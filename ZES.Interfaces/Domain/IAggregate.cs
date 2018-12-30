@@ -15,4 +15,6 @@ namespace ZES.Interfaces.Domain
     {
 
     }
+    
+    public interface ISaga : IEventSourced {}
 }

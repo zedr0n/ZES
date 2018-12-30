@@ -8,12 +8,12 @@ namespace ZES.Interfaces
         /// <summary>
         /// Unique identifier
         /// </summary>
-        Guid Id { get; }
+        string Id { get; }
         
         /// <summary>
         /// Aggregate version ( for optimistic concurrency )
         /// </summary>
-        long Version { get; }
+        int Version { get; }
 
         /// <summary>
         /// Events not yet committed 
@@ -27,6 +27,6 @@ namespace ZES.Interfaces
         /// <param name="pastEvents">Past event sequence</param>
         /// <typeparam name="T">Event sourced type</typeparam>
         /// <returns>Hydrated event sourced instance</returns>
-        void LoadFrom<T>(Guid id,IEnumerable<IEvent> pastEvents) where T : class, IEventSourced;
+        void LoadFrom<T>(string id,IEnumerable<IEvent> pastEvents) where T : class, IEventSourced;
     }
 }

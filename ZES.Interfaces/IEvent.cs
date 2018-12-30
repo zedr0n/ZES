@@ -9,6 +9,10 @@ namespace ZES.Interfaces
         /// </summary>
         Guid EventId { get; set; }
         /// <summary>
+        /// Event type
+        /// </summary>
+        string EventType { get; set; }
+        /// <summary>
         /// Event Unix epoch timestamp
         /// </summary>
         long Timestamp { get; set; } 

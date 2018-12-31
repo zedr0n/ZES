@@ -1,0 +1,3 @@
+namespace ZES.Interfaces.System
+{
+}

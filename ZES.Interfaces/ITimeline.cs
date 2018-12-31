@@ -1,5 +1,3 @@
-using System;
-
 namespace ZES.Interfaces
 {
     public interface ITimeline
@@ -9,13 +7,16 @@ namespace ZES.Interfaces
         // Empty if live
         string TimelineId { get; }
         
-        bool Live { get; }
-        long Now();
+        /// <summary>
+        /// Current timestamp in the timeline
+        /// </summary>
+        /// <returns></returns>
+        long Now { get; }
         
-        void Set(long date);
-        void Reset();
-        
-        IObservable<T> StopAt<T>(long date, T value);
-        void Alternate(Guid timelineId);
+        /// <summary>
+        /// Alternate timeline
+        /// </summary>
+        /// <param name="now"></param>
+        void Set(long now);
     }
 }

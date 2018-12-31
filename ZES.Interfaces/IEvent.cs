@@ -19,6 +19,6 @@ namespace ZES.Interfaces
         /// <summary>
         /// Event version in appropriate stream
         /// </summary>
-        long Verion { get; set; }
+        int Version { get; set; }
     }
 }

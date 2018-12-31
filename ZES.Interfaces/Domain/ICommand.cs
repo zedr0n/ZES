@@ -1,13 +1,11 @@
-using System;
-
-namespace ZES.Interfaces
+namespace ZES.Interfaces.Domain
 {
     public interface ICommand
     {
         /// <summary>
         /// Aggregate target id
         /// </summary>
-        Guid AggregateId { get; set; }
+        string AggregateId { get; set; }
         /// <summary>
         /// Unix time offset for command timestamp
         /// </summary>

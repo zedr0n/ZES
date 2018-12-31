@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Concurrent;
+using SqlStreamStore.Streams;
 using ZES.Interfaces;
 using ZES.Interfaces.Domain;
 using ZES.Interfaces.EventStore;
@@ -15,36 +16,45 @@ namespace ZES.Infrastructure.Streams
             eventStore.Streams.Subscribe(stream => GetOrAdd(stream));
         }
 
-        public string Key(IAggregate es)
+        private static string Key(IAggregate es)
         {
-            return "aggregate-"+es.Id;
-        }
-        
-        public string Key(ISaga es)
-        {
-            return "saga-"+es.Id;
+            return $"root:{es.Id}";
         }
 
-        public IStream Find(string key)
+        private static string Key(ISaga es)
         {
-            _streams.TryGetValue(key, out var stream);
+            return $"saga:{es.Id}";
+        }
+
+        public IStream Find<T>(string id, string timeline = "") where T:IEventSourced
+        {
+            var key = "NA";
+            if(typeof(IAggregate).IsAssignableFrom(typeof(T)))
+                key = $"{timeline}:root:{id}";
+            else if(typeof(ISaga).IsAssignableFrom(typeof(T)))
+                key = $"{timeline}:saga:{id}";
+            
+            _streams.TryGetValue(key, out var stream);            
             return stream;
         }
 
-        public IStream GetOrAdd(IEventSourced es)
+        public IStream GetOrAdd(IEventSourced es, string timeline = "")
         {
             var key = "NA";
             switch (es)
             {
-                case IAggregate aggregate:
-                    key = Key(aggregate);
+                case IAggregate _:
+                    key = $"{timeline}:root:{es.Id}";
                     break;
-                case ISaga saga:
-                    key = Key(saga);
+                case ISaga _:
+                    key = $"${timeline}:saga:{es.Id}";
                     break;
             }
-            
-            var stream = new Stream(key,es.Version);
+
+            if(key == "NA")
+                throw new InvalidOperationException();
+
+            var stream = new Stream(key,ExpectedVersion.NoStream);
             return _streams.GetOrAdd(key, stream);
         }
 

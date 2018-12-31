@@ -29,7 +29,7 @@ namespace ZES.Core.Domain
                 _changes.Clear();                
         }    
 
-        protected virtual void When(IEvent e)
+        protected void When(IEvent e)
         {
             lock (_changes)
             {

@@ -8,6 +8,7 @@ using SqlStreamStore;
 using SqlStreamStore.Streams;
 using ZES.Infrastructure.Streams;
 using ZES.Interfaces;
+using ZES.Interfaces.Domain;
 using ZES.Interfaces.EventStore;
 using ZES.Interfaces.Serialization;
 
@@ -15,17 +16,15 @@ namespace ZES.Infrastructure
 {
     public class SqlEventStore : IEventStore
     {
-        private readonly ITimeline _timeline;
         private readonly IStreamStore _streamStore;
         private readonly IEventSerializer _serializer;
         private readonly Subject<IStream> _streams = new Subject<IStream>();
 
         private const int ReadSize = 100;
 
-        public SqlEventStore(IStreamStore streamStore, ITimeline timeline, IEventSerializer serializer)
+        public SqlEventStore(IStreamStore streamStore, IEventSerializer serializer)
         {
             _streamStore = streamStore;
-            _timeline = timeline;
             _serializer = serializer;
 
             Streams = Observable.Create(async (IObserver<IStream> observer) =>
@@ -35,8 +34,9 @@ namespace ZES.Infrastructure
                 {
                     foreach (var s in page.StreamIds)
                     {
-                        var metadata = await _streamStore.GetStreamMetadata(s);
-                        var stream = new Stream(s, metadata.MetadataStreamVersion);
+                        //var metadata = await _streamStore.GetStreamMetadata(s);
+                        var version = (await _streamStore.ReadStreamForwards(s, StreamVersion.End, 0)).LastStreamVersion;
+                        var stream = new Stream(s, version);
                         observer.OnNext(stream);
                     }
                     page = await page.Next();
@@ -73,23 +73,13 @@ namespace ZES.Infrastructure
             if (!events.Any())
                 return;
 
-            stream.TimelineId = _timeline.TimelineId;
-            
-            TimestampEvents(events);
-            var streamMessages = events.Select(e => new NewStreamMessage(e.EventId, e.EventType, _serializer.Serialize(e))).ToArray();
-            await _streamStore.AppendToStream(stream.Key, stream.Version,streamMessages);
+            var streamMessages = events.Select(e => new NewStreamMessage(e.EventId, e.EventType, _serializer.Serialize(e), "")).ToArray();
+            var result = await _streamStore.AppendToStream(stream.Key, stream.Version,streamMessages);
+
+            stream.Version = result.CurrentVersion;
             _streams.OnNext(stream);
         }
         
-        
-        private void TimestampEvents(IEnumerable<IEvent> events)
-        {
-            var timestamp = _timeline.Now(); 
-            // we only update the timestamps where they haven't been preset
-            foreach (var e in events.Where(e => e.Timestamp == 0))
-                e.Timestamp = timestamp;
-        }
-
         public Task AppendCommand(ICommand command)
         {
             throw new NotImplementedException();

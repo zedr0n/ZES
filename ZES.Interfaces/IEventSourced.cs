@@ -29,4 +29,7 @@ namespace ZES.Interfaces
         /// <returns>Hydrated event sourced instance</returns>
         void LoadFrom<T>(string id,IEnumerable<IEvent> pastEvents) where T : class, IEventSourced;
     }
+    
+    public interface IAggregate : IEventSourced {}
+    public interface ISaga : IEventSourced {}
 }

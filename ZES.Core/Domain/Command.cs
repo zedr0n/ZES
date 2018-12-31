@@ -1,11 +1,11 @@
-using System;
 using ZES.Interfaces;
+using ZES.Interfaces.Domain;
 
 namespace ZES.Core.Domain
 {
     public class Command : ICommand
     {
-        public Guid AggregateId { get; set; }
+        public string AggregateId { get; set; }
         public long Timestamp { get; set; }
     }
 }

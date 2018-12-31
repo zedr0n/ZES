@@ -6,11 +6,13 @@ namespace ZES.Infrastructure.Streams
     {
         public Stream(string key, int version)
         {
-            Key = key;
+            _key = key;
             Version = version;
         }
-        public string Key { get; }
+
+        public string Key => $"{TimelineId}:{_key}";
+        private readonly string _key;
         public int Version { get; set; }
-        public string TimelineId { get; set; }
+        public string TimelineId { get; set; } = "";
     }
 }

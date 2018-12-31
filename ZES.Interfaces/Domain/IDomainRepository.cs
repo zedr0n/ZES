@@ -1,4 +1,3 @@
-using System;
 using System.Threading.Tasks;
 
 namespace ZES.Interfaces.Domain
@@ -16,7 +15,7 @@ namespace ZES.Interfaces.Domain
         /// </summary>
         /// <param name="id">Event sourced guid</param>
         /// <typeparam name="T">Event sourced type</typeparam>
-        /// <returns>Aggregate or null if no events found</returns>
-        Task<T> Find<T>(Guid id) where T : class, IEventSourced,new();
+        /// <returns>Aggregate/saga or null if no events found</returns>
+        Task<T> Find<T>(string id) where T : class, IEventSourced,new();
     }
 }

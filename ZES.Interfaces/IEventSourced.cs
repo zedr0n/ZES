@@ -31,5 +31,4 @@ namespace ZES.Interfaces
     }
     
     public interface IAggregate : IEventSourced {}
-    public interface ISaga : IEventSourced {}
 }

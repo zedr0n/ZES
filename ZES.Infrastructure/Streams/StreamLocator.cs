@@ -4,6 +4,7 @@ using SqlStreamStore.Streams;
 using ZES.Interfaces;
 using ZES.Interfaces.Domain;
 using ZES.Interfaces.EventStore;
+using ZES.Interfaces.Sagas;
 
 namespace ZES.Infrastructure.Streams
 {

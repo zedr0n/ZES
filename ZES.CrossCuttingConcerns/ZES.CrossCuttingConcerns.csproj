@@ -9,7 +9,6 @@
     </ItemGroup>
 
     <ItemGroup>
-      <ProjectReference Include="..\ZES.Core\ZES.Core.csproj" />
       <ProjectReference Include="..\ZES.Infrastructure\ZES.Infrastructure.csproj" />
       <ProjectReference Include="..\ZES.Interfaces\ZES.Interfaces.csproj" />
     </ItemGroup>

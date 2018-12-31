@@ -17,16 +17,6 @@ namespace ZES.Infrastructure.Streams
             eventStore.Streams.Subscribe(stream => GetOrAdd(stream));
         }
 
-        private static string Key(IAggregate es)
-        {
-            return $"root:{es.Id}";
-        }
-
-        private static string Key(ISaga es)
-        {
-            return $"saga:{es.Id}";
-        }
-
         public IStream Find<T>(string id, string timeline = "") where T:IEventSourced
         {
             var key = "NA";
@@ -48,7 +38,7 @@ namespace ZES.Infrastructure.Streams
                     key = $"{timeline}:root:{es.Id}";
                     break;
                 case ISaga _:
-                    key = $"${timeline}:saga:{es.Id}";
+                    key = $"{timeline}:saga:{es.Id}";
                     break;
             }
 

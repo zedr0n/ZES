@@ -14,7 +14,8 @@ namespace ZES.Infrastructure.Domain
 
         protected void Register<TEvent>(Action<TEvent> handler) where TEvent : class, IEvent
         {
-            _handlers.Add(typeof(TEvent), e => handler(e as TEvent));
+            if(handler != null)
+                _handlers.Add(typeof(TEvent), e => handler(e as TEvent));
         }
         
         public IEvent[] GetUncommittedEvents()
@@ -29,7 +30,7 @@ namespace ZES.Infrastructure.Domain
                 _changes.Clear();                
         }    
 
-        protected virtual void When(IEvent e)
+        public virtual void When(IEvent e)
         {
             lock (_changes)
             {
@@ -48,7 +49,7 @@ namespace ZES.Infrastructure.Domain
                 handler(e);
         }
         
-        public virtual void LoadFrom<T>(string id, IEnumerable<IEvent> pastEvents) where T : class, IEventSourced
+        public virtual void LoadFrom<T>(string id, IEnumerable<IEvent> pastEvents ) where T : class, IEventSourced
         {
             Id = id;
             foreach (var e in pastEvents)

@@ -13,5 +13,11 @@ namespace ZES.Interfaces.Sagas
         /// Add the commands to the dispatch queue
         /// </summary>
         void SendCommand(ICommand command);
+
+        /// <summary>
+        /// Process event
+        /// </summary>
+        /// <param name="e">IEvent</param>
+        void When(IEvent e);
     }
 }

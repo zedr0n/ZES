@@ -1,9 +1,12 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using ZES.Interfaces;
 using ZES.Interfaces.Domain;
 using ZES.Interfaces.EventStore;
+using ZES.Interfaces.Pipes;
+using ZES.Interfaces.Sagas;
 
 namespace ZES.Infrastructure.Domain
 {
@@ -12,12 +15,14 @@ namespace ZES.Infrastructure.Domain
         private readonly IEventStore _eventStore;
         private readonly IStreamLocator _streams;
         private readonly ITimeline _timeline;
+        private readonly IBus _bus;
         
-        public DomainRepository(IEventStore eventStore, IStreamLocator streams, ITimeline timeline)
+        public DomainRepository(IEventStore eventStore, IStreamLocator streams, ITimeline timeline, IBus bus)
         {
             _eventStore = eventStore;
             _streams = streams;
             _timeline = timeline;
+            _bus = bus;
         }
         
         public async Task Save<T>(T es) where T : class, IEventSourced
@@ -40,7 +45,22 @@ namespace ZES.Infrastructure.Domain
                 @event.Timestamp = _timeline.Now;
             }
                    
-            await _eventStore.AppendToStream(stream, events);    
+            await _eventStore.AppendToStream(stream, events);
+            if (es is ISaga saga)
+            {
+                var commands = saga.GetUncommittedCommands();
+                foreach (var command in commands)
+                    await _bus.CommandAsync(command);
+            }
+                
+        }
+
+        public async Task<T> GetOrAdd<T>(string id) where T : class, IEventSourced, new()
+        {
+            var instance = await Find<T>(id) ?? new T();
+            var pastEvents = new List<IEvent>();
+            instance.LoadFrom<T>(id, pastEvents);
+            return instance;
         }
 
         public async Task<T> Find<T>(string id) where T : class, IEventSourced, new()

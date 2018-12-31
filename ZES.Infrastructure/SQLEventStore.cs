@@ -10,6 +10,7 @@ using ZES.Infrastructure.Streams;
 using ZES.Interfaces;
 using ZES.Interfaces.Domain;
 using ZES.Interfaces.EventStore;
+using ZES.Interfaces.Pipes;
 using ZES.Interfaces.Serialization;
 
 namespace ZES.Infrastructure
@@ -19,13 +20,15 @@ namespace ZES.Infrastructure
         private readonly IStreamStore _streamStore;
         private readonly IEventSerializer _serializer;
         private readonly Subject<IStream> _streams = new Subject<IStream>();
+        private readonly IMessageQueue _messageQueue;
 
         private const int ReadSize = 100;
 
-        public SqlEventStore(IStreamStore streamStore, IEventSerializer serializer)
+        public SqlEventStore(IStreamStore streamStore, IEventSerializer serializer, IMessageQueue messageQueue)
         {
             _streamStore = streamStore;
             _serializer = serializer;
+            _messageQueue = messageQueue;
 
             Streams = Observable.Create(async (IObserver<IStream> observer) =>
             {
@@ -78,6 +81,13 @@ namespace ZES.Infrastructure
 
             stream.Version = result.CurrentVersion;
             _streams.OnNext(stream);
+
+            // publish non-saga events to queue
+            if (!stream.Key.Contains("saga"))
+            {
+                foreach (var e in events)
+                    await _messageQueue.PublishAsync(e);     
+            }
         }
         
         public Task AppendCommand(ICommand command)

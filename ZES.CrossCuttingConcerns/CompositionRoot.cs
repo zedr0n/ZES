@@ -24,6 +24,7 @@ namespace ZES.CrossCuttingConcerns
             container.Register<IEventStore, SqlEventStore>(Lifestyle.Singleton);
             
             container.Register<ITimeline, Timeline>(Lifestyle.Singleton);
+            container.Register<IMessageQueue,MessageQueue>(Lifestyle.Singleton);
 
             container.Register<IStreamLocator, StreamLocator>(Lifestyle.Singleton);
             container.Register<IDomainRepository,DomainRepository>(Lifestyle.Singleton);

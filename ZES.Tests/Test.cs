@@ -21,6 +21,15 @@ namespace ZES.Tests
                 var container = new Container();
                 CreateRoot().ComposeApplication(container);
                 container.Register<ICommandHandler<CreateRootCommand>,CreateRootHandler>();
+
+                container.Register<RootProjection>(Lifestyle.Singleton);
+                container.Register<TestSaga>(Lifestyle.Singleton);
+                container.Register<TestSagaHandler>(Lifestyle.Singleton);
+                container.Register(typeof(IQueryHandler<,>), new[]
+                {
+                    typeof(CreatedAtHandler)
+                }, Lifestyle.Singleton);
+
                 container.Verify();
                 //Bus = container.GetInstance<IBus>();
                 return container;

@@ -1,9 +1,6 @@
-using ZES.Core.Domain;
+using ZES.Infrastructure.Domain;
 
 namespace ZES.Tests.TestDomain
 {
-    public class CreateRootCommand : Command
-    {
-        
-    }
+    public class CreateRootCommand : Command {}
 }

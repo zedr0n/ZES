@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using ZES.Interfaces;
 
-namespace ZES.Core.Domain
+namespace ZES.Infrastructure.Domain
 {
     public abstract class EventSourced : IEventSourced 
     {        

@@ -1,7 +1,6 @@
-using ZES.Interfaces;
 using ZES.Interfaces.Domain;
 
-namespace ZES.Core.Domain
+namespace ZES.Infrastructure.Domain
 {
     public class Command : ICommand
     {

@@ -1,4 +1,4 @@
-using ZES.Core.Domain;
+using ZES.Infrastructure.Domain;
 using ZES.Interfaces;
 
 namespace ZES.Tests.TestDomain

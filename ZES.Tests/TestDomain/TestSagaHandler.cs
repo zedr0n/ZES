@@ -6,20 +6,17 @@ namespace ZES.Tests.TestDomain
 {
     public class TestSagaHandler : SagaHandler<TestSaga>
     {
-        private readonly IDomainRepository _repository;
-        
-        public TestSagaHandler(IMessageQueue messageQueue, IDomainRepository repository) : base(messageQueue)
+        public TestSagaHandler(IMessageQueue messageQueue, IDomainRepository repository) : base(messageQueue,repository)
         {
-            _repository = repository;
-            Register<RootCreated>(Apply);
+            Register<RootCreated>(e => e.RootId);
         }
 
-        private async void Apply(RootCreated e)
-        {
-            var saga = await _repository.GetOrAdd<TestSaga>(e.RootId);
-            saga.When(e);
-            await _repository.Save(saga);
-        }
+        //private async void Handle(RootCreated e)
+        //{
+        //    var saga = await _repository.GetOrAdd<TestSaga>(e.RootId);
+        //    saga.When(e);
+        //    await _repository.Save(saga);
+        //}
         
     }
 }

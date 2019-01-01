@@ -8,7 +8,7 @@ namespace ZES.Tests.TestDomain
         public enum Trigger { Created } 
         public enum State { Open, Complete}
 
-        private string _rootId = null;
+        private string _rootId;
         
         public TestSaga()
         {

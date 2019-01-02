@@ -14,7 +14,6 @@ namespace ZES.Infrastructure.Sagas
 
     {
         private readonly IDomainRepository _repository;
-        
         private readonly ConcurrentDictionary<Type, Action<IEvent>> _handlers = new ConcurrentDictionary<Type, Action<IEvent>>();
 
         protected SagaHandler(IMessageQueue messageQueue, IDomainRepository repository)

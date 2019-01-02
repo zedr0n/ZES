@@ -1,5 +1,7 @@
+using System.Linq;
 using SimpleInjector;
 using SqlStreamStore;
+using SqlStreamStore.Logging;
 using ZES.Infrastructure;
 using ZES.Infrastructure.Domain;
 using ZES.Infrastructure.Serialization;
@@ -19,6 +21,7 @@ namespace ZES.CrossCuttingConcerns
             container.Register<IBus,Bus>(Lifestyle.Singleton);
             
             container.Register<IStreamStore>(() => new InMemoryStreamStore(),Lifestyle.Singleton);
+            //container.Register(() => LogProvider.GetLogger("NLog"), Lifestyle.Singleton);
             
             container.Register<IEventSerializer, EventSerializer>(Lifestyle.Singleton);
             container.Register<IEventStore, SqlEventStore>(Lifestyle.Singleton);
@@ -26,8 +29,13 @@ namespace ZES.CrossCuttingConcerns
             container.Register<ITimeline, Timeline>(Lifestyle.Singleton);
             container.Register<IMessageQueue,MessageQueue>(Lifestyle.Singleton);
 
-            container.Register<IStreamLocator, StreamLocator>(Lifestyle.Singleton);
+            container.Register<IStreamLocator, StreamLocator>(Lifestyle.Singleton);    
             container.Register<IDomainRepository,DomainRepository>(Lifestyle.Singleton);
+
+            //container.RegisterDecorator(typeof(ICommandHandler<>),
+            //    typeof(CommandRecorder<>),Lifestyle.Singleton,
+            //    context => !context.AppliedDecorators.Any(d => d.IsClosedTypeOf(typeof(CommandRecorder<>)))); 
+
         }
     }
 }

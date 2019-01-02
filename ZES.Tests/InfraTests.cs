@@ -1,4 +1,5 @@
 using Xunit;
+using Xunit.Abstractions;
 using ZES.Interfaces.Domain;
 using ZES.Interfaces.Pipes;
 using ZES.Tests.TestDomain;
@@ -65,6 +66,10 @@ namespace ZES.Tests
             var query = new CreatedAtQuery("RootNew");
             var createdAt = bus.Query(query);
             Assert.NotEqual(0, createdAt);
+        }
+
+        public InfraTests(ITestOutputHelper outputHelper) : base(outputHelper)
+        {
         }
     }
 }

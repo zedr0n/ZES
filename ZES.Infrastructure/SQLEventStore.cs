@@ -1,10 +1,13 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Reactive.Linq;
 using System.Reactive.Subjects;
 using System.Threading.Tasks;
+using NLog;
 using SqlStreamStore;
+using SqlStreamStore.Logging;
 using SqlStreamStore.Streams;
 using ZES.Infrastructure.Streams;
 using ZES.Interfaces;
@@ -21,14 +24,16 @@ namespace ZES.Infrastructure
         private readonly IEventSerializer _serializer;
         private readonly Subject<IStream> _streams = new Subject<IStream>();
         private readonly IMessageQueue _messageQueue;
+        private readonly ILogger _log;
 
         private const int ReadSize = 100;
 
-        public SqlEventStore(IStreamStore streamStore, IEventSerializer serializer, IMessageQueue messageQueue)
+        public SqlEventStore(IStreamStore streamStore, IEventSerializer serializer, IMessageQueue messageQueue, ILogger log)
         {
             _streamStore = streamStore;
             _serializer = serializer;
             _messageQueue = messageQueue;
+            _log = log;
 
             Streams = Observable.Create(async (IObserver<IStream> observer) =>
             {
@@ -70,6 +75,17 @@ namespace ZES.Infrastructure
             return events;
         }
 
+        private void LogEvents(IList<IEvent> events)
+        {
+            foreach (var e in events)
+            {
+                _log.Debug(e.EventType + "( " +
+                                    new DateTime(e.Timestamp).ToUniversalTime().ToString(CultureInfo.InvariantCulture) + " )");
+                _log.Debug(_serializer.Serialize(e));
+            }
+        }
+
+        
         public async Task AppendToStream(IStream stream, IEnumerable<IEvent> enumerable)
         {
             var events = enumerable as IList<IEvent> ?? enumerable.ToList();
@@ -83,8 +99,10 @@ namespace ZES.Infrastructure
             _streams.OnNext(stream);
 
             // publish non-saga events to queue
-            if (!stream.Key.Contains("saga"))
+            if (!stream.IsSaga)
             {
+                LogEvents(events);
+                
                 foreach (var e in events)
                     await _messageQueue.PublishAsync(e);     
             }

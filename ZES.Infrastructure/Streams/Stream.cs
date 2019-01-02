@@ -10,6 +10,7 @@ namespace ZES.Infrastructure.Streams
             Version = version;
         }
 
+        public bool IsSaga => _key.Contains(":saga");
         public string Key => $"{TimelineId}:{_key}";
         private readonly string _key;
         public int Version { get; set; }

@@ -5,6 +5,10 @@ namespace ZES.Interfaces.EventStore
     public interface IStream
     {
         /// <summary>
+        /// Is stream related to a saga
+        /// </summary>
+        bool IsSaga { get; }
+        /// <summary>
         /// Unique key identifying the stream
         /// </summary>
         string Key { get; }

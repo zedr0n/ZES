@@ -10,13 +10,5 @@ namespace ZES.Tests.TestDomain
         {
             Register<RootCreated>(e => e.RootId);
         }
-
-        //private async void Handle(RootCreated e)
-        //{
-        //    var saga = await _repository.GetOrAdd<TestSaga>(e.RootId);
-        //    saga.When(e);
-        //    await _repository.Save(saga);
-        //}
-        
     }
 }

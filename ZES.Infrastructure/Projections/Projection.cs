@@ -40,7 +40,7 @@ namespace ZES.Infrastructure.Projections
                 When(e);
         }
 
-        protected void When(IEvent e)
+        private void When(IEvent e)
         {
             if (e == null)
                 return;

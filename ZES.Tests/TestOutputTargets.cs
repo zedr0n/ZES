@@ -4,7 +4,7 @@ using NLog;
 using NLog.Targets;
 using Xunit.Abstractions;
 
-namespace ZES.Tests
+namespace Xunit 
 {
     [Target("TestOutput")]
     public class TestOutputTarget : TargetWithLayoutHeaderAndFooter
@@ -24,7 +24,7 @@ namespace ZES.Tests
             if (string.IsNullOrWhiteSpace(loggerName))
                 throw new ArgumentNullException(nameof (loggerName));
             ITestOutputHelper testOutputHelper;
-            return this._map.TryRemove(loggerName, out testOutputHelper);
+            return _map.TryRemove(loggerName, out testOutputHelper);
         }
 
         protected override void Write(LogEventInfo logEvent)

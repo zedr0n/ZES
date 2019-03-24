@@ -1,9 +1,8 @@
 using System;
 using System.Collections.Concurrent;
-using System.Threading.Tasks;
+using NLog;
 using ZES.Interfaces;
 using ZES.Interfaces.Domain;
-using ZES.Interfaces.EventStore;
 using ZES.Interfaces.Pipes;
 using ZES.Interfaces.Sagas;
 
@@ -13,12 +12,14 @@ namespace ZES.Infrastructure.Sagas
         where TSaga : class, ISaga, new()
 
     {
+        private readonly ILogger _logger;
         private readonly IDomainRepository _repository;
         private readonly ConcurrentDictionary<Type, Action<IEvent>> _handlers = new ConcurrentDictionary<Type, Action<IEvent>>();
 
-        protected SagaHandler(IMessageQueue messageQueue, IDomainRepository repository)
+        protected SagaHandler(IMessageQueue messageQueue, IDomainRepository repository, ILogger logger)
         {
             _repository = repository;
+            _logger = logger;
             messageQueue.Messages.Subscribe(When);
         }
 
@@ -28,6 +29,7 @@ namespace ZES.Infrastructure.Sagas
             {
                 var saga = await _repository.GetOrAdd<TSaga>(idFunc(e as TEvent)); 
                 saga.When(e);
+                _logger.Debug($"Sending {e.EventType} to {saga.GetType().Name}");
                 await _repository.Save(saga);
             }
             _handlers[typeof(TEvent)] = Handler;

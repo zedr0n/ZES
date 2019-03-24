@@ -4,11 +4,10 @@ using System.Threading;
 using NLog;
 using Xunit.Abstractions;
 
-namespace ZES.Tests
+namespace Xunit 
 {
     public static class TestOutputHelpers
     {
-        public const string DefaultLoggerName = "Test";
         private static int _loggerId;
 
         public static string AddTestOutputHelper(

@@ -32,9 +32,9 @@ namespace ZES.CrossCuttingConcerns
             container.Register<IStreamLocator, StreamLocator>(Lifestyle.Singleton);    
             container.Register<IDomainRepository,DomainRepository>(Lifestyle.Singleton);
 
-            //container.RegisterDecorator(typeof(ICommandHandler<>),
-            //    typeof(CommandRecorder<>),Lifestyle.Singleton,
-            //    context => !context.AppliedDecorators.Any(d => d.IsClosedTypeOf(typeof(CommandRecorder<>)))); 
+            container.RegisterDecorator(typeof(ICommandHandler<>),
+                typeof(CommandRecorder<>),Lifestyle.Singleton,
+                context => !context.AppliedDecorators.Any(d => d.IsClosedTypeOf(typeof(CommandRecorder<>)))); 
 
         }
     }

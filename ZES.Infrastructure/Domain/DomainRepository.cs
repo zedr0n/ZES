@@ -52,7 +52,6 @@ namespace ZES.Infrastructure.Domain
                 foreach (var command in commands)
                     await _bus.CommandAsync(command);
             }
-                
         }
 
         public async Task<T> GetOrAdd<T>(string id) where T : class, IEventSourced, new()

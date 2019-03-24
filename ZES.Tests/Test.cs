@@ -1,3 +1,5 @@
+using System;
+using System.Collections.Generic;
 using NLog;
 using NLog.Config;
 using NLog.Targets;
@@ -34,6 +36,7 @@ namespace ZES.Tests
                 Name = "Test",
                 Layout = @"${date:format=HH\:mm\:ss} ${level} ${message} ${exception}"
             };
+            //consoleTarget.
             config.AddTarget(consoleTarget);
             
             config.AddRuleForAllLevels(consoleTarget); // all to console
@@ -47,7 +50,7 @@ namespace ZES.Tests
             return new CompositionRoot();
         }
 
-        protected Container CreateContainer()
+        protected Container CreateContainer( List<Action<Container>> _registrations = null) 
         {
             lock (_lock)
             {
@@ -55,15 +58,12 @@ namespace ZES.Tests
                 CreateRoot().ComposeApplication(container);
                 container.Register<ICommandHandler<CreateRootCommand>,CreateRootHandler>(Lifestyle.Singleton);
 
-                container.Register<RootProjection>(Lifestyle.Singleton);
-                container.Register<TestSaga>(Lifestyle.Singleton);
-                container.Register<TestSagaHandler>(Lifestyle.Singleton);
-                container.Register(typeof(IQueryHandler<,>), new[]
-                {
-                    typeof(CreatedAtHandler)
-                }, Lifestyle.Singleton);
-                
                 container.Register(() => _logger, Lifestyle.Singleton);
+                
+                if(_registrations == null)
+                    _registrations = new List<Action<Container>>();
+                foreach(var reg in _registrations)
+                    reg(container);
 
                 container.Verify();
                 return container;

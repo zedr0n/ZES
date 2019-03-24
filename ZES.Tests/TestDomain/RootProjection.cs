@@ -18,7 +18,7 @@ namespace ZES.Tests.TestDomain
             eventStore.Streams
                 .Where(s => s.Key.Contains("Root"))
                 .Select(s => new List<IStream> {s})
-                .Subscribe(async s => await Update(s));
+                .Subscribe(s => Notify(s));
         }
 
         public long Get(string id)

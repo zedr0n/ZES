@@ -1,5 +1,6 @@
 using System;
 using System.Threading.Tasks;
+using System.Threading.Tasks.Dataflow;
 using SimpleInjector;
 using ZES.Interfaces.Domain;
 using ZES.Interfaces.Pipes;
@@ -9,7 +10,8 @@ namespace ZES.CrossCuttingConcerns
     public class Bus : IBus
     {
         private readonly Container _container;
-
+        private readonly ActionBlock<ICommand> _commandProcessor;
+        
         private object GetInstance(Type type)
         {
             try
@@ -30,7 +32,27 @@ namespace ZES.CrossCuttingConcerns
         public Bus(Container container)
         {
             _container = container;
-            //_log = log;
+            _commandProcessor = new ActionBlock<ICommand>(HandleCommand,
+                new ExecutionDataflowBlockOptions
+                {
+                    MaxDegreeOfParallelism = 1
+                });
+        }
+
+        private int _executing;
+        private int _submitted;
+        public BusStatus Status
+        {
+            get
+            {
+                if (_commandProcessor.InputCount > 0)
+                    return BusStatus.Busy;
+                if (_executing > 0)
+                    return BusStatus.Executing;
+                if (_submitted > 0)
+                    return BusStatus.Submitted;
+                return BusStatus.Free;
+            }
         }
 
         public bool Command(ICommand command)
@@ -44,12 +66,25 @@ namespace ZES.CrossCuttingConcerns
             return true;
         }
 
-        public async Task CommandAsync(ICommand command)
+        private async Task HandleCommand(ICommand command)
         {
+            _submitted--;
+            _executing++;
+            
             var handlerType = typeof(ICommandHandler<>).MakeGenericType(command.GetType());
             dynamic handler = GetInstance(handlerType);
             if (handler != null)
-                await handler.Handle(command as dynamic); 
+                await handler.Handle(command as dynamic);
+
+            _executing--;
+        }
+
+        public async Task<bool> CommandAsync(ICommand command)
+        {
+            var res = await _commandProcessor.SendAsync(command);
+            if(res)
+                _submitted++;
+            return res;
         }
 
         public TResult Query<TResult>(IQuery<TResult> query)

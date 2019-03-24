@@ -25,18 +25,6 @@ namespace ZES.Interfaces.EventStore
     public interface IStreamLocator
     {
         /// <summary>
-        /// Generate key from aggregate instance
-        /// </summary>
-        /// <param name="es">Aggregate instance</param>
-        /// <returns>aggregate-${key}</returns>
-        //string Key(IAggregate es);
-        /// <summary>
-        /// Generate key from saga instance
-        /// </summary>
-        /// <param name="es">Saga instance</param>
-        /// <returns>saga-${key}</returns>
-        //string Key(ISaga es);
-        /// <summary>
         /// Get the stream with the given id
         /// </summary>
         /// <param name="id">event sourced instance id</param>

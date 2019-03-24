@@ -20,6 +20,8 @@ namespace ZES.Infrastructure
 {
     public class SqlEventStore : IEventStore
     {
+        public IObservable<IStream> Streams { get; }
+        
         private readonly IStreamStore _streamStore;
         private readonly IEventSerializer _serializer;
         private readonly Subject<IStream> _streams = new Subject<IStream>();
@@ -52,8 +54,7 @@ namespace ZES.Infrastructure
                 observer.OnCompleted();
             }).Concat(_streams.AsObservable());
         }
-        
-        public IObservable<IStream> Streams { get; }
+
         public async Task<IEnumerable<IEvent>> ReadStream(IStream stream, int start, int count = -1)
         {
             var events = new List<IEvent>();
@@ -110,7 +111,8 @@ namespace ZES.Infrastructure
         
         public Task AppendCommand(ICommand command)
         {
-            throw new NotImplementedException();
+            return Task.Run(() => true);
+            //throw new NotImplementedException(); 
         }
     }
 }

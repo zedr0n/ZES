@@ -12,7 +12,7 @@ namespace ZES.Tests.TestDomain
 
         public Root(string id) : this()
         {
-            When(new RootCreated(id));    
+            base.When(new RootCreated(id));    
         }
 
         private void ApplyEvent(RootCreated e)

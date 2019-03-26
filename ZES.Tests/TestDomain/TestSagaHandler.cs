@@ -2,12 +2,13 @@ using NLog;
 using ZES.Infrastructure.Sagas;
 using ZES.Interfaces.Domain;
 using ZES.Interfaces.Pipes;
+using ZES.Interfaces.Sagas;
 
 namespace ZES.Tests.TestDomain
 {
     public class TestSagaHandler : SagaHandler<TestSaga>
     {
-        public TestSagaHandler(IMessageQueue messageQueue, IDomainRepository repository, ILogger _logger) : base(messageQueue,repository, _logger)
+        public TestSagaHandler(IMessageQueue messageQueue, ISagaRepository repository, ILogger logger) : base(messageQueue,repository, logger)
         {
             Register<RootCreated>(e => e.RootId);
         }

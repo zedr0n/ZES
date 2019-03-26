@@ -10,6 +10,16 @@ namespace ZES.Infrastructure.Domain
         private readonly List<IEvent> _changes = new List<IEvent>();
         private readonly Dictionary<Type, Action<IEvent>> _handlers = new Dictionary<Type, Action<IEvent>>();
 
+        public static T Create<T>(string id) where T : class,IEventSourced, new()
+        {
+            var instance = new T() as EventSourced;
+            if (instance == null) 
+                return default(T);
+            
+            instance.Id = id;
+            return instance as T;
+        }
+        
         public int Version { get; private set; }
 
         protected void Register<TEvent>(Action<TEvent> handler) where TEvent : class, IEvent
@@ -49,9 +59,8 @@ namespace ZES.Infrastructure.Domain
                 handler(e);
         }
         
-        public virtual void LoadFrom<T>(string id, IEnumerable<IEvent> pastEvents ) where T : class, IEventSourced
+        public virtual void LoadFrom<T>(IEnumerable<IEvent> pastEvents ) where T : class, IEventSourced
         {
-            Id = id;
             foreach (var e in pastEvents)
                 When(e);
 

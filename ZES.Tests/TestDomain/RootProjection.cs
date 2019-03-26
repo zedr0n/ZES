@@ -3,6 +3,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Reactive.Linq;
 using ZES.Infrastructure.Projections;
+using ZES.Interfaces;
 using ZES.Interfaces.EventStore;
 
 namespace ZES.Tests.TestDomain
@@ -11,14 +12,11 @@ namespace ZES.Tests.TestDomain
     {
         private readonly ConcurrentDictionary<string, long> _createdAt = new ConcurrentDictionary<string, long>();
         
-        public RootProjection(IEventStore eventStore) : base(eventStore)
+        public RootProjection(IEventStore<IAggregate> eventStore) : base(eventStore)
         {
             Register<RootCreated>(When);
 
-            eventStore.Streams
-                .Where(s => s.Key.Contains("Root"))
-                .Select(s => new List<IStream> {s})
-                .Subscribe(s => Notify(s));
+            eventStore.Streams.Subscribe(async s => await Notify(s));
         }
 
         public long Get(string id)

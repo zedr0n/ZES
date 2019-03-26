@@ -1,3 +1,4 @@
+using System;
 using ZES.Interfaces.Domain;
 
 namespace ZES.Interfaces.EventStore
@@ -5,9 +6,11 @@ namespace ZES.Interfaces.EventStore
     public interface IStream
     {
         /// <summary>
-        /// Is stream related to a saga
+        /// Clone the stream with a different version
         /// </summary>
-        bool IsSaga { get; }
+        /// <param name="version"></param>
+        /// <returns></returns>
+        IStream Clone(int version);
         /// <summary>
         /// Unique key identifying the stream
         /// </summary>
@@ -21,8 +24,8 @@ namespace ZES.Interfaces.EventStore
         /// </summary>
         string TimelineId { get; set; }
     }
-
-    public interface IStreamLocator
+    
+    public interface IStreamLocator<in I> where I : IEventSourced
     {
         /// <summary>
         /// Get the stream with the given id
@@ -30,7 +33,7 @@ namespace ZES.Interfaces.EventStore
         /// <param name="id">event sourced instance id</param>
         /// <param name="timeline">timeline id</param>
         /// <returns></returns>
-        IStream Find<T>(string id, string timeline = "") where T : IEventSourced;
+        IStream Find<T>(string id, string timeline = "") where T : I;
         // Stream repository        
         /// <summary>
         /// Extract and cache the stream details for event sourced instance
@@ -38,7 +41,7 @@ namespace ZES.Interfaces.EventStore
         /// <param name="es">saga or aggregate</param>
         /// <param name="timeline">timeline id</param>
         /// <returns></returns>
-        IStream GetOrAdd(IEventSourced es, string timeline = "");
+        IStream GetOrAdd(I es, string timeline = "");
         /// <summary>
         /// Extract and cache the stream details for the target stream
         /// </summary>

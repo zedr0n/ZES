@@ -28,9 +28,9 @@ namespace ZES.Infrastructure.Sagas
                 _undispatchedCommands.Add(command);
         }
 
-        public override void LoadFrom<T>(string id, IEnumerable<IEvent> pastEvents)
+        public override void LoadFrom<T>(IEnumerable<IEvent> pastEvents)
         {
-            base.LoadFrom<T>(id, pastEvents);
+            base.LoadFrom<T>(pastEvents);
             ClearUncommittedCommands();
         }
     }   

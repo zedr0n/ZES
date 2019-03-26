@@ -2,6 +2,7 @@ using System;
 using System.Threading.Tasks;
 using NLog;
 using SqlStreamStore.Logging;
+using ZES.Interfaces;
 using ZES.Interfaces.Domain;
 using ZES.Interfaces.EventStore;
 
@@ -10,10 +11,10 @@ namespace ZES.Infrastructure
     public class CommandRecorder<T> : ICommandHandler<T> where T : ICommand
     {
         private readonly ICommandHandler<T> _handler;
-        private readonly IEventStore _eventStore;
+        private readonly IEventStore<IAggregate> _eventStore;
         private readonly ILogger _log;
         
-        public CommandRecorder(ICommandHandler<T> handler, IEventStore eventStore, ILogger log)
+        public CommandRecorder(ICommandHandler<T> handler, IEventStore<IAggregate> eventStore, ILogger log)
         {
             _handler = handler;
             _eventStore = eventStore;

@@ -1,3 +1,4 @@
+using System;
 using ZES.Interfaces.EventStore;
 
 namespace ZES.Infrastructure.Streams
@@ -10,7 +11,20 @@ namespace ZES.Infrastructure.Streams
             Version = version;
         }
 
-        public bool IsSaga => _key.Contains(":saga");
+        public IStream Clone()
+        {
+            return Clone(Version);
+        }
+        
+        public IStream Clone(int version)
+        {
+            if(!(MemberwiseClone() is Stream clone))
+                throw new InvalidCastException();
+            
+            clone.Version = version;
+            return clone;
+        }
+
         public string Key => $"{TimelineId}:{_key}";
         private readonly string _key;
         public int Version { get; set; }

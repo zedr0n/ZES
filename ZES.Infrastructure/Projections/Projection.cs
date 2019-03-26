@@ -12,19 +12,28 @@ namespace ZES.Infrastructure.Projections
 {
     public class Projection
     {
-        private readonly ActionBlock<IEnumerable<IStream>> _updater;
-        private readonly IEventStore _eventStore;
-        private readonly ConcurrentDictionary<string, int> _streams = new ConcurrentDictionary<string, int>();
+        private readonly BatchBlock<IStream> _batchBlock;
+        private readonly IEventStore<IAggregate> _eventStore;
+        //private readonly ConcurrentDictionary<string, int> _streamVersions = new ConcurrentDictionary<string, int>();
+        private readonly ConcurrentDictionary<string,IStream> _streams = new ConcurrentDictionary<string, IStream>();
         private readonly Dictionary<Type, Action<IEvent>> _handlers = new Dictionary<Type, Action<IEvent>>();
 
-        protected Projection(IEventStore eventStore)
+        private const int BatchSize = 100;
+        private long _timestamp;
+        
+        protected Projection(IEventStore<IAggregate> eventStore)
         {
             _eventStore = eventStore;
-            _updater = new ActionBlock<IEnumerable<IStream>>(Update,
+            var actionBlock = new ActionBlock<IEnumerable<IStream>>(Update,
                 new ExecutionDataflowBlockOptions
                 {
                     MaxDegreeOfParallelism = 1
                 });
+            
+            _batchBlock = new BatchBlock<IStream>(BatchSize);
+            _batchBlock.LinkTo(actionBlock);
+
+            _eventStore.StreamsBatched.Subscribe(b => _batchBlock.TriggerBatch());
         }
 
         protected void Register<TEvent>(Action<TEvent> when) where TEvent : class
@@ -32,17 +41,19 @@ namespace ZES.Infrastructure.Projections
             _handlers.Add(typeof(TEvent), e => when(e as TEvent)); 
         }
 
-        protected Task Notify(IEnumerable<IStream> streams)
+        protected async Task Notify(IStream stream)
         {
-            var updatedStreams = new List<IStream>();
-            foreach (var stream in streams)
-            {
-                var version = stream.Version; 
-                var projectionVersion = _streams.GetOrAdd(stream.Key,ExpectedVersion.EmptyStream);
-                if (version > projectionVersion)
-                    updatedStreams.Add(stream);
-            }
-            return _updater.SendAsync(updatedStreams);
+            var version = stream.Version; 
+            var projectionVersion = _streams.GetOrAdd(stream.Key,stream.Clone(-1)).Version;
+            if (version > projectionVersion)
+                await _batchBlock.SendAsync(stream);
+        }
+
+        private async Task Rebuild()
+        {
+            var streams = new List<IStream>(_streams.Values);
+            _timestamp = 0;
+            await Update(streams.Select(s => s.Clone(-1)));
         }
 
         private async Task Update(IEnumerable<IStream> streams)
@@ -50,15 +61,25 @@ namespace ZES.Infrastructure.Projections
             var events = new List<IEvent>();
             foreach (var stream in streams)
             {
-                var version = _streams[stream.Key];
-                var streamEvents = (await _eventStore.ReadStream(stream, version+1)).ToList();
+                if(!_streams.TryGetValue(stream.Key, out var myStream))
+                    throw new InvalidOperationException("Stream not registered");
                 
-                events.AddRange(streamEvents); 
-                _streams[stream.Key] = version + streamEvents.Count;    
+                var streamEvents = (await _eventStore.ReadStream(stream, myStream.Version+1)).ToList();
+                
+                events.AddRange(streamEvents);
+                if(!_streams.TryUpdate(stream.Key, myStream.Clone(myStream.Version + streamEvents.Count), myStream))
+                    throw new InvalidOperationException("Stream version has already been modified!");
+                //_streams[stream.Key].Version = myStream.Version + streamEvents.Count;    
             }
 
-            foreach (var e in events.OrderBy(e => e.Timestamp))
-                When(e);
+            if (events.Select(e => e.Timestamp).Min() >= _timestamp)
+            {
+                _timestamp = events.Select(e => e.Timestamp).Max(); 
+                foreach (var e in events.OrderBy(e => e.Timestamp))
+                    When(e);
+            }
+            else
+                await Rebuild();
         }
 
         private void When(IEvent e)

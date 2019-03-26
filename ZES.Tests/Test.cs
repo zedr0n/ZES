@@ -50,7 +50,7 @@ namespace ZES.Tests
             return new CompositionRoot();
         }
 
-        protected Container CreateContainer( List<Action<Container>> _registrations = null) 
+        protected Container CreateContainer( List<Action<Container>> registrations = null) 
         {
             lock (_lock)
             {
@@ -60,9 +60,9 @@ namespace ZES.Tests
 
                 container.Register(() => _logger, Lifestyle.Singleton);
                 
-                if(_registrations == null)
-                    _registrations = new List<Action<Container>>();
-                foreach(var reg in _registrations)
+                if(registrations == null)
+                    registrations = new List<Action<Container>>();
+                foreach(var reg in registrations)
                     reg(container);
 
                 container.Verify();

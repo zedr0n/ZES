@@ -23,11 +23,10 @@ namespace ZES.Interfaces
         /// <summary>
         /// Hydrate the event sourced instance from event sequence
         /// </summary>
-        /// <param name="id">Unique identifier for event sourced instance</param>
         /// <param name="pastEvents">Past event sequence</param>
         /// <typeparam name="T">Event sourced type</typeparam>
         /// <returns>Hydrated event sourced instance</returns>
-        void LoadFrom<T>(string id,IEnumerable<IEvent> pastEvents) where T : class, IEventSourced;
+        void LoadFrom<T>(IEnumerable<IEvent> pastEvents) where T : class, IEventSourced;
     }
     
     public interface IAggregate : IEventSourced {}

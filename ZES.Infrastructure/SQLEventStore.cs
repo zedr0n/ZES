@@ -2,6 +2,8 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
+using System.Reactive;
+using System.Reactive.Disposables;
 using System.Reactive.Linq;
 using System.Reactive.Subjects;
 using System.Threading.Tasks;
@@ -14,19 +16,24 @@ using ZES.Interfaces;
 using ZES.Interfaces.Domain;
 using ZES.Interfaces.EventStore;
 using ZES.Interfaces.Pipes;
+using ZES.Interfaces.Sagas;
 using ZES.Interfaces.Serialization;
 
 namespace ZES.Infrastructure
 {
-    public class SqlEventStore : IEventStore
+    public class SqlEventStore<I> : IEventStore<I> where I : IEventSourced
     {
+        public IObservable<bool> StreamsBatched => _streamsBatched.AsObservable();
         public IObservable<IStream> Streams { get; }
         
         private readonly IStreamStore _streamStore;
         private readonly IEventSerializer _serializer;
         private readonly Subject<IStream> _streams = new Subject<IStream>();
+        private readonly Subject<bool> _streamsBatched = new Subject<bool>();
         private readonly IMessageQueue _messageQueue;
         private readonly ILogger _log;
+
+        private readonly bool _isDomainStore;
 
         private const int ReadSize = 100;
 
@@ -36,6 +43,7 @@ namespace ZES.Infrastructure
             _serializer = serializer;
             _messageQueue = messageQueue;
             _log = log;
+            _isDomainStore = typeof(I) == typeof(IAggregate);
 
             Streams = Observable.Create(async (IObserver<IStream> observer) =>
             {
@@ -44,15 +52,26 @@ namespace ZES.Infrastructure
                 {
                     foreach (var s in page.StreamIds)
                     {
-                        //var metadata = await _streamStore.GetStreamMetadata(s);
-                        var version = (await _streamStore.ReadStreamForwards(s, StreamVersion.End, 0)).LastStreamVersion;
+                        var version = (await _streamStore.ReadStreamForwards(s, StreamVersion.End, 0))
+                            .LastStreamVersion;
                         var stream = new Stream(s, version);
                         observer.OnNext(stream);
                     }
+
+                    _streamsBatched.OnNext(false);
                     page = await page.Next();
                 }
+
+                _streamsBatched.OnNext(true);
                 observer.OnCompleted();
-            }).Concat(_streams.AsObservable());
+            }).Concat(Observable.Create((IObserver<IStream> observer) =>
+            {
+                return _streams.Subscribe(s =>
+                {
+                    observer.OnNext(s);
+                    _streamsBatched.OnNext(true);
+                });
+            }));
         }
 
         public async Task<IEnumerable<IEvent>> ReadStream(IStream stream, int start, int count = -1)
@@ -100,12 +119,12 @@ namespace ZES.Infrastructure
             _streams.OnNext(stream);
 
             // publish non-saga events to queue
-            if (!stream.IsSaga)
+            if (_isDomainStore)
             {
                 LogEvents(events);
                 
                 foreach (var e in events)
-                    await _messageQueue.PublishAsync(e);     
+                    await _messageQueue.PublishAsync(e);      
             }
         }
         

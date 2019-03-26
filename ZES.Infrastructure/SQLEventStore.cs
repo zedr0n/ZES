@@ -49,7 +49,7 @@ namespace ZES.Infrastructure
             Events = Observable.Create(async (IObserver<IEvent> observer) =>
             {
                 var page = await _streamStore.ReadAllForwards(Position.Start, ReadSize);
-                while (!page.IsEnd)
+                while (true)
                 {
                     foreach(var m in page.Messages)
                     {
@@ -58,6 +58,9 @@ namespace ZES.Infrastructure
                         observer.OnNext(e);
                     }
 
+                    if (page.IsEnd)
+                        break;
+                    
                     page = await page.ReadNext();
                 }
                 observer.OnCompleted();

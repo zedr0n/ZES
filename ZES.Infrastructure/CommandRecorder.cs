@@ -25,7 +25,7 @@ namespace ZES.Infrastructure
 
         public async Task Handle(T command)
         {
-            _log.Trace($"{_handler.GetType().Name}::Handle({command.GetType().Name})"); 
+            _log.Trace($"{_handler.GetType().Name}::Handle({command.GetType().Name}[{command.AggregateId}])"); 
             try
             {
                 await _handler.Handle(command);

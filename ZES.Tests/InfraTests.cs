@@ -39,20 +39,6 @@ namespace ZES.Tests
     {
         private const int Wait = 200;
         
-        public async void BusCanBeBusy(int numberCommands)
-        {
-            var container = CreateContainer();
-            var bus = container.GetInstance<IBus>();
-
-            while (numberCommands > 0)
-            {
-                var command = new CreateRootCommand {AggregateId = $"Root{numberCommands}"};
-                numberCommands--;
-                Assert.True(await bus.CommandAsync(command));
-            }
-            Assert.True(bus.Status == BusStatus.Busy); 
-        }
-        
         [Fact]
         public async void CanSaveRoot()
         {
@@ -68,8 +54,6 @@ namespace ZES.Tests
             var root = await repository.Find<Root>("Root");
             Assert.Equal("Root",root.Id);
         }
-
-
 
         [Fact]
         public async void CanSaveMultipleRoots()
@@ -94,9 +78,11 @@ namespace ZES.Tests
         private void RegisterProjections(Container c)
         {
             c.Register<RootProjection>(Lifestyle.Singleton);
+            c.Register<StatsProjection>(Lifestyle.Singleton);
             c.Register(typeof(IQueryHandler<,>), new[]
             {
-                typeof(CreatedAtHandler)
+                typeof(CreatedAtHandler),
+                typeof(StatsHandler)
             }, Lifestyle.Singleton);
 
         }
@@ -121,7 +107,35 @@ namespace ZES.Tests
         }
 
         [Theory]
-        [InlineData(1000)]
+        [InlineData(150)]        
+        public async void CanRebuildProjection(int numberOfRoots)
+        {
+            var container = CreateContainer(new List<Action<Container>> { RegisterProjections });
+            var bus = container.GetInstance<IBus>();
+            var messageQueue = container.GetInstance<IMessageQueue>();
+
+            var rootId = numberOfRoots;
+            while (rootId > 0)
+            {
+                var command = new CreateRootCommand {AggregateId = $"Root{rootId}"};
+                await bus.CommandAsync(command);
+                rootId--;
+            }
+            
+            var query = new CreatedAtQuery("Root1");
+            Observable.Interval(TimeSpan.FromMilliseconds(50))
+                .TakeUntil(l => bus.Query(query) > 0)
+                .Timeout(TimeSpan.FromMilliseconds(1000))
+                .Wait();
+
+            await messageQueue.PublishAlert("InvalidProjections");
+            Thread.Sleep(100);
+            
+            Assert.Equal(numberOfRoots, bus.Query(new StatsQuery()));
+        }
+
+        [Theory]
+        [InlineData(10)]
         public async void CanProjectALotOfRoots(int numberOfRoots)
         {
             var container = CreateContainer(new List<Action<Container>> { RegisterProjections });
@@ -144,6 +158,9 @@ namespace ZES.Tests
             //    .Wait();
             var createdAt = bus.Query(query);
             Assert.NotEqual(0, createdAt); 
+            
+            var statsQuery = new StatsQuery();
+            Assert.Equal(numberOfRoots,bus.Query(statsQuery));
         }
 
         private void RegisterSagas(Container c)

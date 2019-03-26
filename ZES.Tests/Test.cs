@@ -80,7 +80,7 @@ namespace ZES.Tests
             config.AddTarget(consoleTarget);
             config.AddTarget(testTarget);
             
-            config.AddRuleForAllLevels(consoleTarget); // all to console
+            //config.AddRuleForAllLevels(consoleTarget); // all to console
             config.AddRuleForAllLevels(testTarget);
             LogManager.Configuration = config;
 

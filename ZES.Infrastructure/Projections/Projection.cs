@@ -11,6 +11,7 @@ using NLog;
 using SqlStreamStore.Streams;
 using ZES.Interfaces;
 using ZES.Interfaces.EventStore;
+using ZES.Interfaces.Pipes;
 
 namespace ZES.Infrastructure.Projections
 {
@@ -26,7 +27,7 @@ namespace ZES.Infrastructure.Projections
         private readonly Dictionary<Type, Action<IEvent>> _handlers = new Dictionary<Type, Action<IEvent>>();
         private readonly Func<string,bool> _streamFilter = s => true;
 
-        protected Projection(IEventStore<IAggregate> eventStore, ILog logger)
+        protected Projection(IEventStore<IAggregate> eventStore, ILog logger, IMessageQueue messageQueue)
         {
             _eventStore = eventStore;
             _logger = logger;
@@ -38,6 +39,7 @@ namespace ZES.Infrastructure.Projections
             _bufferBlock = new BufferBlock<IStream>();
             //_bufferBlock.LinkTo(DataflowBlock.NullTarget<IStream>());
             Rebuild();
+            messageQueue.Alerts.Where(s => s == "InvalidProjections").Subscribe(s => Rebuild());
         }
 
         protected void Register<TEvent>(Action<TEvent> when) where TEvent : class
@@ -56,11 +58,13 @@ namespace ZES.Infrastructure.Projections
             if (version > projectionVersion)
                 await _bufferBlock.SendAsync(stream);
         }
+        
+        protected virtual void Reset() {}
 
         private void Rebuild()
         {
             _logger.Trace($"Projection::Rebuild [{GetType().Name}] "); 
-            
+            Reset();
             _connection.Dispose();
             _eventStore.Events.Where(e => _streamFilter(e.Stream))
                 .Finally(() => _connection = _bufferBlock.LinkTo(_actionBlock)) 
@@ -72,7 +76,7 @@ namespace ZES.Infrastructure.Projections
             if(!_streams.TryGetValue(stream.Key, out var version))
                 throw new InvalidOperationException("Stream not registered");
             
-            _logger.Trace($"Projection::Update({stream.Key}[{version}])");     
+            _logger.Trace($"Projection::Update({stream.Key}[{version}]) [{GetType().Name}]");     
             
             var streamEvents = (await _eventStore.ReadStream(stream, version+1)).ToList();
             

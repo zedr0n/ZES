@@ -35,7 +35,7 @@ namespace ZES.CrossCuttingConcerns
             _commandProcessor = new ActionBlock<ICommand>(HandleCommand,
                 new ExecutionDataflowBlockOptions
                 {
-                    MaxDegreeOfParallelism = 1
+                    MaxDegreeOfParallelism = 8
                 });
         }
 

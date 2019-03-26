@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Concurrent;
+using System.Threading;
 using NLog;
 using ZES.Interfaces;
 using ZES.Interfaces.Domain;
@@ -11,22 +12,22 @@ namespace ZES.Infrastructure.Sagas
     public class SagaHandler<TSaga> : ISagaHandler<TSaga>
         where TSaga : class, ISaga, new()
     {
-        private readonly ILogger _logger;
+        private readonly ILog _logger;
         private readonly ISagaRepository _repository;
         private readonly ConcurrentDictionary<Type, Action<IEvent>> _handlers = new ConcurrentDictionary<Type, Action<IEvent>>();
 
-        protected SagaHandler(IMessageQueue messageQueue, ISagaRepository repository, ILogger logger)
+        protected SagaHandler(IMessageQueue messageQueue, ISagaRepository repository, ILog logger)
         {
             _repository = repository;
             _logger = logger;
             messageQueue.Messages.Subscribe(When);
         }
-
+        
         protected void Register<TEvent>(Func<TEvent, string> idFunc) where TEvent : class, IEvent
         {
             async void Handler(IEvent e)
             {
-                _logger.Trace($"Entering {e.EventType} saga handler of {typeof(TSaga).Name}");
+                _logger.Trace($"SagaHandler::Handler({e.EventType}) [{GetType().Name}]"); 
                 var saga = await _repository.GetOrAdd<TSaga>(idFunc(e as TEvent)); 
                 saga.When(e);
                 await _repository.Save(saga);

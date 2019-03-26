@@ -9,5 +9,6 @@ namespace ZES.Infrastructure.Domain
         public string EventType { get; set; }
         public long Timestamp { get; set; }
         public int Version { get; set; }
+        public string Stream { get; set; }
     }
 }

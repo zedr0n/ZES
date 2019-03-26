@@ -20,5 +20,9 @@ namespace ZES.Interfaces
         /// Event version in appropriate stream
         /// </summary>
         int Version { get; set; }
+        /// <summary>
+        /// Originating stream key
+        /// </summary>
+        string Stream { get; set; }
     }
 }

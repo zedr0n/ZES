@@ -1,10 +1,12 @@
 using System;
+using System.Threading;
 using System.Threading.Tasks;
 using NLog;
 using SqlStreamStore.Logging;
 using ZES.Interfaces;
 using ZES.Interfaces.Domain;
 using ZES.Interfaces.EventStore;
+using ILog = ZES.Interfaces.ILog;
 
 namespace ZES.Infrastructure
 {
@@ -12,9 +14,9 @@ namespace ZES.Infrastructure
     {
         private readonly ICommandHandler<T> _handler;
         private readonly IEventStore<IAggregate> _eventStore;
-        private readonly ILogger _log;
+        private readonly ILog _log;
         
-        public CommandRecorder(ICommandHandler<T> handler, IEventStore<IAggregate> eventStore, ILogger log)
+        public CommandRecorder(ICommandHandler<T> handler, IEventStore<IAggregate> eventStore, ILog log)
         {
             _handler = handler;
             _eventStore = eventStore;
@@ -23,7 +25,7 @@ namespace ZES.Infrastructure
 
         public async Task Handle(T command)
         {
-            _log.Trace("Entering handler of " + command.GetType().Name);
+            _log.Trace($"{_handler.GetType().Name}::Handle({command.GetType().Name})"); 
             try
             {
                 await _handler.Handle(command);

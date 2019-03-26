@@ -41,6 +41,7 @@ namespace ZES.Infrastructure
             {
                 e.EventId = Guid.NewGuid();
                 e.Timestamp = _timeline.Now;
+                e.Stream = stream.Key;
             }
                    
             await _eventStore.AppendToStream(stream, events);

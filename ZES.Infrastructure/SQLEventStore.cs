@@ -25,7 +25,8 @@ namespace ZES.Infrastructure
     {
         public IObservable<bool> StreamsBatched => _streamsBatched.AsObservable();
         public IObservable<IStream> Streams { get; }
-        
+        public IObservable<IEvent> Events { get; }
+
         private readonly IStreamStore _streamStore;
         private readonly IEventSerializer _serializer;
         private readonly Subject<IStream> _streams = new Subject<IStream>();
@@ -44,6 +45,23 @@ namespace ZES.Infrastructure
             _messageQueue = messageQueue;
             _log = log;
             _isDomainStore = typeof(I) == typeof(IAggregate);
+            
+            Events = Observable.Create(async (IObserver<IEvent> observer) =>
+            {
+                var page = await _streamStore.ReadAllForwards(Position.Start, ReadSize);
+                while (!page.IsEnd)
+                {
+                    foreach(var m in page.Messages)
+                    {
+                        var payload = await m.GetJsonData();
+                        var e = _serializer.Deserialize(payload);
+                        observer.OnNext(e);
+                    }
+
+                    page = await page.ReadNext();
+                }
+                observer.OnCompleted();
+            });
 
             Streams = Observable.Create(async (IObserver<IStream> observer) =>
             {
@@ -58,20 +76,11 @@ namespace ZES.Infrastructure
                         observer.OnNext(stream);
                     }
 
-                    _streamsBatched.OnNext(false);
                     page = await page.Next();
                 }
 
-                _streamsBatched.OnNext(true);
                 observer.OnCompleted();
-            }).Concat(Observable.Create((IObserver<IStream> observer) =>
-            {
-                return _streams.Subscribe(s =>
-                {
-                    observer.OnNext(s);
-                    _streamsBatched.OnNext(true);
-                });
-            }));
+            }).Concat(_streams.AsObservable());
         }
 
         public async Task<IEnumerable<IEvent>> ReadStream(IStream stream, int start, int count = -1)
@@ -95,37 +104,41 @@ namespace ZES.Infrastructure
             return events;
         }
 
-        private void LogEvents(IList<IEvent> events)
+        private async Task UpdateDomainLog(IEnumerable<NewStreamMessage> messages)
         {
-            foreach (var e in events)
+            if (!_isDomainStore)
+                return;
+            
+            foreach (var m in messages) 
             {
-                _log.Debug(e.EventType + "( " +
-                                    new DateTime(e.Timestamp).ToUniversalTime().ToString(CultureInfo.InvariantCulture) + " )");
-                _log.Debug(_serializer.Serialize(e));
+                //await _streamStore.AppendToStream("::DomainLog", ExpectedVersion.Any, m);
+                _log.Debug(m.JsonData);
             }
         }
 
-        
+        private async Task PublishEvents(IEnumerable<IEvent> events)
+        {
+            if (!_isDomainStore)
+                return;
+
+            foreach (var e in events)
+                await _messageQueue.PublishAsync(e);
+        }
+
         public async Task AppendToStream(IStream stream, IEnumerable<IEvent> enumerable)
         {
             var events = enumerable as IList<IEvent> ?? enumerable.ToList();
             if (!events.Any())
                 return;
 
-            var streamMessages = events.Select(e => new NewStreamMessage(e.EventId, e.EventType, _serializer.Serialize(e), "")).ToArray();
+            var streamMessages = events.Select(_serializer.Encode).ToArray();
             var result = await _streamStore.AppendToStream(stream.Key, stream.Version,streamMessages);
 
             stream.Version = result.CurrentVersion;
             _streams.OnNext(stream);
 
-            // publish non-saga events to queue
-            if (_isDomainStore)
-            {
-                LogEvents(events);
-                
-                foreach (var e in events)
-                    await _messageQueue.PublishAsync(e);      
-            }
+            await UpdateDomainLog(streamMessages);
+            await PublishEvents(events);    
         }
         
         public Task AppendCommand(ICommand command)

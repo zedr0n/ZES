@@ -2,8 +2,12 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reactive.Disposables;
+using System.Reactive.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Threading.Tasks.Dataflow;
+using NLog;
 using SqlStreamStore.Streams;
 using ZES.Interfaces;
 using ZES.Interfaces.EventStore;
@@ -12,28 +16,28 @@ namespace ZES.Infrastructure.Projections
 {
     public class Projection
     {
-        private readonly BatchBlock<IStream> _batchBlock;
-        private readonly IEventStore<IAggregate> _eventStore;
-        //private readonly ConcurrentDictionary<string, int> _streamVersions = new ConcurrentDictionary<string, int>();
-        private readonly ConcurrentDictionary<string,IStream> _streams = new ConcurrentDictionary<string, IStream>();
-        private readonly Dictionary<Type, Action<IEvent>> _handlers = new Dictionary<Type, Action<IEvent>>();
+        private readonly ILog _logger;
 
-        private const int BatchSize = 100;
-        private long _timestamp;
-        
-        protected Projection(IEventStore<IAggregate> eventStore)
+        private IDisposable _connection = Disposable.Empty; 
+        private readonly BufferBlock<IStream> _bufferBlock;
+        private readonly ActionBlock<IStream> _actionBlock;
+        private readonly IEventStore<IAggregate> _eventStore;
+        private readonly ConcurrentDictionary<string,int> _streams = new ConcurrentDictionary<string, int>();
+        private readonly Dictionary<Type, Action<IEvent>> _handlers = new Dictionary<Type, Action<IEvent>>();
+        private readonly Func<string,bool> _streamFilter = s => true;
+
+        protected Projection(IEventStore<IAggregate> eventStore, ILog logger)
         {
             _eventStore = eventStore;
-            var actionBlock = new ActionBlock<IEnumerable<IStream>>(Update,
+            _logger = logger;
+            _actionBlock = new ActionBlock<IStream>(Update,
                 new ExecutionDataflowBlockOptions
                 {
-                    MaxDegreeOfParallelism = 1
+                    MaxDegreeOfParallelism = 8
                 });
-            
-            _batchBlock = new BatchBlock<IStream>(BatchSize);
-            _batchBlock.LinkTo(actionBlock);
-
-            _eventStore.StreamsBatched.Subscribe(b => _batchBlock.TriggerBatch());
+            _bufferBlock = new BufferBlock<IStream>();
+            //_bufferBlock.LinkTo(DataflowBlock.NullTarget<IStream>());
+            Rebuild();
         }
 
         protected void Register<TEvent>(Action<TEvent> when) where TEvent : class
@@ -43,52 +47,53 @@ namespace ZES.Infrastructure.Projections
 
         protected async Task Notify(IStream stream)
         {
+            _logger.Trace($"Projection::Notify({stream.Key}[{stream.Version}])"); 
+            if (!_streamFilter(stream.Key))
+                return;
+            
             var version = stream.Version; 
-            var projectionVersion = _streams.GetOrAdd(stream.Key,stream.Clone(-1)).Version;
+            var projectionVersion = _streams.GetOrAdd(stream.Key,-1);
             if (version > projectionVersion)
-                await _batchBlock.SendAsync(stream);
+                await _bufferBlock.SendAsync(stream);
         }
 
-        private async Task Rebuild()
+        private void Rebuild()
         {
-            var streams = new List<IStream>(_streams.Values);
-            _timestamp = 0;
-            await Update(streams.Select(s => s.Clone(-1)));
+            _logger.Trace($"Projection::Rebuild [{GetType().Name}] "); 
+            
+            _connection.Dispose();
+            _eventStore.Events.Where(e => _streamFilter(e.Stream))
+                .Finally(() => _connection = _bufferBlock.LinkTo(_actionBlock)) 
+                .Subscribe(When);
         }
 
-        private async Task Update(IEnumerable<IStream> streams)
+        private async Task Update(IStream stream)
         {
-            var events = new List<IEvent>();
-            foreach (var stream in streams)
-            {
-                if(!_streams.TryGetValue(stream.Key, out var myStream))
-                    throw new InvalidOperationException("Stream not registered");
-                
-                var streamEvents = (await _eventStore.ReadStream(stream, myStream.Version+1)).ToList();
-                
-                events.AddRange(streamEvents);
-                if(!_streams.TryUpdate(stream.Key, myStream.Clone(myStream.Version + streamEvents.Count), myStream))
-                    throw new InvalidOperationException("Stream version has already been modified!");
-                //_streams[stream.Key].Version = myStream.Version + streamEvents.Count;    
-            }
+            if(!_streams.TryGetValue(stream.Key, out var version))
+                throw new InvalidOperationException("Stream not registered");
+            
+            _logger.Trace($"Projection::Update({stream.Key}[{version}])");     
+            
+            var streamEvents = (await _eventStore.ReadStream(stream, version+1)).ToList();
+            
+            //if(!_streams.TryUpdate(stream.Key, version + streamEvents.Count, version))
+            //    throw new InvalidOperationException("Stream version has already been modified!");
+            //_logger.Debug($"{stream.Key}:{_streams[stream.Key]}");
 
-            if (events.Select(e => e.Timestamp).Min() >= _timestamp)
-            {
-                _timestamp = events.Select(e => e.Timestamp).Max(); 
-                foreach (var e in events.OrderBy(e => e.Timestamp))
-                    When(e);
-            }
-            else
-                await Rebuild();
+            foreach (var e in streamEvents)
+                When(e);
         }
 
         private void When(IEvent e)
         {
             if (e == null)
                 return;
+
+            if (!_handlers.TryGetValue(e.GetType(), out var handler)) 
+                return;
             
-            if (_handlers.TryGetValue(e.GetType(), out var handler))
-                handler(e);
+            handler(e);
+            _streams[e.Stream] = e.Version;
         }
     }
 }

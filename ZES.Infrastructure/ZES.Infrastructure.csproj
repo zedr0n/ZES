@@ -17,4 +17,8 @@
       <ProjectReference Include="..\ZES.Interfaces\ZES.Interfaces.csproj" />
     </ItemGroup>
 
+    <ItemGroup>
+      <Folder Include="Logging" />
+    </ItemGroup>
+
 </Project>

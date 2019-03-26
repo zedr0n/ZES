@@ -2,6 +2,7 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Reactive.Linq;
+using NLog;
 using ZES.Infrastructure.Projections;
 using ZES.Interfaces;
 using ZES.Interfaces.EventStore;
@@ -12,7 +13,7 @@ namespace ZES.Tests.TestDomain
     {
         private readonly ConcurrentDictionary<string, long> _createdAt = new ConcurrentDictionary<string, long>();
         
-        public RootProjection(IEventStore<IAggregate> eventStore) : base(eventStore)
+        public RootProjection(IEventStore<IAggregate> eventStore, ILog logger) : base(eventStore, logger)
         {
             Register<RootCreated>(When);
 

@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Reactive.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using SimpleInjector;
 using Xunit;
@@ -11,9 +12,32 @@ using ZES.Tests.TestDomain;
 
 namespace ZES.Tests
 {
+    public class BusTests : Test
+    {
+        public BusTests(ITestOutputHelper outputHelper) : base(outputHelper)
+        {
+        }
+        
+        [Theory]
+        [InlineData(100)]
+        public async void BusCanBeBusy(int numberCommands)
+        {
+            var container = CreateContainer();
+            var bus = container.GetInstance<IBus>();
+
+            while (numberCommands > 0)
+            {
+                var command = new CreateRootCommand {AggregateId = $"Root{numberCommands}"};
+                numberCommands--;
+                Assert.True(await bus.CommandAsync(command));
+            }
+            Assert.True(bus.Status == BusStatus.Busy); 
+        }
+    }
+    
     public class InfraTests : Test
     {
-        private const int Wait = 30;
+        private const int Wait = 200;
         
         [Fact]
         public async void CanSaveRoot()
@@ -31,19 +55,7 @@ namespace ZES.Tests
             Assert.Equal("Root",root.Id);
         }
 
-        [Fact]
-        public async void BusCanBeBusy()
-        {
-            var container = CreateContainer();
-            var bus = container.GetInstance<IBus>();
-            
-            var command = new CreateRootCommand {AggregateId = "Root"};
-            var command2 = new CreateRootCommand {AggregateId = "Root2"};
-            Assert.True(await bus.CommandAsync(command));
-            Assert.True(await bus.CommandAsync(command2));
-            
-            Assert.True(bus.Status == BusStatus.Busy); 
-        }
+
 
         [Fact]
         public async void CanSaveMultipleRoots()
@@ -84,10 +96,40 @@ namespace ZES.Tests
             var command = new CreateRootCommand {AggregateId = "Root"};
             await bus.CommandAsync(command); 
             
-            Observable.Timer(TimeSpan.FromMilliseconds(Wait)).Wait();
             var query = new CreatedAtQuery("Root");
+            Observable.Interval(TimeSpan.FromMilliseconds(50))
+                .TakeUntil(l => bus.Query(query) > 0)
+                .Timeout(TimeSpan.FromMilliseconds(1000))
+                .Wait();
+
             var createdAt = bus.Query(query);
             Assert.NotEqual(0, createdAt);
+        }
+
+        [Theory]
+        [InlineData(1000)]
+        public async void CanProjectALotOfRoots(int numberOfRoots)
+        {
+            var container = CreateContainer(new List<Action<Container>> { RegisterProjections });
+            var bus = container.GetInstance<IBus>();
+
+            while (numberOfRoots > 0)
+            {
+                var command = new CreateRootCommand {AggregateId = $"Root{numberOfRoots}"};
+                await bus.CommandAsync(command);
+                numberOfRoots--;
+            }
+            
+            var query = new CreatedAtQuery("Root1");
+            Observable.Interval(TimeSpan.FromMilliseconds(50))
+                .TakeUntil(l => bus.Query(query) > 0)
+                .Timeout(TimeSpan.FromMilliseconds(1000))
+                .Wait();
+            //Observable.Timer(TimeSpan.FromMilliseconds(50))
+            //    .DoWhile(() => bus.Query(query) == 0 && DateTime.UtcNow.Subtract(start).Milliseconds < 1000)
+            //    .Wait();
+            var createdAt = bus.Query(query);
+            Assert.NotEqual(0, createdAt); 
         }
 
         private void RegisterSagas(Container c)
@@ -109,8 +151,12 @@ namespace ZES.Tests
             var command = new CreateRootCommand {AggregateId = "Root"};
             await bus.CommandAsync(command);
 
-            Observable.Timer(TimeSpan.FromMilliseconds(Wait)).Wait();
             var query = new CreatedAtQuery("RootNew");
+            Observable.Interval(TimeSpan.FromMilliseconds(50))
+                .TakeUntil(l => bus.Query(query) > 0)
+                .Timeout(TimeSpan.FromMilliseconds(1000))
+                .Wait();
+
             var createdAt = bus.Query(query);
             Assert.NotEqual(0, createdAt);
         }

@@ -6,12 +6,6 @@ namespace ZES.Interfaces.EventStore
     public interface IStream
     {
         /// <summary>
-        /// Clone the stream with a different version
-        /// </summary>
-        /// <param name="version"></param>
-        /// <returns></returns>
-        IStream Clone(int version);
-        /// <summary>
         /// Unique key identifying the stream
         /// </summary>
         string Key { get; }

@@ -39,6 +39,20 @@ namespace ZES.Tests
     {
         private const int Wait = 200;
         
+        public async void BusCanBeBusy(int numberCommands)
+        {
+            var container = CreateContainer();
+            var bus = container.GetInstance<IBus>();
+
+            while (numberCommands > 0)
+            {
+                var command = new CreateRootCommand {AggregateId = $"Root{numberCommands}"};
+                numberCommands--;
+                Assert.True(await bus.CommandAsync(command));
+            }
+            Assert.True(bus.Status == BusStatus.Busy); 
+        }
+        
         [Fact]
         public async void CanSaveRoot()
         {

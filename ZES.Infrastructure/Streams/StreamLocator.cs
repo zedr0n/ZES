@@ -19,14 +19,14 @@ namespace ZES.Infrastructure.Streams
 
         public IStream Find<T>(string id, string timeline = "") where T : I
         {
-            var key = $"{timeline}:{id}";
+            var key = $"{timeline}:{typeof(T).Name}:{id}";
             _streams.TryGetValue(key, out var stream);            
             return stream;
         }
 
         public IStream GetOrAdd(I es, string timeline = "")
         {
-            var key = $"{timeline}:{es.Id}";
+            var key = $"{timeline}:{es.GetType().Name}:{es.Id}";
             var stream = new Stream(key,ExpectedVersion.NoStream);
             return _streams.GetOrAdd(key, stream);
         }

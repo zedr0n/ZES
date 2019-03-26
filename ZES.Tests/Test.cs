@@ -64,15 +64,24 @@ namespace ZES.Tests
             var config = new LoggingConfiguration();
 
             // Step 2. Create targets
-            var consoleTarget = new TestOutputTarget //new ColoredConsoleTarget("target1")
+            //var consoleTarget = new TestOutputTarget 
+            var testTarget = new TestOutputTarget 
             {
                 Name = "Test",
-                Layout = @"${date:format=HH\:mm\:ss} ${level} ${message} ${exception}"
+                Layout = @"${date:format=HH\:mm\:ss.ffff} ${level} ${message} ${exception}"
+            }; 
+            
+            var consoleTarget = new ColoredConsoleTarget
+            {
+                Name = "Console",
+                Layout = @"${date:format=HH\:mm\:ss.ffff} ${level} ${message} ${exception}"
             };
             //consoleTarget.
             config.AddTarget(consoleTarget);
+            config.AddTarget(testTarget);
             
             config.AddRuleForAllLevels(consoleTarget); // all to console
+            config.AddRuleForAllLevels(testTarget);
             LogManager.Configuration = config;
 
             _logger = outputHelper.GetNLogLogger();

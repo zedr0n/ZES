@@ -6,7 +6,7 @@ using SqlStreamStore.Logging;
 using ZES.Interfaces;
 using ZES.Interfaces.Domain;
 using ZES.Interfaces.EventStore;
-using ILog = ZES.Interfaces.ILog;
+using ILog = ZES.Infrastructure.ILog;
 
 namespace ZES.Infrastructure
 {
@@ -25,7 +25,8 @@ namespace ZES.Infrastructure
 
         public async Task Handle(T command)
         {
-            _log.Trace($"{_handler.GetType().Name}::Handle({command.GetType().Name}[{command.AggregateId}])"); 
+            //_log.Trace(command.GetType().Name,_handler); 
+            _log.Trace($"{_handler.GetType().Name}.Handle({command.GetType().Name})");
             try
             {
                 await _handler.Handle(command);

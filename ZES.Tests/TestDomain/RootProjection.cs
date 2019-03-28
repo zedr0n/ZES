@@ -3,6 +3,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Reactive.Linq;
 using NLog;
+using ZES.Infrastructure;
 using ZES.Infrastructure.Projections;
 using ZES.Interfaces;
 using ZES.Interfaces.EventStore;

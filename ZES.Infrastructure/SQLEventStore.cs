@@ -32,13 +32,13 @@ namespace ZES.Infrastructure
         private readonly Subject<IStream> _streams = new Subject<IStream>();
         private readonly Subject<bool> _streamsBatched = new Subject<bool>();
         private readonly IMessageQueue _messageQueue;
-        private readonly ILogger _log;
+        private readonly ILog _log;
 
         private readonly bool _isDomainStore;
 
         private const int ReadSize = 100;
 
-        public SqlEventStore(IStreamStore streamStore, IEventSerializer serializer, IMessageQueue messageQueue, ILogger log)
+        public SqlEventStore(IStreamStore streamStore, IEventSerializer serializer, IMessageQueue messageQueue, ILog log)
         {
             _streamStore = streamStore;
             _serializer = serializer;
@@ -107,7 +107,7 @@ namespace ZES.Infrastructure
             return events;
         }
 
-        private async Task UpdateDomainLog(IEnumerable<NewStreamMessage> messages)
+        private void LogEvents(IEnumerable<NewStreamMessage> messages)
         {
             if (!_isDomainStore)
                 return;
@@ -125,7 +125,7 @@ namespace ZES.Infrastructure
                 return;
 
             foreach (var e in events)
-                await _messageQueue.PublishAsync(e);
+                await _messageQueue.Event(e);
         }
 
         public async Task AppendToStream(IStream stream, IEnumerable<IEvent> enumerable)
@@ -139,8 +139,8 @@ namespace ZES.Infrastructure
 
             stream.Version = result.CurrentVersion;
             _streams.OnNext(stream);
-
-            await UpdateDomainLog(streamMessages);
+            
+            LogEvents(streamMessages);
             await PublishEvents(events);    
         }
         

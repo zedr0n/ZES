@@ -12,7 +12,12 @@ namespace ZES.Tests.TestDomain
         
         public TestSaga()
         {
-            Register<RootCreated>(Trigger.Created, e => _rootId = e.RootId);
+            Register<RootCreated>(Trigger.Created,When);
+        }
+
+        private void When(RootCreated e)
+        {
+            _rootId = e.RootId;
         }
 
         protected override void ConfigureStateMachine()

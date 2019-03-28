@@ -3,6 +3,7 @@ using System.Reactive.Linq;
 using System.Threading.Tasks;
 using System.Threading.Tasks.Dataflow;
 using SqlStreamStore.Infrastructure;
+using ZES.Infrastructure;
 using ZES.Interfaces;
 using ZES.Interfaces.Pipes;
 
@@ -10,6 +11,7 @@ namespace ZES.CrossCuttingConcerns
 {
     public class MessageQueue : IMessageQueue
     {
+        private readonly ILog _log;
         private readonly ActionBlock<IEvent> _actionBlock;
         private readonly ActionBlock<string> _alertBlock; 
         
@@ -18,8 +20,9 @@ namespace ZES.CrossCuttingConcerns
 
         private readonly Subject<string> _alerts = new Subject<string>();
         public IObservable<string> Alerts => _alerts.AsObservable();
-        public MessageQueue()
+        public MessageQueue(ILog log)
         {
+            _log = log;
             _actionBlock = new ActionBlock<IEvent>(e => 
                     _messages.OnNext(e),
                 new ExecutionDataflowBlockOptions
@@ -34,13 +37,15 @@ namespace ZES.CrossCuttingConcerns
                 });
         }
 
-        public async Task PublishAlert(string alert)
+        public async Task Alert(string alert)
         {
+            _log.Trace(alert,this);
             await _alertBlock.SendAsync(alert);
         }
 
-        public async Task PublishAsync(IEvent e)
+        public async Task Event(IEvent e)
         {
+            _log.Trace(e.EventType,this);
             await _actionBlock.SendAsync(e);
         }
     }

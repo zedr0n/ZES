@@ -49,7 +49,7 @@ namespace ZES.Infrastructure.Projections
 
         protected async Task Notify(IStream stream)
         {
-            _logger.Trace($"Projection::Notify({stream.Key}[{stream.Version}])"); 
+            _logger.Trace($"{stream.Key}[{stream.Version}]",this); 
             if (!_streamFilter(stream.Key))
                 return;
             
@@ -61,13 +61,25 @@ namespace ZES.Infrastructure.Projections
         
         protected virtual void Reset() {}
 
+        private void Pause()
+        {
+            _logger.Trace("", this);
+            _connection.Dispose();
+        }
+        
+        private void Unpause()
+        {
+            _logger.Trace("", this);
+            _connection = _bufferBlock.LinkTo(_actionBlock);
+        }
+        
         private void Rebuild()
         {
-            _logger.Trace($"Projection::Rebuild [{GetType().Name}] "); 
+            _logger.Trace("",this); 
+            Pause();
             Reset();
-            _connection.Dispose();
             _eventStore.Events.Where(e => _streamFilter(e.Stream))
-                .Finally(() => _connection = _bufferBlock.LinkTo(_actionBlock)) 
+                .Finally(Unpause) 
                 .Subscribe(When);
         }
 
@@ -76,7 +88,7 @@ namespace ZES.Infrastructure.Projections
             if(!_streams.TryGetValue(stream.Key, out var version))
                 throw new InvalidOperationException("Stream not registered");
             
-            _logger.Trace($"Projection::Update({stream.Key}[{version}]) [{GetType().Name}]");     
+            _logger.Trace($"{stream.Key}[{version}]",this);     
             
             var streamEvents = (await _eventStore.ReadStream(stream, version+1)).ToList();
             

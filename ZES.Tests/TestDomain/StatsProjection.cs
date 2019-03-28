@@ -1,3 +1,4 @@
+using ZES.Infrastructure;
 using ZES.Infrastructure.Projections;
 using ZES.Interfaces;
 using ZES.Interfaces.EventStore;

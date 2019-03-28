@@ -7,7 +7,7 @@ namespace ZES.Interfaces.Pipes
     {
         IObservable<IEvent> Messages { get; }
         IObservable<string> Alerts { get; }
-        Task PublishAsync(IEvent e);
-        Task PublishAlert(string alert);
+        Task Event(IEvent e);
+        Task Alert(string alert);
     }
 }

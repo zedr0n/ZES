@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 using System.Reactive.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -128,10 +129,13 @@ namespace ZES.Tests
                 .Timeout(TimeSpan.FromMilliseconds(1000))
                 .Wait();
 
-            await messageQueue.PublishAlert("InvalidProjections");
-            Thread.Sleep(100);
+            await messageQueue.Alert("InvalidProjections");
+            Thread.Sleep(10);
+            var newCommand = new CreateRootCommand {AggregateId = $"OtherRoot"};
+            await bus.CommandAsync(newCommand);
+            Thread.Sleep(200);
             
-            Assert.Equal(numberOfRoots, bus.Query(new StatsQuery()));
+            Assert.Equal(numberOfRoots+1, bus.Query(new StatsQuery()));
         }
 
         [Theory]

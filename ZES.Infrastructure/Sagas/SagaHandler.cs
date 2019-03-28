@@ -27,8 +27,8 @@ namespace ZES.Infrastructure.Sagas
         {
             async void Handler(IEvent e)
             {
-                _logger.Trace($"SagaHandler::Handler({e.EventType}) [{GetType().Name}]"); 
                 var saga = await _repository.GetOrAdd<TSaga>(idFunc(e as TEvent)); 
+                _logger.Trace($"{saga.GetType().Name}.When({e.EventType})"); 
                 saga.When(e);
                 await _repository.Save(saga);
             }

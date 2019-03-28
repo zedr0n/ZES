@@ -133,23 +133,24 @@ namespace ZES.Tests
             Thread.Sleep(10);
             var newCommand = new CreateRootCommand {AggregateId = $"OtherRoot"};
             await bus.CommandAsync(newCommand);
-            Thread.Sleep(200);
+            Thread.Sleep(50);
             
             Assert.Equal(numberOfRoots+1, bus.Query(new StatsQuery()));
         }
 
         [Theory]
         [InlineData(10)]
-        public async void CanProjectALotOfRoots(int numberOfRoots)
+        public async void CanProjectALotOfRoots(int numRoots)
         {
             var container = CreateContainer(new List<Action<Container>> { RegisterProjections });
             var bus = container.GetInstance<IBus>();
 
-            while (numberOfRoots > 0)
+            var rootId = numRoots; 
+            while (rootId > 0)
             {
-                var command = new CreateRootCommand {AggregateId = $"Root{numberOfRoots}"};
+                var command = new CreateRootCommand {AggregateId = $"Root{rootId}"};
                 await bus.CommandAsync(command);
-                numberOfRoots--;
+                rootId--;
             }
             
             var query = new CreatedAtQuery("Root1");
@@ -164,7 +165,7 @@ namespace ZES.Tests
             Assert.NotEqual(0, createdAt); 
             
             var statsQuery = new StatsQuery();
-            Assert.Equal(numberOfRoots,bus.Query(statsQuery));
+            Assert.Equal(numRoots,bus.Query(statsQuery));
         }
 
         private void RegisterSagas(Container c)

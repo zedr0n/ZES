@@ -76,7 +76,7 @@ namespace ZES.Infrastructure.Projections
         
         private void Rebuild()
         {
-            _logger.Trace("",this); 
+            //_logger.Trace("",this); 
             Pause();
             Reset();
             _eventStore.Events.Where(e => _streamFilter(e.Stream))

@@ -12,8 +12,10 @@ before_build:
 build:
   project: ZES.sln
   verbosity: minimal
+  publish_nuget: true             # package projects with .nuspec files and push to artifacts
+
 after_build:
-  - dotnet pack --no-build -o ..
+  #- cmd: pushd ZES && dotnet pack --no-build -o .. && popd
 test_script:
   - cmd: dotnet test ZES.Tests\ZES.Tests.csproj
 on_failure:

@@ -15,8 +15,8 @@
     </ItemGroup>
 
     <ItemGroup>
-      <ProjectReference Include="..\ZES.CrossCuttingConcerns\ZES.CrossCuttingConcerns.csproj" />
       <ProjectReference Include="..\ZES.Interfaces\ZES.Interfaces.csproj" />
+      <ProjectReference Include="..\ZES\ZES.csproj" />
     </ItemGroup>
 
     <ItemGroup>

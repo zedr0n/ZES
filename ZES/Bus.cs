@@ -5,7 +5,7 @@ using SimpleInjector;
 using ZES.Interfaces.Domain;
 using ZES.Interfaces.Pipes;
 
-namespace ZES.CrossCuttingConcerns
+namespace ZES
 {
     public class Bus : IBus
     {

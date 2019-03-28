@@ -7,7 +7,7 @@ using ZES.Infrastructure;
 using ZES.Interfaces;
 using ZES.Interfaces.Pipes;
 
-namespace ZES.CrossCuttingConcerns
+namespace ZES
 {
     public class MessageQueue : IMessageQueue
     {

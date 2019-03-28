@@ -4,7 +4,7 @@ using System.Diagnostics;
 using SimpleInjector;
 using SimpleInjector.Advanced;
 
-namespace ZES.CrossCuttingConcerns
+namespace ZES
 {
     public static class SimpleInjectorExtensions
     {

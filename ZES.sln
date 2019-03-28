@@ -6,7 +6,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ZES.Infrastructure", "ZES.I
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ZES.Tests", "ZES.Tests\ZES.Tests.csproj", "{1B29EB38-CFED-4B10-A0AF-7C1B32C8CF7C}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ZES.CrossCuttingConcerns", "ZES.CrossCuttingConcerns\ZES.CrossCuttingConcerns.csproj", "{64456FBC-4A59-4EF9-BAAE-69467F9884CF}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ZES", "ZES\ZES.csproj", "{64456FBC-4A59-4EF9-BAAE-69467F9884CF}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

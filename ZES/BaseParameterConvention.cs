@@ -2,7 +2,7 @@ using System;
 using System.Linq.Expressions;
 using SimpleInjector;
 
-namespace ZES.CrossCuttingConcerns
+namespace ZES
 {
     public abstract class BaseParameterConvention : IParameterConvention
     {

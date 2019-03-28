@@ -16,7 +16,7 @@ using ZES.Interfaces.Pipes;
 using ZES.Interfaces.Sagas;
 using ZES.Interfaces.Serialization;
 
-namespace ZES.CrossCuttingConcerns
+namespace ZES
 {
     public class CompositionRoot : ICompositionRoot
     {

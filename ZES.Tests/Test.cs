@@ -8,7 +8,7 @@ using NLog.Targets;
 using SimpleInjector;
 using Xunit;
 using Xunit.Abstractions;
-using ZES.CrossCuttingConcerns;
+using ZES;
 using ZES.Infrastructure;
 using ZES.Interfaces.Domain;
 using ZES.Tests.TestDomain;

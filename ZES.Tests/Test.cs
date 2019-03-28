@@ -81,7 +81,6 @@ namespace ZES.Tests
 
                 //var logReg = Lifestyle.Singleton.CreateRegistration(() => _logger,container); 
                 container.Register(() => _logger, Lifestyle.Singleton);
-                container.Register<ILog, NLogger>(Lifestyle.Singleton);
                 
                 if(registrations == null)
                     registrations = new List<Action<Container>>();

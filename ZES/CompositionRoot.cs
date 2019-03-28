@@ -15,6 +15,7 @@ using ZES.Interfaces.EventStore;
 using ZES.Interfaces.Pipes;
 using ZES.Interfaces.Sagas;
 using ZES.Interfaces.Serialization;
+using ILog = ZES.Infrastructure.ILog;
 
 namespace ZES
 {
@@ -46,6 +47,7 @@ namespace ZES
             
             container.Register<ITimeline, Timeline>(Lifestyle.Singleton);
             container.Register<IMessageQueue,MessageQueue>(Lifestyle.Singleton);
+            container.Register<ILog, NLogger>(Lifestyle.Singleton);
 
             container.Register(typeof(IStreamLocator<>), typeof(StreamLocator<>),Lifestyle.Singleton);    
             container.Register<IDomainRepository,DomainRepository>(Lifestyle.Singleton);

@@ -1,7 +1,7 @@
 using NLog;
 using ZES.Infrastructure;
 
-namespace ZES.Tests
+namespace ZES
 {
     public class NLogger : ILog
     {

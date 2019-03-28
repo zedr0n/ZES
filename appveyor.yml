@@ -27,3 +27,5 @@ cache:
 artifacts:
   #- path: SqlTests.zip
   #  name: SqlTests
+nuget:
+  project_feed: true

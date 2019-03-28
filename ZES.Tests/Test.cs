@@ -8,6 +8,7 @@ using Xunit.Abstractions;
 using ZES.Interfaces.Domain;
 using ZES.Logging;
 using ZES.Tests.Domain;
+using Registration = ZES.Tests.Domain.Registration;
 
 namespace ZES.Tests
 {
@@ -47,6 +48,16 @@ namespace ZES.Tests
             return new CompositionRoot();
         }
 
+        protected void RegisterProjections(Container c)
+        {
+            Registration.RegisterProjections(c);
+        }
+        
+        protected void RegisterSagas(Container c)
+        {
+            Registration.RegisterSagas(c);
+        }
+        
         protected Container CreateContainer( List<Action<Container>> registrations = null) 
         {
             lock (_lock)

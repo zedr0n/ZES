@@ -76,17 +76,7 @@ namespace ZES.Tests
             Assert.NotEqual(root.Id, root2.Id);
         }
 
-        private void RegisterProjections(Container c)
-        {
-            c.Register<RootProjection>(Lifestyle.Singleton);
-            c.Register<StatsProjection>(Lifestyle.Singleton);
-            c.Register(typeof(IQueryHandler<,>), new[]
-            {
-                typeof(CreatedAtHandler),
-                typeof(StatsHandler)
-            }, Lifestyle.Singleton);
 
-        }
 
         [Fact]
         public async void CanProjectRoot()
@@ -168,11 +158,7 @@ namespace ZES.Tests
             Assert.Equal(numRoots,bus.Query(statsQuery));
         }
 
-        private void RegisterSagas(Container c)
-        {
-            c.Register<TestSaga>(Lifestyle.Singleton);
-            c.Register<TestSagaHandler>(Lifestyle.Singleton);
-        }
+
 
         [Fact]
         public async void CanUseSaga()

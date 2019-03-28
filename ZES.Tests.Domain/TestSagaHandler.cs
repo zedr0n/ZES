@@ -1,12 +1,9 @@
-using NLog;
 using ZES.Infrastructure;
 using ZES.Infrastructure.Sagas;
-using ZES.Interfaces;
-using ZES.Interfaces.Domain;
 using ZES.Interfaces.Pipes;
 using ZES.Interfaces.Sagas;
 
-namespace ZES.Tests.TestDomain
+namespace ZES.Tests.Domain
 {
     public class TestSagaHandler : SagaHandler<TestSaga>
     {

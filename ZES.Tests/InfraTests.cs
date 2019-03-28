@@ -9,7 +9,7 @@ using Xunit;
 using Xunit.Abstractions;
 using ZES.Interfaces.Domain;
 using ZES.Interfaces.Pipes;
-using ZES.Tests.TestDomain;
+using ZES.Tests.Domain;
 
 namespace ZES.Tests
 {

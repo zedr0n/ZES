@@ -1,7 +1,7 @@
 using System.Threading.Tasks;
 using ZES.Interfaces.Domain;
 
-namespace ZES.Tests.TestDomain
+namespace ZES.Tests.Domain
 {
     public class StatsHandler : IQueryHandler<StatsQuery, long>
     {

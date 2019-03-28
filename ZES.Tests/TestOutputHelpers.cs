@@ -4,7 +4,7 @@ using System.Threading;
 using NLog;
 using Xunit.Abstractions;
 
-namespace Xunit 
+namespace ZES.Tests 
 {
     public static class TestOutputHelpers
     {

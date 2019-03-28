@@ -1,7 +1,7 @@
 using ZES.Infrastructure.Domain;
 using ZES.Interfaces;
 
-namespace ZES.Tests.TestDomain
+namespace ZES.Tests.Domain
 {
     public class Root : EventSourced, IAggregate
     {

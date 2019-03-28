@@ -1,7 +1,7 @@
 using Stateless;
 using ZES.Infrastructure.Sagas;
 
-namespace ZES.Tests.TestDomain
+namespace ZES.Tests.Domain
 {
     public class TestSaga : StatelessSaga<TestSaga.State, TestSaga.Trigger>
     {

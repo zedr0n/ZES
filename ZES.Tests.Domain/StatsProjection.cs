@@ -1,11 +1,10 @@
-using System;
 using ZES.Infrastructure;
 using ZES.Infrastructure.Projections;
 using ZES.Interfaces;
 using ZES.Interfaces.EventStore;
 using ZES.Interfaces.Pipes;
 
-namespace ZES.Tests.TestDomain
+namespace ZES.Tests.Domain
 {
     public class StatsProjection : Projection
     {

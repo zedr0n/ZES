@@ -4,7 +4,7 @@ using NLog;
 using NLog.Targets;
 using Xunit.Abstractions;
 
-namespace Xunit 
+namespace ZES.Tests 
 {
     [Target("TestOutput")]
     public class TestOutputTarget : TargetWithLayoutHeaderAndFooter

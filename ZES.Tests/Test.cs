@@ -1,19 +1,13 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Runtime.CompilerServices;
-using System.Threading;
 using NLog;
-using NLog.Config;
 using NLog.Targets;
 using SimpleInjector;
-using Xunit;
 using Xunit.Abstractions;
-using ZES;
-using ZES.Infrastructure;
 using ZES.Interfaces.Domain;
 using ZES.Logging;
-using ZES.Tests.TestDomain;
+using ZES.Tests.Domain;
 
 namespace ZES.Tests
 {

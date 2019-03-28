@@ -4,7 +4,6 @@ using NLog.Targets;
 
 namespace Xunit 
 {
-
     public abstract class TargetWithLayoutHeaderAndFooter : TargetWithLayout
     {
         /// <summary>Gets or sets the text to be rendered.</summary>

@@ -15,6 +15,7 @@ using ZES.Interfaces.EventStore;
 using ZES.Interfaces.Pipes;
 using ZES.Interfaces.Sagas;
 using ZES.Interfaces.Serialization;
+using ZES.Logging;
 using ILog = ZES.Infrastructure.ILog;
 
 namespace ZES
@@ -28,6 +29,7 @@ namespace ZES
                 new LogNameConvention(),
                 new UtcNowConvention()
             });
+            //container.Options.AllowOverridingRegistrations = true;
             container.Register<IBus,Bus>(Lifestyle.Singleton);
             
             //container.Register<IStreamStore>(() => new InMemoryStreamStore(),Lifestyle.Singleton);
@@ -47,6 +49,8 @@ namespace ZES
             
             container.Register<ITimeline, Timeline>(Lifestyle.Singleton);
             container.Register<IMessageQueue,MessageQueue>(Lifestyle.Singleton);
+            container.Register(typeof(ILogger), () => LogManager.GetLogger(typeof(NLogger).Name),Lifestyle.Singleton);
+
             container.Register<ILog, NLogger>(Lifestyle.Singleton);
 
             container.Register(typeof(IStreamLocator<>), typeof(StreamLocator<>),Lifestyle.Singleton);    

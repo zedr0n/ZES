@@ -15,7 +15,7 @@ namespace Xunit
         {
             if (string.IsNullOrWhiteSpace(loggerName))
                 throw new ArgumentNullException(nameof (loggerName));
-            if (!this._map.TryAdd(loggerName, testOutputHelper))
+            if (!_map.TryAdd(loggerName, testOutputHelper))
                 throw new ArgumentException("LoggerName already in use", nameof (loggerName));
         }
 
@@ -23,18 +23,16 @@ namespace Xunit
         {
             if (string.IsNullOrWhiteSpace(loggerName))
                 throw new ArgumentNullException(nameof (loggerName));
-            ITestOutputHelper testOutputHelper;
-            return _map.TryRemove(loggerName, out testOutputHelper);
+            return _map.TryRemove(loggerName, out _);
         }
 
         protected override void Write(LogEventInfo logEvent)
         {
-            ITestOutputHelper testOutputHelper;
-            if (!this._map.TryGetValue(logEvent.LoggerName, out testOutputHelper))
+            if (!_map.TryGetValue(logEvent.LoggerName, out var testOutputHelper))
                 return;
             try
             {
-                string message = this.Layout.Render(logEvent);
+                var message = Layout.Render(logEvent);
                 testOutputHelper.WriteLine(message);
             }
             catch (Exception ex)

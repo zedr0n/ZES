@@ -1,8 +1,5 @@
 using System;
 using System.Collections.Concurrent;
-using System.Collections.Generic;
-using System.Reactive.Linq;
-using NLog;
 using ZES.Infrastructure;
 using ZES.Infrastructure.Projections;
 using ZES.Interfaces;
@@ -18,8 +15,6 @@ namespace ZES.Tests.TestDomain
         public RootProjection(IEventStore<IAggregate> eventStore, ILog logger, IMessageQueue messageQueue) : base(eventStore, logger, messageQueue)
         {
             Register<RootCreated>(When);
-
-            eventStore.Streams.Subscribe(async s => await Notify(s));
         }
 
         public long Get(string id)

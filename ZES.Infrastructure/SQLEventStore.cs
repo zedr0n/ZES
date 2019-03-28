@@ -136,11 +136,12 @@ namespace ZES.Infrastructure
 
             var streamMessages = events.Select(_serializer.Encode).ToArray();
             var result = await _streamStore.AppendToStream(stream.Key, stream.Version,streamMessages);
+            LogEvents(streamMessages);
 
             stream.Version = result.CurrentVersion;
             _streams.OnNext(stream);
             
-            LogEvents(streamMessages);
+
             await PublishEvents(events);    
         }
         

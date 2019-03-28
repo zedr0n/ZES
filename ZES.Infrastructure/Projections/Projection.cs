@@ -39,6 +39,7 @@ namespace ZES.Infrastructure.Projections
             _bufferBlock = new BufferBlock<IStream>();
             //_bufferBlock.LinkTo(DataflowBlock.NullTarget<IStream>());
             Rebuild();
+            eventStore.Streams.Subscribe(async s => await Notify(s));
             messageQueue.Alerts.Where(s => s == "InvalidProjections").Subscribe(s => Rebuild());
         }
 
@@ -49,12 +50,12 @@ namespace ZES.Infrastructure.Projections
 
         protected async Task Notify(IStream stream)
         {
-            _logger.Trace($"{stream.Key}[{stream.Version}]",this); 
             if (!_streamFilter(stream.Key))
                 return;
             
             var version = stream.Version; 
             var projectionVersion = _streams.GetOrAdd(stream.Key,-1);
+            _logger.Trace($"{stream.Key}@{projectionVersion}",this); 
             if (version > projectionVersion)
                 await _bufferBlock.SendAsync(stream);
         }
@@ -88,7 +89,7 @@ namespace ZES.Infrastructure.Projections
             if(!_streams.TryGetValue(stream.Key, out var version))
                 throw new InvalidOperationException("Stream not registered");
             
-            _logger.Trace($"{stream.Key}[{version}]",this);     
+            _logger.Trace($"{stream.Key}@{stream.Version}",this);     
             
             var streamEvents = (await _eventStore.ReadStream(stream, version+1)).ToList();
             

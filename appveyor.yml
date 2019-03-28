@@ -13,7 +13,6 @@ build:
   project: ZES.sln
   verbosity: minimal
   publish_nuget: true             # package projects with .nuspec files and push to artifacts
-
 after_build:
   #- cmd: pushd ZES && dotnet pack --no-build -o .. && popd
 test_script:

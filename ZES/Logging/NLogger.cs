@@ -1,3 +1,4 @@
+using System;
 using NLog;
 using NLog.Config;
 using NLog.Targets;
@@ -29,8 +30,8 @@ namespace ZES.Logging
                 Layout = trace  
             };
             config.AddTarget(consoleTarget);
-            
-            config.AddRuleForAllLevels(consoleTarget); // all to console
+
+            //config.AddRuleForAllLevels(consoleTarget); // all to console
             LogManager.Configuration = config;
             
             return config;

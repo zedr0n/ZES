@@ -34,10 +34,16 @@ namespace ZES.Tests
                 Layout = layout 
             };  
             config.AddTarget(testTarget);
-            config.AddRuleForAllLevels(testTarget);
-
-            LogManager.Configuration = config;
             
+            foreach (var target in config.AllTargets)
+            {
+                if(Environment.GetEnvironmentVariable("TRACE") == "1")
+                    config.AddRuleForOneLevel(LogLevel.Trace, target);
+                if(Environment.GetEnvironmentVariable("DEBUG") == "1")
+                    config.AddRuleForOneLevel(LogLevel.Debug, target);
+            }
+            
+            LogManager.Configuration = config;
             _logger = outputHelper.GetNLogLogger();
         }
         

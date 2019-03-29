@@ -5,10 +5,7 @@ using NLog;
 using NLog.Targets;
 using SimpleInjector;
 using Xunit.Abstractions;
-using ZES.Interfaces.Domain;
 using ZES.Logging;
-using ZES.Tests.Domain;
-using Registration = ZES.Tests.Domain.Registration;
 
 namespace ZES.Tests
 {
@@ -50,13 +47,13 @@ namespace ZES.Tests
 
         protected void RegisterProjections(Container c)
         {
-            Registration.RegisterProjections(c);
-            Registration.RegisterQueries(c);
+            //Registration.RegisterProjections(c);
+            //Registration.RegisterQueries(c);
         }
         
         protected void RegisterSagas(Container c)
         {
-            Registration.RegisterSagas(c);
+            //Registration.RegisterSagas(c);
         }
         
         protected Container CreateContainer( List<Action<Container>> registrations = null) 
@@ -64,8 +61,8 @@ namespace ZES.Tests
             lock (_lock)
             {
                 var container = new Container();
-                CreateRoot().ComposeApplication(container);
-                Registration.RegisterCommands(container);
+                CreateRoot().ComposeApplication(container, new[] {"ZES.Tests.Domain"});
+                //Registration.RegisterCommands(container);
 
                 //var logReg = Lifestyle.Singleton.CreateRegistration(() => _logger,container); 
                 //container.Register(() => _logger, Lifestyle.Singleton);

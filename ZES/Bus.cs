@@ -100,7 +100,7 @@ namespace ZES
             var handlerType = typeof(IQueryHandler<,>).MakeGenericType(query.GetType(), typeof(TResult));
             dynamic handler = GetInstance(handlerType);
             if (handler != null)
-                return await handler.Handle(query as dynamic);
+                return await handler.HandleAsync(query as dynamic);
             return default(TResult);            
         }
 

@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using NLog;
 using SimpleInjector;
 using SqlStreamStore;
@@ -22,7 +23,7 @@ namespace ZES
 {
     public class CompositionRoot : ICompositionRoot
     {
-        public virtual void ComposeApplication(Container container)
+        public virtual void ComposeApplication(Container container, IEnumerable<string> domains)
         {
             container.Options.RegisterParameterConventions(new List<IParameterConvention>
             {
@@ -59,7 +60,14 @@ namespace ZES
             
             container.RegisterDecorator(typeof(ICommandHandler<>),
                 typeof(CommandRecorder<>),Lifestyle.Singleton,
-                context => !context.AppliedDecorators.Any(d => d.IsClosedTypeOf(typeof(CommandRecorder<>)))); 
+                context => !context.AppliedDecorators.Any(d => d.IsClosedTypeOf(typeof(CommandRecorder<>))));
+
+            foreach (var domain in domains)
+            {
+                var assembly = Assembly.Load(AssemblyName.GetAssemblyName(domain+".dll"));
+                var config = assembly.GetTypes().SingleOrDefault(t => t.Name == "Config");
+                config?.GetMethod("RegisterAll")?.Invoke(null,new object[] {container});
+            }
 
         }
     }

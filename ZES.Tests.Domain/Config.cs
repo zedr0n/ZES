@@ -3,7 +3,7 @@ using SimpleInjector;
 
 namespace ZES.Tests.Domain
 {
-    public static class Registration
+    public static class Config
     {
         public static void RegisterAll(Container c)
         {

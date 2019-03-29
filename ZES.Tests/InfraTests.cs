@@ -1,15 +1,18 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
+using System.Reactive;
 using System.Reactive.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using SimpleInjector;
 using Xunit;
 using Xunit.Abstractions;
+using Xunit.Sdk;
 using ZES.Interfaces.Domain;
 using ZES.Interfaces.Pipes;
 using ZES.Tests.Domain;
+using static ZES.ObservableExtensions;
 
 namespace ZES.Tests
 {
@@ -38,7 +41,8 @@ namespace ZES.Tests
     
     public class InfraTests : Test
     {
-        private const int Wait = 200;
+        private const int Wait = 25;
+        private const int Timeout = 1000;
         
         [Fact]
         public async void CanSaveRoot()
@@ -49,10 +53,8 @@ namespace ZES.Tests
             
             var command = new CreateRootCommand {AggregateId = "Root"};
             await bus.CommandAsync(command);
-            
-            Observable.Timer(TimeSpan.FromMilliseconds(Wait)).Wait();
-            
-            var root = await repository.Find<Root>("Root");
+
+            var root = await RetryUntil(async () => await repository.Find<Root>("Root"));
             Assert.Equal("Root",root.Id);
         }
 
@@ -68,15 +70,12 @@ namespace ZES.Tests
             
             var command2 = new CreateRootCommand {AggregateId = "Root2"};
             await bus.CommandAsync(command2);
-            
-            Observable.Timer(TimeSpan.FromMilliseconds(Wait)).Wait();
 
-            var root = await repository.Find<Root>("Root1");
-            var root2 = await repository.Find<Root>("Root2");
+            var root = await RetryUntil(async () => await repository.Find<Root>("Root1"));
+            var root2 = await RetryUntil(async () => await repository.Find<Root>("Root2"));
+
             Assert.NotEqual(root.Id, root2.Id);
         }
-
-
 
         [Fact]
         public async void CanProjectRoot()
@@ -88,44 +87,8 @@ namespace ZES.Tests
             await bus.CommandAsync(command); 
             
             var query = new CreatedAtQuery("Root");
-            Observable.Interval(TimeSpan.FromMilliseconds(50))
-                .TakeUntil(l => bus.Query(query) > 0)
-                .Timeout(TimeSpan.FromMilliseconds(1000))
-                .Wait();
-
-            var createdAt = bus.Query(query);
+            var createdAt = await RetryUntil(async () => await bus.QueryAsync(query));
             Assert.NotEqual(0, createdAt);
-        }
-
-        [Theory]
-        [InlineData(150)]        
-        public async void CanRebuildProjection(int numberOfRoots)
-        {
-            var container = CreateContainer(new List<Action<Container>> { RegisterProjections });
-            var bus = container.GetInstance<IBus>();
-            var messageQueue = container.GetInstance<IMessageQueue>();
-
-            var rootId = numberOfRoots;
-            while (rootId > 0)
-            {
-                var command = new CreateRootCommand {AggregateId = $"Root{rootId}"};
-                await bus.CommandAsync(command);
-                rootId--;
-            }
-            
-            var query = new CreatedAtQuery("Root1");
-            Observable.Interval(TimeSpan.FromMilliseconds(50))
-                .TakeUntil(l => bus.Query(query) > 0)
-                .Timeout(TimeSpan.FromMilliseconds(1000))
-                .Wait();
-
-            await messageQueue.Alert("InvalidProjections");
-            Thread.Sleep(10);
-            var newCommand = new CreateRootCommand {AggregateId = $"OtherRoot"};
-            await bus.CommandAsync(newCommand);
-            Thread.Sleep(50);
-            
-            Assert.Equal(numberOfRoots+1, bus.Query(new StatsQuery()));
         }
 
         [Theory]
@@ -144,14 +107,7 @@ namespace ZES.Tests
             }
             
             var query = new CreatedAtQuery("Root1");
-            Observable.Interval(TimeSpan.FromMilliseconds(50))
-                .TakeUntil(l => bus.Query(query) > 0)
-                .Timeout(TimeSpan.FromMilliseconds(1000))
-                .Wait();
-            //Observable.Timer(TimeSpan.FromMilliseconds(50))
-            //    .DoWhile(() => bus.Query(query) == 0 && DateTime.UtcNow.Subtract(start).Milliseconds < 1000)
-            //    .Wait();
-            var createdAt = bus.Query(query);
+            var createdAt = await RetryUntil(async () => await bus.QueryAsync(query));
             Assert.NotEqual(0, createdAt); 
             
             var statsQuery = new StatsQuery();
@@ -159,6 +115,34 @@ namespace ZES.Tests
         }
 
 
+        [Theory]
+        [InlineData(150)]        
+        public async void CanRebuildProjection(int numberOfRoots)
+        {
+            var container = CreateContainer(new List<Action<Container>> { RegisterProjections });
+            var bus = container.GetInstance<IBus>();
+            var messageQueue = container.GetInstance<IMessageQueue>();
+
+            var rootId = numberOfRoots;
+            while (rootId > 0)
+            {
+                var command = new CreateRootCommand {AggregateId = $"Root{rootId}"};
+                await bus.CommandAsync(command);
+                rootId--;
+            }
+            
+            var query = new CreatedAtQuery("Root1");
+            await RetryUntil(async () => await bus.QueryAsync(query));
+            
+            await messageQueue.Alert("InvalidProjections");
+            Thread.Sleep(10);
+            
+            var newCommand = new CreateRootCommand {AggregateId = "OtherRoot"};
+            await bus.CommandAsync(newCommand);
+            var res = await RetryUntil(async () => await bus.QueryAsync(new StatsQuery()), x => x == numberOfRoots + 1);
+
+            Assert.Equal(numberOfRoots + 1, res);
+        }
 
         [Fact]
         public async void CanUseSaga()
@@ -174,12 +158,8 @@ namespace ZES.Tests
             await bus.CommandAsync(command);
 
             var query = new CreatedAtQuery("RootNew");
-            Observable.Interval(TimeSpan.FromMilliseconds(50))
-                .TakeUntil(l => bus.Query(query) > 0)
-                .Timeout(TimeSpan.FromMilliseconds(1000))
-                .Wait();
-
-            var createdAt = bus.Query(query);
+            var createdAt = await RetryUntil(async () => await bus.QueryAsync(query));
+            
             Assert.NotEqual(0, createdAt);
         }
 

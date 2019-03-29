@@ -28,3 +28,4 @@ artifacts:
   #  name: SqlTests
 nuget:
   project_feed: true
+  account_feed: true

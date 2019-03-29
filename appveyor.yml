@@ -28,4 +28,5 @@ artifacts:
   #  name: SqlTests
 nuget:
   project_feed: true
-  account_feed: true
+install:
+ - nuget sources add -Name Account -Source https://ci.appveyor.com/nuget/zinnos -UserName %nuget_user% -Password %nuget_password%

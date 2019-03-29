@@ -4,8 +4,10 @@ using System.Linq;
 using NLog;
 using NLog.Targets;
 using SimpleInjector;
+using Xunit;
 using Xunit.Abstractions;
 using ZES.Logging;
+[assembly: CollectionBehavior(DisableTestParallelization = true)]
 
 namespace ZES.Tests
 {

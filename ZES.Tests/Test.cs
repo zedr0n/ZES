@@ -64,7 +64,7 @@ namespace ZES.Tests
             {
                 var container = new Container();
                 CreateRoot().ComposeApplication(container);
-                container.Register<ICommandHandler<CreateRootCommand>,CreateRootHandler>(Lifestyle.Singleton);
+                Registration.RegisterCommands(container);
 
                 //var logReg = Lifestyle.Singleton.CreateRegistration(() => _logger,container); 
                 //container.Register(() => _logger, Lifestyle.Singleton);

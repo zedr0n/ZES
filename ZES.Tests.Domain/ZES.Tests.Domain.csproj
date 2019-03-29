@@ -1,0 +1,15 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>netstandard2.0</TargetFramework>
+        <IsPackable>true</IsPackable>
+        <Version>1.0.0</Version>        
+    </PropertyGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\ZES.Infrastructure\ZES.Infrastructure.csproj" />
+      <ProjectReference Include="..\ZES.Interfaces\ZES.Interfaces.csproj" />
+      <ProjectReference Include="..\ZES\ZES.csproj" />
+    </ItemGroup>
+
+</Project>

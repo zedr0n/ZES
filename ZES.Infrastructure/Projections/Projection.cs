@@ -10,12 +10,13 @@ using System.Threading.Tasks.Dataflow;
 using NLog;
 using SqlStreamStore.Streams;
 using ZES.Interfaces;
+using ZES.Interfaces.Domain;
 using ZES.Interfaces.EventStore;
 using ZES.Interfaces.Pipes;
 
 namespace ZES.Infrastructure.Projections
 {
-    public class Projection
+    public class Projection : IProjection
     {
         private readonly ILog _logger;
 

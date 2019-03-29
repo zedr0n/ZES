@@ -9,7 +9,7 @@ using ZES.Interfaces.Sagas;
 
 namespace ZES.Infrastructure.Sagas
 {
-    public class SagaHandler<TSaga> : ISagaHandler<TSaga>
+    public abstract class SagaHandler<TSaga> : ISagaHandler<TSaga>
         where TSaga : class, ISaga, new()
     {
         private readonly ILog _logger;

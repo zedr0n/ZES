@@ -51,6 +51,7 @@ namespace ZES.Tests
         protected void RegisterProjections(Container c)
         {
             Registration.RegisterProjections(c);
+            Registration.RegisterQueries(c);
         }
         
         protected void RegisterSagas(Container c)

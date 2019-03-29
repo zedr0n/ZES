@@ -1,21 +1,11 @@
-using System.Threading.Tasks;
+using ZES.Infrastructure.Domain;
 using ZES.Interfaces.Domain;
 
 namespace ZES.Tests.Domain
 {
-    public class CreateRootHandler : ICommandHandler<CreateRootCommand>
+    public class CreateRootHandler : CommandHandler<CreateRootCommand,Root>
     {
-        private readonly IDomainRepository _repository;
-
-        public CreateRootHandler(IDomainRepository repository)
-        {
-            _repository = repository;
-        }
-
-        public async Task Handle(CreateRootCommand command)
-        {
-            var root = new Root(command.AggregateId);
-            await _repository.Save(root);
-        }
+        public CreateRootHandler(IDomainRepository repository) : base(repository) {}
+        protected override Root Act(CreateRootCommand command) => new Root(command.AggregateId);
     }
 }

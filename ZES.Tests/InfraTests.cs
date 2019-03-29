@@ -38,12 +38,45 @@ namespace ZES.Tests
             Assert.True(bus.Status == BusStatus.Busy); 
         }
     }
+
+    public class RebuildTest : Test
+    {
+        public RebuildTest(ITestOutputHelper outputHelper) : base(outputHelper)
+        {
+        }
+        
+        [Theory]
+        [InlineData(150)]        
+        public async void CanRebuildProjection(int numberOfRoots)
+        {
+            var container = CreateContainer();
+            var bus = container.GetInstance<IBus>();
+            var messageQueue = container.GetInstance<IMessageQueue>();
+
+            var rootId = numberOfRoots;
+            while (rootId > 0)
+            {
+                var command = new CreateRootCommand {AggregateId = $"Root{rootId}"};
+                await bus.CommandAsync(command);
+                rootId--;
+            }
+            
+            var query = new CreatedAtQuery("Root1");
+            await RetryUntil(async () => await bus.QueryAsync(query));
+            
+            await messageQueue.Alert("InvalidProjections");
+            Thread.Sleep(10);
+            
+            var newCommand = new CreateRootCommand {AggregateId = "OtherRoot"};
+            await bus.CommandAsync(newCommand);
+            var res = await RetryUntil(async () => await bus.QueryAsync(new StatsQuery()), x => x == numberOfRoots + 1);
+
+            Assert.Equal(numberOfRoots + 1, res);
+        }
+    }
     
     public class InfraTests : Test
     {
-        private const int Wait = 25;
-        private const int Timeout = 1000;
-        
         [Fact]
         public async void CanSaveRoot()
         {
@@ -80,7 +113,7 @@ namespace ZES.Tests
         [Fact]
         public async void CanProjectRoot()
         {
-            var container = CreateContainer(new List<Action<Container>> { RegisterProjections });
+            var container = CreateContainer();
             var bus = container.GetInstance<IBus>();
             
             var command = new CreateRootCommand {AggregateId = "Root"};
@@ -95,7 +128,7 @@ namespace ZES.Tests
         [InlineData(10)]
         public async void CanProjectALotOfRoots(int numRoots)
         {
-            var container = CreateContainer(new List<Action<Container>> { RegisterProjections });
+            var container = CreateContainer();
             var bus = container.GetInstance<IBus>();
 
             var rootId = numRoots; 
@@ -115,43 +148,11 @@ namespace ZES.Tests
         }
 
 
-        [Theory]
-        [InlineData(150)]        
-        public async void CanRebuildProjection(int numberOfRoots)
-        {
-            var container = CreateContainer(new List<Action<Container>> { RegisterProjections });
-            var bus = container.GetInstance<IBus>();
-            var messageQueue = container.GetInstance<IMessageQueue>();
-
-            var rootId = numberOfRoots;
-            while (rootId > 0)
-            {
-                var command = new CreateRootCommand {AggregateId = $"Root{rootId}"};
-                await bus.CommandAsync(command);
-                rootId--;
-            }
-            
-            var query = new CreatedAtQuery("Root1");
-            await RetryUntil(async () => await bus.QueryAsync(query));
-            
-            await messageQueue.Alert("InvalidProjections");
-            Thread.Sleep(10);
-            
-            var newCommand = new CreateRootCommand {AggregateId = "OtherRoot"};
-            await bus.CommandAsync(newCommand);
-            var res = await RetryUntil(async () => await bus.QueryAsync(new StatsQuery()), x => x == numberOfRoots + 1);
-
-            Assert.Equal(numberOfRoots + 1, res);
-        }
 
         [Fact]
         public async void CanUseSaga()
         {
-            var container = CreateContainer( new List<Action<Container>>
-            {
-                RegisterProjections,
-                RegisterSagas
-            } );
+            var container = CreateContainer();
             var bus = container.GetInstance<IBus>();
             
             var command = new CreateRootCommand {AggregateId = "Root"};

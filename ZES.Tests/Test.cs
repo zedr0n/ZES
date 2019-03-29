@@ -7,7 +7,6 @@ using SimpleInjector;
 using Xunit;
 using Xunit.Abstractions;
 using ZES.Logging;
-[assembly: CollectionBehavior(DisableTestParallelization = true)]
 
 namespace ZES.Tests
 {
@@ -47,28 +46,12 @@ namespace ZES.Tests
             return new CompositionRoot();
         }
 
-        protected void RegisterProjections(Container c)
-        {
-            //Registration.RegisterProjections(c);
-            //Registration.RegisterQueries(c);
-        }
-        
-        protected void RegisterSagas(Container c)
-        {
-            //Registration.RegisterSagas(c);
-        }
-        
         protected Container CreateContainer( List<Action<Container>> registrations = null) 
         {
             lock (_lock)
             {
                 var container = new Container();
                 CreateRoot().ComposeApplication(container, new[] {"ZES.Tests.Domain"});
-                //Registration.RegisterCommands(container);
-
-                //var logReg = Lifestyle.Singleton.CreateRegistration(() => _logger,container); 
-                //container.Register(() => _logger, Lifestyle.Singleton);
-                //container.Register(() => _helper, Lifestyle.Singleton);
 
                 container.Options.AllowOverridingRegistrations = true;
                 container.Register(typeof(ILogger),() => _logger,Lifestyle.Singleton);

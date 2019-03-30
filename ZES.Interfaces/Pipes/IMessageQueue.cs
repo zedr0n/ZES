@@ -6,8 +6,8 @@ namespace ZES.Interfaces.Pipes
     public interface IMessageQueue
     {
         IObservable<IEvent> Messages { get; }
-        IObservable<string> Alerts { get; }
+        IObservable<IAlert> Alerts { get; }
         Task Event(IEvent e);
-        Task Alert(string alert);
+        Task Alert(IAlert alert);
     }
 }

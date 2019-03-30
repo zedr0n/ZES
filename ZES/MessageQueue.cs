@@ -13,13 +13,13 @@ namespace ZES
     {
         private readonly ILog _log;
         private readonly ActionBlock<IEvent> _actionBlock;
-        private readonly ActionBlock<string> _alertBlock; 
+        private readonly ActionBlock<IAlert> _alertBlock; 
         
         public IObservable<IEvent> Messages => _messages.AsObservable();
         private readonly Subject<IEvent> _messages = new Subject<IEvent>();
 
-        private readonly Subject<string> _alerts = new Subject<string>();
-        public IObservable<string> Alerts => _alerts.AsObservable();
+        private readonly Subject<IAlert> _alerts = new Subject<IAlert>();
+        public IObservable<IAlert> Alerts => _alerts.AsObservable();
         public MessageQueue(ILog log)
         {
             _log = log;
@@ -30,16 +30,16 @@ namespace ZES
                     MaxDegreeOfParallelism = 1
                 });
             
-            _alertBlock = new ActionBlock<string>(s => _alerts.OnNext(s),
+            _alertBlock = new ActionBlock<IAlert>(s => _alerts.OnNext(s),
                 new ExecutionDataflowBlockOptions
                 {
                     MaxDegreeOfParallelism = 1
                 });
         }
 
-        public async Task Alert(string alert)
+        public async Task Alert(IAlert alert)
         {
-            _log.Trace(alert,this);
+            _log.Trace(alert.GetType().Name,this);
             await _alertBlock.SendAsync(alert);
         }
 

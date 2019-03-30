@@ -9,6 +9,7 @@ using SimpleInjector;
 using Xunit;
 using Xunit.Abstractions;
 using Xunit.Sdk;
+using ZES.Infrastructure.Alerts;
 using ZES.Interfaces.Domain;
 using ZES.Interfaces.Pipes;
 using ZES.Tests.Domain;
@@ -66,7 +67,7 @@ namespace ZES.Tests
             var query = new CreatedAtQuery("Root1");
             await RetryUntil(async () => await bus.QueryAsync(query));
             
-            await messageQueue.Alert("InvalidProjections");
+            await messageQueue.Alert(new InvalidateProjections());
             Thread.Sleep(10);
             
             var newCommand = new CreateRootCommand {AggregateId = "OtherRoot"};

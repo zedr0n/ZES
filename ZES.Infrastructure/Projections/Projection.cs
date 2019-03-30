@@ -9,6 +9,7 @@ using System.Threading.Tasks;
 using System.Threading.Tasks.Dataflow;
 using NLog;
 using SqlStreamStore.Streams;
+using ZES.Infrastructure.Alerts;
 using ZES.Interfaces;
 using ZES.Interfaces.Domain;
 using ZES.Interfaces.EventStore;
@@ -41,7 +42,7 @@ namespace ZES.Infrastructure.Projections
             //_bufferBlock.LinkTo(DataflowBlock.NullTarget<IStream>());
             Rebuild();
             eventStore.Streams.Subscribe(async s => await Notify(s));
-            messageQueue.Alerts.Where(s => s == "InvalidProjections").Subscribe(s => Rebuild());
+            messageQueue.Alerts.OfType<InvalidateProjections>().Subscribe(s => Rebuild());
         }
 
         protected void Register<TEvent>(Action<TEvent> when) where TEvent : class

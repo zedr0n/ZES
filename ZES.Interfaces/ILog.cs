@@ -1,4 +1,4 @@
-namespace ZES.Infrastructure
+namespace ZES.Interfaces
 {
     public interface ILog
     {

@@ -2,9 +2,9 @@ using ZES.Interfaces.Domain;
 
 namespace ZES.Tests.Domain.Queries
 {
-    public class StatsQuery : IQuery<long>
+    public class Stats : IQuery<long>
     {
-        public StatsQuery()
+        public Stats()
         {
         }
     }

@@ -3,7 +3,7 @@ using ZES.Infrastructure.Sagas;
 using ZES.Tests.Domain.Commands;
 using ZES.Tests.Domain.Events;
 
-namespace ZES.Tests.Domain
+namespace ZES.Tests.Domain.Sagas
 {
     public class TestSaga : StatelessSaga<TestSaga.State, TestSaga.Trigger>
     {
@@ -32,7 +32,7 @@ namespace ZES.Tests.Domain
                 .OnEntry(() =>
                 {
                     if (!_rootId.Contains("Copy"))
-                        SendCommand(new CreateRootCommand {AggregateId =$"{_rootId}Copy"});
+                        SendCommand(new CreateRoot {AggregateId =$"{_rootId}Copy"});
 
                 });
             base.ConfigureStateMachine();

@@ -15,7 +15,7 @@ using ZES.Interfaces.Pipes;
 using ZES.Interfaces.Sagas;
 using ZES.Interfaces.Serialization;
 using ZES.Logging;
-using ILog = ZES.Infrastructure.ILog;
+using ILog = ZES.Interfaces.ILog;
 
 namespace ZES
 {

@@ -4,7 +4,7 @@ using ZES.Tests.Domain.Projections;
 
 namespace ZES.Tests.Domain.Queries
 {
-    public class StatsHandler : IQueryHandler<StatsQuery, long>
+    public class StatsHandler : IQueryHandler<Stats, long>
     {
         private readonly StatsProjection _projection;
 
@@ -13,12 +13,12 @@ namespace ZES.Tests.Domain.Queries
             _projection = projection;
         }
 
-        public long Handle(StatsQuery query)
+        public long Handle(Stats query)
         {
             return _projection.Get(); 
         }
 
-        public async Task<long> HandleAsync(StatsQuery query)
+        public async Task<long> HandleAsync(Stats query)
         {
             return await Task.FromResult(Handle(query));
         }

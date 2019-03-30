@@ -1,10 +1,10 @@
-using ZES.Infrastructure;
 using ZES.Infrastructure.Sagas;
+using ZES.Interfaces;
 using ZES.Interfaces.Pipes;
 using ZES.Interfaces.Sagas;
 using ZES.Tests.Domain.Events;
 
-namespace ZES.Tests.Domain
+namespace ZES.Tests.Domain.Sagas
 {
     public class TestSagaHandler : SagaHandler<TestSaga>
     {

@@ -1,5 +1,7 @@
 using Stateless;
 using ZES.Infrastructure.Sagas;
+using ZES.Tests.Domain.Commands;
+using ZES.Tests.Domain.Events;
 
 namespace ZES.Tests.Domain
 {

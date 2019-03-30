@@ -1,7 +1,7 @@
 using System.Threading.Tasks;
 using ZES.Interfaces.Domain;
 
-namespace ZES.Tests.Domain
+namespace ZES.Tests.Domain.Commands
 {
     public class CreateRootHandler : ICommandHandler<CreateRootCommand>
     {

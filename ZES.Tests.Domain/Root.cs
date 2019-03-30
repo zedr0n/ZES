@@ -1,5 +1,6 @@
 using ZES.Infrastructure.Domain;
 using ZES.Interfaces;
+using ZES.Tests.Domain.Events;
 
 namespace ZES.Tests.Domain
 {

@@ -12,6 +12,8 @@ using Xunit.Sdk;
 using ZES.Interfaces.Domain;
 using ZES.Interfaces.Pipes;
 using ZES.Tests.Domain;
+using ZES.Tests.Domain.Commands;
+using ZES.Tests.Domain.Queries;
 using static ZES.ObservableExtensions;
 
 namespace ZES.Tests

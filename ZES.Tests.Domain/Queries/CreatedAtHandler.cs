@@ -1,7 +1,8 @@
 using System.Threading.Tasks;
 using ZES.Interfaces.Domain;
+using ZES.Tests.Domain.Projections;
 
-namespace ZES.Tests.Domain
+namespace ZES.Tests.Domain.Queries
 {
     public class CreatedAtHandler : IQueryHandler<CreatedAtQuery, long>
     {

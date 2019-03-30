@@ -4,8 +4,9 @@ using ZES.Infrastructure.Projections;
 using ZES.Interfaces;
 using ZES.Interfaces.EventStore;
 using ZES.Interfaces.Pipes;
+using ZES.Tests.Domain.Events;
 
-namespace ZES.Tests.Domain
+namespace ZES.Tests.Domain.Projections
 {
     public class RootProjection : Projection
     {

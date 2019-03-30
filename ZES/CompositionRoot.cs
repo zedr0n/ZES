@@ -21,9 +21,9 @@ using ILog = ZES.Infrastructure.ILog;
 
 namespace ZES
 {
-    public class CompositionRoot : ICompositionRoot
+    public sealed class CompositionRoot : ICompositionRoot
     {
-        public virtual void ComposeApplication(Container container, IEnumerable<string> domains = null)
+        public void ComposeApplication(Container container, IEnumerable<string> domains = null)
         {
             container.Options.RegisterParameterConventions(new List<IParameterConvention>
             {

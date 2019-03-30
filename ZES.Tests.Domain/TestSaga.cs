@@ -31,8 +31,8 @@ namespace ZES.Tests.Domain
             StateMachine.Configure(State.Complete)
                 .OnEntry(() =>
                 {
-                    if (_rootId == "Root")
-                        SendCommand(new CreateRootCommand {AggregateId = "RootNew"});
+                    if (!_rootId.Contains("Copy"))
+                        SendCommand(new CreateRootCommand {AggregateId =$"{_rootId}Copy"});
 
                 });
             base.ConfigureStateMachine();

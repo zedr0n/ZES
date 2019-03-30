@@ -27,13 +27,13 @@ namespace ZES
                     _messages.OnNext(e),
                 new ExecutionDataflowBlockOptions
                 {
-                    MaxDegreeOfParallelism = 1
+                    MaxDegreeOfParallelism = 8
                 });
             
             _alertBlock = new ActionBlock<IAlert>(s => _alerts.OnNext(s),
                 new ExecutionDataflowBlockOptions
                 {
-                    MaxDegreeOfParallelism = 1
+                    MaxDegreeOfParallelism = 8
                 });
         }
 

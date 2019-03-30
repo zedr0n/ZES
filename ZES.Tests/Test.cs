@@ -57,7 +57,10 @@ namespace ZES.Tests
             lock (_lock)
             {
                 var container = new Container();
-                CreateRoot().ComposeApplication(container, new[] {"ZES.Tests.Domain"});
+                CreateRoot().ComposeApplication(container);
+                Domain.Config.RegisterCommands(container);
+                Domain.Config.RegisterQueries(container);
+                Domain.Config.RegisterProjections(container);
 
                 container.Options.AllowOverridingRegistrations = true;
                 container.Register(typeof(ILogger),() => _logger,Lifestyle.Singleton);

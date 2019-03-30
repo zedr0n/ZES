@@ -25,11 +25,11 @@ namespace ZES
                 .Retry());
         }
 
-        public static async Task<T> RetryUntil<T>(Func<Task<T>> action,Func<T,bool> predicate = null, TimeSpan delay = default(TimeSpan), TimeSpan timeout = default(TimeSpan))
+        public static async Task<T> RetryUntil<T>(Func<Task<T>> action,Func<T,bool> predicate = null, TimeSpan timeout = default(TimeSpan), TimeSpan delay = default(TimeSpan))
         {
             if (delay == default(TimeSpan))
                 delay = Delay;
-            if (delay == default(TimeSpan))
+            if (timeout == default(TimeSpan))
                 timeout = Timeout;
             if (predicate == null)
                 predicate = x => !Equals(x, default(T));
@@ -47,8 +47,8 @@ namespace ZES
                     o.OnError(new ArgumentNullException());
             });
 
-            var dObs = obs.RetryWithDelay(delay);
-            return await (timeout == default(TimeSpan) ? dObs : dObs.Timeout(timeout));
+            obs = obs.RetryWithDelay(delay).Timeout(timeout);
+            return await obs;
         }
     }
     

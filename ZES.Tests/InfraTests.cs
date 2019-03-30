@@ -72,7 +72,7 @@ namespace ZES.Tests
             
             var newCommand = new CreateRootCommand {AggregateId = "OtherRoot"};
             await bus.CommandAsync(newCommand);
-            var res = await RetryUntil(async () => await bus.QueryAsync(new StatsQuery()), x => x == numberOfRoots + 1);
+            var res = await RetryUntil(async () => await bus.QueryAsync(new StatsQuery()), x => x > numberOfRoots);
 
             Assert.Equal(numberOfRoots + 1, res);
         }
@@ -150,18 +150,16 @@ namespace ZES.Tests
             Assert.Equal(numRoots,bus.Query(statsQuery));
         }
 
-
-
         [Fact]
         public async void CanUseSaga()
         {
-            var container = CreateContainer();
+            var container = CreateContainer(new List<Action<Container>> {Config.RegisterSagas});
             var bus = container.GetInstance<IBus>();
             
             var command = new CreateRootCommand {AggregateId = "Root"};
             await bus.CommandAsync(command);
 
-            var query = new CreatedAtQuery("RootNew");
+            var query = new CreatedAtQuery("RootCopy");
             var createdAt = await RetryUntil(async () => await bus.QueryAsync(query));
             
             Assert.NotEqual(0, createdAt);

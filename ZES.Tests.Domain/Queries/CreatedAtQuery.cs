@@ -2,9 +2,9 @@ using ZES.Interfaces.Domain;
 
 namespace ZES.Tests.Domain.Queries
 {
-    public class CreatedAt : IQuery<long>
+    public class CreatedAtQuery : IQuery<long>
     {
-        public CreatedAt(string id)
+        public CreatedAtQuery(string id)
         {
             this.id = id;
         }

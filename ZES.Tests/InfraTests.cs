@@ -59,7 +59,7 @@ namespace ZES.Tests
                 rootId--;
             }
             
-            var query = new CreatedAt("Root1");
+            var query = new CreatedAtQuery("Root1");
             await RetryUntil(async () => await bus.QueryAsync(query));
             
             await messageQueue.Alert(new InvalidateProjections());
@@ -67,7 +67,7 @@ namespace ZES.Tests
             
             var newCommand = new CreateRoot {AggregateId = "OtherRoot"};
             await bus.CommandAsync(newCommand);
-            var res = await RetryUntil(async () => await bus.QueryAsync(new Stats()), x => x > numberOfRoots);
+            var res = await RetryUntil(async () => await bus.QueryAsync(new StatsQuery()), x => x > numberOfRoots);
 
             Assert.Equal(numberOfRoots + 1, res);
         }
@@ -117,7 +117,7 @@ namespace ZES.Tests
             var command = new CreateRoot {AggregateId = "Root"};
             await bus.CommandAsync(command); 
             
-            var query = new CreatedAt("Root");
+            var query = new CreatedAtQuery("Root");
             var createdAt = await RetryUntil(async () => await bus.QueryAsync(query));
             Assert.NotEqual(0, createdAt);
         }
@@ -137,11 +137,11 @@ namespace ZES.Tests
                 rootId--;
             }
             
-            var query = new CreatedAt("Root1");
+            var query = new CreatedAtQuery("Root1");
             var createdAt = await RetryUntil(async () => await bus.QueryAsync(query));
             Assert.NotEqual(0, createdAt); 
             
-            var statsQuery = new Stats();
+            var statsQuery = new StatsQuery();
             Assert.Equal(numRoots,bus.Query(statsQuery));
         }
 
@@ -154,7 +154,7 @@ namespace ZES.Tests
             var command = new CreateRoot {AggregateId = "Root"};
             await bus.CommandAsync(command);
 
-            var query = new CreatedAt("RootCopy");
+            var query = new CreatedAtQuery("RootCopy");
             var createdAt = await RetryUntil(async () => await bus.QueryAsync(query));
             
             Assert.NotEqual(0, createdAt);

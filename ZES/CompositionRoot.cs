@@ -1,10 +1,8 @@
 using System.Collections.Generic;
 using System.Linq;
-using System.Reflection;
 using NLog;
 using SimpleInjector;
 using SqlStreamStore;
-using SqlStreamStore.Logging;
 using ZES.Infrastructure;
 using ZES.Infrastructure.Domain;
 using ZES.Infrastructure.Sagas;

@@ -1,12 +1,8 @@
 using System;
-using System.Threading;
 using System.Threading.Tasks;
-using NLog;
-using SqlStreamStore.Logging;
 using ZES.Interfaces;
 using ZES.Interfaces.Domain;
 using ZES.Interfaces.EventStore;
-using ILog = ZES.Infrastructure.ILog;
 
 namespace ZES.Infrastructure
 {

@@ -1,5 +1,4 @@
 using System.Threading.Tasks;
-using ZES.Interfaces.EventStore;
 
 namespace ZES.Interfaces
 {

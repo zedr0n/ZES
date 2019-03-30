@@ -1,22 +1,16 @@
 using System;
 using System.Collections.Generic;
-using System.Globalization;
 using System.Linq;
-using System.Reactive;
-using System.Reactive.Disposables;
 using System.Reactive.Linq;
 using System.Reactive.Subjects;
 using System.Threading.Tasks;
-using NLog;
 using SqlStreamStore;
-using SqlStreamStore.Logging;
 using SqlStreamStore.Streams;
 using ZES.Infrastructure.Streams;
 using ZES.Interfaces;
 using ZES.Interfaces.Domain;
 using ZES.Interfaces.EventStore;
 using ZES.Interfaces.Pipes;
-using ZES.Interfaces.Sagas;
 using ZES.Interfaces.Serialization;
 
 namespace ZES.Infrastructure

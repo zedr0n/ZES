@@ -1,9 +1,6 @@
 using System;
 using System.Collections.Concurrent;
-using System.Threading;
-using NLog;
 using ZES.Interfaces;
-using ZES.Interfaces.Domain;
 using ZES.Interfaces.Pipes;
 using ZES.Interfaces.Sagas;
 

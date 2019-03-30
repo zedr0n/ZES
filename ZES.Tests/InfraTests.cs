@@ -1,14 +1,9 @@
 using System;
 using System.Collections.Generic;
-using System.ComponentModel.DataAnnotations;
-using System.Reactive;
-using System.Reactive.Linq;
 using System.Threading;
-using System.Threading.Tasks;
 using SimpleInjector;
 using Xunit;
 using Xunit.Abstractions;
-using Xunit.Sdk;
 using ZES.Infrastructure.Alerts;
 using ZES.Interfaces.Domain;
 using ZES.Interfaces.Pipes;

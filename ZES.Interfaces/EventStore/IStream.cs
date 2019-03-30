@@ -1,6 +1,3 @@
-using System;
-using ZES.Interfaces.Domain;
-
 namespace ZES.Interfaces.EventStore
 {
     public interface IStream

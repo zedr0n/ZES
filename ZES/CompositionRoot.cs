@@ -23,7 +23,7 @@ namespace ZES
 {
     public class CompositionRoot : ICompositionRoot
     {
-        public virtual void ComposeApplication(Container container, IEnumerable<string> domains)
+        public virtual void ComposeApplication(Container container, IEnumerable<string> domains = null)
         {
             container.Options.RegisterParameterConventions(new List<IParameterConvention>
             {
@@ -62,13 +62,15 @@ namespace ZES
                 typeof(CommandRecorder<>),Lifestyle.Singleton,
                 context => !context.AppliedDecorators.Any(d => d.IsClosedTypeOf(typeof(CommandRecorder<>))));
 
+            if (domains == null) 
+                return;
+            
             foreach (var domain in domains)
             {
-                var assembly = Assembly.Load(AssemblyName.GetAssemblyName(domain+".dll"));
+                var assembly = Assembly.Load(AssemblyName.GetAssemblyName(domain + ".dll"));
                 var config = assembly.GetTypes().SingleOrDefault(t => t.Name == "Config");
-                config?.GetMethod("RegisterAll")?.Invoke(null,new object[] {container});
+                config?.GetMethod("RegisterAll")?.Invoke(null, new object[] {container});
             }
-
         }
     }
 }

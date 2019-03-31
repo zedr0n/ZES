@@ -46,6 +46,7 @@ namespace ZES.Infrastructure.Domain
             {
                 ApplyEvent(e);
                 Version++;
+                ((Event) e).Version = Version;  
                 _changes.Add(e);
             }
         }

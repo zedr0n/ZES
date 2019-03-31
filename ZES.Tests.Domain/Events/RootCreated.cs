@@ -7,7 +7,6 @@ namespace ZES.Tests.Domain.Events
         public RootCreated(string rootId)
         {
             RootId = rootId;
-            EventType = "RootCreated";
         }
 
         public string RootId { get; }   

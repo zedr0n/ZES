@@ -7,22 +7,22 @@ namespace ZES.Interfaces
         /// <summary>
         /// Unique event id
         /// </summary>
-        Guid EventId { get; set; }
+        Guid EventId { get; }
         /// <summary>
         /// Event type
         /// </summary>
-        string EventType { get; set; }
+        string EventType { get; }
         /// <summary>
         /// Event Unix epoch timestamp
         /// </summary>
-        long Timestamp { get; set; } 
+        long Timestamp { get; } 
         /// <summary>
         /// Event version in appropriate stream
         /// </summary>
-        int Version { get; set; }
+        int Version { get; }
         /// <summary>
         /// Originating stream key
         /// </summary>
-        string Stream { get; set; }
+        string Stream { get;  }
     }
 }

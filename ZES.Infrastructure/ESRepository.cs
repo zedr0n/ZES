@@ -37,9 +37,8 @@ namespace ZES.Infrastructure
             if (stream.Version >= 0 && (await _eventStore.ReadStream(stream, stream.Version)).Any())
                 throw new InvalidOperationException();
 
-            foreach (var e in events)
+            foreach (var e in events.OfType<Event>())
             {
-                e.EventId = Guid.NewGuid();
                 e.Timestamp = _timeline.Now;
                 e.Stream = stream.Key;
             }

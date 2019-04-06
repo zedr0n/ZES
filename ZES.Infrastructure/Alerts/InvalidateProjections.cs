@@ -7,5 +7,5 @@ namespace ZES.Infrastructure.Alerts
         
     }
 
-    public class TimelineBranched : IAlert {}
+    public class TimelineChanged : IAlert {}
 }

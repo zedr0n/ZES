@@ -61,6 +61,12 @@ namespace ZES.Tests
 
             var query = new StatsQuery();
             await RetryUntil(async () => await bus.QueryAsync(query) == 0);
+
+            await timeTraveller.Reset();
+            
+            Assert.Equal("master",timeline.Id);
+            await RetryUntil(async () => await repository.Find<Root>("Root"));
+            await RetryUntil(async () => await bus.QueryAsync(query) == 1);
         }
     }
 }

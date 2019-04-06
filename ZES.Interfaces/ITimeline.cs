@@ -9,6 +9,8 @@ namespace ZES.Interfaces
         /// Branch the current timeline at a certain point in the past
         /// </summary>
         Task<ITimeline> Branch(string branchId, long time);
+
+        Task<ITimeline> Reset();
     }
     
     public interface ITimeline

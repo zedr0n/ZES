@@ -19,7 +19,8 @@ namespace ZES.Infrastructure.Projections
         private readonly ILog _logger;
         private readonly ITimeline _timeline;
 
-        private IDisposable _connection = Disposable.Empty; 
+        private IDisposable _connection = Disposable.Empty;
+        private IDisposable _subscription;
         private readonly BufferBlock<IStream> _bufferBlock;
         private readonly ActionBlock<IStream> _actionBlock;
         private readonly IEventStore<IAggregate> _eventStore;
@@ -80,7 +81,8 @@ namespace ZES.Infrastructure.Projections
             Pause();
             Reset();
             bool StreamFilter(string s) => _streamFilter(s) && s.StartsWith(_timeline.Id);
-            _eventStore.Events.Where(e => StreamFilter(e.Stream))
+            _subscription?.Dispose();
+            _subscription = _eventStore.Events.Where(e => StreamFilter(e.Stream))
                 .Finally(Unpause) 
                 .Subscribe(When);
         }

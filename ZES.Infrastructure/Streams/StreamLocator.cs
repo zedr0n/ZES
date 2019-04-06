@@ -20,7 +20,7 @@ namespace ZES.Infrastructure.Streams
         {
             _eventStore = eventStore;
             _log = log;
-            messageQueue.Alerts.OfType<TimelineBranched>().Subscribe(e => Restart());
+            messageQueue.Alerts.OfType<TimelineChanged>().Subscribe(e => Restart());
             Restart();
         }
 

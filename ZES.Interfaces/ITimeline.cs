@@ -5,7 +5,7 @@ namespace ZES.Interfaces
         // id of the alternate timeline we are in
         // at the moment
         // Empty if live
-        string TimelineId { get; }
+        string Id { get; }
         
         /// <summary>
         /// Current timestamp in the timeline

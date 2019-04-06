@@ -13,7 +13,7 @@ namespace ZES.Interfaces.EventStore
         /// <summary>
         /// Stream timeline id
         /// </summary>
-        string TimelineId { get; set; }
+        string Timeline { get; set; }
     }
     
     public interface IStreamLocator<in I> where I : IEventSourced
@@ -24,7 +24,7 @@ namespace ZES.Interfaces.EventStore
         /// <param name="id">event sourced instance id</param>
         /// <param name="timeline">timeline id</param>
         /// <returns></returns>
-        IStream Find<T>(string id, string timeline = "") where T : I;
+        IStream Find<T>(string id, string timeline = "master") where T : I;
         // Stream repository        
         /// <summary>
         /// Extract and cache the stream details for event sourced instance
@@ -32,7 +32,7 @@ namespace ZES.Interfaces.EventStore
         /// <param name="es">saga or aggregate</param>
         /// <param name="timeline">timeline id</param>
         /// <returns></returns>
-        IStream GetOrAdd(I es, string timeline = "");
+        IStream GetOrAdd(I es, string timeline = "master");
         /// <summary>
         /// Extract and cache the stream details for the target stream
         /// </summary>

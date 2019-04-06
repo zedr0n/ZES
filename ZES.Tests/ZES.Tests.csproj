@@ -24,8 +24,4 @@
         <Content Update="nlog.config" CopyToOutputDirectory="PreserveNewest" />
     </ItemGroup>
 
-    <ItemGroup>
-      <Folder Include="TestDomain" />
-    </ItemGroup>
-
 </Project>

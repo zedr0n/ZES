@@ -4,15 +4,16 @@ namespace ZES.Infrastructure.Streams
 {
     public class Stream : IStream
     {
-        public Stream(string key, int version)
+        public Stream(string id, int version, string timeline = "")
         {
-            _key = key;
+            _id = id;
             Version = version;
+            Timeline = timeline;
         }
-
-        public string Key => $"{TimelineId}:{_key}";
-        private readonly string _key;
+        
+        public string Key => $"{Timeline}:{_id}";
+        private readonly string _id;
         public int Version { get; set; }
-        public string TimelineId { get; set; } = "";
+        public string Timeline { get; set; }
     }
 }

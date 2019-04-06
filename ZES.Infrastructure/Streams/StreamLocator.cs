@@ -15,18 +15,19 @@ namespace ZES.Infrastructure.Streams
             eventStore.Streams.Subscribe(stream => GetOrAdd(stream));
         }
 
-        public IStream Find<T>(string id, string timeline = "") where T : I
+        public IStream Find<T>(string id, string timeline = "master") where T : I
         {
-            var key = $"{timeline}:{typeof(T).Name}:{id}";
-            _streams.TryGetValue(key, out var stream);            
-            return stream;
+            var aStream = new Stream(id, ExpectedVersion.NoStream, timeline);
+            return _streams.TryGetValue(aStream.Key, out var stream) ? stream : default(IStream);
         }
 
-        public IStream GetOrAdd(I es, string timeline = "")
+        public IStream GetOrAdd(I es, string timeline = "master")
         {
-            var key = $"{timeline}:{es.GetType().Name}:{es.Id}";
-            var stream = new Stream(key,ExpectedVersion.NoStream);
-            return _streams.GetOrAdd(key, stream);
+            if (es == null)
+                return default(IStream);
+
+            var stream = new Stream(es.Id,ExpectedVersion.NoStream,timeline);
+            return _streams.GetOrAdd(stream.Key, stream);
         }
 
         public IStream GetOrAdd(IStream stream)

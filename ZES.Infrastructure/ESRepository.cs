@@ -60,7 +60,7 @@ namespace ZES.Infrastructure
 
         public async Task<T> Find<T>(string id) where T : class, I, new()
         {
-            var stream = _streams.Find<T>(id, _timeline.TimelineId);
+            var stream = _streams.Find<T>(id, _timeline.Id);
             if (stream == null)
                 return null;
 

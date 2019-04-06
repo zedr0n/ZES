@@ -141,6 +141,7 @@ namespace ZES.Infrastructure
         
         public Task AppendCommand(ICommand command)
         {
+            
             return Task.Run(() => true);
             //throw new NotImplementedException(); 
         }

@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Runtime.Serialization;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using ZES.Infrastructure.Domain;
 using ZES.Interfaces;
 using ZES.Interfaces.Domain;
@@ -12,9 +13,11 @@ namespace ZES.Infrastructure.Serialization
     public class Serializer<T> : ISerializer<T> where T : class
     {
         private readonly JsonSerializer _serializer;
+        private readonly ILog _log;
 
-        public Serializer()
+        public Serializer(ILog log)
         {
+            _log = log;
             _serializer = JsonSerializer.Create(new JsonSerializerSettings
             {
                 // Allows deserializing to the actual runtime type
@@ -40,6 +43,15 @@ namespace ZES.Infrastructure.Serialization
             }
         }
 
+        public string Metadata(long timestamp)
+        {
+            //var array = new JObject(new JProperty("metadata",new JObject(new JProperty("timestamp",timestamp))));
+            var array = new JObject(new JProperty("timestamp",timestamp));
+            var s = array.ToString();
+            _log.Debug(s);
+            return s;
+        }
+
         public T Deserialize(string payload)
         {
             using (var reader = new StringReader(payload))
@@ -59,6 +71,14 @@ namespace ZES.Infrastructure.Serialization
         }
     }
     
-    public class EventSerializer : Serializer<IEvent>, IEventSerializer {}
-    public class CommandSerializer : Serializer<ICommand>, ICommandSerializer {}
+    public class EventSerializer : Serializer<IEvent>, IEventSerializer {
+        public EventSerializer(ILog log) : base(log)
+        {
+        }
+    }
+    public class CommandSerializer : Serializer<ICommand>, ICommandSerializer {
+        public CommandSerializer(ILog log) : base(log)
+        {
+        }
+    }
 }

@@ -1,3 +1,4 @@
+using System;
 using NLog;
 using NLog.Config;
 using NLog.Targets;
@@ -63,7 +64,12 @@ namespace ZES.Logging
         {
             _logger.Error("{dtype} {msg}",instance?.GetType().Name ?? "",message);
         }
-        
+
+        public void Error(Exception e, string message)
+        {
+            _logger.Error(e,message);
+        }
+
         public void Fatal(object message, object instance = null)
         {
             _logger.Fatal("{dtype} {msg}",instance?.GetType().Name ?? "",message);

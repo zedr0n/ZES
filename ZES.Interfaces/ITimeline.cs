@@ -1,5 +1,16 @@
+using System.Threading.Tasks;
+
 namespace ZES.Interfaces
 {
+
+    public interface ITimeTraveller
+    {
+        /// <summary>
+        /// Branch the current timeline at a certain point in the past
+        /// </summary>
+        Task<ITimeline> Branch(string branchId, long time);
+    }
+    
     public interface ITimeline
     {
         /// <summary>
@@ -11,11 +22,5 @@ namespace ZES.Interfaces
         /// Current timestamp in the timeline
         /// </summary>
         long Now { get; }
-        
-        /// <summary>
-        /// Alternate timeline
-        /// </summary>
-        /// <param name="now"></param>
-        void Set(long now);
     }
 }

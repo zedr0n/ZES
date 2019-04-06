@@ -14,26 +14,20 @@ namespace ZES.Infrastructure
         private readonly ICommandSerializer _serializer;
         private readonly ITimeline _timeline;
 
-        private readonly string _streamId;
-        
         public CommandLog(IStreamStore streamStore, ICommandSerializer serializer, ITimeline timeline)
         {
             _streamStore = streamStore;
             _serializer = serializer;
             _timeline = timeline;
-
-            _streamId = $"{_timeline.Id}:commands";
         }
 
-        private NewStreamMessage Encode(ICommand command)
-        {
-            return new NewStreamMessage(Guid.NewGuid(),command.GetType().Name,_serializer.Serialize(command));
-        }
+        private NewStreamMessage Encode(ICommand command) => 
+            new NewStreamMessage(Guid.NewGuid(),command.GetType().Name,_serializer.Serialize(command),_serializer.Metadata(command.Timestamp));
 
         public async Task AppendCommand(ICommand command)
         {
             var message = Encode(command);
-            await _streamStore.AppendToStream(_streamId, ExpectedVersion.Any, message);
+            await _streamStore.AppendToStream($"{_timeline.Id}:commands", ExpectedVersion.Any, message);
         }
     }
 }

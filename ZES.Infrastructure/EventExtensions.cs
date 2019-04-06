@@ -8,7 +8,7 @@ namespace ZES.Infrastructure
     {
         public static NewStreamMessage Encode(this IEventSerializer serializer, IEvent e)
         {
-            return new NewStreamMessage(e.EventId, e.EventType, serializer.Serialize(e), "");
+            return new NewStreamMessage(e.EventId, e.EventType, serializer.Serialize(e), serializer.Metadata(e.Timestamp));
         }
     }
 }

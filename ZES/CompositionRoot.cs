@@ -39,7 +39,8 @@ namespace ZES
                 c => c.Consumer.ImplementationType.GetGenericArguments().Contains(typeof(ISaga)));*/
             
             container.RegisterConditional(typeof(IStreamStore),Lifestyle.Singleton.CreateRegistration(() => new InMemoryStreamStore(), container),
-                c => c.Consumer.ImplementationType.GetGenericArguments().Contains(typeof(IAggregate)));
+                c => c.Consumer.ImplementationType.GetGenericArguments().Contains(typeof(IAggregate)) ||
+                     c.Consumer.ImplementationType.GetInterfaces().Contains(typeof(ITimeTraveller)));
             container.RegisterConditional(typeof(IStreamStore),Lifestyle.Singleton.CreateRegistration(() => new InMemoryStreamStore(), container),
                 c => c.Consumer.ImplementationType.GetGenericArguments().Contains(typeof(ISaga))); 
             container.RegisterConditional(typeof(IStreamStore),Lifestyle.Singleton.CreateRegistration(() => new InMemoryStreamStore(), container),
@@ -64,6 +65,7 @@ namespace ZES
                 typeof(CommandRecorder<>),Lifestyle.Singleton,
                 context => !context.AppliedDecorators.Any(d => d.IsClosedTypeOf(typeof(CommandRecorder<>))));
 
+            container.Register<ITimeTraveller,TimeTraveller>(Lifestyle.Singleton);
             /*if (domains == null) 
                 return;
             

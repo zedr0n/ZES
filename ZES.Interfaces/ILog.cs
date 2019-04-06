@@ -1,3 +1,5 @@
+using System;
+
 namespace ZES.Interfaces
 {
     public interface ILog
@@ -28,6 +30,13 @@ namespace ZES.Interfaces
         /// <param name="instance"></param>
         void Error(object message, object instance = null);
 
+        /// <summary>
+        /// Writes the diagnostic message at the <c>Error</c> level.
+        /// </summary>
+        /// <param name="e"></param>
+        /// <param name="message">A <see langword="object" /> to be written.</param>
+        void Error(Exception e,string message);
+        
         /// <summary>
         /// Writes the diagnostic message at the <c>Fatal</c> level.
         /// </summary>

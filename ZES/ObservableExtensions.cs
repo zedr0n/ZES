@@ -47,7 +47,9 @@ namespace ZES
                     o.OnError(new ArgumentNullException());
             });
 
-            obs = obs.RetryWithDelay(delay).Timeout(timeout);
+            obs = obs.RetryWithDelay(delay);
+            if(timeout != TimeSpan.MaxValue)
+                obs = obs.Timeout(timeout);
             return await obs;
         }
     }

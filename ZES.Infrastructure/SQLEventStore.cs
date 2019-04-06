@@ -66,7 +66,7 @@ namespace ZES.Infrastructure
                 {
                     foreach (var s in page.StreamIds)
                     {
-                        var version = (await _streamStore.ReadStreamForwards(s, StreamVersion.End, 0))
+                        var version = (await _streamStore.ReadStreamBackwards(s, StreamVersion.End, 1))
                             .LastStreamVersion;
                         var stream = new Stream(s, version);
                         observer.OnNext(stream);

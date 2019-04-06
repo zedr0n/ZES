@@ -17,6 +17,7 @@ namespace ZES.Infrastructure.Projections
     public class Projection : IProjection
     {
         private readonly ILog _logger;
+        private readonly ITimeline _timeline;
 
         private IDisposable _connection = Disposable.Empty; 
         private readonly BufferBlock<IStream> _bufferBlock;
@@ -24,19 +25,19 @@ namespace ZES.Infrastructure.Projections
         private readonly IEventStore<IAggregate> _eventStore;
         private readonly ConcurrentDictionary<string,int> _streams = new ConcurrentDictionary<string, int>();
         private readonly Dictionary<Type, Action<IEvent>> _handlers = new Dictionary<Type, Action<IEvent>>();
-        private readonly Func<string,bool> _streamFilter = s => true;
+        private Func<string, bool> _streamFilter = s => true;
 
-        protected Projection(IEventStore<IAggregate> eventStore, ILog logger, IMessageQueue messageQueue)
+        protected Projection(IEventStore<IAggregate> eventStore, ILog logger, IMessageQueue messageQueue, ITimeline timeline)
         {
             _eventStore = eventStore;
             _logger = logger;
+            _timeline = timeline;
             _actionBlock = new ActionBlock<IStream>(Update,
                 new ExecutionDataflowBlockOptions
                 {
                     MaxDegreeOfParallelism = 8
                 });
             _bufferBlock = new BufferBlock<IStream>();
-            //_bufferBlock.LinkTo(DataflowBlock.NullTarget<IStream>());
             Rebuild();
             eventStore.Streams.Subscribe(async s => await Notify(s));
             messageQueue.Alerts.OfType<InvalidateProjections>().Subscribe(s => Rebuild());
@@ -78,7 +79,8 @@ namespace ZES.Infrastructure.Projections
             //_logger.Trace("",this); 
             Pause();
             Reset();
-            _eventStore.Events.Where(e => _streamFilter(e.Stream))
+            bool StreamFilter(string s) => _streamFilter(s) && s.StartsWith(_timeline.Id);
+            _eventStore.Events.Where(e => StreamFilter(e.Stream))
                 .Finally(Unpause) 
                 .Subscribe(When);
         }

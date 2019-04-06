@@ -1,10 +1,19 @@
+using ZES.Interfaces.Domain;
+
 namespace ZES.Interfaces.Serialization
 {
-
-    public interface IEventSerializer
+    public interface ISerializer<T> where T : class
     {
-        string Serialize(IEvent e);
+        string Serialize(T e);
+        T Deserialize(string json);
+    }
 
-        IEvent Deserialize(string jsonData);
+    public interface IEventSerializer : ISerializer<IEvent>
+    {
+    }
+
+    public interface ICommandSerializer : ISerializer<ICommand>
+    {
+        
     }
 }

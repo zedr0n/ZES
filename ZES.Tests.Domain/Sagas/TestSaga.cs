@@ -32,7 +32,7 @@ namespace ZES.Tests.Domain.Sagas
                 .OnEntry(() =>
                 {
                     if (!_rootId.Contains("Copy"))
-                        SendCommand(new CreateRoot {AggregateId =$"{_rootId}Copy"});
+                        SendCommand(new CreateRoot($"{_rootId}Copy"));
 
                 });
             base.ConfigureStateMachine();

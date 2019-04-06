@@ -8,7 +8,6 @@ using SqlStreamStore;
 using SqlStreamStore.Streams;
 using ZES.Infrastructure.Streams;
 using ZES.Interfaces;
-using ZES.Interfaces.Domain;
 using ZES.Interfaces.EventStore;
 using ZES.Interfaces.Pipes;
 using ZES.Interfaces.Serialization;
@@ -137,13 +136,6 @@ namespace ZES.Infrastructure
             
 
             await PublishEvents(events);    
-        }
-        
-        public Task AppendCommand(ICommand command)
-        {
-            
-            return Task.Run(() => true);
-            //throw new NotImplementedException(); 
         }
     }
 }

@@ -29,7 +29,7 @@ namespace ZES.Tests
 
             while (numberCommands > 0)
             {
-                var command = new CreateRoot {AggregateId = $"Root{numberCommands}"};
+                var command = new CreateRoot($"Root{numberCommands}");
                 numberCommands--;
                 Assert.True(await bus.CommandAsync(command));
             }
@@ -54,7 +54,7 @@ namespace ZES.Tests
             var rootId = numberOfRoots;
             while (rootId > 0)
             {
-                var command = new CreateRoot {AggregateId = $"Root{rootId}"};
+                var command = new CreateRoot($"Root{rootId}");
                 await bus.CommandAsync(command);
                 rootId--;
             }
@@ -65,7 +65,7 @@ namespace ZES.Tests
             await messageQueue.Alert(new InvalidateProjections());
             Thread.Sleep(10);
             
-            var newCommand = new CreateRoot {AggregateId = "OtherRoot"};
+            var newCommand = new CreateRoot("OtherRoot");
             await bus.CommandAsync(newCommand);
             var res = await RetryUntil(async () => await bus.QueryAsync(new StatsQuery()), x => x > numberOfRoots);
 
@@ -82,7 +82,7 @@ namespace ZES.Tests
             var bus = container.GetInstance<IBus>();
             var repository = container.GetInstance<IDomainRepository>();
             
-            var command = new CreateRoot {AggregateId = "Root"};
+            var command = new CreateRoot("Root");
             await bus.CommandAsync(command);
 
             var root = await RetryUntil(async () => await repository.Find<Root>("Root"));
@@ -96,10 +96,10 @@ namespace ZES.Tests
             var bus = container.GetInstance<IBus>();
             var repository = container.GetInstance<IDomainRepository>();
             
-            var command = new CreateRoot {AggregateId = "Root1"};
+            var command = new CreateRoot("Root1");
             await bus.CommandAsync(command);  
             
-            var command2 = new CreateRoot {AggregateId = "Root2"};
+            var command2 = new CreateRoot("Root2");
             await bus.CommandAsync(command2);
 
             var root = await RetryUntil(async () => await repository.Find<Root>("Root1"));
@@ -114,7 +114,7 @@ namespace ZES.Tests
             var container = CreateContainer();
             var bus = container.GetInstance<IBus>();
             
-            var command = new CreateRoot {AggregateId = "Root"};
+            var command = new CreateRoot("Root");
             await bus.CommandAsync(command); 
             
             var query = new CreatedAtQuery("Root");
@@ -132,7 +132,7 @@ namespace ZES.Tests
             var rootId = numRoots; 
             while (rootId > 0)
             {
-                var command = new CreateRoot {AggregateId = $"Root{rootId}"};
+                var command = new CreateRoot($"Root{rootId}");
                 await bus.CommandAsync(command);
                 rootId--;
             }
@@ -151,7 +151,7 @@ namespace ZES.Tests
             var container = CreateContainer(new List<Action<Container>> {Config.RegisterSagas});
             var bus = container.GetInstance<IBus>();
             
-            var command = new CreateRoot {AggregateId = "Root"};
+            var command = new CreateRoot("Root");
             await bus.CommandAsync(command);
 
             var query = new CreatedAtQuery("RootCopy");

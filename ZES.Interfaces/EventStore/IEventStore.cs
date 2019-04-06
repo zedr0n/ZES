@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using ZES.Interfaces.Domain;
 
 namespace ZES.Interfaces.EventStore
 {
@@ -33,10 +32,5 @@ namespace ZES.Interfaces.EventStore
         /// <param name="stream">Target stream</param>
         /// <param name="events">Events to append</param>
         Task AppendToStream(IStream stream, IEnumerable<IEvent> events);
-        /// <summary>
-        /// Save the command to command log
-        /// </summary>
-        /// <param name="command"></param>
-        Task AppendCommand(ICommand command);
     }
 }

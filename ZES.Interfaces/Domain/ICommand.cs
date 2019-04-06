@@ -5,10 +5,12 @@ namespace ZES.Interfaces.Domain
         /// <summary>
         /// Aggregate target id
         /// </summary>
-        string AggregateId { get; set; }
+        string Target { get;  }
         /// <summary>
         /// Unix time offset for command timestamp
         /// </summary>
-        long Timestamp { get; set; }
+        long Timestamp { get;  }
     }
+    
+    public interface ISideEffectCommand {}
 }

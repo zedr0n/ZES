@@ -4,15 +4,16 @@ using System.Runtime.Serialization;
 using Newtonsoft.Json;
 using ZES.Infrastructure.Domain;
 using ZES.Interfaces;
+using ZES.Interfaces.Domain;
 using ZES.Interfaces.Serialization;
 
 namespace ZES.Infrastructure.Serialization
 {
-    public class EventSerializer : IEventSerializer
+    public class Serializer<T> : ISerializer<T> where T : class
     {
         private readonly JsonSerializer _serializer;
 
-        public EventSerializer()
+        public Serializer()
         {
             _serializer = JsonSerializer.Create(new JsonSerializerSettings
             {
@@ -25,7 +26,7 @@ namespace ZES.Infrastructure.Serialization
             });
         }
         
-        public string Serialize(IEvent e)
+        public string Serialize(T e)
         {
             using (var writer = new StringWriter())
             {
@@ -39,7 +40,7 @@ namespace ZES.Infrastructure.Serialization
             }
         }
 
-        public IEvent Deserialize(string payload)
+        public T Deserialize(string payload)
         {
             using (var reader = new StringReader(payload))
             {
@@ -47,7 +48,7 @@ namespace ZES.Infrastructure.Serialization
 
                 try
                 {
-                    return (Event) _serializer.Deserialize(jsonReader);
+                    return (T) _serializer.Deserialize(jsonReader);
                 }
                 catch (JsonSerializationException e)
                 {
@@ -57,4 +58,7 @@ namespace ZES.Infrastructure.Serialization
             }
         }
     }
+    
+    public class EventSerializer : Serializer<IEvent>, IEventSerializer {}
+    public class CommandSerializer : Serializer<ICommand>, ICommandSerializer {}
 }

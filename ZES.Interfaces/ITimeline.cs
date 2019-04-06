@@ -2,15 +2,14 @@ namespace ZES.Interfaces
 {
     public interface ITimeline
     {
-        // id of the alternate timeline we are in
-        // at the moment
-        // Empty if live
+        /// <summary>
+        /// id of the alternate timeline we are in at the moment
+        /// </summary>
         string Id { get; }
         
         /// <summary>
         /// Current timestamp in the timeline
         /// </summary>
-        /// <returns></returns>
         long Now { get; }
         
         /// <summary>

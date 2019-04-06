@@ -42,12 +42,16 @@ namespace ZES
                 c => c.Consumer.ImplementationType.GetGenericArguments().Contains(typeof(IAggregate)));
             container.RegisterConditional(typeof(IStreamStore),Lifestyle.Singleton.CreateRegistration(() => new InMemoryStreamStore(), container),
                 c => c.Consumer.ImplementationType.GetGenericArguments().Contains(typeof(ISaga))); 
+            container.RegisterConditional(typeof(IStreamStore),Lifestyle.Singleton.CreateRegistration(() => new InMemoryStreamStore(), container),
+                c => c.Consumer.ImplementationType == typeof(CommandLog)); 
             
             container.Register<IEventSerializer, EventSerializer>(Lifestyle.Singleton);
+            container.Register<ICommandSerializer,CommandSerializer>(Lifestyle.Singleton);
             container.Register(typeof(IEventStore<>), typeof(SqlEventStore<>),Lifestyle.Singleton);
             
             container.Register<ITimeline, Timeline>(Lifestyle.Singleton);
             container.Register<IMessageQueue,MessageQueue>(Lifestyle.Singleton);
+            container.Register<ICommandLog,CommandLog>(Lifestyle.Singleton);
             container.Register(typeof(ILogger), () => LogManager.GetLogger(typeof(NLogger).Name),Lifestyle.Singleton);
 
             container.Register<ILog, NLogger>(Lifestyle.Singleton);

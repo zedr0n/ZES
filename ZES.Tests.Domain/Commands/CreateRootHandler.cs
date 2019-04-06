@@ -12,7 +12,7 @@ namespace ZES.Tests.Domain.Commands
         }
         public async Task Handle(CreateRoot command)
         {
-            var root = new Root(command.AggregateId);
+            var root = new Root(command.Target);
             await _repository.Save(root);
         }
     }

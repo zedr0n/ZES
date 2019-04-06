@@ -4,7 +4,12 @@ namespace ZES.Infrastructure.Domain
 {
     public class Command : ICommand
     {
-        public string AggregateId { get; set; }
+        protected Command(string target)
+        {
+            Target = target;
+        }
+        
+        public string Target { get; }
         public long Timestamp { get; set; }
     }
 }

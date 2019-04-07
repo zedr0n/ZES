@@ -16,7 +16,7 @@ using static ZES.ObservableExtensions;
 
 namespace ZES.Tests
 {
-    public class BusTests : ZESTest
+    public class BusTests : ZesTest
     {
         public BusTests(ITestOutputHelper outputHelper) : base(outputHelper)
         {
@@ -39,7 +39,7 @@ namespace ZES.Tests
         }
     }
 
-    public class RebuildTest : ZESTest
+    public class RebuildTest : ZesTest
     {
         public RebuildTest(ITestOutputHelper outputHelper) : base(outputHelper)
         {
@@ -75,31 +75,9 @@ namespace ZES.Tests
         }
     }
 
-    public class ZESTest : Test
-    {
-        protected override Container CreateContainer(List<Action<Container>> registrations = null)
-        {
-            var regs = new List<Action<Container>>
-            {
-                c =>
-                {
-                    Config.RegisterCommands(c);
-                    Config.RegisterQueries(c);
-                    Config.RegisterProjections(c);
-                }
-            };
-            if(registrations != null)
-                regs.AddRange(registrations);
 
-            return base.CreateContainer(regs);
-        }
-
-        protected ZESTest(ITestOutputHelper outputHelper) : base(outputHelper)
-        {
-        }
-    }
     
-    public class InfraTests : ZESTest
+    public class InfraTests : ZesTest
     {
 
         [Fact]

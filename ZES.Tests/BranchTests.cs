@@ -11,7 +11,7 @@ using static ZES.ObservableExtensions;
 
 namespace ZES.Tests
 {
-    public class BranchTests : ZESTest
+    public class BranchTests : ZesTest
     {
         public BranchTests(ITestOutputHelper outputHelper) : base(outputHelper)
         {

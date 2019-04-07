@@ -27,7 +27,10 @@ namespace ZES.Infrastructure.Projections
                     _complete.Subscribe(b =>
                     {
                         if (b == 0)
+                        {
+                            observer.OnNext(true);
                             observer.OnCompleted();
+                        }
                     });
                 });
         }

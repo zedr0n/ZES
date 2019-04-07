@@ -15,7 +15,10 @@ namespace ZES.Tests.Domain.Projections
         
         private StateType When(RootCreated e, StateType state)
         {
-            state.Value++;
+            lock (state)
+            {
+                state.Value++; 
+            }
             return state;
         }
 

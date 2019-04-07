@@ -116,10 +116,10 @@ namespace ZES.Infrastructure.Projections
             if (!Handlers.TryGetValue(e.GetType(), out var handler)) 
                 return;
 
-            lock (State)
-            {
+            //lock (State)
+            //{
                 State = handler(e,State);    
-            }
+            //}
             _streams[e.Stream] = e.Version;
         }
     }

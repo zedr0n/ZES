@@ -27,7 +27,7 @@ namespace ZES.Infrastructure
         public async Task AppendCommand(ICommand command)
         {
             var message = Encode(command);
-            await _streamStore.AppendToStream($"{_timeline.Id}:commands", ExpectedVersion.Any, message);
+            await _streamStore.AppendToStream($"{_timeline.Id}:Command:commands", ExpectedVersion.Any, message);
         }
     }
 }

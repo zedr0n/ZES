@@ -43,7 +43,7 @@ namespace ZES.Infrastructure.Projections
                 });
             _bufferBlock = new BufferBlock<IStream>();
             Rebuild();
-            eventStore.Streams.Subscribe(async s => await Notify(s));
+            _eventStore.Streams.Subscribe(async s => await Notify(s));
             messageQueue.Alerts.OfType<InvalidateProjections>().Subscribe(s => Rebuild());
         }
 
@@ -69,11 +69,6 @@ namespace ZES.Infrastructure.Projections
                 await _bufferBlock.SendAsync(stream);
         }
 
-        private void Reset()
-        {
-            State = default(TState);
-        }
-
         private void Pause()
         {
             _logger.Trace("", this);
@@ -84,12 +79,13 @@ namespace ZES.Infrastructure.Projections
         {
             _logger.Trace("", this);
             _connection = _bufferBlock.LinkTo(_actionBlock);
+
         }
         
-        private void Rebuild()
+        protected void Rebuild()
         {
             Pause();
-            Reset();
+            State = new TState();
             
             bool StreamFilter(string s) => _streamFilter(s) && s.StartsWith(Timeline.Id);
             
@@ -119,8 +115,11 @@ namespace ZES.Infrastructure.Projections
 
             if (!Handlers.TryGetValue(e.GetType(), out var handler)) 
                 return;
-            
-            State = handler(e,State);
+
+            lock (State)
+            {
+                State = handler(e,State);    
+            }
             _streams[e.Stream] = e.Version;
         }
     }

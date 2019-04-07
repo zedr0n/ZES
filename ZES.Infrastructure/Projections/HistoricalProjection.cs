@@ -20,6 +20,7 @@ namespace ZES.Infrastructure.Projections
         public void Init(long timestamp)
         {
             _timestamp = timestamp;
+            Rebuild();
         }
     }
 }

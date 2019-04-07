@@ -164,6 +164,7 @@ namespace ZES.Tests
             Assert.NotEqual(0, createdAt); 
             
             var statsQuery = new StatsQuery();
+            await RetryUntil(async () => await bus.QueryAsync(statsQuery) == numRoots);
             Assert.Equal(numRoots,bus.Query(statsQuery));
         }
 

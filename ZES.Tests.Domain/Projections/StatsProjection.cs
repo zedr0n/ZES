@@ -6,14 +6,9 @@ using ZES.Tests.Domain.Events;
 
 namespace ZES.Tests.Domain.Projections
 {
-    public class StatsProjection : Projection<StatsProjection.StateType>
+    public class StatsProjection : Projection<ValueState<long>>
     {
-        public class StateType
-        {
-            public long Value { get; set; }
-        }
-        
-        private static StateType When(RootCreated e, StateType state)
+        private static ValueState<long> When(RootCreated e, ValueState<long> state)
         {
             lock (state)
             {

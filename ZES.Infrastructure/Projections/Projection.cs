@@ -59,7 +59,12 @@ namespace ZES.Infrastructure.Projections
 
         protected void Register<TEvent>(Action<TEvent> action) where TEvent : class, IEvent
         {
-            
+            TState Handler(IEvent e, TState s)
+            {
+                action(e as TEvent);
+                return State;
+            }
+            Handlers.Add(typeof(TEvent), Handler);
         }
 
         private async Task Notify(IStream stream)

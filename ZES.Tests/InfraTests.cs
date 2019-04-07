@@ -6,6 +6,7 @@ using Xunit;
 using Xunit.Abstractions;
 using ZES.Infrastructure.Alerts;
 using ZES.Infrastructure.Projections;
+using ZES.Interfaces;
 using ZES.Interfaces.Domain;
 using ZES.Interfaces.Pipes;
 using ZES.Tests.Domain;
@@ -131,7 +132,7 @@ namespace ZES.Tests
             var container = CreateContainer();
             var bus = container.GetInstance<IBus>();
             var projection = container.GetInstance<HistoricalProjection<RootProjection, RootProjection.StateType>>();
-            var statsProjection = container.GetInstance<HistoricalProjection<StatsProjection, StatsProjection.StateType>>();
+            var statsProjection = container.GetInstance<HistoricalProjection<StatsProjection, ValueState<long>>>();
             projection.Init(0);
             
             var command = new CreateRoot("Root");

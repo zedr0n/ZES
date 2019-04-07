@@ -1,5 +1,4 @@
 using System.Collections.Concurrent;
-using ZES.Infrastructure;
 using ZES.Infrastructure.Projections;
 using ZES.Interfaces;
 using ZES.Interfaces.EventStore;
@@ -8,24 +7,33 @@ using ZES.Tests.Domain.Events;
 
 namespace ZES.Tests.Domain.Projections
 {
-    public class RootProjection : Projection
+    public class RootProjection : Projection<RootProjection.StateType>
     {
-        private readonly ConcurrentDictionary<string, long> _createdAt = new ConcurrentDictionary<string, long>();
-        
-
-        public long Get(string id)
+        public class StateType
         {
-            _createdAt.TryGetValue(id, out var createdAt);
-            return createdAt;
+            private readonly ConcurrentDictionary<string, long> _createdAt = new ConcurrentDictionary<string, long>();
+
+            public long Get(string id)
+            {
+                _createdAt.TryGetValue(id, out var createdAt);
+                return createdAt;
+            }
+
+            public void Set(string id, long timestamp)
+            {
+                _createdAt[id] = timestamp;
+            }
         }
-
-        private void When(RootCreated e)
+        
+        private StateType When(RootCreated e, StateType state)
         {
-            _createdAt[e.RootId] = e.Timestamp;
+            state.Set(e.RootId, e.Timestamp);
+            return state;
         }
 
         public RootProjection(IEventStore<IAggregate> eventStore, ILog logger, IMessageQueue messageQueue, ITimeline timeline) : base(eventStore, logger, messageQueue, timeline)
         {
+            State = new StateType();
             Register<RootCreated>(When);
         }
     }

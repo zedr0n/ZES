@@ -66,6 +66,7 @@ namespace ZES
                 context => !context.AppliedDecorators.Any(d => d.IsClosedTypeOf(typeof(CommandRecorder<>))));
 
             container.Register<ITimeTraveller,TimeTraveller>(Lifestyle.Singleton);
+            //container.Register();
             /*if (domains == null) 
                 return;
             

@@ -1,4 +1,3 @@
-using ZES.Infrastructure;
 using ZES.Infrastructure.Projections;
 using ZES.Interfaces;
 using ZES.Interfaces.EventStore;
@@ -7,23 +6,17 @@ using ZES.Tests.Domain.Events;
 
 namespace ZES.Tests.Domain.Projections
 {
-    public class StatsProjection : Projection
+    public class StatsProjection : Projection<StatsProjection.StateType>
     {
-        private long _count;
-
-        public long Get()
+        public class StateType
         {
-            return _count;
+            public long Value { get; set; }
         }
-
-        protected override void Reset()
+        
+        private StateType When(RootCreated e, StateType state)
         {
-            _count = 0;
-        }
-
-        private void When(RootCreated e)
-        {
-            _count++;
+            state.Value++;
+            return state;
         }
 
         public StatsProjection(IEventStore<IAggregate> eventStore, ILog logger, IMessageQueue messageQueue, ITimeline timeline) : base(eventStore, logger, messageQueue, timeline)

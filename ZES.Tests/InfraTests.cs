@@ -5,10 +5,12 @@ using SimpleInjector;
 using Xunit;
 using Xunit.Abstractions;
 using ZES.Infrastructure.Alerts;
+using ZES.Infrastructure.Projections;
 using ZES.Interfaces.Domain;
 using ZES.Interfaces.Pipes;
 using ZES.Tests.Domain;
 using ZES.Tests.Domain.Commands;
+using ZES.Tests.Domain.Projections;
 using ZES.Tests.Domain.Queries;
 using static ZES.ObservableExtensions;
 
@@ -120,6 +122,26 @@ namespace ZES.Tests
             var query = new CreatedAtQuery("Root");
             var createdAt = await RetryUntil(async () => await bus.QueryAsync(query));
             Assert.NotEqual(0, createdAt);
+        }
+        
+        [Fact]
+        public async void CanHistoricalProjectRoot()
+        {
+            var container = CreateContainer();
+            var bus = container.GetInstance<IBus>();
+            var projection = container.GetInstance<HistoricalProjection<RootProjection, RootProjection.StateType>>();
+            var statsProjection = container.GetInstance<HistoricalProjection<StatsProjection, StatsProjection.StateType>>();
+            projection.Init(0);
+            
+            var command = new CreateRoot("Root");
+            await bus.CommandAsync(command); 
+            
+            var query = new CreatedAtQuery("Root");
+            var createdAt = await RetryUntil(async () => await bus.QueryAsync(query));
+            Assert.NotEqual(0, createdAt);
+
+            Assert.Equal(0, projection.State.Get("Root"));
+            Assert.Equal(0, statsProjection.State.Value);
         }
 
         [Theory]

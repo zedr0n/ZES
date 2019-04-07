@@ -14,10 +14,10 @@ using ZES.Interfaces.Pipes;
 
 namespace ZES.Infrastructure.Projections
 {
-    public class Projection : IProjection
+    public class Projection<TState> : IProjection where TState : new()
     {
         private readonly ILog _logger;
-        private readonly ITimeline _timeline;
+        protected readonly ITimeline Timeline;
 
         private IDisposable _connection = Disposable.Empty;
         private IDisposable _subscription;
@@ -25,14 +25,17 @@ namespace ZES.Infrastructure.Projections
         private readonly ActionBlock<IStream> _actionBlock;
         private readonly IEventStore<IAggregate> _eventStore;
         private readonly ConcurrentDictionary<string,int> _streams = new ConcurrentDictionary<string, int>();
-        private readonly Dictionary<Type, Action<IEvent>> _handlers = new Dictionary<Type, Action<IEvent>>();
-        private Func<string, bool> _streamFilter = s => true;
+        internal readonly Dictionary<Type, Func<IEvent,TState,TState>> Handlers = new Dictionary<Type, Func<IEvent, TState, TState>>();
+            
+        private readonly Func<string, bool> _streamFilter = s => true;
+        
+        public TState State { get; protected set; }
 
         protected Projection(IEventStore<IAggregate> eventStore, ILog logger, IMessageQueue messageQueue, ITimeline timeline)
         {
             _eventStore = eventStore;
             _logger = logger;
-            _timeline = timeline;
+            Timeline = timeline;
             _actionBlock = new ActionBlock<IStream>(Update,
                 new ExecutionDataflowBlockOptions
                 {
@@ -44,12 +47,17 @@ namespace ZES.Infrastructure.Projections
             messageQueue.Alerts.OfType<InvalidateProjections>().Subscribe(s => Rebuild());
         }
 
-        protected void Register<TEvent>(Action<TEvent> when) where TEvent : class
+        protected void Register<TEvent>(Func<TEvent,TState,TState> when) where TEvent : class
         {
-            _handlers.Add(typeof(TEvent), e => when(e as TEvent)); 
+            Handlers.Add(typeof(TEvent), (e,s) => when(e as TEvent,s)); 
         }
 
-        protected async Task Notify(IStream stream)
+        protected void Register(Type tEvent, Func<IEvent,TState,TState> when)
+        {
+            Handlers.Add(tEvent, when);
+        }
+
+        private async Task Notify(IStream stream)
         {
             if (!_streamFilter(stream.Key))
                 return;
@@ -60,8 +68,11 @@ namespace ZES.Infrastructure.Projections
             if (version > projectionVersion)
                 await _bufferBlock.SendAsync(stream);
         }
-        
-        protected virtual void Reset() {}
+
+        private void Reset()
+        {
+            State = default(TState);
+        }
 
         private void Pause()
         {
@@ -77,10 +88,11 @@ namespace ZES.Infrastructure.Projections
         
         private void Rebuild()
         {
-            //_logger.Trace("",this); 
             Pause();
             Reset();
-            bool StreamFilter(string s) => _streamFilter(s) && s.StartsWith(_timeline.Id);
+            
+            bool StreamFilter(string s) => _streamFilter(s) && s.StartsWith(Timeline.Id);
+            
             _subscription?.Dispose();
             _subscription = _eventStore.Events.Where(e => StreamFilter(e.Stream))
                 .Finally(Unpause) 
@@ -96,10 +108,6 @@ namespace ZES.Infrastructure.Projections
             
             var streamEvents = (await _eventStore.ReadStream(stream, version+1)).ToList();
             
-            //if(!_streams.TryUpdate(stream.Key, version + streamEvents.Count, version))
-            //    throw new InvalidOperationException("Stream version has already been modified!");
-            //_logger.Debug($"{stream.Key}:{_streams[stream.Key]}");
-
             foreach (var e in streamEvents)
                 When(e);
         }
@@ -109,10 +117,10 @@ namespace ZES.Infrastructure.Projections
             if (e == null)
                 return;
 
-            if (!_handlers.TryGetValue(e.GetType(), out var handler)) 
+            if (!Handlers.TryGetValue(e.GetType(), out var handler)) 
                 return;
             
-            handler(e);
+            State = handler(e,State);
             _streams[e.Stream] = e.Version;
         }
     }

@@ -15,7 +15,7 @@ namespace ZES.Tests.Domain.Queries
 
         public long Handle(StatsQuery query)
         {
-            return _projection.Get(); 
+            return _projection.State.Value; 
         }
 
         public async Task<long> HandleAsync(StatsQuery query)

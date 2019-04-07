@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using NLog;
 using NLog.Config;
 using NLog.Targets;
@@ -7,6 +8,27 @@ using ZES.Interfaces;
 
 namespace ZES.Logging
 {
+    public static class TypeExtensions
+    {
+        public static string GetName(this Type type)
+        {
+            var genericArguments = type.GetGenericArguments();
+            var str = type.Name.Split('`')[0];
+            if (genericArguments.Length > 0)
+                str = $"{str}<";
+            foreach (var arg in genericArguments)
+            {
+                str = $"{str}{arg.GetName()}";
+                if (arg != genericArguments.Last())
+                    str = $"{str},";
+            }
+
+            if (genericArguments.Length > 0)
+                str = $"{str}>";
+            return str;
+        }
+    }
+    
     public class NLogger : ILog
     {
         private readonly ILogger _logger;
@@ -51,7 +73,7 @@ namespace ZES.Logging
         public void Trace(object message, object instance)
             //public void Trace(object message)
         {
-            _logger.Trace("{dtype} {msg}",instance?.GetType().Name,message);
+            _logger.Trace("{dtype} {msg}",instance?.GetType().GetName(),message);
             //_logger.Trace($"[{instance?.GetType().Name??""}]{message}");
         }
 
@@ -62,7 +84,7 @@ namespace ZES.Logging
         
         public void Error(object message, object instance = null)
         {
-            _logger.Error("{dtype} {msg}",instance?.GetType().Name ?? "",message);
+            _logger.Error("{dtype} {msg}",instance?.GetType().GetName() ?? "",message);
         }
 
         public void Error(Exception e, string message)
@@ -72,7 +94,7 @@ namespace ZES.Logging
 
         public void Fatal(object message, object instance = null)
         {
-            _logger.Fatal("{dtype} {msg}",instance?.GetType().Name ?? "",message);
+            _logger.Fatal("{dtype} {msg}",instance?.GetType().GetName() ?? "",message);
         }
     }
 }

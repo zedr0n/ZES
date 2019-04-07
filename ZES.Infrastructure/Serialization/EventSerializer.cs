@@ -48,7 +48,7 @@ namespace ZES.Infrastructure.Serialization
             //var array = new JObject(new JProperty("metadata",new JObject(new JProperty("timestamp",timestamp))));
             var array = new JObject(new JProperty("timestamp",timestamp));
             var s = array.ToString();
-            _log.Debug(s);
+            //_log.Debug(s);
             return s;
         }
 

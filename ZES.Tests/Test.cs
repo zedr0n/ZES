@@ -51,15 +51,13 @@ namespace ZES.Tests
             return new CompositionRoot();
         }
 
-        protected Container CreateContainer( List<Action<Container>> registrations = null) 
+        protected virtual Container CreateContainer( List<Action<Container>> registrations = null) 
         {
             lock (_lock)
             {
                 var container = new Container();
                 CreateRoot().ComposeApplication(container);
-                Domain.Config.RegisterCommands(container);
-                Domain.Config.RegisterQueries(container);
-                Domain.Config.RegisterProjections(container);
+
 
                 container.Options.AllowOverridingRegistrations = true;
                 container.Register(typeof(ILogger),() => _logger,Lifestyle.Singleton);

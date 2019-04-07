@@ -16,7 +16,7 @@ using static ZES.ObservableExtensions;
 
 namespace ZES.Tests
 {
-    public class BusTests : Test
+    public class BusTests : ZESTest
     {
         public BusTests(ITestOutputHelper outputHelper) : base(outputHelper)
         {
@@ -39,7 +39,7 @@ namespace ZES.Tests
         }
     }
 
-    public class RebuildTest : Test
+    public class RebuildTest : ZESTest
     {
         public RebuildTest(ITestOutputHelper outputHelper) : base(outputHelper)
         {
@@ -74,9 +74,34 @@ namespace ZES.Tests
             Assert.Equal(numberOfRoots + 1, res);
         }
     }
-    
-    public class InfraTests : Test
+
+    public class ZESTest : Test
     {
+        protected override Container CreateContainer(List<Action<Container>> registrations = null)
+        {
+            var regs = new List<Action<Container>>
+            {
+                c =>
+                {
+                    Config.RegisterCommands(c);
+                    Config.RegisterQueries(c);
+                    Config.RegisterProjections(c);
+                }
+            };
+            if(registrations != null)
+                regs.AddRange(registrations);
+
+            return base.CreateContainer(regs);
+        }
+
+        protected ZESTest(ITestOutputHelper outputHelper) : base(outputHelper)
+        {
+        }
+    }
+    
+    public class InfraTests : ZESTest
+    {
+
         [Fact]
         public async void CanSaveRoot()
         {

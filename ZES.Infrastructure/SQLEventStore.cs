@@ -16,14 +16,12 @@ namespace ZES.Infrastructure
 {
     public class SqlEventStore<I> : IEventStore<I> where I : IEventSourced
     {
-        public IObservable<bool> StreamsBatched => _streamsBatched.AsObservable();
         public IObservable<IStream> Streams { get; }
         public IObservable<IEvent> Events { get; }
 
         private readonly IStreamStore _streamStore;
         private readonly IEventSerializer _serializer;
         private readonly Subject<IStream> _streams = new Subject<IStream>();
-        private readonly Subject<bool> _streamsBatched = new Subject<bool>();
         private readonly IMessageQueue _messageQueue;
         private readonly ILog _log;
 

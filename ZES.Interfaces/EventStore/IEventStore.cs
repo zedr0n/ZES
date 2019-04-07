@@ -7,10 +7,6 @@ namespace ZES.Interfaces.EventStore
     public interface IEventStore<I> where I : IEventSourced
     {
         /// <summary>
-        /// Trigger info when streams finish loading
-        /// </summary>
-        IObservable<bool> StreamsBatched { get; }
-        /// <summary>
         /// Stream details channel 
         /// </summary>
         IObservable<IStream> Streams { get; }       

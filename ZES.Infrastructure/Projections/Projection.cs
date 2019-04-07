@@ -2,10 +2,12 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reactive;
 using System.Reactive.Disposables;
 using System.Reactive.Linq;
 using System.Threading.Tasks;
 using System.Threading.Tasks.Dataflow;
+using SqlStreamStore.Infrastructure;
 using ZES.Infrastructure.Alerts;
 using ZES.Interfaces;
 using ZES.Interfaces.Domain;
@@ -29,6 +31,9 @@ namespace ZES.Infrastructure.Projections
             
         private readonly Func<string, bool> _streamFilter = s => true;
         
+        private bool _rebuilding;
+        private readonly Subject<bool> _buildSubject = new Subject<bool>();
+        
         public TState State { get; protected set; }
 
         protected Projection(IEventStore<IAggregate> eventStore, ILog logger, IMessageQueue messageQueue, ITimeline timeline)
@@ -45,6 +50,22 @@ namespace ZES.Infrastructure.Projections
             Rebuild();
             _eventStore.Streams.Subscribe(async s => await Notify(s));
             messageQueue.Alerts.OfType<InvalidateProjections>().Subscribe(s => Rebuild());
+            
+            Complete = Observable.Create( async (IObserver<bool> observer) =>
+            {
+                if (!_rebuilding)
+                {
+                    observer.OnNext(true);
+                    observer.OnCompleted(); 
+                }
+
+                _buildSubject.Subscribe(b => {
+                    if (_rebuilding)
+                        return;
+                    observer.OnNext(true);
+                    observer.OnCompleted();
+                });
+            });
         }
 
         protected void Register<TEvent>(Func<TEvent,TState,TState> when) where TEvent : class
@@ -87,22 +108,27 @@ namespace ZES.Infrastructure.Projections
         
         protected virtual void Unpause()
         {
+            _rebuilding = false;
             _logger.Trace("", this);
             _connection = _bufferBlock.LinkTo(_actionBlock);
-
+            _subscription.Dispose();
         }
         
-        protected void Rebuild()
+        protected async Task Rebuild()
         {
-            Pause();
-            State = new TState();
-            
             bool StreamFilter(string s) => _streamFilter(s) && s.StartsWith(Timeline.Id);
             
+            _rebuilding = true;
             _subscription?.Dispose();
+            
+            Pause();
+            
+            State = new TState();
+            
             _subscription = _eventStore.Events.Where(e => StreamFilter(e.Stream))
                 .Finally(Unpause) 
                 .Subscribe(When);
+            await Complete;
         }
 
         private async Task Update(IStream stream)
@@ -132,5 +158,7 @@ namespace ZES.Infrastructure.Projections
             //}
             _streams[e.Stream] = e.Version;
         }
+
+        public IObservable<bool> Complete { get; }
     }
 }

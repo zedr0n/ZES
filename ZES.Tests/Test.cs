@@ -41,6 +41,8 @@ namespace ZES.Tests
                     config.AddRuleForOneLevel(LogLevel.Trace, target);
                 if(Environment.GetEnvironmentVariable("DEBUG") == "1")
                     config.AddRuleForOneLevel(LogLevel.Debug, target);
+                if(Environment.GetEnvironmentVariable("ERROR") == "1")
+                    config.AddRuleForOneLevel(LogLevel.Error, target);
             }
             
             LogManager.Configuration = config;

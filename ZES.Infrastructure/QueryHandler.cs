@@ -36,7 +36,15 @@ namespace ZES.Infrastructure
 
         public async Task<TResult> HandleAsync(TQuery query)
         {
-            return Handle(query);
+            try
+            {
+                return await _handler.HandleAsync(query);
+            }
+            catch (Exception e)
+            {
+                _log.Error(e.Message);
+                return Handle(query); 
+            }
         }
     }
 }

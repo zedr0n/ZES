@@ -18,9 +18,9 @@ namespace ZES.Tests.Domain.Queries
             return _projection.State.Value; 
         }
 
-        public async Task<long> HandleAsync(StatsQuery query)
+        public Task<long> HandleAsync(StatsQuery query)
         {
-            return await Task.FromResult(Handle(query));
+            throw new System.NotImplementedException();
         }
     }
 }

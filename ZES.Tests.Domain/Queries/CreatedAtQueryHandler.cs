@@ -18,9 +18,9 @@ namespace ZES.Tests.Domain.Queries
             return _projection.State.Get(query.id); 
         }
 
-        public async Task<long> HandleAsync(CreatedAtQuery query)
+        public Task<long> HandleAsync(CreatedAtQuery query)
         {
-            return await Task.FromResult(Handle(query));
+            throw new System.NotImplementedException();
         }
     }
 }

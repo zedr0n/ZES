@@ -1,10 +1,8 @@
-using System;
-using ZES.Interfaces.Domain;
+using ZES.Infrastructure;
 
 namespace ZES.Tests.Domain.Queries
 {
-    public class StatsQuery : IQuery<long>
+    public class StatsQuery : Query<long>
     {
-        public Type Type => typeof(StatsQuery);
     }
 }

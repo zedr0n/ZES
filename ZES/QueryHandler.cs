@@ -42,7 +42,20 @@ namespace ZES
         
         public async Task<TResult> HandleAsync(IHistoricalQuery<TResult> query)
         {
-            return await Task.FromResult(Handle(query));
+            var timestamp = query.Timestamp;
+            var prop = _handler.GetType().GetProperty("Projection",
+                System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+            var field = _handler.GetType().GetField("_projection",
+                System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+            
+            if(prop == null || field == null)
+                throw new InvalidOperationException();
+            
+            var projection = _container.GetHistorical(prop.PropertyType);
+            await projection.Init(timestamp);
+            
+            field.SetValue(_handler,projection);
+            return _handler.Handle(query.Query as TQuery);
         }
 
         public TResult Handle(TQuery query)

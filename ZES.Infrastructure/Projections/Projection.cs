@@ -79,13 +79,13 @@ namespace ZES.Infrastructure.Projections
                 await _bufferBlock.SendAsync(stream);
         }
 
-        private void Pause()
+        protected virtual void Pause()
         {
             _logger.Trace("", this);
             _connection.Dispose();
         }
         
-        private void Unpause()
+        protected virtual void Unpause()
         {
             _logger.Trace("", this);
             _connection = _bufferBlock.LinkTo(_actionBlock);

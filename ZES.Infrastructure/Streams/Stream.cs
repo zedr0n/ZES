@@ -6,9 +6,10 @@ namespace ZES.Infrastructure.Streams
 {
     public class Stream : IStream
     {
-        public Stream(string id, int version, string timeline = "")
+        public Stream(string id, string type, int version, string timeline = "")
         {
             _id = id;
+            _type = type;
             Version = version;
             Timeline = timeline;
         }
@@ -16,11 +17,12 @@ namespace ZES.Infrastructure.Streams
         public Stream(string key, int version = ExpectedVersion.NoStream)
         {
             var tokens = key.Split(':');
-            if (tokens.Length != 2)
+            if (tokens.Length != 3)
                 throw new InvalidOperationException();
             
             Timeline = tokens[0];
-            _id = tokens[1];
+            _type = tokens[1];
+            _id = tokens[2];
             Version = version;
         }
 
@@ -29,8 +31,9 @@ namespace ZES.Infrastructure.Streams
             return new Stream(key) { Timeline = timeline};
         }
         
-        public string Key => $"{Timeline}:{_id}";
+        public string Key => $"{Timeline}:{_type}:{_id}";
         private readonly string _id;
+        private readonly string _type;
         public int Version { get; set; }
         public string Timeline { get; set; }
     }

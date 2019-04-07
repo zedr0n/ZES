@@ -33,7 +33,7 @@ namespace ZES.Infrastructure.Streams
 
         public IStream Find<T>(string id, string timeline = "master") where T : I
         {
-            var aStream = new Stream(id, ExpectedVersion.NoStream, timeline);
+            var aStream = new Stream(id, typeof(T).Name, ExpectedVersion.NoStream, timeline);
             return _streams.TryGetValue(aStream.Key, out var stream) ? stream : default(IStream);
         }
 
@@ -42,7 +42,7 @@ namespace ZES.Infrastructure.Streams
             if (es == null)
                 return default(IStream);
 
-            var stream = new Stream(es.Id,ExpectedVersion.NoStream,timeline);
+            var stream = new Stream(es.Id, es.GetType().Name, ExpectedVersion.NoStream,timeline);
             return _streams.GetOrAdd(stream.Key, stream);
         }
 

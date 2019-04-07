@@ -57,6 +57,11 @@ namespace ZES.Infrastructure.Projections
             Handlers.Add(tEvent, when);
         }
 
+        protected void Register<TEvent>(Action<TEvent> action) where TEvent : class, IEvent
+        {
+            
+        }
+
         private async Task Notify(IStream stream)
         {
             if (!_streamFilter(stream.Key))

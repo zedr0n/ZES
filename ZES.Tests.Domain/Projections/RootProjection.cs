@@ -25,7 +25,7 @@ namespace ZES.Tests.Domain.Projections
             }
         }
         
-        private StateType When(RootCreated e, StateType state)
+        private static StateType When(RootCreated e, StateType state)
         {
             state.Set(e.RootId, e.Timestamp);
             return state;

@@ -13,7 +13,7 @@ namespace ZES.Tests.Domain.Projections
             public long Value { get; set; }
         }
         
-        private StateType When(RootCreated e, StateType state)
+        private static StateType When(RootCreated e, StateType state)
         {
             lock (state)
             {

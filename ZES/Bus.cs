@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using System.Threading.Tasks;
 using System.Threading.Tasks.Dataflow;
 using SimpleInjector;
@@ -97,7 +98,14 @@ namespace ZES
         }
         public async Task<TResult> QueryAsync<TResult>(IQuery<TResult> query)
         {
-            var handlerType = typeof(IQueryHandler<,>).MakeGenericType(query.GetType(), typeof(TResult));
+            var queryType = query.GetType();
+            if (queryType.GetInterfaces().Contains(typeof(IHistoricalQuery)))
+            {
+                dynamic q = query;
+                queryType = q.Query.GetType();
+            }
+                
+            var handlerType = typeof(IQueryHandler<,>).MakeGenericType(queryType, typeof(TResult));
             dynamic handler = GetInstance(handlerType);
             if (handler != null)
                 return await handler.HandleAsync(query as dynamic);

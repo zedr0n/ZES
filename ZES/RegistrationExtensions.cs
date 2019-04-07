@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using SimpleInjector;
+using ZES.Infrastructure.Projections;
 using ZES.Interfaces.Domain;
 using ZES.Interfaces.Sagas;
 
@@ -47,7 +48,7 @@ namespace ZES
                 
                 var iQuery = typeof(IQueryHandler<,>).MakeGenericType(q, result);
                 var handler = assembly.GetTypesFromInterface(iQuery).SingleOrDefault();
-                c.Register(iQuery,handler, Lifestyle.Singleton);
+                c.Register(iQuery,handler, Lifestyle.Transient);
             }
         }
         
@@ -59,6 +60,18 @@ namespace ZES
 
         }
 
+        public static HistoricalProjection<TProjection,TState> GetHistorical<TProjection,TState>(this Container c) where TState : new()
+            where TProjection : Projection<TState>
+        {
+            return c.GetInstance(typeof(HistoricalProjection<,>).MakeGenericType(typeof(TProjection), typeof(TState))) as HistoricalProjection<TProjection,TState>;
+        }
+        
+        public static dynamic GetHistorical(this Container c, Type tProjection)
+        {
+            var tState = tProjection.GetInterfaces().First(i => i.GetGenericArguments().Length > 0).GetGenericArguments()[0];
+            return c.GetInstance(typeof(HistoricalProjection<,>).MakeGenericType(tProjection, tState));
+        }
+        
         public static void RegisterCommands(this Container c, Assembly assembly)
         {
             var commands = assembly.GetTypesFromInterface(typeof(ICommand));
@@ -70,4 +83,5 @@ namespace ZES
             }
         }
     }
+
 }

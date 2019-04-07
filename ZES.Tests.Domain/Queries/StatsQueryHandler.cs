@@ -1,4 +1,5 @@
 using System.Threading.Tasks;
+using ZES.Interfaces;
 using ZES.Interfaces.Domain;
 using ZES.Tests.Domain.Projections;
 
@@ -6,11 +7,16 @@ namespace ZES.Tests.Domain.Queries
 {
     public class StatsQueryHandler : IQueryHandler<StatsQuery, long>
     {
-        private readonly StatsProjection _projection;
+        private IProjection<ValueState<long>> _projection;
+
+        private StatsProjection Projection
+        {
+            set => _projection = value;
+        }
 
         public StatsQueryHandler(StatsProjection projection)
         {
-            _projection = projection;
+            Projection = projection;
         }
 
         public long Handle(StatsQuery query)

@@ -67,7 +67,7 @@ namespace ZES
                 context => !context.AppliedDecorators.Any(d => d.IsClosedTypeOf(typeof(CommandHandler<>))));
 
             container.RegisterDecorator(typeof(IQueryHandler<,>),
-                typeof(QueryHandler<,>),Lifestyle.Singleton,
+                typeof(QueryHandler<,>),Lifestyle.Transient,
                 context => !context.AppliedDecorators.Any(d => d.IsClosedTypeOf(typeof(QueryHandler<,>))));
             
             container.Register<ITimeTraveller,TimeTraveller>(Lifestyle.Singleton);

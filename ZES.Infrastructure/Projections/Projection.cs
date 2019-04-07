@@ -14,7 +14,7 @@ using ZES.Interfaces.Pipes;
 
 namespace ZES.Infrastructure.Projections
 {
-    public class Projection<TState> : IProjection where TState : new()
+    public class Projection<TState> : IProjection<TState> where TState : new()
     {
         private readonly ILog _logger;
         protected readonly ITimeline Timeline;

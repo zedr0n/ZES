@@ -1,9 +1,11 @@
 using System;
 using System.Collections.Generic;
+using System.Reflection;
 using System.Threading;
 using SimpleInjector;
 using Xunit;
 using Xunit.Abstractions;
+using ZES.Infrastructure;
 using ZES.Infrastructure.Alerts;
 using ZES.Infrastructure.Projections;
 using ZES.Interfaces;
@@ -131,19 +133,16 @@ namespace ZES.Tests
         {
             var container = CreateContainer();
             var bus = container.GetInstance<IBus>();
-            var projection = container.GetInstance<HistoricalProjection<RootProjection, RootProjection.StateType>>();
-            var statsProjection = container.GetInstance<HistoricalProjection<StatsProjection, ValueState<long>>>();
-            projection.Init(0);
             
             var command = new CreateRoot("Root");
             await bus.CommandAsync(command); 
-            
-            var query = new CreatedAtQuery("Root");
-            var createdAt = await RetryUntil(async () => await bus.QueryAsync(query));
-            Assert.NotEqual(0, createdAt);
 
-            Assert.Equal(0, projection.State.Get("Root"));
-            Assert.Equal(0, statsProjection.State.Value);
+            var statsQuery = new StatsQuery();
+            await RetryUntil(async () => await bus.QueryAsync(statsQuery) == 1);
+            //Assert.Equal(1, bus.Query(statsQuery));
+            
+            var historicalQuery = new HistoricalQuery<StatsQuery, long>(statsQuery, 0);
+            await RetryUntil(async () => await bus.QueryAsync(historicalQuery) == 0);
         }
 
         [Theory]

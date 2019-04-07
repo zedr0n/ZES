@@ -1,4 +1,5 @@
 using System.Threading.Tasks;
+using ZES.Interfaces;
 using ZES.Interfaces.Domain;
 using ZES.Tests.Domain.Projections;
 
@@ -6,7 +7,12 @@ namespace ZES.Tests.Domain.Queries
 {
     public class CreatedAtQueryHandler : IQueryHandler<CreatedAtQuery, long>
     {
-        private readonly RootProjection _projection;
+        private IProjection<RootProjection.StateType> _projection;
+        
+        private RootProjection Projection
+        {
+            set => _projection = value;
+        }
 
         public CreatedAtQueryHandler(RootProjection projection)
         {

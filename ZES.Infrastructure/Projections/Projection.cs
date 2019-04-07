@@ -31,6 +31,7 @@ namespace ZES.Infrastructure.Projections
             
         private readonly Func<string, bool> _streamFilter = s => true;
         
+        public IObservable<bool> Complete { get; }
         private bool _rebuilding;
         private readonly Subject<bool> _buildSubject = new Subject<bool>();
         
@@ -158,7 +159,5 @@ namespace ZES.Infrastructure.Projections
             //}
             _streams[e.Stream] = e.Version;
         }
-
-        public IObservable<bool> Complete { get; }
     }
 }

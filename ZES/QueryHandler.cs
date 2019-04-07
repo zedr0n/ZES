@@ -23,7 +23,7 @@ namespace ZES
             _container = container;
         }
 
-        public TResult HandleHistorical(IHistoricalQuery<TResult> query)
+        public TResult Handle(IHistoricalQuery<TResult> query)
         {
             var timestamp = query.Timestamp;
             var prop = _handler.GetType().GetProperty("Projection",
@@ -40,21 +40,16 @@ namespace ZES
             field.SetValue(_handler,projection);
             return _handler.Handle(query.Query as TQuery);
         }
-
-        public TResult Handle(IQuery<TResult> query)
+        
+        public async Task<TResult> HandleAsync(IHistoricalQuery<TResult> query)
         {
-            if (query is IHistoricalQuery<TResult> historicalQuery)
-                return HandleHistorical(historicalQuery);
-            return Handle(query as TQuery);
+            return await Task.FromResult(Handle(query));
         }
 
         public TResult Handle(TQuery query)
         {
             _log.Trace($"{_handler.GetType().Name}.Handle({query.GetType().Name})");
             _log.Debug(_serializer.Serialize(query));
-            if (query is IHistoricalQuery<TResult> historicalQuery)
-                return HandleHistorical(historicalQuery);
-            
             try
             {
                 return _handler.Handle(query);
@@ -64,13 +59,6 @@ namespace ZES
                 _log.Error(e.Message);
                 throw;
             }
-        }
-
-        public async Task<TResult> HandleAsync(IQuery<TResult> query)
-        {
-            if (query is IHistoricalQuery<TResult> historicalQuery)
-                return HandleHistorical(historicalQuery);
-            return await HandleAsync(query as TQuery);
         }
 
         public async Task<TResult> HandleAsync(TQuery query)

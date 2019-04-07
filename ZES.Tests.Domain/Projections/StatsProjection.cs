@@ -17,7 +17,7 @@ namespace ZES.Tests.Domain.Projections
             return state;
         }
 
-        public StatsProjection(IEventStore<IAggregate> eventStore, ILog logger, IMessageQueue messageQueue, ITimeline timeline) : base(eventStore, logger, messageQueue, timeline)
+        public StatsProjection(IEventStore<IAggregate> eventStore, ILog log, IMessageQueue messageQueue, ITimeline timeline) : base(eventStore, log, messageQueue, timeline)
         {
             Register<RootCreated>(When);
         }

@@ -18,7 +18,7 @@ namespace ZES.Infrastructure.Projections
 {
     public class Projection<TState> : IProjection<TState> where TState : new()
     {
-        private readonly ILog _logger;
+        protected readonly ILog Log;
         protected readonly ITimeline Timeline;
 
         private IDisposable _connection = Disposable.Empty;
@@ -37,10 +37,10 @@ namespace ZES.Infrastructure.Projections
         
         public TState State { get; protected set; }
 
-        protected Projection(IEventStore<IAggregate> eventStore, ILog logger, IMessageQueue messageQueue, ITimeline timeline)
+        protected Projection(IEventStore<IAggregate> eventStore, ILog log, IMessageQueue messageQueue, ITimeline timeline)
         {
             _eventStore = eventStore;
-            _logger = logger;
+            Log = log;
             Timeline = timeline;
             _actionBlock = new ActionBlock<IStream>(Update,
                 new ExecutionDataflowBlockOptions
@@ -96,21 +96,21 @@ namespace ZES.Infrastructure.Projections
             
             var version = stream.Version; 
             var projectionVersion = _streams.GetOrAdd(stream.Key,-1);
-            _logger.Trace($"{stream.Key}@{projectionVersion}",this); 
+            Log.Trace($"{stream.Key}@{projectionVersion}",this); 
             if (version > projectionVersion)
                 await _bufferBlock.SendAsync(stream);
         }
 
         protected virtual void Pause()
         {
-            _logger.Trace("", this);
+            Log.Trace("", this);
             _connection.Dispose();
         }
         
         protected virtual void Unpause()
         {
             _rebuilding = false;
-            _logger.Trace("", this);
+            Log.Trace("", this);
             _connection = _bufferBlock.LinkTo(_actionBlock);
             _subscription.Dispose();
         }
@@ -137,7 +137,7 @@ namespace ZES.Infrastructure.Projections
             if(!_streams.TryGetValue(stream.Key, out var version))
                 throw new InvalidOperationException("Stream not registered");
             
-            _logger.Trace($"{stream.Key}@{stream.Version}",this);     
+            Log.Trace($"{stream.Key}@{stream.Version}",this);     
             
             var streamEvents = (await _eventStore.ReadStream(stream, version+1)).ToList();
             

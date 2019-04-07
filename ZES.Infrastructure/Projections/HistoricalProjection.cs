@@ -13,8 +13,8 @@ namespace ZES.Infrastructure.Projections
     {
         private long _timestamp;
 
-        public HistoricalProjection(IEventStore<IAggregate> eventStore, ILog logger, IMessageQueue messageQueue, ITimeline timeline, T projection) 
-            : base(eventStore, logger, messageQueue, timeline)
+        public HistoricalProjection(IEventStore<IAggregate> eventStore, ILog log, IMessageQueue messageQueue, ITimeline timeline, T projection) 
+            : base(eventStore, log, messageQueue, timeline)
         {
             foreach (var h in projection.Handlers)
                 Register(h.Key, (e,s) => e.Timestamp <= _timestamp ? h.Value(e,s) : s);
@@ -22,6 +22,7 @@ namespace ZES.Infrastructure.Projections
 
         public async Task Init(long timestamp)
         {
+            Log.Trace("",this);
             _timestamp = timestamp;
             await Rebuild();
         }

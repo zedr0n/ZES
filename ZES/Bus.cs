@@ -90,7 +90,7 @@ namespace ZES
 
         public TResult Query<TResult>(IQuery<TResult> query)
         {
-            var handlerType = typeof(IQueryHandler<,>).MakeGenericType(query.GetType(), typeof(TResult));
+            var handlerType = typeof(IQueryHandler<,>).MakeGenericType(query.Type, typeof(TResult));
             dynamic handler = GetInstance(handlerType);
             if (handler != null)
                 return handler.Handle(query as dynamic);
@@ -98,11 +98,7 @@ namespace ZES
         }
         public async Task<TResult> QueryAsync<TResult>(IQuery<TResult> query)
         {
-            var queryType = query.GetType();
-            if (query is IHistoricalQuery<TResult> historicalQuery)
-                queryType = historicalQuery.Query.GetType();
-            
-            var handlerType = typeof(IQueryHandler<,>).MakeGenericType(queryType, typeof(TResult));
+            var handlerType = typeof(IQueryHandler<,>).MakeGenericType(query.Type, typeof(TResult));
             dynamic handler = GetInstance(handlerType);
             if (handler != null)
                 return await handler.HandleAsync(query as dynamic);

@@ -1,3 +1,4 @@
+using System;
 using ZES.Interfaces.Domain;
 
 namespace ZES.Tests.Domain.Queries
@@ -6,9 +7,10 @@ namespace ZES.Tests.Domain.Queries
     {
         public CreatedAtQuery(string id)
         {
-            this.id = id;
+            this.Id = id;
         }
 
-        public string id { get; }
+        public string Id { get; }
+        public Type Type => typeof(CreatedAtQuery);
     }
 }

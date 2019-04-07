@@ -1,3 +1,4 @@
+using System;
 using ZES.Interfaces.Domain;
 
 namespace ZES.Infrastructure
@@ -12,5 +13,6 @@ namespace ZES.Infrastructure
 
         public IQuery<TResult> Query { get; }
         public long Timestamp { get; }
+        public Type Type => Query.Type;
     }
 }

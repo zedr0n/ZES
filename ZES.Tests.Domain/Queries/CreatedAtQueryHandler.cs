@@ -21,7 +21,7 @@ namespace ZES.Tests.Domain.Queries
 
         public long Handle(CreatedAtQuery query)
         {
-            return _projection.State.Get(query.id); 
+            return _projection.State.Get(query.Id); 
         }
 
         public Task<long> HandleAsync(CreatedAtQuery query)

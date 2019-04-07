@@ -99,12 +99,9 @@ namespace ZES
         public async Task<TResult> QueryAsync<TResult>(IQuery<TResult> query)
         {
             var queryType = query.GetType();
-            if (queryType.GetInterfaces().Contains(typeof(IHistoricalQuery)))
-            {
-                dynamic q = query;
-                queryType = q.Query.GetType();
-            }
-                
+            if (query is IHistoricalQuery<TResult> historicalQuery)
+                queryType = historicalQuery.Query.GetType();
+            
             var handlerType = typeof(IQueryHandler<,>).MakeGenericType(queryType, typeof(TResult));
             dynamic handler = GetInstance(handlerType);
             if (handler != null)

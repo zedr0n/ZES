@@ -141,7 +141,7 @@ namespace ZES.Tests
             await RetryUntil(async () => await bus.QueryAsync(statsQuery) == 1);
             //Assert.Equal(1, bus.Query(statsQuery));
             
-            var historicalQuery = new HistoricalQuery<StatsQuery, long>(statsQuery, 0);
+            var historicalQuery = new HistoricalQuery<long>(statsQuery, 0);
             await RetryUntil(async () => await bus.QueryAsync(historicalQuery) == 0);
         }
 

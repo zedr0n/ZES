@@ -23,7 +23,7 @@ namespace ZES
             _container = container;
         }
 
-        public TResult HandleHistorical(IHistoricalQuery<TQuery, TResult> query)
+        public TResult HandleHistorical(IHistoricalQuery<TResult> query)
         {
             var timestamp = query.Timestamp;
             var prop = _handler.GetType().GetProperty("Projection",
@@ -38,13 +38,13 @@ namespace ZES
             projection.Init(timestamp);
             
             field.SetValue(_handler,projection);
-            return _handler.Handle(query.Query);
+            return _handler.Handle(query.Query as TQuery);
         }
 
         public TResult Handle(IQuery<TResult> query)
         {
-            if (query.GetType().GetInterfaces().Contains(typeof(IHistoricalQuery)))
-                return HandleHistorical(query as IHistoricalQuery<TQuery,TResult>);
+            if (query is IHistoricalQuery<TResult> historicalQuery)
+                return HandleHistorical(historicalQuery);
             return Handle(query as TQuery);
         }
 
@@ -52,8 +52,8 @@ namespace ZES
         {
             _log.Trace($"{_handler.GetType().Name}.Handle({query.GetType().Name})");
             _log.Debug(_serializer.Serialize(query));
-            if (typeof(TQuery).GetInterfaces().Contains(typeof(IHistoricalQuery)))
-                return HandleHistorical(query as IHistoricalQuery<TQuery,TResult>);
+            if (query is IHistoricalQuery<TResult> historicalQuery)
+                return HandleHistorical(historicalQuery);
             
             try
             {
@@ -68,8 +68,8 @@ namespace ZES
 
         public async Task<TResult> HandleAsync(IQuery<TResult> query)
         {
-            if (query.GetType().GetInterfaces().Contains(typeof(IHistoricalQuery)))
-                return HandleHistorical(query as IHistoricalQuery<TQuery,TResult>);
+            if (query is IHistoricalQuery<TResult> historicalQuery)
+                return HandleHistorical(historicalQuery);
             return await HandleAsync(query as TQuery);
         }
 

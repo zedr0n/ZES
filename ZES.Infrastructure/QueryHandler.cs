@@ -42,7 +42,8 @@ namespace ZES.Infrastructure
             }
             catch (Exception e)
             {
-                _log.Error(e.Message);
+                if(!(e is NotImplementedException))
+                    _log.Error(e.Message,_handler);
                 return Handle(query); 
             }
         }

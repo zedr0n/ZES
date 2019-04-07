@@ -16,7 +16,8 @@ namespace ZES.Infrastructure
 {
     public class SqlEventStore<I> : IEventStore<I> where I : IEventSourced
     {
-        public IObservable<IStream> Streams { get; }
+        public IObservable<IStream> AllStreams { get; }
+        public IObservable<IStream> Streams => _streams.AsObservable();
         public IObservable<IEvent> Events { get; }
 
         private readonly IStreamStore _streamStore;
@@ -57,7 +58,7 @@ namespace ZES.Infrastructure
                 observer.OnCompleted();
             });
 
-            Streams = Observable.Create(async (IObserver<IStream> observer) =>
+            AllStreams = Observable.Create(async (IObserver<IStream> observer) =>
             {
                 var page = await _streamStore.ListStreams();
                 while (page.StreamIds.Length > 0)

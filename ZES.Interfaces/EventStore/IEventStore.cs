@@ -7,6 +7,11 @@ namespace ZES.Interfaces.EventStore
     public interface IEventStore<I> where I : IEventSourced
     {
         /// <summary>
+        /// Get currently stored streams
+        /// </summary>
+        /// <returns></returns>
+        IObservable<IStream> AllStreams { get; }
+        /// <summary>
         /// Stream details channel 
         /// </summary>
         IObservable<IStream> Streams { get; }       

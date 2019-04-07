@@ -28,7 +28,7 @@ namespace ZES.Infrastructure.Streams
         {
             _log.Trace("", this);
             _subscription?.Dispose();
-            _subscription = _eventStore.Streams.Subscribe(stream => GetOrAdd(stream));            
+            _subscription = _eventStore.AllStreams.Subscribe(stream => GetOrAdd(stream));            
         }
 
         public IStream Find<T>(string id, string timeline = "master") where T : I

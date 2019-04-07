@@ -41,6 +41,13 @@ namespace ZES
             return _handler.Handle(query.Query);
         }
 
+        public TResult Handle(IQuery<TResult> query)
+        {
+            if (query.GetType().GetInterfaces().Contains(typeof(IHistoricalQuery)))
+                return HandleHistorical(query as IHistoricalQuery<TQuery,TResult>);
+            return Handle(query as TQuery);
+        }
+
         public TResult Handle(TQuery query)
         {
             _log.Trace($"{_handler.GetType().Name}.Handle({query.GetType().Name})");

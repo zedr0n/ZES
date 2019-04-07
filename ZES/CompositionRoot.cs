@@ -46,6 +46,7 @@ namespace ZES
             container.RegisterConditional(typeof(IStreamStore),Lifestyle.Singleton.CreateRegistration(() => new InMemoryStreamStore(), container),
                 c => c.Consumer.ImplementationType == typeof(CommandLog)); 
             
+            container.Register(typeof(ISerializer<>),typeof(Serializer<>),Lifestyle.Singleton);
             container.Register<IEventSerializer, EventSerializer>(Lifestyle.Singleton);
             container.Register<ICommandSerializer,CommandSerializer>(Lifestyle.Singleton);
             container.Register(typeof(IEventStore<>), typeof(SqlEventStore<>),Lifestyle.Singleton);
@@ -62,9 +63,13 @@ namespace ZES
             container.Register<ISagaRepository, SagaRepository>(Lifestyle.Singleton);
             
             container.RegisterDecorator(typeof(ICommandHandler<>),
-                typeof(CommandRecorder<>),Lifestyle.Singleton,
-                context => !context.AppliedDecorators.Any(d => d.IsClosedTypeOf(typeof(CommandRecorder<>))));
+                typeof(CommandHandler<>),Lifestyle.Singleton,
+                context => !context.AppliedDecorators.Any(d => d.IsClosedTypeOf(typeof(CommandHandler<>))));
 
+            container.RegisterDecorator(typeof(IQueryHandler<,>),
+                typeof(QueryHandler<,>),Lifestyle.Singleton,
+                context => !context.AppliedDecorators.Any(d => d.IsClosedTypeOf(typeof(QueryHandler<,>))));
+            
             container.Register<ITimeTraveller,TimeTraveller>(Lifestyle.Singleton);
             //container.Register();
             /*if (domains == null) 

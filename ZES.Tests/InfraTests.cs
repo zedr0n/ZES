@@ -75,8 +75,6 @@ namespace ZES.Tests
         }
     }
 
-
-    
     public class InfraTests : ZesTest
     {
 

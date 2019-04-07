@@ -8,12 +8,9 @@ namespace ZES.Interfaces.Domain
         Type Type { get; }
     }
 
-    public interface IHistoricalQuery
+    public interface IHistoricalQuery<TResult> : IQuery<TResult>
     {
         long Timestamp { get; }
-    }
-    public interface IHistoricalQuery<TResult> : IQuery<TResult>, IHistoricalQuery
-    {
         IQuery<TResult> Query { get; }
     }
 }

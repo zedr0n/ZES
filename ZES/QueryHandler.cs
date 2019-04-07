@@ -12,10 +12,10 @@ namespace ZES
     {
         private readonly IQueryHandler<TQuery, TResult> _handler;
         private readonly ILog _log;
-        private readonly ISerializer<IQuery> _serializer;
+        private readonly ISerializer<IQuery<TResult>> _serializer;
         private readonly Container _container;
 
-        public QueryHandler(IQueryHandler<TQuery, TResult> handler, ILog log, ISerializer<IQuery> serializer, Container container)
+        public QueryHandler(IQueryHandler<TQuery, TResult> handler, ILog log, ISerializer<IQuery<TResult>> serializer, Container container)
         {
             _handler = handler;
             _log = log;

@@ -41,6 +41,7 @@ namespace ZES.Infrastructure.Projections
         {
             _eventStore = eventStore;
             Log = log;
+            
             Timeline = timeline;
             _actionBlock = new ActionBlock<IStream>(Update,
                 new ExecutionDataflowBlockOptions

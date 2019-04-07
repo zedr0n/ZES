@@ -7,6 +7,26 @@ using ZES.Interfaces.Serialization;
 
 namespace ZES
 {
+    public class HistoricalQueryHandler<TQuery, TResult> : IHistoricalQueryHandler<TQuery, TResult>
+        where TQuery : class, IHistoricalQuery<TResult>
+    {
+        private readonly IQueryHandler<TQuery, TResult> _handler;
+
+        public HistoricalQueryHandler(IQueryHandler<TQuery, TResult> handler)
+        {
+            _handler = handler;
+        }
+
+        public TResult Handle(TQuery query)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task<TResult> HandleAsync(TQuery query)
+        {
+            throw new NotImplementedException();
+        }
+    }
     public class QueryHandler<TQuery, TResult> : IQueryHandler<TQuery, TResult> where TQuery : class, IQuery<TResult>
     {
         private readonly IQueryHandler<TQuery, TResult> _handler;
@@ -25,15 +45,10 @@ namespace ZES
         public TResult Handle(IHistoricalQuery<TResult> query)
         {
             var timestamp = query.Timestamp;
-            var prop = _handler.GetType().GetProperty("Projection",
-                System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
             var field = _handler.GetType().GetField("_projection",
                 System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
             
-            if(prop == null || field == null)
-                throw new InvalidOperationException();
-            
-            var projection = _container.GetHistorical(prop.PropertyType);
+            var projection = _container.GetHistorical(field.FieldType);
             projection.Init(timestamp);
             
             field.SetValue(_handler,projection);
@@ -43,15 +58,10 @@ namespace ZES
         public async Task<TResult> HandleAsync(IHistoricalQuery<TResult> query)
         {
             var timestamp = query.Timestamp;
-            var prop = _handler.GetType().GetProperty("Projection",
-                System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
             var field = _handler.GetType().GetField("_projection",
                 System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
             
-            if(prop == null || field == null)
-                throw new InvalidOperationException();
-            
-            var projection = _container.GetHistorical(prop.PropertyType);
+            var projection = _container.GetHistorical(field.FieldType);
             await projection.Init(timestamp);
             
             field.SetValue(_handler,projection);

@@ -20,4 +20,7 @@ namespace ZES.Interfaces.Domain
         /// <returns>Query result</returns>
         Task<TResult> HandleAsync(TQuery query);
     }
-}
+   
+    public interface IHistoricalQueryHandler {}
+    public interface IHistoricalQueryHandler<TQuery, TResult> : IQueryHandler<TQuery, TResult>, IHistoricalQueryHandler {} 
+} 

@@ -8,13 +8,8 @@ namespace ZES.Tests.Domain.Queries
     public class CreatedAtQueryHandler : IQueryHandler<CreatedAtQuery, long>
     {
         private IProjection<RootProjection.StateType> _projection;
-        
-        private RootProjection Projection
-        {
-            set => _projection = value;
-        }
 
-        public CreatedAtQueryHandler(RootProjection projection)
+        public CreatedAtQueryHandler(IProjection<RootProjection.StateType> projection)
         {
             _projection = projection;
         }

@@ -61,14 +61,14 @@ namespace ZES
             container.Register(typeof(IStreamLocator<>), typeof(StreamLocator<>),Lifestyle.Singleton);    
             container.Register<IDomainRepository,DomainRepository>(Lifestyle.Singleton);
             container.Register<ISagaRepository, SagaRepository>(Lifestyle.Singleton);
-            
+
             container.RegisterDecorator(typeof(ICommandHandler<>),
-                typeof(CommandHandler<>),Lifestyle.Singleton,
-                context => !context.AppliedDecorators.Any(d => d.IsClosedTypeOf(typeof(CommandHandler<>))));
+                typeof(CommandHandler<>), Lifestyle.Singleton);
 
             container.RegisterDecorator(typeof(IQueryHandler<,>),
-                typeof(QueryHandler<,>),Lifestyle.Transient,
-                context => !context.AppliedDecorators.Any(d => d.IsClosedTypeOf(typeof(QueryHandler<,>))));
+                typeof(QueryHandler<,>), Lifestyle.Transient);
+            
+            
             
             container.Register<ITimeTraveller,TimeTraveller>(Lifestyle.Singleton);
             //container.Register();

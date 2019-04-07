@@ -7,21 +7,15 @@ namespace ZES.Tests.Domain.Queries
 {
     public class StatsQueryHandler : IQueryHandler<StatsQuery, long>
     {
-        private IProjection<ValueState<long>> _projection;
-
-        private StatsProjection Projection
+        private IProjection<ValueState<Stats>> _projection;
+        public StatsQueryHandler(IProjection<ValueState<Stats>> projection)
         {
-            set => _projection = value;
-        }
-
-        public StatsQueryHandler(StatsProjection projection)
-        {
-            Projection = projection;
+            _projection = projection;
         }
 
         public long Handle(StatsQuery query)
         {
-            return _projection.State.Value; 
+            return _projection.State.Value.NumberOfRoots; 
         }
 
         public Task<long> HandleAsync(StatsQuery query)

@@ -56,7 +56,16 @@ namespace ZES
         {
             var projections = assembly.GetTypesFromInterface(typeof(IProjection));
             foreach (var p in projections)
-                c.Register(p,p,Lifestyle.Singleton);
+            {
+                var projectionInterface = p.GetInterfaces().First(x => x.Name.StartsWith(nameof(IProjection)));
+                var tState = projectionInterface.GenericTypeArguments[0];
+
+                c.Register(projectionInterface, p, Lifestyle.Singleton);
+                //c.RegisterConditional(projectionInterface, typeof(HistoricalDecorator<>).MakeGenericType(tState),
+                //    Lifestyle.Transient,x => x.Consumer.Target.TargetType.GetInterfaces().Contains(typeof(IHistoricalQueryHandler)));
+                //c.RegisterConditional(projectionInterface,p,Lifestyle.Singleton, x => !x.Handled); 
+            }
+
 
         }
 
@@ -68,7 +77,12 @@ namespace ZES
         
         public static dynamic GetHistorical(this Container c, Type tProjection)
         {
-            var tState = tProjection.GetInterfaces().First(i => i.GetGenericArguments().Length > 0).GetGenericArguments()[0];
+            Type tState;
+            if (!tProjection.IsInterface)
+                tState = tProjection.GetInterfaces().First(i => i.GetGenericArguments().Length > 0)
+                    .GetGenericArguments()[0];
+            else
+                tState = tProjection.GenericTypeArguments[0];
             return c.GetInstance(typeof(HistoricalProjection<,>).MakeGenericType(tProjection, tState));
         }
         

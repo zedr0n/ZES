@@ -20,8 +20,10 @@ namespace ZES.Infrastructure.Projections
     {
         protected readonly ILog Log;
         protected readonly ITimeline Timeline;
+        private readonly IMessageQueue _messageQueue;
 
-        private IDisposable _connection = Disposable.Empty;
+
+        private IDisposable _connection; 
         private IDisposable _subscription;
         private readonly BufferBlock<IStream> _bufferBlock;
         private readonly ActionBlock<IStream> _actionBlock;
@@ -41,18 +43,17 @@ namespace ZES.Infrastructure.Projections
         {
             _eventStore = eventStore;
             Log = log;
-            
+            _messageQueue = messageQueue;            
             Timeline = timeline;
+            
             _actionBlock = new ActionBlock<IStream>(Update,
                 new ExecutionDataflowBlockOptions
                 {
                     MaxDegreeOfParallelism = 8
                 });
             _bufferBlock = new BufferBlock<IStream>();
-            Rebuild();
-            _eventStore.Streams.Subscribe(async s => await Notify(s));
-            messageQueue.Alerts.OfType<InvalidateProjections>().Subscribe(s => Rebuild());
-            
+
+            OnInit();
             Complete = Observable.Create( async (IObserver<bool> observer) =>
             {
                 if (!_rebuilding)
@@ -70,6 +71,19 @@ namespace ZES.Infrastructure.Projections
             });
         }
 
+        public virtual void OnInit()
+        {
+            Start();
+        }
+
+        public void Start(bool rebuild = true)
+        {
+            if(rebuild)
+                Rebuild();
+            _eventStore.Streams.Subscribe(async s => await Notify(s));
+            _messageQueue.Alerts.OfType<InvalidateProjections>().Subscribe(s => Rebuild()); 
+        }
+        
         protected void Register<TEvent>(Func<TEvent,TState,TState> when) where TEvent : class
         {
             Handlers.Add(typeof(TEvent), (e,s) => when(e as TEvent,s)); 
@@ -105,7 +119,7 @@ namespace ZES.Infrastructure.Projections
         protected virtual void Pause()
         {
             Log.Trace("", this);
-            _connection.Dispose();
+            _connection?.Dispose();
         }
         
         protected virtual void Unpause()

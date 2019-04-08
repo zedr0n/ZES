@@ -45,13 +45,17 @@ namespace ZES.Infrastructure.Projections
             foreach (var h in _projection.Handlers)
                 Register(h.Key, (e,s) => e.Timestamp <= _timestamp ? h.Value(e,s) : s);
         }
+
+        public override void OnInit()
+        {
+        }
+
         public async Task Init(long timestamp)
         {
             Log.Trace("",this);
             _timestamp = timestamp;
+            Start(false);
             await Rebuild();
         }
-
-
     }
 }

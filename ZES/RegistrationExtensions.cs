@@ -76,8 +76,6 @@ namespace ZES
                     Lifestyle.Transient,x => x.Consumer.ImplementationType.GetInterfaces().Contains(typeof(IHistoricalQueryHandler)));
                 c.RegisterConditional(projectionInterface,p,Lifestyle.Singleton, x => !x.Handled); 
             }
-
-
         }
 
         public static HistoricalProjection<TProjection,TState> GetHistorical<TProjection,TState>(this Container c) where TState : new()

@@ -138,7 +138,7 @@ namespace ZES.Tests
             await bus.CommandAsync(command); 
 
             var statsQuery = new StatsQuery();
-            await RetryUntil(async () => await bus.QueryAsync(statsQuery) ==1, timeout:TimeSpan.MaxValue);
+            await RetryUntil(async () => await bus.QueryAsync(statsQuery) ==1);
             //Assert.Equal(1, bus.Query(statsQuery));
             
             var historicalQuery = new HistoricalQuery<long>(statsQuery, 0);

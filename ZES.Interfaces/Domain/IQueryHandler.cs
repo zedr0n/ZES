@@ -13,16 +13,13 @@ namespace ZES.Interfaces.Domain
         /// </summary>
         /// <param name="query"> Query object </param>
         /// <returns>Query result</returns>
-        TResult Handle(TQuery query);
+        TResult Handle(IQuery<TResult> query);
         
         /// <summary>
         /// Query handler processor ( can be overriden via decorators )
         /// </summary>
         /// <param name="query"> Query object </param>
         /// <returns>Query result</returns>
-        Task<TResult> HandleAsync(TQuery query);
+        Task<TResult> HandleAsync(IQuery<TResult> query);
     }
-   
-    public interface IHistoricalQueryHandler {}
-    public interface IHistoricalQueryHandler<TQuery, TResult> : IQueryHandler<TQuery, TResult>, IHistoricalQueryHandler {} 
 } 

@@ -47,18 +47,29 @@ namespace ZES
                 if(result == null)
                     continue;
                 
-                var iQuery = typeof(IQueryHandler<,>).MakeGenericType(q, result);
-                var handler = assembly.GetTypesFromInterface(iQuery).SingleOrDefault();
-                c.Register(iQuery,handler, Lifestyle.Transient);
-                               
-                var iHistoricalHandler = typeof(IHistoricalQueryHandler<,>).MakeGenericType(q, result); 
+                var iQueryHandler = typeof(IQueryHandler<,>).MakeGenericType(q, result);
+                var handler = assembly.GetTypesFromInterface(iQueryHandler).SingleOrDefault();
                 
                 var parameters = handler.GetConstructors()[0].GetParameters();
                 var tState = parameters.First(p => p.ParameterType.GetInterfaces().Contains(typeof(IProjection)))
                     .ParameterType.GenericTypeArguments[0];
+
+                var iHistoricalQuery = typeof(HistoricalQuery<,>).MakeGenericType(q,result);
+                var iHistoricalQueryHandler = typeof(IQueryHandler<,>).MakeGenericType(iHistoricalQuery, result);
                 
                 var historicalHandler = typeof(HistoricalQueryHandler<,,>).MakeGenericType(q, result,tState);
-                c.Register(iHistoricalHandler, historicalHandler, Lifestyle.Transient);
+
+                c.RegisterConditional(iQueryHandler, handler, Lifestyle.Transient, x => !x.Handled);
+                c.RegisterConditional(iHistoricalQueryHandler, historicalHandler, Lifestyle.Transient, x => !x.Handled);
+                //c.RegisterDecorator(iQueryHandler, historicalHandler, p => 
+                //    p.ServiceType.GenericTypeArguments[0].GetInterfaces().Contains(iHistoricalQuery) );
+                //c.RegisterConditional(iQueryHandler, historicalHandler, Lifestyle.Transient,
+                //    p => p.ImplementationType.GenericTypeArguments[0].GetInterfaces().Contains(iHistoricalQuery));
+
+                //var iHistoricalHandler = typeof(IQueryHandler<,>).MakeGenericType(q, result); 
+
+
+                //c.Register(iHistoricalHandler, historicalHandler, Lifestyle.Transient);
                 //c.RegisterConditional(iQuery,historicalHandler, Lifestyle.Transient,x => q.GetInterfaces().Contains(typeof(IHistoricalQuery)));
                 //c.RegisterConditional(iQuery, handler, Lifestyle.Transient, x => !q.GetInterfaces().Contains(typeof(IHistoricalQuery)));
             }
@@ -74,28 +85,12 @@ namespace ZES
 
                 //c.Register(projectionInterface, p, Lifestyle.Singleton);
                 c.RegisterConditional(projectionInterface, typeof(HistoricalDecorator<>).MakeGenericType(tState),
-                    Lifestyle.Transient,x => x.Consumer.ImplementationType.GetInterfaces().Contains(typeof(IHistoricalQueryHandler)));
+                    Lifestyle.Transient,
+                    x => x.Consumer.ImplementationType.IsClosedTypeOf(typeof(HistoricalQueryHandler<,,>)));
                 c.RegisterConditional(projectionInterface,p,Lifestyle.Singleton, x => !x.Handled); 
             }
         }
 
-        public static HistoricalProjection<TProjection,TState> GetHistorical<TProjection,TState>(this Container c) where TState : new()
-            where TProjection : Projection<TState>
-        {
-            return c.GetInstance(typeof(HistoricalProjection<,>).MakeGenericType(typeof(TProjection), typeof(TState))) as HistoricalProjection<TProjection,TState>;
-        }
-        
-        public static dynamic GetHistorical(this Container c, Type tProjection)
-        {
-            Type tState;
-            if (!tProjection.IsInterface)
-                tState = tProjection.GetInterfaces().First(i => i.GetGenericArguments().Length > 0)
-                    .GetGenericArguments()[0];
-            else
-                tState = tProjection.GenericTypeArguments[0];
-            return c.GetInstance(typeof(HistoricalProjection<,>).MakeGenericType(tProjection, tState));
-        }
-        
         public static void RegisterCommands(this Container c, Assembly assembly)
         {
             var commands = assembly.GetTypesFromInterface(typeof(ICommand));

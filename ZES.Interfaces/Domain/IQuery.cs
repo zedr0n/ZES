@@ -9,9 +9,9 @@ namespace ZES.Interfaces.Domain
     }
     public interface IHistoricalQuery {}
 
-    public interface IHistoricalQuery<TResult> : IQuery<TResult>, IHistoricalQuery
+    public interface IHistoricalQuery<out TQuery,TResult> : IQuery<TResult>, IHistoricalQuery
     {
         long Timestamp { get; }
-        IQuery<TResult> Query { get; }
+        TQuery Query { get; }
     }
 }

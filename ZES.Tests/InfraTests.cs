@@ -138,14 +138,14 @@ namespace ZES.Tests
             await bus.CommandAsync(command); 
 
             var statsQuery = new StatsQuery();
-            await RetryUntil(async () => await bus.QueryAsync(statsQuery) ==1);
+            await RetryUntil(async () => await bus.QueryAsync(statsQuery) ==1, timeout: TimeSpan.MaxValue);
             //Assert.Equal(1, bus.Query(statsQuery));
             
-            var historicalQuery = new HistoricalQuery<long>(statsQuery, 0);
+            var historicalQuery = new HistoricalQuery<StatsQuery,long>(statsQuery, 0);
             var historicalStats = await bus.QueryAsync(historicalQuery);
             Assert.Equal(0, historicalStats);
             
-            var liveQuery = new HistoricalQuery<long>(statsQuery, DateTime.UtcNow.Ticks);
+            var liveQuery = new HistoricalQuery<StatsQuery,long>(statsQuery, DateTime.UtcNow.Ticks);
             var liveStats = await bus.QueryAsync(liveQuery);
             Assert.Equal(1, liveStats);
         }

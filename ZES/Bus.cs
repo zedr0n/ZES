@@ -4,6 +4,7 @@ using System.Reflection;
 using System.Threading.Tasks;
 using System.Threading.Tasks.Dataflow;
 using SimpleInjector;
+using ZES.Interfaces;
 using ZES.Interfaces.Domain;
 using ZES.Interfaces.Pipes;
 
@@ -13,6 +14,7 @@ namespace ZES
     {
         private readonly Container _container;
         private readonly ActionBlock<ICommand> _commandProcessor;
+        private readonly ILog _log;
         
         private object GetInstance(Type type)
         {
@@ -24,6 +26,7 @@ namespace ZES
             catch (Exception e)
             {
                 //_log.WriteLine("Failed to create handler " + type.Name );
+                _log.Error(e.Message,this);
                 if (e is ActivationException)
                     return null;
                 throw;
@@ -31,9 +34,10 @@ namespace ZES
             
         }
         
-        public Bus(Container container)
+        public Bus(Container container, ILog log)
         {
             _container = container;
+            _log = log;
             _commandProcessor = new ActionBlock<ICommand>(HandleCommand,
                 new ExecutionDataflowBlockOptions
                 {
@@ -107,11 +111,15 @@ namespace ZES
         }
         public async Task<TResult> QueryAsync<TResult>(IQuery<TResult> query)
         {
-            Type handlerType;
+            /*Type handlerType;
             if (query.GetType().GetInterfaces().Contains(typeof(IHistoricalQuery)))
-                handlerType = typeof(IHistoricalQueryHandler<,>).MakeGenericType(query.Type, typeof(TResult));
-            else
-                handlerType = typeof(IQueryHandler<,>).MakeGenericType(query.Type, typeof(TResult));
+            {
+                var historicalQueryType = typeof(IHistoricalQuery<,>).MakeGenericType(query.Type, typeof(TResult));
+                handlerType = typeof(IQueryHandler<,>).MakeGenericType(historicalQueryType, typeof(TResult)); 
+            }
+
+            else*/
+            var handlerType = typeof(IQueryHandler<,>).MakeGenericType(query.GetType(), typeof(TResult));
                 
             dynamic handler = GetInstance(handlerType);
             if (handler != null)

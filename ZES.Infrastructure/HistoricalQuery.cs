@@ -3,15 +3,15 @@ using ZES.Interfaces.Domain;
 
 namespace ZES.Infrastructure
 {
-    public class HistoricalQuery<TResult> : IHistoricalQuery<TResult>
+    public class HistoricalQuery<TQuery,TResult> : IHistoricalQuery<TQuery,TResult>
     {
-        public HistoricalQuery(IQuery<TResult> query,long timestamp)
+        public HistoricalQuery(TQuery query,long timestamp)
         {
             Query = query;
             Timestamp = timestamp;
         }
-        public IQuery<TResult> Query { get; }
         public long Timestamp { get; }
-        public Type Type => Query.Type;
+        public TQuery Query { get; }
+        public Type Type => typeof(TQuery);
     }
 }

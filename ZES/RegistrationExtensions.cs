@@ -49,6 +49,9 @@ namespace ZES
                 var iQuery = typeof(IQueryHandler<,>).MakeGenericType(q, result);
                 var handler = assembly.GetTypesFromInterface(iQuery).SingleOrDefault();
                 c.Register(iQuery,handler, Lifestyle.Transient);
+                //var historicalHandler = typeof(HistoricalQueryHandler<,>).MakeGenericType(q, result);
+                //c.RegisterConditional(iQuery,historicalHandler, Lifestyle.Transient,x => q.GetInterfaces().Contains(typeof(IHistoricalQuery)));
+                //c.RegisterConditional(iQuery, handler, Lifestyle.Transient, x => !q.GetInterfaces().Contains(typeof(IHistoricalQuery)));
             }
         }
         
@@ -60,10 +63,10 @@ namespace ZES
                 var projectionInterface = p.GetInterfaces().First(x => x.Name.StartsWith(nameof(IProjection)));
                 var tState = projectionInterface.GenericTypeArguments[0];
 
-                c.Register(projectionInterface, p, Lifestyle.Singleton);
-                //c.RegisterConditional(projectionInterface, typeof(HistoricalDecorator<>).MakeGenericType(tState),
-                //    Lifestyle.Transient,x => x.Consumer.Target.TargetType.GetInterfaces().Contains(typeof(IHistoricalQueryHandler)));
-                //c.RegisterConditional(projectionInterface,p,Lifestyle.Singleton, x => !x.Handled); 
+                //c.Register(projectionInterface, p, Lifestyle.Singleton);
+                c.RegisterConditional(projectionInterface, typeof(HistoricalDecorator<>).MakeGenericType(tState),
+                    Lifestyle.Transient,x => x.Consumer.ImplementationType.GetInterfaces().Contains(typeof(IHistoricalQueryHandler)));
+                c.RegisterConditional(projectionInterface,p,Lifestyle.Singleton, x => !x.Handled); 
             }
 
 

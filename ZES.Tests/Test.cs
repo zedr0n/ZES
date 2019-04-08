@@ -5,6 +5,7 @@ using NLog;
 using NLog.Targets;
 using SimpleInjector;
 using Xunit.Abstractions;
+using ZES.Interfaces.Domain;
 using ZES.Logging;
 using ZES.Tests.Domain;
 
@@ -64,6 +65,7 @@ namespace ZES.Tests
 
                 container.Options.AllowOverridingRegistrations = true;
                 container.Register(typeof(ILogger),() => _logger,Lifestyle.Singleton);
+                container.Options.AllowOverridingRegistrations = false;
                 
                 if(registrations == null)
                     registrations = new List<Action<Container>>();

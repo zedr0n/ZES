@@ -14,6 +14,12 @@ namespace ZES.Tests.Domain.Queries
             _projection = projection;
         }
 
+        public IProjection Projection
+        {
+            get => _projection;
+            set => _projection = value as IProjection<RootProjection.StateType>;
+        }
+
         public long Handle(CreatedAtQuery query)
         {
             return _projection.State.Get(query.Id); 
@@ -21,7 +27,7 @@ namespace ZES.Tests.Domain.Queries
 
         public Task<long> HandleAsync(CreatedAtQuery query)
         {
-            throw new System.NotImplementedException();
+            return Task.FromResult(Handle(query));
         }
     }
 }

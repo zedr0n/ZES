@@ -30,11 +30,16 @@ namespace ZES.Infrastructure.Projections
         }
     }
 
-    public class HistoricalDecorator<TState> : Projection<TState> where TState : new()
+    public interface IHistoricalProjection
+    {
+        Task Init(long timestamp);
+    }
+    
+    public class HistoricalDecorator<TState> : Projection<TState>, IHistoricalProjection where TState : new()
     {
         private long _timestamp;
         private readonly Projection<TState> _projection;
-        protected HistoricalDecorator(IEventStore<IAggregate> eventStore, ILog log, IMessageQueue messageQueue, ITimeline timeline, IProjection<TState> projection) : base(eventStore, log, messageQueue, timeline)
+        public HistoricalDecorator(IEventStore<IAggregate> eventStore, ILog log, IMessageQueue messageQueue, ITimeline timeline, IProjection<TState> projection) : base(eventStore, log, messageQueue, timeline)
         {
             _projection = projection as Projection<TState>;
             foreach (var h in _projection.Handlers)
@@ -46,5 +51,7 @@ namespace ZES.Infrastructure.Projections
             _timestamp = timestamp;
             await Rebuild();
         }
+
+
     }
 }

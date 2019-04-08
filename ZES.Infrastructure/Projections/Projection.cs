@@ -53,7 +53,6 @@ namespace ZES.Infrastructure.Projections
                 });
             _bufferBlock = new BufferBlock<IStream>();
 
-            OnInit();
             Complete = Observable.Create( async (IObserver<bool> observer) =>
             {
                 if (!_rebuilding)
@@ -69,6 +68,8 @@ namespace ZES.Infrastructure.Projections
                     observer.OnCompleted();
                 });
             });
+            
+            OnInit();
         }
 
         public virtual void OnInit()

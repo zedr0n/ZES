@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using SimpleInjector;
+using ZES.Infrastructure;
 using ZES.Infrastructure.Projections;
 using ZES.Interfaces.Domain;
 using ZES.Interfaces.Sagas;

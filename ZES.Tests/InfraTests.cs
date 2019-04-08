@@ -65,7 +65,7 @@ namespace ZES.Tests
             }
             
             var query = new CreatedAtQuery("Root1");
-            await RetryUntil(async () => await bus.QueryAsync(query));
+            await bus.QueryAsync(query);
             
             await messageQueue.Alert(new InvalidateProjections());
             Thread.Sleep(10);

@@ -13,7 +13,6 @@ namespace ZES.Tests.Domain.Queries
             _projection = projection;
         }
 
-
         public IProjection Projection
         {
             get => _projection;

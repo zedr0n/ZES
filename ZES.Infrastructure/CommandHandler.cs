@@ -32,7 +32,7 @@ namespace ZES.Infrastructure
             }
             catch (Exception e)
             {
-                _log.Error(e.Message);
+                _log.Error(e.Message,this);
                 
                 // retry the command in case of concurrency exception
                 //if(e is ConcurrencyException)

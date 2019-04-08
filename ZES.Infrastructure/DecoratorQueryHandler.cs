@@ -32,7 +32,7 @@ namespace ZES.Infrastructure
             }
             catch (Exception e)
             {
-                _log.Error(e.Message);
+                _log.Error(e.Message,_handler);
                 throw;
             }
         }
@@ -45,6 +45,8 @@ namespace ZES.Infrastructure
                 //    _handler.Projection = Projection;
                 //else
                 //    await _handler.Projection.Complete;
+                if(_handler.Projection != null)
+                    await _handler.Projection.Complete;
                 return await _handler.HandleAsync(query);
             }
             catch (Exception e)

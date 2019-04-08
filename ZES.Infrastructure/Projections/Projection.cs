@@ -22,11 +22,12 @@ namespace ZES.Infrastructure.Projections
         protected readonly ITimeline Timeline;
         private readonly IMessageQueue _messageQueue;
 
-
         private IDisposable _connection; 
         private IDisposable _subscription;
+        private readonly List<IDisposable> _updateSubscription = new List<IDisposable>();
+        
         private readonly BufferBlock<IStream> _bufferBlock;
-        private readonly ActionBlock<IStream> _actionBlock;
+        private ActionBlock<IStream> _actionBlock;
         private readonly IEventStore<IAggregate> _eventStore;
         private readonly ConcurrentDictionary<string,int> _streams = new ConcurrentDictionary<string, int>();
         internal readonly Dictionary<Type, Func<IEvent,TState,TState>> Handlers = new Dictionary<Type, Func<IEvent, TState, TState>>();
@@ -37,7 +38,7 @@ namespace ZES.Infrastructure.Projections
         private bool _rebuilding;
         private readonly Subject<bool> _buildSubject = new Subject<bool>();
         
-        public TState State { get; protected set; }
+        public TState State { get; protected set; } = new TState();
 
         protected Projection(IEventStore<IAggregate> eventStore, ILog log, IMessageQueue messageQueue, ITimeline timeline)
         {
@@ -46,11 +47,6 @@ namespace ZES.Infrastructure.Projections
             _messageQueue = messageQueue;            
             Timeline = timeline;
             
-            _actionBlock = new ActionBlock<IStream>(Update,
-                new ExecutionDataflowBlockOptions
-                {
-                    MaxDegreeOfParallelism = 8
-                });
             _bufferBlock = new BufferBlock<IStream>();
 
             Complete = Observable.Create( async (IObserver<bool> observer) =>
@@ -67,6 +63,7 @@ namespace ZES.Infrastructure.Projections
                     observer.OnNext(true);
                     observer.OnCompleted();
                 });
+                observer.OnNext(false);
             });
             
             OnInit();
@@ -109,26 +106,36 @@ namespace ZES.Infrastructure.Projections
         {
             if (!_streamFilter(stream.Key))
                 return;
-            
-            var version = stream.Version; 
-            var projectionVersion = _streams.GetOrAdd(stream.Key,-1);
-            Log.Trace($"{stream.Key}@{projectionVersion}",this); 
-            if (version > projectionVersion)
-                await _bufferBlock.SendAsync(stream);
+
+            Log.Trace($"{stream.Key}@{stream.Version}",this); 
+            await _bufferBlock.SendAsync(stream);
         }
 
         protected virtual void Pause()
         {
             Log.Trace("", this);
+            _actionBlock?.Complete();
             _connection?.Dispose();
+            _subscription?.Dispose();
+            foreach (var sub in _updateSubscription)
+            {
+                sub?.Dispose();
+                _updateSubscription.Remove(sub);
+            } 
         }
         
         protected virtual void Unpause()
         {
             _rebuilding = false;
             Log.Trace("", this);
+            _actionBlock = new ActionBlock<IStream>(async s => await Update(s),
+                new ExecutionDataflowBlockOptions
+                {
+                    MaxDegreeOfParallelism = 16
+                    
+                });
+            
             _connection = _bufferBlock.LinkTo(_actionBlock);
-            _subscription.Dispose();
         }
         
         protected async Task Rebuild()
@@ -136,11 +143,10 @@ namespace ZES.Infrastructure.Projections
             bool StreamFilter(string s) => _streamFilter(s) && s.StartsWith(Timeline.Id);
             
             _rebuilding = true;
-            _subscription?.Dispose();
-            
             Pause();
             
-            State = new TState();
+            lock(State)
+                State = new TState();
             
             _subscription = _eventStore.Events.Where(e => StreamFilter(e.Stream))
                 .Finally(Unpause) 
@@ -150,29 +156,34 @@ namespace ZES.Infrastructure.Projections
 
         private async Task Update(IStream stream)
         {
-            if(!_streams.TryGetValue(stream.Key, out var version))
-                throw new InvalidOperationException("Stream not registered");
+            var version = stream.Version; 
+            var projectionVersion = _streams.GetOrAdd(stream.Key,-1);
+
+            if (version <= projectionVersion)
+                return;
             
-            Log.Trace($"{stream.Key}@{stream.Version}",this);     
-            
-            var streamEvents = (await _eventStore.ReadStream(stream, version+1)).ToList();
-            
-            foreach (var e in streamEvents)
-                When(e);
+            Log.Trace($"{stream.Key}@{projectionVersion}->{version}",this);
+
+            var task = new TaskCompletionSource<bool>();
+            var obs = _eventStore.ReadStream(stream, projectionVersion + 1)
+                .Finally(() => task.SetResult(true));
+
+            var sub = obs.Subscribe(When);
+            _updateSubscription.Add(sub);
+            await task.Task;
+            _updateSubscription.Remove(sub);
         }
 
         private void When(IEvent e)
         {
+            Log.Trace("",this);
             if (e == null)
                 return;
 
             if (!Handlers.TryGetValue(e.GetType(), out var handler)) 
                 return;
 
-            //lock (State)
-            //{
-                State = handler(e,State);    
-            //}
+            State = handler(e,State);    
             _streams[e.Stream] = e.Version;
         }
     }

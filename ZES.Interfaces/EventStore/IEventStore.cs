@@ -26,7 +26,7 @@ namespace ZES.Interfaces.EventStore
         /// <param name="start">Starting version for the read</param>
         /// <param name="count">Number of events to read</param>
         /// <returns></returns>
-        Task<IEnumerable<IEvent>> ReadStream(IStream stream, int start, int count = -1);
+        IObservable<IEvent> ReadStream(IStream stream, int start, int count = -1);
         /// <summary>
         /// Append events to stream
         /// </summary>

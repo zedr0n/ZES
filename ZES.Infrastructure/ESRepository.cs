@@ -1,5 +1,6 @@
 using System;
 using System.Linq;
+using System.Reactive.Linq;
 using System.Threading.Tasks;
 using ZES.Infrastructure.Domain;
 using ZES.Interfaces;
@@ -34,8 +35,8 @@ namespace ZES.Infrastructure
                 return;
             
             var stream = _streams.GetOrAdd(es);
-            if (stream.Version >= 0 && (await _eventStore.ReadStream(stream, stream.Version)).Any())
-                throw new InvalidOperationException();
+            //if (stream.Version >= 0 && (await _eventStore.ReadStream(stream, stream.Version)))
+            //    throw new InvalidOperationException();
 
             foreach (var e in events.OfType<Event>())
             {
@@ -64,7 +65,7 @@ namespace ZES.Infrastructure
             if (stream == null)
                 return null;
 
-            var events = await _eventStore.ReadStream(stream, 0);
+            var events = await _eventStore.ReadStream(stream, 0).ToList();
             var aggregate = EventSourced.Create<T>(id);
             aggregate.LoadFrom<T>(events);
             

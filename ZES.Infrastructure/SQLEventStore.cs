@@ -78,25 +78,31 @@ namespace ZES.Infrastructure
             }).Concat(_streams.AsObservable());
         }
 
-        public async Task<IEnumerable<IEvent>> ReadStream(IStream stream, int start, int count = -1)
+        public IObservable<IEvent> ReadStream(IStream stream, int start, int count = -1)
         {
-            var events = new List<IEvent>();
             if (count == -1)
                 count = int.MaxValue;
-            
-            var page = await _streamStore.ReadStreamForwards(stream.Key,start,ReadSize);
-            while (page.Messages.Length > 0 && count > 0)
+
+            var observable = Observable.Create(async (IObserver<IEvent> observer) =>
             {
-                foreach (var m in page.Messages)
+                var page = await _streamStore.ReadStreamForwards(stream.Key,start,ReadSize);
+                while (page.Messages.Length > 0 && count > 0)
                 {
-                    var payload = await m.GetJsonData();
-                    var @event = _serializer.Deserialize(payload);
-                    events.Add(@event);
-                    count--;
-                }
-                page = await page.ReadNext();
-            }
-            return events;
+                    foreach (var m in page.Messages)
+                    {
+                        var payload = await m.GetJsonData();
+                        var @event = _serializer.Deserialize(payload);
+                        observer.OnNext(@event);
+                        count--;
+                        if (count == 0)
+                            break;
+                    }
+                    page = await page.ReadNext();
+                } 
+                observer.OnCompleted();
+            });
+            
+            return observable;
         }
 
         private void LogEvents(IEnumerable<NewStreamMessage> messages)

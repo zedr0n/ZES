@@ -49,7 +49,15 @@ namespace ZES
                 var iQuery = typeof(IQueryHandler<,>).MakeGenericType(q, result);
                 var handler = assembly.GetTypesFromInterface(iQuery).SingleOrDefault();
                 c.Register(iQuery,handler, Lifestyle.Transient);
-                //var historicalHandler = typeof(HistoricalQueryHandler<,>).MakeGenericType(q, result);
+                               
+                var iHistoricalHandler = typeof(IHistoricalQueryHandler<,>).MakeGenericType(q, result); 
+                
+                var parameters = handler.GetConstructors()[0].GetParameters();
+                var tState = parameters.First(p => p.ParameterType.GetInterfaces().Contains(typeof(IProjection)))
+                    .ParameterType.GenericTypeArguments[0];
+                
+                var historicalHandler = typeof(HistoricalQueryHandler<,,>).MakeGenericType(q, result,tState);
+                c.Register(iHistoricalHandler, historicalHandler, Lifestyle.Transient);
                 //c.RegisterConditional(iQuery,historicalHandler, Lifestyle.Transient,x => q.GetInterfaces().Contains(typeof(IHistoricalQuery)));
                 //c.RegisterConditional(iQuery, handler, Lifestyle.Transient, x => !q.GetInterfaces().Contains(typeof(IHistoricalQuery)));
             }

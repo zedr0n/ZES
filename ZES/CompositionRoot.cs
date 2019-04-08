@@ -65,8 +65,8 @@ namespace ZES
             container.RegisterDecorator(typeof(ICommandHandler<>),
                 typeof(CommandHandler<>), Lifestyle.Singleton);
 
-            //container.RegisterDecorator(typeof(IQueryHandler<,>),
-            //    typeof(QueryHandler<,>), Lifestyle.Transient );
+            container.RegisterDecorator(typeof(IQueryHandler<,>),
+                typeof(QueryHandler<,>), Lifestyle.Transient );
             
             container.Register<ITimeTraveller,TimeTraveller>(Lifestyle.Singleton);
             //container.Register();

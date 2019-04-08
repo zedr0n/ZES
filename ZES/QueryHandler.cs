@@ -1,6 +1,5 @@
 using System;
 using System.Threading.Tasks;
-using SimpleInjector;
 using ZES.Infrastructure.Projections;
 using ZES.Interfaces;
 using ZES.Interfaces.Domain;
@@ -45,42 +44,13 @@ namespace ZES
         private readonly IQueryHandler<TQuery, TResult> _handler;
         private readonly ILog _log;
         private readonly ISerializer<IQuery<TResult>> _serializer;
-        private readonly Container _container;
 
-        public QueryHandler(IQueryHandler<TQuery, TResult> handler, ILog log, ISerializer<IQuery<TResult>> serializer, Container container)
+        public QueryHandler(IQueryHandler<TQuery, TResult> handler, ILog log, ISerializer<IQuery<TResult>> serializer)
         {
             _handler = handler;
             _log = log;
             _serializer = serializer;
-            _container = container;
         }
-
-        public TResult Handle(IHistoricalQuery<TResult> query)
-        {
-            var timestamp = query.Timestamp;
-            var field = _handler.GetType().GetField("_projection",
-                System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-            
-            var projection = _container.GetHistorical(field.FieldType);
-            projection.Init(timestamp);
-            
-            field.SetValue(_handler,projection);
-            return _handler.Handle(query.Query as TQuery);
-        }
-        
-        public async Task<TResult> HandleAsync(IHistoricalQuery<TResult> query)
-        {
-            var timestamp = query.Timestamp;
-            var field = _handler.GetType().GetField("_projection",
-                System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-            
-            var projection = _container.GetHistorical(field.FieldType);
-            await projection.Init(timestamp);
-            
-            field.SetValue(_handler,projection);
-            return _handler.Handle(query.Query as TQuery);
-        }
-
 
         public IProjection Projection { get; set; }
 
@@ -90,6 +60,8 @@ namespace ZES
             _log.Debug(_serializer.Serialize(query));
             try
             {
+                if (Projection != null)
+                    _handler.Projection = Projection;
                 return _handler.Handle(query);
             }
             catch (Exception e)
@@ -103,6 +75,8 @@ namespace ZES
         {
             try
             {
+                if (Projection != null)
+                    _handler.Projection = Projection;
                 return await _handler.HandleAsync(query);
             }
             catch (Exception e)

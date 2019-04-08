@@ -107,17 +107,12 @@ namespace ZES
         }
         public async Task<TResult> QueryAsync<TResult>(IQuery<TResult> query)
         {
-            var handlerType = typeof(IQueryHandler<,>).MakeGenericType(query.Type, typeof(TResult));
+            Type handlerType;
             if (query.GetType().GetInterfaces().Contains(typeof(IHistoricalQuery)))
-            {
-                var realHandlerImpType = GetInstance(handlerType).GetType();
-                var parameters = realHandlerImpType.GetConstructors()[0].GetParameters();
-
-                var tState = parameters.First(p => p.ParameterType.GetInterfaces().Contains(typeof(IProjection)))
-                    .ParameterType.GenericTypeArguments[0];
-                handlerType = typeof(HistoricalQueryHandler<,,>).MakeGenericType(query.Type, typeof(TResult),tState); 
-            }
-            
+                handlerType = typeof(IHistoricalQueryHandler<,>).MakeGenericType(query.Type, typeof(TResult));
+            else
+                handlerType = typeof(IQueryHandler<,>).MakeGenericType(query.Type, typeof(TResult));
+                
             dynamic handler = GetInstance(handlerType);
             if (handler != null)
                 try

@@ -139,24 +139,15 @@ namespace ZES.Infrastructure.Projections
             Handlers.Add(tEvent, when);
         }
 
-        protected void Register<TEvent>(Action<TEvent> action) where TEvent : class, IEvent
-        {
-            TState Handler(IEvent e, TState s)
-            {
-                action(e as TEvent);
-                return State;
-            }
-            Handlers.Add(typeof(TEvent), Handler);
-        }
-
         protected async Task Rebuild()
         {
             Log.Trace("",this);
-            lock(State)
-                State = new TState();
             
             _streamSource.Cancel();
             _rebuildSource.Cancel();
+            
+            lock(State)
+                State = new TState();
             
             _rebuildSource = new CancellationTokenSource();
             var eventFlow = new EventFlow(When,_rebuildSource);
@@ -168,6 +159,12 @@ namespace ZES.Infrastructure.Projections
 
         private void When(IEvent e)
         {
+            if (_rebuildSource.IsCancellationRequested)
+            {
+                Log.Debug("Cancellation requested!");
+                return;
+            }
+
             Log.Trace("",this);
             if (e == null)
                 return;

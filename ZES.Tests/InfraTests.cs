@@ -74,7 +74,7 @@ namespace ZES.Tests
             
             var newCommand = new CreateRoot("OtherRoot");
             await bus.CommandAsync(newCommand);
-            var res = await RetryUntil(async () => await bus.QueryAsync(new StatsQuery()), x => x >= numberOfRoots, TimeSpan.MaxValue);
+            var res = await RetryUntil(async () => await bus.QueryAsync(new StatsQuery()), x => x >= numberOfRoots);
 
             Assert.Equal(numberOfRoots+1 , res);
         }

@@ -5,8 +5,8 @@ namespace ZES.Interfaces.Domain
 {
     public interface IProjection
     {
-        void Start(bool rebuild = true);
-        IObservable<bool> Complete { get; }
+        Task Start(bool rebuild = true);
+        Task Complete { get; }
     }
     public interface IProjection<TState> : IProjection
     {

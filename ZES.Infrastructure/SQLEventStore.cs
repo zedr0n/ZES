@@ -25,17 +25,19 @@ namespace ZES.Infrastructure
         private readonly Subject<IStream> _streams = new Subject<IStream>();
         private readonly IMessageQueue _messageQueue;
         private readonly ILog _log;
+        private readonly ITimeline _timeline;
 
         private readonly bool _isDomainStore;
 
         private const int ReadSize = 100;
 
-        public SqlEventStore(IStreamStore streamStore, IEventSerializer serializer, IMessageQueue messageQueue, ILog log)
+        public SqlEventStore(IStreamStore streamStore, IEventSerializer serializer, IMessageQueue messageQueue, ILog log, ITimeline timeline)
         {
             _streamStore = streamStore;
             _serializer = serializer;
             _messageQueue = messageQueue;
             _log = log;
+            _timeline = timeline;
             _isDomainStore = typeof(I) == typeof(IAggregate);
             
             Events = Observable.Create(async (IObserver<IEvent> observer) =>
@@ -45,6 +47,9 @@ namespace ZES.Infrastructure
                 {
                     foreach(var m in page.Messages)
                     {
+                        var stream = new Stream(m.StreamId);
+                        if (stream.Timeline != _timeline.Id) 
+                            continue;
                         var payload = await m.GetJsonData();
                         var e = _serializer.Deserialize(payload);
                         observer.OnNext(e);
@@ -128,6 +133,7 @@ namespace ZES.Infrastructure
 
         public async Task AppendToStream(IStream stream, IEnumerable<IEvent> enumerable)
         {
+            _log.Trace("",this);
             var events = enumerable as IList<IEvent> ?? enumerable.ToList();
             if (!events.Any())
                 return;

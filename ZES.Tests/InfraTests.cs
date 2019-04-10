@@ -185,7 +185,7 @@ namespace ZES.Tests
             await bus.CommandAsync(command);
 
             var query = new CreatedAtQuery("RootCopy");
-            var createdAt = await RetryUntil(async () => await bus.QueryAsync(query));
+            var createdAt = await RetryUntil(async () => await bus.QueryAsync(query),timeout: TimeSpan.MaxValue);
             
             Assert.NotEqual(0, createdAt);
         }

@@ -172,7 +172,7 @@ namespace ZES.Tests
             Assert.NotEqual(0, createdAt); 
             
             var statsQuery = new StatsQuery();
-            Assert.Equal(numRoots,bus.Query(statsQuery));
+            Assert.Equal(numRoots,await bus.QueryAsync(statsQuery));
         }
 
         [Fact]

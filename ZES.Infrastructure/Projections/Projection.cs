@@ -73,7 +73,7 @@ namespace ZES.Infrastructure.Projections
                 var readBlock = new TransformBlock<IStream, IObservable<IEvent>>(s => eventStore.ReadStream(s, LocalVersion(s) + 1), 
                     new ExecutionDataflowBlockOptions
                     {
-                        CancellationToken = tokenSource.Token
+                        CancellationToken = tokenSource.Token,
                     });               
                 
                 var updateBlock = new ActionBlock<IObservable<IEvent>>(e => e.Subscribe(when,tokenSource.Token),
@@ -116,13 +116,14 @@ namespace ZES.Infrastructure.Projections
         {
             if(rebuild)
                 await Rebuild();
-            
-            ListenToStreams();
+            else
+                ListenToStreams();
             _messageQueue.Alerts.OfType<InvalidateProjections>().Subscribe(async s => await Rebuild()); 
         }
 
         private void ListenToStreams()
         {
+            Log.Trace("",this);
             _streamSource.Cancel();
             _streamSource = new CancellationTokenSource();
             var streamFlow = new StreamFlow(_eventStore, _streams, When, _streamSource );

@@ -25,7 +25,6 @@ namespace ZES.Infrastructure
         private readonly Subject<IStream> _streams = new Subject<IStream>();
         private readonly IMessageQueue _messageQueue;
         private readonly ILog _log;
-        private readonly ITimeline _timeline;
 
         private readonly bool _isDomainStore;
 
@@ -37,7 +36,6 @@ namespace ZES.Infrastructure
             _serializer = serializer;
             _messageQueue = messageQueue;
             _log = log;
-            _timeline = timeline;
             _isDomainStore = typeof(I) == typeof(IAggregate);
             
             Events = Observable.Create(async (IObserver<IEvent> observer) =>
@@ -48,7 +46,7 @@ namespace ZES.Infrastructure
                     foreach(var m in page.Messages)
                     {
                         var stream = new Stream(m.StreamId);
-                        if (stream.Timeline != _timeline.Id) 
+                        if (stream.Timeline != timeline.Id) 
                             continue;
                         var payload = await m.GetJsonData();
                         var e = _serializer.Deserialize(payload);
@@ -85,6 +83,7 @@ namespace ZES.Infrastructure
 
         public IObservable<IEvent> ReadStream(IStream stream, int start, int count = -1)
         {
+            _log.Trace("",this);
             if (count == -1)
                 count = int.MaxValue;
 
@@ -144,7 +143,6 @@ namespace ZES.Infrastructure
 
             stream.Version = result.CurrentVersion;
             _streams.OnNext(stream);
-            
 
             await PublishEvents(events);    
         }

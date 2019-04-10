@@ -3,6 +3,7 @@ using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
 using System.Threading.Tasks.Dataflow;
+using Gridsum.DataflowEx;
 using SimpleInjector;
 using ZES.Interfaces;
 using ZES.Interfaces.Domain;
@@ -13,8 +14,31 @@ namespace ZES
     public class Bus : IBus
     {
         private readonly Container _container;
-        private readonly ActionBlock<ICommand> _commandProcessor;
+        private readonly CommandProcessor _commandProcessor;
         private readonly ILog _log;
+
+        private class CommandProcessor : Dataflow<ICommand>
+        {
+            private readonly BufferBlock<ICommand> _inputBlock;
+            private readonly ActionBlock<ICommand> _dispatchBlock;
+            
+            public CommandProcessor(Func<ICommand,Task> handler) : base(DataflowOptions.Default)
+            {
+                _inputBlock = new BufferBlock<ICommand>();
+                
+                _dispatchBlock = new ActionBlock<ICommand>(async c => await handler(c), new ExecutionDataflowBlockOptions
+                {
+                    MaxDegreeOfParallelism = 8
+                });
+                _inputBlock.LinkTo(_dispatchBlock, new DataflowLinkOptions {PropagateCompletion = true});
+                
+                RegisterChild(_inputBlock);
+                RegisterChild(_dispatchBlock);
+            }
+
+            public override ITargetBlock<ICommand> InputBlock => _inputBlock;
+            public int InputCount => _dispatchBlock.InputCount;
+        }
         
         private object GetInstance(Type type)
         {
@@ -38,11 +62,7 @@ namespace ZES
         {
             _container = container;
             _log = log;
-            _commandProcessor = new ActionBlock<ICommand>(HandleCommand,
-                new ExecutionDataflowBlockOptions
-                {
-                    MaxDegreeOfParallelism = 8
-                });
+            _commandProcessor = new CommandProcessor(HandleCommand); 
         }
 
         private int _executing;
@@ -61,17 +81,6 @@ namespace ZES
             }
         }
 
-        public bool Command(ICommand command)
-        {
-            var handlerType = typeof(ICommandHandler<>).MakeGenericType(command.GetType());
-            dynamic handler = GetInstance(handlerType);
-            if (handler == null)
-                return false;
-            
-            handler.Handle(command as dynamic);
-            return true;
-        }
-
         private async Task HandleCommand(ICommand command)
         {
             _submitted--;
@@ -87,38 +96,14 @@ namespace ZES
 
         public async Task<bool> CommandAsync(ICommand command)
         {
-            var res = await _commandProcessor.SendAsync(command);
+            var res = await _commandProcessor.InputBlock.SendAsync(command);
             if(res)
                 _submitted++;
             return res;
         }
 
-        public TResult Query<TResult>(IQuery<TResult> query)
-        {
-            var handlerType = typeof(IQueryHandler<,>).MakeGenericType(query.Type, typeof(TResult));
-            dynamic handler = GetInstance(handlerType);
-            if (handler != null)
-                try
-                {
-                    return handler.Handle(query as dynamic);
-                }
-                catch (Exception e)
-                {
-                    // ignored
-                }
-
-            return default(TResult);            
-        }
         public async Task<TResult> QueryAsync<TResult>(IQuery<TResult> query)
         {
-            /*Type handlerType;
-            if (query.GetType().GetInterfaces().Contains(typeof(IHistoricalQuery)))
-            {
-                var historicalQueryType = typeof(IHistoricalQuery<,>).MakeGenericType(query.Type, typeof(TResult));
-                handlerType = typeof(IQueryHandler<,>).MakeGenericType(historicalQueryType, typeof(TResult)); 
-            }
-
-            else*/
             var handlerType = typeof(IQueryHandler<,>).MakeGenericType(query.GetType(), typeof(TResult));
                 
             dynamic handler = GetInstance(handlerType);

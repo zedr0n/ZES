@@ -67,10 +67,10 @@ namespace ZES.Tests
             var query = new CreatedAtQuery("Root1");
             await bus.QueryAsync(query);
             var statsQuery = new StatsQuery();
-            await RetryUntil(async () => await bus.QueryAsync(statsQuery) == numberOfRoots);
+            await RetryUntil(async () => await bus.QueryAsync(statsQuery) == numberOfRoots, timeout: TimeSpan.MaxValue);
             
             await messageQueue.Alert(new InvalidateProjections());
-            await RetryUntil(async () => await bus.QueryAsync(statsQuery) == numberOfRoots);
+            await bus.QueryAsync(statsQuery);
             
             var newCommand = new CreateRoot("OtherRoot");
             await bus.CommandAsync(newCommand);

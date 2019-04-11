@@ -33,8 +33,7 @@ namespace ZES.Infrastructure.Projections
         {
             Log.Trace("",this);
             _timestamp = timestamp;
-            Start(false);
-            await Rebuild();
+            await Start();
         }
     }
 }

@@ -28,7 +28,7 @@ namespace ZES
                 
                 _dispatchBlock = new ActionBlock<ICommand>(async c => await handler(c), new ExecutionDataflowBlockOptions
                 {
-                    MaxDegreeOfParallelism = 8
+                    MaxDegreeOfParallelism = 1
                 });
                 _inputBlock.LinkTo(_dispatchBlock, new DataflowLinkOptions {PropagateCompletion = true});
                 
@@ -37,7 +37,6 @@ namespace ZES
             }
 
             public override ITargetBlock<ICommand> InputBlock => _inputBlock;
-            public int InputCount => _dispatchBlock.InputCount;
         }
         
         private object GetInstance(Type type)
@@ -65,41 +64,17 @@ namespace ZES
             _commandProcessor = new CommandProcessor(HandleCommand); 
         }
 
-        private int _executing;
-        private int _submitted;
-        public BusStatus Status
-        {
-            get
-            {
-                if (_commandProcessor.InputCount > 0)
-                    return BusStatus.Busy;
-                if (_executing > 0)
-                    return BusStatus.Executing;
-                if (_submitted > 0)
-                    return BusStatus.Submitted;
-                return BusStatus.Free;
-            }
-        }
-
         private async Task HandleCommand(ICommand command)
         {
-            _submitted--;
-            _executing++;
-            
             var handlerType = typeof(ICommandHandler<>).MakeGenericType(command.GetType());
             dynamic handler = GetInstance(handlerType);
             if (handler != null)
                 await handler.Handle(command as dynamic);
-
-            _executing--;
         }
 
         public async Task<bool> CommandAsync(ICommand command)
         {
-            var res = await _commandProcessor.InputBlock.SendAsync(command);
-            if(res)
-                _submitted++;
-            return res;
+            return await _commandProcessor.InputBlock.SendAsync(command);
         }
 
         public async Task<TResult> QueryAsync<TResult>(IQuery<TResult> query)
@@ -108,14 +83,7 @@ namespace ZES
                 
             dynamic handler = GetInstance(handlerType);
             if (handler != null)
-                try
-                {
-                    return await handler.HandleAsync(query as dynamic);
-                }
-                catch (Exception e)
-                {
-                    // ignored
-                }
+                return await handler.HandleAsync(query as dynamic);
 
             return default(TResult);            
         }

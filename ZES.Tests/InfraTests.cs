@@ -19,29 +19,6 @@ using static ZES.ObservableExtensions;
 
 namespace ZES.Tests
 {
-    public class BusTests : ZesTest
-    {
-        public BusTests(ITestOutputHelper outputHelper) : base(outputHelper)
-        {
-        }
-        
-        [Theory]
-        [InlineData(100)]
-        public async void BusCanBeBusy(int numberCommands)
-        {
-            var container = CreateContainer();
-            var bus = container.GetInstance<IBus>();
-
-            while (numberCommands > 0)
-            {
-                var command = new CreateRoot($"Root{numberCommands}");
-                numberCommands--;
-                Assert.True(await bus.CommandAsync(command));
-            }
-            Assert.True(bus.Status == BusStatus.Busy); 
-        }
-    }
-
     public class RebuildTest : ZesTest
     {
         public RebuildTest(ITestOutputHelper outputHelper) : base(outputHelper)
@@ -65,9 +42,9 @@ namespace ZES.Tests
             }
             
             var query = new CreatedAtQuery("Root1");
-            await bus.QueryAsync(query);
+            await RetryUntil(async () => await bus.QueryAsync(query), timeout: TimeSpan.FromSeconds(5));
             var statsQuery = new StatsQuery();
-            await RetryUntil(async () => await bus.QueryAsync(statsQuery) == numberOfRoots, timeout: TimeSpan.MaxValue);
+            await bus.QueryAsync(statsQuery);
             
             await messageQueue.Alert(new InvalidateProjections());
             await bus.QueryAsync(statsQuery);

@@ -19,44 +19,6 @@ using static ZES.ObservableExtensions;
 
 namespace ZES.Tests
 {
-    public class RebuildTest : ZesTest
-    {
-        public RebuildTest(ITestOutputHelper outputHelper) : base(outputHelper)
-        {
-        }
-        
-        [Theory]
-        [InlineData(150)]        
-        public async void CanRebuildProjection(int numberOfRoots)
-        {
-            var container = CreateContainer();
-            var bus = container.GetInstance<IBus>();
-            var messageQueue = container.GetInstance<IMessageQueue>();
-
-            var rootId = numberOfRoots;
-            while (rootId > 0)
-            {
-                var command = new CreateRoot($"Root{rootId}");
-                await bus.CommandAsync(command);
-                rootId--;
-            }
-            
-            var query = new CreatedAtQuery("Root1");
-            await RetryUntil(async () => await bus.QueryAsync(query), timeout: TimeSpan.FromSeconds(5));
-            var statsQuery = new StatsQuery();
-            await bus.QueryAsync(statsQuery);
-            
-            await messageQueue.Alert(new InvalidateProjections());
-            await bus.QueryAsync(statsQuery);
-            
-            var newCommand = new CreateRoot("OtherRoot");
-            await bus.CommandAsync(newCommand);
-            var res = await RetryUntil(async () => await bus.QueryAsync(new StatsQuery()), x => x >= numberOfRoots + 1);
-
-            Assert.Equal(numberOfRoots+1 , res);
-        }
-    }
-
     public class InfraTests : ZesTest
     {
 
@@ -165,6 +127,39 @@ namespace ZES.Tests
             var createdAt = await RetryUntil(async () => await bus.QueryAsync(query),timeout: TimeSpan.MaxValue);
             
             Assert.NotEqual(0, createdAt);
+        }
+        
+        [Theory]
+        [InlineData(50)]         
+        public async void CanRebuildProjection(int numberOfRoots)
+        {
+            var container = CreateContainer();
+            var bus = container.GetInstance<IBus>();
+            var messageQueue = container.GetInstance<IMessageQueue>();
+
+            var rootId = numberOfRoots;
+            while (rootId > 0)
+            {
+                var command = new CreateRoot($"Root{rootId}");
+                await bus.CommandAsync(command);
+                rootId--;
+            }
+            
+            var query = new CreatedAtQuery("Root1");
+            await RetryUntil(async () => await bus.QueryAsync(query), timeout: TimeSpan.FromSeconds(5));
+            var statsQuery = new StatsQuery();
+            await bus.QueryAsync(statsQuery);
+            
+            await messageQueue.Alert(new InvalidateProjections());
+            Thread.Sleep(10);
+            await bus.QueryAsync(statsQuery);
+            
+            var newCommand = new CreateRoot("OtherRoot");
+            await bus.CommandAsync(newCommand);
+            await RetryUntil(async () => await bus.QueryAsync(new CreatedAtQuery("OtherRoot")));
+            var res = await bus.QueryAsync(new StatsQuery());
+
+            Assert.Equal(numberOfRoots+1 , res);
         }
 
         public InfraTests(ITestOutputHelper outputHelper) : base(outputHelper)

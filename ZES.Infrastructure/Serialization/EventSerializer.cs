@@ -3,7 +3,6 @@ using System.IO;
 using System.Runtime.Serialization;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
-using ZES.Infrastructure.Domain;
 using ZES.Interfaces;
 using ZES.Interfaces.Domain;
 using ZES.Interfaces.Serialization;

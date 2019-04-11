@@ -3,7 +3,6 @@ using System.Linq;
 using NLog;
 using NLog.Config;
 using NLog.Targets;
-using ZES.Infrastructure;
 using ZES.Interfaces;
 
 namespace ZES.Logging

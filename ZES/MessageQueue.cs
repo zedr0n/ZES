@@ -3,7 +3,6 @@ using System.Reactive.Linq;
 using System.Threading.Tasks;
 using System.Threading.Tasks.Dataflow;
 using SqlStreamStore.Infrastructure;
-using ZES.Infrastructure;
 using ZES.Interfaces;
 using ZES.Interfaces.Pipes;
 

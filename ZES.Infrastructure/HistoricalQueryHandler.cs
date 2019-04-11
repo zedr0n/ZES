@@ -1,4 +1,3 @@
-using System;
 using System.Threading.Tasks;
 using ZES.Infrastructure.Projections;
 using ZES.Interfaces.Domain;
@@ -15,11 +14,6 @@ namespace ZES.Infrastructure
         {
             _handler = handler;
             _projection = projection;
-        }
-
-        public override TResult Handle(HistoricalQuery<TQuery,TResult> query)
-        {
-            throw new NotImplementedException();
         }
 
         public override async Task<TResult> HandleAsync(HistoricalQuery<TQuery,TResult> query)

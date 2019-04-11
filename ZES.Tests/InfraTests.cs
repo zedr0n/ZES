@@ -1,19 +1,15 @@
 using System;
 using System.Collections.Generic;
-using System.Reflection;
 using System.Threading;
 using SimpleInjector;
 using Xunit;
 using Xunit.Abstractions;
 using ZES.Infrastructure;
 using ZES.Infrastructure.Alerts;
-using ZES.Infrastructure.Projections;
-using ZES.Interfaces;
 using ZES.Interfaces.Domain;
 using ZES.Interfaces.Pipes;
 using ZES.Tests.Domain;
 using ZES.Tests.Domain.Commands;
-using ZES.Tests.Domain.Projections;
 using ZES.Tests.Domain.Queries;
 using static ZES.ObservableExtensions;
 

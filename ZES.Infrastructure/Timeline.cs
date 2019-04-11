@@ -1,14 +1,11 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.IO;
-using System.Linq;
 using System.Threading.Tasks;
 using Newtonsoft.Json.Linq;
 using SqlStreamStore;
 using SqlStreamStore.Streams;
 using ZES.Interfaces;
-using ZES.Interfaces.EventStore;
 using ZES.Interfaces.Pipes;
 using Stream = ZES.Infrastructure.Streams.Stream;
 

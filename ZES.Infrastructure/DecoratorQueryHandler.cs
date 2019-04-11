@@ -1,5 +1,4 @@
 using System;
-using System.Reactive.Linq;
 using System.Threading.Tasks;
 using ZES.Interfaces;
 using ZES.Interfaces.Domain;
@@ -20,31 +19,10 @@ namespace ZES.Infrastructure
             _serializer = serializer;
         }
 
-        public override TResult Handle(TQuery query)
-        {
-            _log.Trace($"{_handler.GetType().Name}.Handle({query.GetType().Name})");
-            _log.Debug(_serializer.Serialize(query));
-            try
-            {
-                if (Projection != null)
-                    _handler.Projection = Projection;
-                return _handler.Handle(query);
-            }
-            catch (Exception e)
-            {
-                _log.Error(e.Message,_handler);
-                throw;
-            }
-        }
-
         public override async Task<TResult> HandleAsync(TQuery query)
         {
             try
             {
-                //if (Projection != null)
-                //    _handler.Projection = Projection;
-                //else
-                //    await _handler.Projection.Complete;
                 if(_handler.Projection != null)
                     await _handler.Projection.Complete;
                 return await _handler.HandleAsync(query);

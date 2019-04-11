@@ -5,7 +5,6 @@ using NLog;
 using NLog.Targets;
 using SimpleInjector;
 using Xunit.Abstractions;
-using ZES.Interfaces.Domain;
 using ZES.Logging;
 using ZES.Tests.Domain;
 

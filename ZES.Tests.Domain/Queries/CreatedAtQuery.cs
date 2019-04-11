@@ -1,6 +1,4 @@
-using System;
 using ZES.Infrastructure;
-using ZES.Interfaces.Domain;
 
 namespace ZES.Tests.Domain.Queries
 {

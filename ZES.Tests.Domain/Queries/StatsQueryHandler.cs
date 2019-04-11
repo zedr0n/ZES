@@ -1,8 +1,6 @@
-using System.Threading.Tasks;
 using ZES.Infrastructure;
 using ZES.Interfaces;
 using ZES.Interfaces.Domain;
-using ZES.Tests.Domain.Projections;
 
 namespace ZES.Tests.Domain.Queries
 {
@@ -23,11 +21,6 @@ namespace ZES.Tests.Domain.Queries
         public override long Handle(StatsQuery query)
         {
             return _projection.State.Value.NumberOfRoots; 
-        }
-
-        public override Task<long> HandleAsync(StatsQuery query)
-        {
-            return Task.FromResult(Handle(query));
         }
     }
 }

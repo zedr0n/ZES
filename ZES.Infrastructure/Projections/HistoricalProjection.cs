@@ -15,7 +15,7 @@ namespace ZES.Infrastructure.Projections
     {
         private long _timestamp;
 
-        public HistoricalDecorator(IEventStore<IAggregate> eventStore, ILog log, IMessageQueue messageQueue, ITimeline timeline, IProjection<TState> iProjection) : base(eventStore, log, messageQueue, timeline)
+        public HistoricalDecorator(IEventStore<IAggregate> eventStore, ILog log, IMessageQueue messageQueue, ITimeline timeline, IProjection<TState> iProjection) : base(eventStore, log, messageQueue)
         {
             var projection = iProjection as Projection<TState>;
             foreach (var h in projection.Handlers)

@@ -1,46 +1,66 @@
 using System;
 using System.Collections.Concurrent;
+using System.Collections.Generic;
+using System.Reactive.Concurrency;
+using System.Reactive.Linq;
+using System.Threading.Tasks;
+using System.Threading.Tasks.Dataflow;
+using Gridsum.DataflowEx;
 using ZES.Interfaces;
 using ZES.Interfaces.Pipes;
 using ZES.Interfaces.Sagas;
 
 namespace ZES.Infrastructure.Sagas
 {
-    public abstract class SagaHandler<TSaga> : ISagaHandler<TSaga>
+    public class SagaHandler<TSaga> : ISagaHandler<TSaga>
         where TSaga : class, ISaga, new()
     {
-        private readonly ILog _logger;
-        private readonly ISagaRepository _repository;
-        private readonly ConcurrentDictionary<Type, Action<IEvent>> _handlers = new ConcurrentDictionary<Type, Action<IEvent>>();
-
-        protected SagaHandler(IMessageQueue messageQueue, ISagaRepository repository, ILog logger)
+        private readonly ConcurrentDictionary<string, SagaFlow> _flows = new ConcurrentDictionary<string, SagaFlow>();
+        
+        private class SagaFlow : Dataflow<IEvent>
         {
-            _repository = repository;
-            _logger = logger;
-            messageQueue.Messages.Subscribe(When);
+            private readonly ISagaRepository _repository;
+            private readonly ILog _log;
+
+            private readonly string _id;
+            private readonly ActionBlock<IEvent> _inputBlock;
+            public SagaFlow(ISagaRepository repository, string id, ILog log) : base(DataflowOptions.Default)
+            {
+                _repository = repository;
+                _id = id;
+                _log = log;
+                _inputBlock = new ActionBlock<IEvent>(async e => await Handle(e));
+                
+                RegisterChild(_inputBlock);
+            }
+
+            private async Task Handle(IEvent e)
+            {
+                var saga = await _repository.GetOrAdd<TSaga>(_id);  
+                _log.Trace($"{saga.GetType().Name}::When({e.EventType})");
+                saga.When(e);
+                await _repository.Save(saga);  
+            }
+
+            public override ITargetBlock<IEvent> InputBlock => _inputBlock;
         }
         
-        protected void Register<TEvent>(Func<TEvent, string> idFunc) where TEvent : class, IEvent
+        public SagaHandler(IMessageQueue messageQueue, ISagaRepository repository, ISagaRegistry sagaRegistry, ILog log)
         {
-            async void Handler(IEvent e)
+            var sagaBlock = new ActionBlock<IEvent>(async e =>
             {
-                var saga = await _repository.GetOrAdd<TSaga>(idFunc(e as TEvent)); 
-                _logger.Trace($"{saga.GetType().Name}.When({e.EventType})"); 
-                saga.When(e);
-                await _repository.Save(saga);
-            }
-            _handlers[typeof(TEvent)] = Handler;
-        }
+                var sagaId = sagaRegistry.SagaId<TSaga>()(e);
+                if (sagaId == null)
+                    return;
 
-        protected void Register<TEvent>(Action<TEvent> action) where TEvent : class, IEvent
-        {
-            _handlers[typeof(TEvent)] = e => action(e as TEvent);
-        }
+                var flow = _flows.GetOrAdd(sagaId, new SagaFlow(repository, sagaId, log));
+                await flow.InputBlock.SendAsync(e); 
+            }, new ExecutionDataflowBlockOptions
+            {
+                MaxDegreeOfParallelism = 8
+            }); 
 
-        private void When(IEvent e)
-        {
-            if (_handlers.TryGetValue(e.GetType(), out var handler))
-                handler(e);
+            messageQueue.Messages.Subscribe(async e => await sagaBlock.SendAsync(e));
         }
     }
 }

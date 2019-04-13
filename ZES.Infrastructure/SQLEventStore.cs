@@ -83,7 +83,7 @@ namespace ZES.Infrastructure
 
         public IObservable<IEvent> ReadStream(IStream stream, int start, int count = -1)
         {
-            _log.Trace("",this);
+            //_log.Trace("",this);
             if (count == -1)
                 count = int.MaxValue;
 
@@ -132,7 +132,7 @@ namespace ZES.Infrastructure
 
         public async Task AppendToStream(IStream stream, IEnumerable<IEvent> enumerable)
         {
-            _log.Trace("",this);
+            //_log.Trace("",this);
             var events = enumerable as IList<IEvent> ?? enumerable.ToList();
             if (!events.Any())
                 return;

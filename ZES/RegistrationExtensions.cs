@@ -5,6 +5,7 @@ using System.Reflection;
 using SimpleInjector;
 using ZES.Infrastructure;
 using ZES.Infrastructure.Projections;
+using ZES.Infrastructure.Sagas;
 using ZES.Interfaces.Domain;
 using ZES.Interfaces.Sagas;
 
@@ -32,9 +33,9 @@ namespace ZES
             foreach (var s in sagas)
             {
                 var iSaga = typeof(ISagaHandler<>).MakeGenericType(s);
-                var handler = assembly.GetTypesFromInterface(iSaga).SingleOrDefault();
-                if(handler != null)
-                    c.Register(iSaga, handler);
+                //var handler = assembly.GetTypesFromInterface(iSaga).SingleOrDefault();
+                var handler = typeof(SagaHandler<>).MakeGenericType(s);
+                c.Register(iSaga, handler, Lifestyle.Singleton);
             }
         }
 

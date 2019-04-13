@@ -23,7 +23,7 @@ namespace ZES.Infrastructure.Sagas
         public override void When(IEvent e)
         {
             base.When(e);
-            if (_triggers.TryGetValue(e.GetType(), out var trigger))
+            if (_triggers.TryGetValue(e.GetType(), out var trigger) && trigger != null)
                 StateMachine.Fire(trigger);
         }
 

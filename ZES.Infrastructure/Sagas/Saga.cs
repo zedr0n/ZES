@@ -10,6 +10,8 @@ namespace ZES.Infrastructure.Sagas
     {
         private readonly List<ICommand> _undispatchedCommands = new List<ICommand>();
 
+        public static string SagaId(IEvent e) => null;
+        
         private void ClearUncommittedCommands()
         {
             lock(_undispatchedCommands) 

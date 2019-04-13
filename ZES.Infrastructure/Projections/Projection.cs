@@ -90,7 +90,7 @@ namespace ZES.Infrastructure.Projections
             public override ITargetBlock<IStream> InputBlock => _inputBlock;
         }
         
-        protected Projection(IEventStore<IAggregate> eventStore, ILog log, IMessageQueue messageQueue, ITimeline timeline)
+        protected Projection(IEventStore<IAggregate> eventStore, ILog log, IMessageQueue messageQueue)
         {
             _eventStore = eventStore;
             Log = log;

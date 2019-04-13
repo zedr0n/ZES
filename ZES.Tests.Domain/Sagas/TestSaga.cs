@@ -1,5 +1,7 @@
+using System;
 using Stateless;
 using ZES.Infrastructure.Sagas;
+using ZES.Interfaces;
 using ZES.Tests.Domain.Commands;
 using ZES.Tests.Domain.Events;
 
@@ -14,7 +16,22 @@ namespace ZES.Tests.Domain.Sagas
         
         public TestSaga()
         {
-            Register<RootCreated>(Trigger.Created,When);
+            Register<RootCreated>(Trigger.Created, When);
+            Register<RootUpdated>(Trigger.Created, When);
+        }
+
+        public new static string SagaId(IEvent e)
+        {
+            if (e is RootCreated created)
+                return created.RootId;
+            if (e is RootUpdated updated)
+                return updated.RootId;
+            return null;
+        }
+
+        private void When(RootUpdated e)
+        {
+            
         }
 
         private void When(RootCreated e)

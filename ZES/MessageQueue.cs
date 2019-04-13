@@ -11,8 +11,6 @@ namespace ZES
     public class MessageQueue : IMessageQueue
     {
         private readonly ILog _log;
-        private readonly ActionBlock<IEvent> _actionBlock;
-        private readonly ActionBlock<IAlert> _alertBlock; 
         
         public IObservable<IEvent> Messages => _messages.AsObservable();
         private readonly Subject<IEvent> _messages = new Subject<IEvent>();
@@ -22,30 +20,18 @@ namespace ZES
         public MessageQueue(ILog log)
         {
             _log = log;
-            _actionBlock = new ActionBlock<IEvent>(e => 
-                    _messages.OnNext(e),
-                new ExecutionDataflowBlockOptions
-                {
-                    MaxDegreeOfParallelism = 8
-                });
-            
-            _alertBlock = new ActionBlock<IAlert>(s => _alerts.OnNext(s),
-                new ExecutionDataflowBlockOptions
-                {
-                    MaxDegreeOfParallelism = 8
-                });
         }
 
         public async Task Alert(IAlert alert)
         {
             _log.Trace(alert.GetType().Name,this);
-            await _alertBlock.SendAsync(alert);
+            _alerts.OnNext(alert);
         }
 
         public async Task Event(IEvent e)
         {
             _log.Trace(e.EventType,this);
-            await _actionBlock.SendAsync(e);
+            _messages.OnNext(e);
         }
     }
 }

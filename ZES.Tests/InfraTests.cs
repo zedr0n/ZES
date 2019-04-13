@@ -124,6 +124,34 @@ namespace ZES.Tests
             
             Assert.NotEqual(0, createdAt);
         }
+
+        [Theory]
+        [InlineData(10)]
+        public async void CanParallelizeSagas(int numRoots)
+        {
+            var container = CreateContainer(new List<Action<Container>> {Config.RegisterSagas});
+            var bus = container.GetInstance<IBus>(); 
+            
+            var rootId = numRoots; 
+            while (rootId > 0)
+            {
+                var command = new CreateRoot($"Root{rootId}");
+                await bus.CommandAsync(command);
+                rootId--;
+            }
+            
+            await RetryUntil(async () => await bus.QueryAsync(new CreatedAtQuery("Root1")));
+            
+            rootId = numRoots;
+            while (rootId > 0)
+            {
+                var updateCommand = new UpdateRoot($"Root{rootId}");
+                await bus.CommandAsync(updateCommand);
+                rootId--;
+            }
+            
+            Thread.Sleep(50);
+        }
         
         [Theory]
         [InlineData(50)]         

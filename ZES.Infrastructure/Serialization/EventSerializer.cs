@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Runtime.Serialization;
@@ -61,10 +62,12 @@ namespace ZES.Infrastructure.Serialization
                 {
                     return (T) _serializer.Deserialize(jsonReader);
                 }
-                catch (JsonSerializationException e)
+                catch (Exception e)
                 {
+                    if(e is JsonSerializationException)
                     // Wrap in a standard .NET exception.
-                    throw new SerializationException(e.Message, e);
+                        throw new SerializationException(e.Message, e);
+                    return null;
                 }
             }
         }

@@ -50,7 +50,8 @@ namespace ZES.Infrastructure
                             continue;
                         var payload = await m.GetJsonData();
                         var e = _serializer.Deserialize(payload);
-                        observer.OnNext(e);
+                        if(e != null)
+                            observer.OnNext(e);
                     }
 
                     if (page.IsEnd)
@@ -66,7 +67,7 @@ namespace ZES.Infrastructure
                 var page = await _streamStore.ListStreams();
                 while (page.StreamIds.Length > 0)
                 {
-                    foreach (var s in page.StreamIds)
+                    foreach (var s in page.StreamIds.Where(x => !x.Contains("Command")))
                     {
                         var version = (await _streamStore.ReadStreamBackwards(s, StreamVersion.End, 1))
                             .LastStreamVersion;

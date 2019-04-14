@@ -21,6 +21,15 @@ namespace ZES
 {
     public sealed class CompositionRoot : ICompositionRoot
     {
+        private readonly bool _isMemoryStore = true;
+
+        private Registration GetStore(Container container)
+        {
+            //if (!_isMemoryStore)
+            
+            return Lifestyle.Singleton.CreateRegistration(() => new InMemoryStreamStore(), container);
+        }
+        
         public void ComposeApplication(Container container)
         {
             container.Options.RegisterParameterConventions(new List<IParameterConvention>
@@ -38,13 +47,13 @@ namespace ZES
             container.RegisterConditional(typeof(IStreamStore),typeof(InMemoryStreamStore), Lifestyle.Singleton, 
                 c => c.Consumer.ImplementationType.GetGenericArguments().Contains(typeof(ISaga)));*/
             
-            container.RegisterConditional(typeof(IStreamStore),Lifestyle.Singleton.CreateRegistration(() => new InMemoryStreamStore(), container),
-                c => c.Consumer.ImplementationType.GetGenericArguments().Contains(typeof(IAggregate)) ||
-                     c.Consumer.ImplementationType.GetInterfaces().Contains(typeof(ITimeTraveller)));
-            container.RegisterConditional(typeof(IStreamStore),Lifestyle.Singleton.CreateRegistration(() => new InMemoryStreamStore(), container),
+            container.RegisterConditional(typeof(IStreamStore), GetStore(container),
+                c => 
+                     c.Consumer.ImplementationType.GetGenericArguments().Contains(typeof(IAggregate)) ||
+                     c.Consumer.ImplementationType.GetInterfaces().Contains(typeof(ITimeTraveller)) || 
+                     c.Consumer.ImplementationType == typeof(CommandLog));
+            container.RegisterConditional(typeof(IStreamStore), GetStore(container),
                 c => c.Consumer.ImplementationType.GetGenericArguments().Contains(typeof(ISaga))); 
-            container.RegisterConditional(typeof(IStreamStore),Lifestyle.Singleton.CreateRegistration(() => new InMemoryStreamStore(), container),
-                c => c.Consumer.ImplementationType == typeof(CommandLog)); 
             
             container.Register(typeof(ISerializer<>),typeof(Serializer<>),Lifestyle.Singleton);
             container.Register<IEventSerializer, EventSerializer>(Lifestyle.Singleton);

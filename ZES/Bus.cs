@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Concurrent;
 using System.Threading.Tasks;
 using System.Threading.Tasks.Dataflow;
 using Gridsum.DataflowEx;
@@ -15,26 +16,49 @@ namespace ZES
         private readonly CommandProcessor _commandProcessor;
         private readonly ILog _log;
 
-        private class CommandProcessor : Dataflow<ICommand>
+
+        private class CommandFlow : Dataflow<ICommand>
         {
-            private readonly BufferBlock<ICommand> _inputBlock;
-            private readonly ActionBlock<ICommand> _dispatchBlock;
+            private readonly ActionBlock<ICommand> _inputBlock;
+            private TaskCompletionSource<bool> _next = new TaskCompletionSource<bool>();
             
-            public CommandProcessor(Func<ICommand,Task> handler) : base(DataflowOptions.Default)
+            public CommandFlow(Func<ICommand,Task> handler) : base(DataflowOptions.Default)
             {
-                _inputBlock = new BufferBlock<ICommand>();
-                
-                _dispatchBlock = new ActionBlock<ICommand>(async c => await handler(c), new ExecutionDataflowBlockOptions
+                _inputBlock = new ActionBlock<ICommand>(async c =>
                 {
-                    MaxDegreeOfParallelism = 1
+                    await handler(c);
+                    _next.SetResult(true);
+                    _next = new TaskCompletionSource<bool>();
+                    
                 });
-                _inputBlock.LinkTo(_dispatchBlock, new DataflowLinkOptions {PropagateCompletion = true});
-                
                 RegisterChild(_inputBlock);
-                RegisterChild(_dispatchBlock);
             }
 
             public override ITargetBlock<ICommand> InputBlock => _inputBlock;
+            public Task Next => _next.Task;
+        }
+        
+        private class CommandProcessor : Dataflow<ICommand>
+        {
+            private readonly ActionBlock<ICommand> _commandBlock;
+            private readonly ConcurrentDictionary<string, CommandFlow> _flows = new ConcurrentDictionary<string, CommandFlow>();
+            
+            public CommandProcessor(Func<ICommand,Task> handler) : base(DataflowOptions.Default)
+            {
+                _commandBlock = new ActionBlock<ICommand>(async c =>
+                {
+                    var flow = _flows.GetOrAdd(c.Target, new CommandFlow(handler));
+                    await flow.SendAsync(c);
+                    await flow.Next;
+                }, new ExecutionDataflowBlockOptions
+                {
+                    MaxDegreeOfParallelism = 8
+                });
+                
+                RegisterChild(_commandBlock);
+            }
+
+            public override ITargetBlock<ICommand> InputBlock => _commandBlock;
         }
         
         private object GetInstance(Type type)

@@ -121,13 +121,13 @@ namespace ZES.Infrastructure
             }
         }
 
-        private async Task PublishEvents(IEnumerable<IEvent> events)
+        private void PublishEvents(IEnumerable<IEvent> events)
         {
             if (!_isDomainStore)
                 return;
 
             foreach (var e in events)
-                await _messageQueue.Event(e);
+                _messageQueue.Event(e);
         }
 
         public async Task AppendToStream(IStream stream, IEnumerable<IEvent> enumerable)
@@ -144,7 +144,7 @@ namespace ZES.Infrastructure
             stream.Version = result.CurrentVersion;
             _streams.OnNext(stream);
 
-            await PublishEvents(events);    
+            PublishEvents(events);    
         }
     }
 }

@@ -98,14 +98,13 @@ namespace ZES
                 await handler.Handle(command as dynamic);
         }
 
-        public async Task<bool> CommandAsync(ICommand command)
+        public async Task<Task> CommandAsync(ICommand command)
         {
             var source = new TaskCompletionSource<bool>();
             _executing[command] = source;
             if (!await _commandProcessor.InputBlock.SendAsync(command))
-                return false;
-            await source.Task;
-            return true;
+                return Task.FromResult(false);
+            return source.Task;
         }
 
         public async Task<TResult> QueryAsync<TResult>(IQuery<TResult> query)

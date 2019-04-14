@@ -7,7 +7,7 @@ namespace ZES.Interfaces.Pipes
     {
         IObservable<IEvent> Messages { get; }
         IObservable<IAlert> Alerts { get; }
-        Task Event(IEvent e);
-        Task Alert(IAlert alert);
+        void Event(IEvent e);
+        void Alert(IAlert alert);
     }
 }

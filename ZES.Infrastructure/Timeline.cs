@@ -89,20 +89,20 @@ namespace ZES.Infrastructure
             await Clone(branchId, time);
             
             // refresh the stream locator
-            await _messageQueue.Alert(new Alerts.TimelineChanged());
+            _messageQueue.Alert(new Alerts.TimelineChanged());
             
             // rebuild all projections
-            await _messageQueue.Alert(new Alerts.InvalidateProjections());
+            _messageQueue.Alert(new Alerts.InvalidateProjections());
                 
             return _activeTimeline;
         }
 
-        public async Task<ITimeline> Reset()
+        public ITimeline Reset()
         {
             _activeTimeline.Id = Master;
 
-            await _messageQueue.Alert(new Alerts.TimelineChanged());
-            await _messageQueue.Alert(new Alerts.InvalidateProjections());
+            _messageQueue.Alert(new Alerts.TimelineChanged());
+            _messageQueue.Alert(new Alerts.InvalidateProjections());
 
             return _activeTimeline;
         }

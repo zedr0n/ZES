@@ -10,7 +10,7 @@ namespace ZES.Interfaces
         /// </summary>
         Task<ITimeline> Branch(string branchId, long time);
 
-        Task<ITimeline> Reset();
+        ITimeline Reset();
     }
     
     public interface ITimeline

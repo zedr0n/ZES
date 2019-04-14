@@ -22,13 +22,13 @@ namespace ZES
             _log = log;
         }
 
-        public async Task Alert(IAlert alert)
+        public void Alert(IAlert alert)
         {
             _log.Trace(alert.GetType().Name,this);
             _alerts.OnNext(alert);
         }
 
-        public async Task Event(IEvent e)
+        public void Event(IEvent e)
         {
             _log.Trace(e.EventType,this);
             _messages.OnNext(e);

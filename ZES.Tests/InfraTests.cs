@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Threading;
+using System.Threading.Tasks;
 using SimpleInjector;
 using Xunit;
 using Xunit.Abstractions;
@@ -26,7 +27,7 @@ namespace ZES.Tests
             var repository = container.GetInstance<IDomainRepository>();
             
             var command = new CreateRoot("Root");
-            await bus.CommandAsync(command);
+            await await bus.CommandAsync(command);
 
             var root = await repository.Find<Root>("Root");
             Assert.Equal("Root",root.Id);
@@ -40,10 +41,10 @@ namespace ZES.Tests
             var repository = container.GetInstance<IDomainRepository>();
             
             var command = new CreateRoot("Root1");
-            await bus.CommandAsync(command);  
+            await await bus.CommandAsync(command);  
             
             var command2 = new CreateRoot("Root2");
-            await bus.CommandAsync(command2);
+            await await bus.CommandAsync(command2);
 
             var root = await repository.Find<Root>("Root1");
             var root2 = await repository.Find<Root>("Root2");
@@ -58,7 +59,7 @@ namespace ZES.Tests
             var bus = container.GetInstance<IBus>();
             
             var command = new CreateRoot("Root");
-            await bus.CommandAsync(command); 
+            await await bus.CommandAsync(command); 
             
             var query = new CreatedAtQuery("Root");
             var createdAt = await bus.QueryAsync(query);
@@ -72,7 +73,7 @@ namespace ZES.Tests
             var bus = container.GetInstance<IBus>();
             
             var command = new CreateRoot("Root");
-            await bus.CommandAsync(command); 
+            await await bus.CommandAsync(command); 
 
             var statsQuery = new StatsQuery();
             //await RetryUntil(async () => await bus.QueryAsync(statsQuery) ==1, timeout: TimeSpan.MaxValue);
@@ -98,10 +99,10 @@ namespace ZES.Tests
             while (rootId > 0)
             {
                 var command = new CreateRoot($"Root{rootId}");
-                bus.CommandAsync(command);
+                await bus.CommandAsync(command);
                 rootId--;
             }
-            
+
             var query = new CreatedAtQuery("Root1");
             var createdAt = await RetryUntil(async () => await bus.QueryAsync(query));
             Assert.NotEqual(0, createdAt); 
@@ -136,7 +137,7 @@ namespace ZES.Tests
             while (rootId > 0)
             {
                 var command = new CreateRoot($"Root{rootId}");
-                bus.CommandAsync(command);
+                await bus.CommandAsync(command);
                 rootId--;
             }
             
@@ -146,7 +147,7 @@ namespace ZES.Tests
             while (rootId > 0)
             {
                 var updateCommand = new UpdateRoot($"Root{rootId}");
-                bus.CommandAsync(updateCommand);
+                await bus.CommandAsync(updateCommand);
                 rootId--;
             }
             
@@ -165,7 +166,7 @@ namespace ZES.Tests
             while (rootId > 0)
             {
                 var command = new CreateRoot($"Root{rootId}");
-                bus.CommandAsync(command);
+                await bus.CommandAsync(command);
                 rootId--;
             }
             
@@ -174,7 +175,7 @@ namespace ZES.Tests
             var statsQuery = new StatsQuery();
             await bus.QueryAsync(statsQuery);
             
-            await messageQueue.Alert(new InvalidateProjections());
+            messageQueue.Alert(new InvalidateProjections());
             Thread.Sleep(10);
             await bus.QueryAsync(statsQuery);
             

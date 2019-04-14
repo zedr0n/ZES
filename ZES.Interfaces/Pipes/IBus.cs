@@ -5,7 +5,7 @@ namespace ZES.Interfaces.Pipes
 {
     public interface IBus
     {
-        Task<bool> CommandAsync(ICommand command);
+        Task<Task> CommandAsync(ICommand command);
 
         Task<TResult> QueryAsync<TResult>(IQuery<TResult> query);
     }

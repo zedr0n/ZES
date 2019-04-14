@@ -15,7 +15,7 @@ namespace ZES
         private readonly Container _container;
         private readonly CommandProcessor _commandProcessor;
         private readonly ILog _log;
-
+        private ConcurrentDictionary<ICommand, TaskCompletionSource<bool>> _executing = new ConcurrentDictionary<ICommand, TaskCompletionSource<bool>>();
 
         private class CommandFlow : Dataflow<ICommand>
         {
@@ -42,14 +42,18 @@ namespace ZES
         {
             private readonly ActionBlock<ICommand> _commandBlock;
             private readonly ConcurrentDictionary<string, CommandFlow> _flows = new ConcurrentDictionary<string, CommandFlow>();
+            private readonly ConcurrentDictionary<ICommand, TaskCompletionSource<bool>> _executing;
             
-            public CommandProcessor(Func<ICommand,Task> handler) : base(DataflowOptions.Default)
+            public CommandProcessor(Func<ICommand,Task> handler, ConcurrentDictionary<ICommand, TaskCompletionSource<bool>> executing) : base(DataflowOptions.Default)
             {
+                _executing = executing;
                 _commandBlock = new ActionBlock<ICommand>(async c =>
                 {
                     var flow = _flows.GetOrAdd(c.Target, new CommandFlow(handler));
                     await flow.SendAsync(c);
-                    await flow.Next;
+                    await flow.Next;            
+                    _executing.TryRemove(c, out var source);
+                    source.SetResult(true);
                 }, new ExecutionDataflowBlockOptions
                 {
                     MaxDegreeOfParallelism = 8
@@ -83,7 +87,7 @@ namespace ZES
         {
             _container = container;
             _log = log;
-            _commandProcessor = new CommandProcessor(HandleCommand); 
+            _commandProcessor = new CommandProcessor(HandleCommand, _executing); 
         }
 
         private async Task HandleCommand(ICommand command)
@@ -96,7 +100,12 @@ namespace ZES
 
         public async Task<bool> CommandAsync(ICommand command)
         {
-            return await _commandProcessor.InputBlock.SendAsync(command);
+            var source = new TaskCompletionSource<bool>();
+            _executing[command] = source;
+            if (!await _commandProcessor.InputBlock.SendAsync(command))
+                return false;
+            await source.Task;
+            return true;
         }
 
         public async Task<TResult> QueryAsync<TResult>(IQuery<TResult> query)

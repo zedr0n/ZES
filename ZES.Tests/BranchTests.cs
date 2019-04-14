@@ -26,7 +26,6 @@ namespace ZES.Tests
             var command = new CreateRoot("Root");
             await bus.CommandAsync(command);
 
-           await RetryUntil(async () => await repository.Find<Root>("Root"));
            var timeline = container.GetInstance<ITimeline>();
            Assert.Equal("master",timeline.Id);
            
@@ -34,7 +33,7 @@ namespace ZES.Tests
            await timeTraveller.Branch("test", timeline.Now);
                      
            Assert.Equal("test",timeline.Id);
-           var root = await RetryUntil(async () => await repository.Find<Root>("Root"));
+           var root = await repository.Find<Root>("Root");
            
            Assert.Equal("Root",root.Id);
         }
@@ -49,7 +48,7 @@ namespace ZES.Tests
             var command = new CreateRoot("Root");
             await bus.CommandAsync(command);
 
-            await RetryUntil(async () => await repository.Find<Root>("Root"));
+            await repository.Find<Root>("Root");
             var timeline = container.GetInstance<ITimeline>();
             Assert.Equal("master",timeline.Id);
            

@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using Newtonsoft.Json.Linq;
 using SqlStreamStore;
 using SqlStreamStore.Streams;
+using ZES.Infrastructure.Domain;
 using ZES.Interfaces;
 using ZES.Interfaces.Pipes;
 using Stream = ZES.Infrastructure.Streams.Stream;
@@ -48,7 +49,7 @@ namespace ZES.Infrastructure
                         var messages = new List<NewStreamMessage>();
                         foreach (var m in readPage.Messages)
                         {
-                            var timestamp = (long) JObject.Parse(m.JsonMetadata)["timestamp"];
+                            var timestamp = (long) JObject.Parse(m.JsonMetadata)[nameof(Command.Timestamp)];
                             if (timestamp > time)
                             {
                                 readPage = null;

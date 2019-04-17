@@ -13,12 +13,14 @@ namespace ZES.Infrastructure
         private readonly IStreamStore _streamStore;
         private readonly ICommandSerializer _serializer;
         private readonly ITimeline _timeline;
+        private readonly ILog _log;
 
-        public CommandLog(IStreamStore streamStore, ICommandSerializer serializer, ITimeline timeline)
+        public CommandLog(IStreamStore streamStore, ICommandSerializer serializer, ITimeline timeline, ILog log)
         {
             _streamStore = streamStore;
             _serializer = serializer;
             _timeline = timeline;
+            _log = log;
         }
 
         private NewStreamMessage Encode(ICommand command) => 
@@ -27,6 +29,7 @@ namespace ZES.Infrastructure
         public async Task AppendCommand(ICommand command)
         {
             var message = Encode(command);
+            _log.Debug(message.JsonData);
             await _streamStore.AppendToStream($"{_timeline.Id}:Command:commands", ExpectedVersion.Any, message);
         }
     }

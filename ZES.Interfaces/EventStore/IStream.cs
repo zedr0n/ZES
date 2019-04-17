@@ -10,6 +10,7 @@ namespace ZES.Interfaces.EventStore
         /// Last stream event version
         /// </summary>
         int Version { get; set; }
+        int UpdatedOn { get; set; }
         /// <summary>
         /// Stream timeline id
         /// </summary>

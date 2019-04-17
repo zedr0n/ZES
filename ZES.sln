@@ -10,7 +10,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ZES", "ZES\ZES.csproj", "{6
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ZES.Tests.Domain", "ZES.Tests.Domain\ZES.Tests.Domain.csproj", "{2713F636-E151-46BA-B224-1E811CED91AD}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ZES.ReadModels.SQLite", "ZES.ReadModels.SQLite\ZES.ReadModels.SQLite.csproj", "{39AA2FBA-FB1C-4932-882C-61971E9ED4DC}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ZES.GraphQL", "ZES.GraphQL\ZES.GraphQL.csproj", "{E760F7B3-81B7-400B-B40A-9A9669775B6E}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -38,9 +38,9 @@ Global
 		{2713F636-E151-46BA-B224-1E811CED91AD}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{2713F636-E151-46BA-B224-1E811CED91AD}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{2713F636-E151-46BA-B224-1E811CED91AD}.Release|Any CPU.Build.0 = Release|Any CPU
-		{39AA2FBA-FB1C-4932-882C-61971E9ED4DC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{39AA2FBA-FB1C-4932-882C-61971E9ED4DC}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{39AA2FBA-FB1C-4932-882C-61971E9ED4DC}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{39AA2FBA-FB1C-4932-882C-61971E9ED4DC}.Release|Any CPU.Build.0 = Release|Any CPU
+		{E760F7B3-81B7-400B-B40A-9A9669775B6E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E760F7B3-81B7-400B-B40A-9A9669775B6E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E760F7B3-81B7-400B-B40A-9A9669775B6E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E760F7B3-81B7-400B-B40A-9A9669775B6E}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal

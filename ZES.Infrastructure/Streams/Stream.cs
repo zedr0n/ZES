@@ -35,6 +35,7 @@ namespace ZES.Infrastructure.Streams
         private readonly string _id;
         private readonly string _type;
         public int Version { get; set; }
+        public int UpdatedOn { get; set; }
         public string Timeline { get; set; }
     }
 }

@@ -10,7 +10,7 @@ using SimpleInjector.Lifestyles;
 using ZES.Infrastructure.Domain;
 using ZES.Interfaces.Pipes;
 
-namespace ZES.GraphQL
+namespace ZES.GraphQL.AspNetCore
 {
     public class Startup
     {
@@ -31,7 +31,7 @@ namespace ZES.GraphQL
         // For more information on how to configure your application, visit https://go.microsoft.com/fwlink/?LinkID=398940
         public void ConfigureServices(IServiceCollection services)
         {
-            services.AddGraphQL(c => c.RegisterQueryType<ObjectType<Command>>());
+            services.AddGraphQL(c => c.RegisterType(new ObjectType<Command>(d => d.Field(f => f.Timestamp).Ignore())));
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.

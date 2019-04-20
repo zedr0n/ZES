@@ -106,12 +106,12 @@ namespace ZES.Tests
             }
 
             var query = new CreatedAtQuery("Root1");
-            var createdAt = await bus.QueryUntil(query);//await RetryUntil(async () => await bus.QueryAsync(query));
-            Assert.NotEqual(0, createdAt.Timestamp); 
+            var createdAt = await bus.QueryUntil(query, c => c?.Timestamp > 0);
+            Assert.NotEqual(0, createdAt?.Timestamp); 
             
             var statsQuery = new StatsQuery();
             var stats = await bus.QueryUntil(statsQuery, s => s?.NumberOfRoots == numRoots);
-            Assert.Equal(numRoots, stats.NumberOfRoots);
+            Assert.Equal(numRoots, stats?.NumberOfRoots);
         }
 
         [Fact]

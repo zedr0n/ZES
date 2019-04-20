@@ -45,13 +45,13 @@ namespace ZES.Tests
             
             var schema = schemaProvider.Generate();
             var executor = schema.MakeExecutable();
-            var createdAtResult = executor.Execute(@"{ createdAt( query: { id : ""Root"" } ) { timestamp }  }") as IReadOnlyQueryResult;
+            var createdAtResult = await executor.ExecuteAsync(@"{ createdAt( query: { id : ""Root"" } ) { timestamp }  }") as IReadOnlyQueryResult;
             dynamic createdAtDict = createdAtResult?.Data["createdAt"];
             log.Info(createdAtDict);
             Assert.NotNull(createdAtDict);
             Assert.NotEqual(0, createdAtDict["timestamp"]);
 
-            var statsResult = executor.Execute(@"{ stats( query : {  } ) { numberOfRoots } }") as IReadOnlyQueryResult;
+            var statsResult = await executor.ExecuteAsync(@"{ stats( query : {  } ) { numberOfRoots } }") as IReadOnlyQueryResult;
             dynamic statsDict = statsResult?.Data["stats"];
             log.Info(statsDict);
             Assert.NotNull(statsDict);
@@ -71,7 +71,7 @@ namespace ZES.Tests
             var schema = schemaProvider.Generate();
             var executor = schema.MakeExecutable();
 
-            executor.Execute(@"mutation { createRoot( command : { target : ""Root"" } ) }");
+            await executor.ExecuteAsync(@"mutation { createRoot( command : { target : ""Root"" } ) }");
             
             var statsResult = executor.Execute(@"{ stats( query : {  } ) { numberOfRoots } }") as IReadOnlyQueryResult;
             dynamic statsDict = statsResult?.Data["stats"];

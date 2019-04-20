@@ -2,7 +2,6 @@ using System;
 using System.Threading.Tasks;
 using ZES.Interfaces;
 using ZES.Interfaces.Domain;
-using ZES.Interfaces.Serialization;
 
 namespace ZES.Infrastructure
 {
@@ -10,13 +9,11 @@ namespace ZES.Infrastructure
     {
         private readonly IQueryHandler<TQuery, TResult> _handler;
         private readonly ILog _log;
-        private readonly ISerializer<IQuery<TResult>> _serializer;
 
-        public DecoratorQueryHandler(IQueryHandler<TQuery, TResult> handler, ILog log, ISerializer<IQuery<TResult>> serializer)
+        public DecoratorQueryHandler(IQueryHandler<TQuery, TResult> handler, ILog log)
         {
             _handler = handler;
             _log = log;
-            _serializer = serializer;
         }
 
         public override async Task<TResult> HandleAsync(TQuery query)

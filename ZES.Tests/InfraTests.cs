@@ -62,7 +62,7 @@ namespace ZES.Tests
             await await bus.CommandAsync(command); 
             
             var query = new CreatedAtQuery("Root");
-            var createdAt = await bus.QueryAsync(query);
+            var createdAt = await RetryUntil(async () => await bus.QueryAsync(query), x => x != 0);
             Assert.NotEqual(0, createdAt);
         }
         
@@ -76,16 +76,16 @@ namespace ZES.Tests
             await await bus.CommandAsync(command); 
 
             var statsQuery = new StatsQuery();
-            //await RetryUntil(async () => await bus.QueryAsync(statsQuery) ==1, timeout: TimeSpan.MaxValue);
+            //await RetryUntil(async () => (await bus.QueryAsync(statsQuery)).NumberOfRoots == 1, timeout: TimeSpan.FromSeconds(5));
             //Assert.Equal(1, bus.Query(statsQuery));
             
-            var historicalQuery = new HistoricalQuery<StatsQuery,long>(statsQuery, 0);
+            var historicalQuery = new HistoricalQuery<StatsQuery,Stats>(statsQuery, 0);
             var historicalStats = await bus.QueryAsync(historicalQuery);
-            Assert.Equal(0, historicalStats);
+            Assert.Equal(0, historicalStats.NumberOfRoots);
             
-            var liveQuery = new HistoricalQuery<StatsQuery,long>(statsQuery, DateTime.UtcNow.Ticks);
+            var liveQuery = new HistoricalQuery<StatsQuery,Stats>(statsQuery, DateTime.UtcNow.Ticks);
             var liveStats = await bus.QueryAsync(liveQuery);
-            Assert.Equal(1, liveStats);
+            Assert.Equal(1, liveStats.NumberOfRoots);
         }
 
         [Theory]

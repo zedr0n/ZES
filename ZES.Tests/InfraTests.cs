@@ -110,7 +110,8 @@ namespace ZES.Tests
             Assert.NotEqual(0, createdAt); 
             
             var statsQuery = new StatsQuery();
-            await bus.QueryUntil(statsQuery, s => s?.NumberOfRoots == numRoots);
+            var stats = await bus.QueryUntil(statsQuery, s => s?.NumberOfRoots == numRoots);
+            Assert.Equal(numRoots, stats.NumberOfRoots);
         }
 
         [Fact]

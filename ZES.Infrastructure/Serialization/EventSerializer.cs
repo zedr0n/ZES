@@ -43,7 +43,7 @@ namespace ZES.Infrastructure.Serialization
             }
         }
 
-        public string Metadata(long timestamp)
+        public string Metadata(long? timestamp)
         {
             //var array = new JObject(new JProperty("metadata",new JObject(new JProperty("timestamp",timestamp))));
             var array = new JObject(new JProperty(nameof(Command.Timestamp),timestamp));

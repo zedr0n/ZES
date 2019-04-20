@@ -25,6 +25,7 @@ namespace ZES.Tests
             var log = container.GetInstance<ILog>();
             
             schemaProvider.SetQuery(typeof(ZES.Tests.Domain.Schema.Query));
+            schemaProvider.SetMutation(typeof(ZES.Tests.Domain.Schema.Mutation));
             var schema = schemaProvider.Generate();
             log.Info(schema.ToString());
         }
@@ -55,6 +56,28 @@ namespace ZES.Tests
             log.Info(statsDict);
             Assert.NotNull(statsDict);
             Assert.Equal(1, statsDict["numberOfRoots"]);
+        }
+
+        [Fact]
+        public async void CanExecuteMutation()
+        {
+            var container = CreateContainer();
+            var log = container.GetInstance<ILog>(); 
+            
+            var schemaProvider = container.GetInstance<ISchemaProvider>();
+            schemaProvider.SetQuery(typeof(ZES.Tests.Domain.Schema.Query)); 
+            schemaProvider.SetMutation(typeof(ZES.Tests.Domain.Schema.Mutation));
+            
+            var schema = schemaProvider.Generate();
+            var executor = schema.MakeExecutable();
+
+            executor.Execute(@"mutation { createRoot( command : { target : ""Root"" } ) }");
+            
+            var statsResult = executor.Execute(@"{ stats( query : {  } ) { numberOfRoots } }") as IReadOnlyQueryResult;
+            dynamic statsDict = statsResult?.Data["stats"];
+            log.Info(statsDict);
+            Assert.NotNull(statsDict);
+            Assert.Equal(1, statsDict["numberOfRoots"]); 
         }
     }
 }

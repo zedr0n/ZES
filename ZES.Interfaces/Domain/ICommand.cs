@@ -9,7 +9,7 @@ namespace ZES.Interfaces.Domain
         /// <summary>
         /// Unix time offset for command timestamp
         /// </summary>
-        long Timestamp { get;  }
+        long? Timestamp { get;  }
     }
     
     public interface ISideEffectCommand {}

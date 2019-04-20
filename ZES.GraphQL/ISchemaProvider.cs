@@ -7,5 +7,6 @@ namespace ZES.GraphQL
     {
         ISchema Generate();
         void SetQuery(Type queryType);
+        void SetMutation(Type mutationType);
     }
 }

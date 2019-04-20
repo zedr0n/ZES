@@ -27,7 +27,7 @@ namespace ZES.Tests
             log.Info(schema.ToString());
         }
 
-        public async void CanExecuteQuery()
+        /*public async void CanExecuteQuery()
         {
             var container = CreateContainer();
             var bus = container.GetInstance<IBus>();
@@ -40,6 +40,6 @@ namespace ZES.Tests
             var schema = schemaProvider.Generate();
             var executor = schema.MakeExecutable();
             //executor.Execute();
-        }
+        }*/
     }
 }

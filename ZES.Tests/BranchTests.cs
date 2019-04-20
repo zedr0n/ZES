@@ -64,7 +64,7 @@ namespace ZES.Tests
             
             Assert.Equal("master",timeline.Id);
             await RetryUntil(async () => await repository.Find<Root>("Root"));
-            await RetryUntil(async () => (await bus.QueryAsync(query)).NumberOfRoots == 1);
+            await RetryUntil(async () => (await bus.QueryAsync(query))?.NumberOfRoots == 1);
         }
     }
 }

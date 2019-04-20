@@ -63,7 +63,7 @@ namespace ZES.Tests
             
             var query = new CreatedAtQuery("Root");
             //var createdAt = await RetryUntil(async () => await bus.QueryAsync(query), x => x != 0);
-            var createdAt = await bus.QueryUntil(query);
+            var createdAt = await bus.QueryUntil(query, c => c  != 0 );
             Assert.NotEqual(0, createdAt);
         }
         

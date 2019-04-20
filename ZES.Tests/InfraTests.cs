@@ -174,19 +174,17 @@ namespace ZES.Tests
             }
             
             var query = new CreatedAtQuery("Root1");
-            //await RetryUntil(async () => await bus.QueryAsync(query), timeout: TimeSpan.FromSeconds(5));
             await bus.QueryUntil(query, c => c.Timestamp > 0);
             
             var statsQuery = new StatsQuery();
-            await bus.QueryAsync(statsQuery);
-            
             messageQueue.Alert(new InvalidateProjections());
             Thread.Sleep(10);
-            await bus.QueryAsync(statsQuery);
+            var stats = await bus.QueryUntil(statsQuery, s => s?.NumberOfRoots == numberOfRoots);
+            Assert.Equal(numberOfRoots, stats?.NumberOfRoots);
             
             var newCommand = new CreateRoot("OtherRoot");
             await bus.CommandAsync(newCommand);
-            var stats = await bus.QueryUntil(new StatsQuery(), s => s?.NumberOfRoots > numberOfRoots);
+            stats = await bus.QueryUntil(statsQuery, s => s?.NumberOfRoots > numberOfRoots);
             
             Assert.Equal(numberOfRoots+1 , stats?.NumberOfRoots);
         }

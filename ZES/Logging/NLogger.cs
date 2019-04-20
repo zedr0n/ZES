@@ -80,7 +80,12 @@ namespace ZES.Logging
         {
             _logger.Debug("{msg}",message);
         }
-        
+
+        public void Info(object message)
+        {
+            _logger.Info("{msg}",message);
+        }
+
         public void Error(object message, object instance = null)
         {
             _logger.Error("{dtype} {msg}",instance?.GetType().GetName() ?? "",message);

@@ -5,6 +5,7 @@ using NLog;
 using NLog.Targets;
 using SimpleInjector;
 using Xunit.Abstractions;
+using ZES.GraphQL;
 using ZES.Logging;
 using ZES.Tests.Domain;
 
@@ -43,6 +44,8 @@ namespace ZES.Tests
                     config.AddRuleForOneLevel(LogLevel.Debug, target);
                 if(Environment.GetEnvironmentVariable("ERROR") == "1")
                     config.AddRuleForOneLevel(LogLevel.Error, target);
+                if(Environment.GetEnvironmentVariable("INFO") == "1")
+                    config.AddRuleForOneLevel(LogLevel.Info, target);
             }
             
             LogManager.Configuration = config;
@@ -60,7 +63,7 @@ namespace ZES.Tests
             {
                 var container = new Container();
                 CreateRoot().ComposeApplication(container);
-
+                container.Register<ISchemaProvider, SchemaProvider>(Lifestyle.Singleton);
 
                 container.Options.AllowOverridingRegistrations = true;
                 container.Register(typeof(ILogger),() => _logger,Lifestyle.Singleton);

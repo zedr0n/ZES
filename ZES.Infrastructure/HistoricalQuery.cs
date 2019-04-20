@@ -1,4 +1,3 @@
-using System;
 using ZES.Interfaces.Domain;
 
 namespace ZES.Infrastructure
@@ -12,6 +11,5 @@ namespace ZES.Infrastructure
         }
         public long Timestamp { get; }
         public TQuery Query { get; }
-        public Type Type => typeof(TQuery);
     }
 }

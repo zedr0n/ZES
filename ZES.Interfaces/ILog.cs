@@ -24,6 +24,12 @@ namespace ZES.Interfaces
         void Debug(object message);
 
         /// <summary>
+        /// Writes the diagnostic message at the <c>Info</c> level.
+        /// </summary>
+        /// <param name="message"></param>
+        void Info(object message);
+        
+        /// <summary>
         /// Writes the diagnostic message at the <c>Error</c> level.
         /// </summary>
         /// <param name="message">A <see langword="object" /> to be written.</param>

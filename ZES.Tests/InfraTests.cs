@@ -108,7 +108,7 @@ namespace ZES.Tests
             Assert.NotEqual(0, createdAt); 
             
             var statsQuery = new StatsQuery();
-            Assert.Equal(numRoots,await bus.QueryAsync(statsQuery));
+            Assert.Equal(numRoots,(await bus.QueryAsync(statsQuery))?.NumberOfRoots);
         }
 
         [Fact]
@@ -181,7 +181,7 @@ namespace ZES.Tests
             
             var newCommand = new CreateRoot("OtherRoot");
             await bus.CommandAsync(newCommand);
-            var res = await RetryUntil(async () => await bus.QueryAsync(new StatsQuery()), s => s > numberOfRoots);
+            var res = await RetryUntil(async () => (await bus.QueryAsync(new StatsQuery()))?.NumberOfRoots, s => s > numberOfRoots);
 
             Assert.Equal(numberOfRoots+1 , res);
         }

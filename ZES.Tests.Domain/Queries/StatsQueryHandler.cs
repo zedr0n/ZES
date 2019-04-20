@@ -4,7 +4,7 @@ using ZES.Interfaces.Domain;
 
 namespace ZES.Tests.Domain.Queries
 {
-    public class StatsQueryHandler : QueryHandler<StatsQuery, long>
+    public class StatsQueryHandler : QueryHandler<StatsQuery, Stats>
     {
         private IProjection<ValueState<Stats>> _projection;
         public StatsQueryHandler(IProjection<ValueState<Stats>> projection)
@@ -18,9 +18,10 @@ namespace ZES.Tests.Domain.Queries
             set => _projection = value as IProjection<ValueState<Stats>>;
         }
 
-        public override long Handle(StatsQuery query)
+        public override Stats Handle(StatsQuery query)
         {
-            return _projection.State.Value.NumberOfRoots; 
+            //query.Result = _projection.State.Value;
+            return _projection.State.Value; 
         }
     }
 }

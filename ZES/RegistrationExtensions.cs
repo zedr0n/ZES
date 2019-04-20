@@ -44,6 +44,9 @@ namespace ZES
             var queries = assembly.GetTypesFromInterface(typeof(IQuery));
             foreach (var q in queries)
             {
+                c.Collection.Append(typeof(ITypeProvider<IQuery>),
+                    Lifestyle.Singleton.CreateRegistration(() => new TypeProvider<IQuery>(q), c));
+                
                 var result = q.GetInterfaces().SingleOrDefault(g => g.IsGenericType)?.GetGenericArguments().SingleOrDefault(); 
                 if(result == null)
                     continue;
@@ -51,8 +54,8 @@ namespace ZES
                 var iQueryHandler = typeof(IQueryHandler<,>).MakeGenericType(q, result);
                 var handler = assembly.GetTypesFromInterface(iQueryHandler).SingleOrDefault();
                 
-                var parameters = handler.GetConstructors()[0].GetParameters();
-                var tState = parameters.First(p => p.ParameterType.GetInterfaces().Contains(typeof(IProjection)))
+                var parameters = handler?.GetConstructors()[0].GetParameters();
+                var tState = parameters?.First(p => p.ParameterType.GetInterfaces().Contains(typeof(IProjection)))
                     .ParameterType.GenericTypeArguments[0];
 
                 var iHistoricalQuery = typeof(HistoricalQuery<,>).MakeGenericType(q,result);

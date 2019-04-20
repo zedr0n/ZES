@@ -19,9 +19,6 @@ namespace ZES.Tests.Domain.Queries
             set => _projection = value as IProjection<RootProjection.StateType>;
         }
 
-        public override long Handle(CreatedAtQuery query)
-        { 
-            return _projection.State.Get(query.Id); 
-        }
+        public override long Handle(CreatedAtQuery query) => _projection.State.Get(query.Id);
     }
 }

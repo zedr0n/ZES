@@ -18,10 +18,6 @@ namespace ZES.Tests.Domain.Queries
             set => _projection = value as IProjection<ValueState<Stats>>;
         }
 
-        public override Stats Handle(StatsQuery query)
-        {
-            //query.Result = _projection.State.Value;
-            return _projection.State.Value; 
-        }
+        public override Stats Handle(StatsQuery query) => _projection.State.Value;
     }
 }

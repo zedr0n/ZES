@@ -15,8 +15,9 @@ namespace ZES.Tests.Domain.Projections
 
             public long Get(string id)
             {
-                _createdAt.TryGetValue(id, out var createdAt);
-                return createdAt;
+                if(_createdAt.TryGetValue(id, out var createdAt))
+                    return createdAt;
+                return default(long);
             }
 
             public void Set(string id, long timestamp)

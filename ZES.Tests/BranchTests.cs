@@ -58,13 +58,15 @@ namespace ZES.Tests
             Assert.Equal("test",timeline.Id);
 
             var query = new StatsQuery();
-            await bus.QueryUntil(query, s => s?.NumberOfRoots == 0);
+            var stats = await bus.QueryUntil(query, s => s?.NumberOfRoots == 0);
+            Assert.Equal(0, stats.NumberOfRoots);
 
             timeTraveller.Reset();
             
             Assert.Equal("master",timeline.Id);
             await RetryUntil(async () => await repository.Find<Root>("Root"));
-            await bus.QueryUntil(query, s => s?.NumberOfRoots == 1);
+            stats = await bus.QueryUntil(query, s => s?.NumberOfRoots == 1);
+            Assert.Equal(1, stats.NumberOfRoots); 
         }
     }
 }

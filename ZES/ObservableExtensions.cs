@@ -59,7 +59,7 @@ namespace ZES
             obs = obs.RetryWithDelay(delay);
             if(timeout != TimeSpan.MaxValue)
                 obs = obs.Timeout(timeout);
-            return await obs;
+            return await obs.Catch(Observable.Return(default(T)));
         }
     }
     

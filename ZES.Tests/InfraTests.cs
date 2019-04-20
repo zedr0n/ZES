@@ -188,7 +188,7 @@ namespace ZES.Tests
             await bus.CommandAsync(newCommand);
             var stats = await bus.QueryUntil(new StatsQuery(), s => s?.NumberOfRoots > numberOfRoots);
             
-            Assert.Equal(numberOfRoots+1 , stats.NumberOfRoots);
+            Assert.Equal(numberOfRoots+1 , stats?.NumberOfRoots);
         }
 
         public InfraTests(ITestOutputHelper outputHelper) : base(outputHelper)

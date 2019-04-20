@@ -2,7 +2,7 @@ using ZES.Infrastructure;
 
 namespace ZES.Tests.Domain.Queries
 {
-    public class CreatedAtQuery : Query<long>
+    public class CreatedAtQuery : Query<CreatedAt>
     {
         public CreatedAtQuery(string id)
         {

@@ -5,7 +5,7 @@ using ZES.Interfaces.Domain;
 namespace ZES.Infrastructure
 {
     public class HistoricalQueryHandler<TQuery, TResult,TState> : QueryHandler<HistoricalQuery<TQuery,TResult>, TResult>,
-                                                                  IQueryHandler<TQuery,TResult> where TQuery : class, IQuery<TResult>
+                                                                  IQueryHandler<TQuery,TResult> where TQuery : class, IQuery<TResult> where TResult : class
     {
         private readonly IQueryHandler<TQuery, TResult> _handler;
         private readonly IProjection<TState> _projection;

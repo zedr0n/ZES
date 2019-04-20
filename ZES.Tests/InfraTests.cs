@@ -64,8 +64,8 @@ namespace ZES.Tests
             
             var query = new CreatedAtQuery("Root");
             //var createdAt = await RetryUntil(async () => await bus.QueryAsync(query), x => x != 0);
-            var createdAt = await bus.QueryUntil(query, c => c  != 0 );
-            Assert.NotEqual(0, createdAt);
+            var createdAt = await bus.QueryUntil(query, c => c?.Timestamp != 0 );
+            Assert.NotEqual(0, createdAt.Timestamp);
         }
         
         [Fact]
@@ -107,7 +107,7 @@ namespace ZES.Tests
 
             var query = new CreatedAtQuery("Root1");
             var createdAt = await bus.QueryUntil(query);//await RetryUntil(async () => await bus.QueryAsync(query));
-            Assert.NotEqual(0, createdAt); 
+            Assert.NotEqual(0, createdAt.Timestamp); 
             
             var statsQuery = new StatsQuery();
             var stats = await bus.QueryUntil(statsQuery, s => s?.NumberOfRoots == numRoots);
@@ -124,9 +124,9 @@ namespace ZES.Tests
             await bus.CommandAsync(command);
 
             var query = new CreatedAtQuery("RootCopy");
-            var createdAt = await bus.QueryUntil(query); //await RetryUntil(async () => await bus.QueryAsync(query));
+            var createdAt = await bus.QueryUntil(query, x => x.Timestamp > 0); //await RetryUntil(async () => await bus.QueryAsync(query));
             
-            Assert.NotEqual(0, createdAt);
+            Assert.NotEqual(0, createdAt.Timestamp);
         }
 
         [Theory]
@@ -175,7 +175,7 @@ namespace ZES.Tests
             
             var query = new CreatedAtQuery("Root1");
             //await RetryUntil(async () => await bus.QueryAsync(query), timeout: TimeSpan.FromSeconds(5));
-            await bus.QueryUntil(query);
+            await bus.QueryUntil(query, c => c.Timestamp > 0);
             
             var statsQuery = new StatsQuery();
             await bus.QueryAsync(statsQuery);

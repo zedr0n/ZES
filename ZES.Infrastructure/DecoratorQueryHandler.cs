@@ -6,6 +6,7 @@ using ZES.Interfaces.Domain;
 namespace ZES.Infrastructure
 {
     public class DecoratorQueryHandler<TQuery, TResult> : QueryHandler<TQuery, TResult> where TQuery : class, IQuery<TResult>
+                                                                                        where TResult : class
     {
         private readonly IQueryHandler<TQuery, TResult> _handler;
         private readonly ILog _log;

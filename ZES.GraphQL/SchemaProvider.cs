@@ -43,11 +43,12 @@ namespace ZES.GraphQL
                 foreach (var q in _queries.Where(x => x.ClrType != null))
                 {
                     var result = q.ClrType.GetInterfaces().SingleOrDefault(g => g.IsGenericType)?.GetGenericArguments().SingleOrDefault();  
-                    c.RegisterType(typeof(QueryType<,>).MakeGenericType(q.ClrType, result)); 
+                    //c.RegisterType(typeof(QueryType<,>).MakeGenericType(q.ClrType, result)); 
+                    c.RegisterType(typeof(ObjectType<>).MakeGenericType(q.ClrType));
+                    if(result != null && result.IsClass)
+                        c.RegisterType(typeof(ObjectType<>).MakeGenericType(result)); 
+                    //c.RegisterType(typeof(ObjectType<>).MakeGenericType(result));
                 }
-
-
-
             });
             return schema;
         }

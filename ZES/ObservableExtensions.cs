@@ -29,8 +29,8 @@ namespace ZES
 
         public static async Task<TResult> QueryUntil<TResult>(this IBus bus, IQuery<TResult> query, Func<TResult,bool> predicate = null,TimeSpan timeout = default(TimeSpan), TimeSpan delay = default(TimeSpan))
         {
-            if (timeout == default(TimeSpan))
-                timeout = TimeSpan.FromSeconds(5);
+            //if (timeout == default(TimeSpan))
+            //    timeout = TimeSpan.FromSeconds(5);
             return await RetryUntil(async () => await bus.QueryAsync(query), predicate, timeout, delay);
         }
 

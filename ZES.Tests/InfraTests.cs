@@ -173,7 +173,7 @@ namespace ZES.Tests
             
             var query = new CreatedAtQuery("Root1");
             //await RetryUntil(async () => await bus.QueryAsync(query), timeout: TimeSpan.FromSeconds(5));
-            await bus.QueryUntil(query, timeout: TimeSpan.FromSeconds(5));
+            await bus.QueryUntil(query);
             
             var statsQuery = new StatsQuery();
             await bus.QueryAsync(statsQuery);

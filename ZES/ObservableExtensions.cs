@@ -1,6 +1,8 @@
 using System;
 using System.Reactive.Linq;
 using System.Threading.Tasks;
+using ZES.Interfaces.Domain;
+using ZES.Interfaces.Pipes;
 
 namespace ZES
 {
@@ -23,6 +25,11 @@ namespace ZES
             return source.Catch(Observable.Timer(timeSpan)
                 .SelectMany(_ => source)
                 .Retry());
+        }
+
+        public static async Task<TResult> QueryUntil<TResult>(this IBus bus, IQuery<TResult> query, Func<TResult,bool> predicate = null,TimeSpan timeout = default(TimeSpan), TimeSpan delay = default(TimeSpan))
+        {
+            return await RetryUntil(async () => await bus.QueryAsync(query), predicate, timeout, delay);
         }
 
         public static async Task<T> RetryUntil<T>(Func<Task<T>> action,Func<T,bool> predicate = null, TimeSpan timeout = default(TimeSpan), TimeSpan delay = default(TimeSpan))

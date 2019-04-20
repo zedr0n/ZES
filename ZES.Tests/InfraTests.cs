@@ -62,7 +62,8 @@ namespace ZES.Tests
             await await bus.CommandAsync(command); 
             
             var query = new CreatedAtQuery("Root");
-            var createdAt = await RetryUntil(async () => await bus.QueryAsync(query), x => x != 0);
+            //var createdAt = await RetryUntil(async () => await bus.QueryAsync(query), x => x != 0);
+            var createdAt = await bus.QueryUntil(query);
             Assert.NotEqual(0, createdAt);
         }
         
@@ -104,11 +105,11 @@ namespace ZES.Tests
             }
 
             var query = new CreatedAtQuery("Root1");
-            var createdAt = await RetryUntil(async () => await bus.QueryAsync(query));
+            var createdAt = await bus.QueryUntil(query);//await RetryUntil(async () => await bus.QueryAsync(query));
             Assert.NotEqual(0, createdAt); 
             
             var statsQuery = new StatsQuery();
-            Assert.Equal(numRoots,(await bus.QueryAsync(statsQuery))?.NumberOfRoots);
+            await bus.QueryUntil(statsQuery, s => s?.NumberOfRoots == numRoots);
         }
 
         [Fact]
@@ -121,7 +122,7 @@ namespace ZES.Tests
             await bus.CommandAsync(command);
 
             var query = new CreatedAtQuery("RootCopy");
-            var createdAt = await RetryUntil(async () => await bus.QueryAsync(query));
+            var createdAt = await bus.QueryUntil(query); //await RetryUntil(async () => await bus.QueryAsync(query));
             
             Assert.NotEqual(0, createdAt);
         }
@@ -140,8 +141,8 @@ namespace ZES.Tests
                 await bus.CommandAsync(command);
                 rootId--;
             }
-            
-            await RetryUntil(async () => await bus.QueryAsync(new CreatedAtQuery("Root1")));
+
+            await bus.QueryUntil(new CreatedAtQuery("Root1"));  //await RetryUntil(async () => await bus.QueryAsync(new CreatedAtQuery("Root1")));
             
             rootId = numRoots;
             while (rootId > 0)
@@ -171,7 +172,9 @@ namespace ZES.Tests
             }
             
             var query = new CreatedAtQuery("Root1");
-            await RetryUntil(async () => await bus.QueryAsync(query), timeout: TimeSpan.FromSeconds(5));
+            //await RetryUntil(async () => await bus.QueryAsync(query), timeout: TimeSpan.FromSeconds(5));
+            await bus.QueryUntil(query, timeout: TimeSpan.FromSeconds(5));
+            
             var statsQuery = new StatsQuery();
             await bus.QueryAsync(statsQuery);
             
@@ -181,9 +184,9 @@ namespace ZES.Tests
             
             var newCommand = new CreateRoot("OtherRoot");
             await bus.CommandAsync(newCommand);
-            var res = await RetryUntil(async () => (await bus.QueryAsync(new StatsQuery()))?.NumberOfRoots, s => s > numberOfRoots);
-
-            Assert.Equal(numberOfRoots+1 , res);
+            var stats = await bus.QueryUntil(new StatsQuery(), s => s?.NumberOfRoots > numberOfRoots);
+            
+            Assert.Equal(numberOfRoots+1 , stats.NumberOfRoots);
         }
 
         public InfraTests(ITestOutputHelper outputHelper) : base(outputHelper)

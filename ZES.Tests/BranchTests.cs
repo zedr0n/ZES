@@ -1,3 +1,4 @@
+using System;
 using Xunit;
 using Xunit.Abstractions;
 using ZES.Interfaces;
@@ -64,7 +65,7 @@ namespace ZES.Tests
             
             Assert.Equal("master",timeline.Id);
             await RetryUntil(async () => await repository.Find<Root>("Root"));
-            await bus.QueryUntil(query, s => s?.NumberOfRoots == 1);
+            await bus.QueryUntil(query, s => s?.NumberOfRoots == 1, TimeSpan.FromSeconds(5));
         }
     }
 }

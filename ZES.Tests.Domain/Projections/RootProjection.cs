@@ -32,7 +32,7 @@ namespace ZES.Tests.Domain.Projections
             return state;
         }
 
-        public RootProjection(IEventStore<IAggregate> eventStore, ILog log, IMessageQueue messageQueue, ITimeline timeline) : base(eventStore, log, messageQueue)
+        public RootProjection(IEventStore<IAggregate> eventStore, ILog log, IMessageQueue messageQueue) : base(eventStore, log, messageQueue)
         {
             State = new StateType();
             Register<RootCreated>(When);

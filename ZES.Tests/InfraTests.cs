@@ -60,6 +60,7 @@ namespace ZES.Tests
             
             var command = new CreateRoot("Root");
             await await bus.CommandAsync(command); 
+            Thread.Sleep(10);
             
             var query = new CreatedAtQuery("Root");
             //var createdAt = await RetryUntil(async () => await bus.QueryAsync(query), x => x != 0);

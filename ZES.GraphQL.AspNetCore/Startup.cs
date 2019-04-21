@@ -2,7 +2,6 @@
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.DependencyInjection;
-using SimpleInjector;
 using ZES.Tests.Domain;
 
 namespace ZES.GraphQL.AspNetCore
@@ -13,8 +12,7 @@ namespace ZES.GraphQL.AspNetCore
         // For more information on how to configure your application, visit https://go.microsoft.com/fwlink/?LinkID=398940
         public void ConfigureServices(IServiceCollection services)
         {
-            var container = new Container();
-            services.WireGraphQl(container, new[] { typeof(Config) });
+            services.WireGraphQl(typeof(Config));
             //services.WireGraphQl(container, Config.RegisterAll, typeof(Query), typeof(Mutation));
         }
 

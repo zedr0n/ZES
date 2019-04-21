@@ -24,7 +24,12 @@ namespace ZES.GraphQL
 {
     public static class Startup
     {
-        public static void WireGraphQl(this IServiceCollection services, Container container, Type[] configs)
+        public static void WireGraphQl(this IServiceCollection services, Type config)
+        {
+            var container = new Container();
+            WireGraphQl(services, container, new[] {config});
+        }
+        public static void WireGraphQl(this IServiceCollection services, Container container, IEnumerable<Type> configs)
         {
             container.Options.DefaultScopedLifestyle = new AsyncScopedLifestyle();
             new CompositionRoot().ComposeApplication(container);
@@ -64,7 +69,7 @@ namespace ZES.GraphQL
             _errorLog = errorLog;
         }
 
-        private FieldMiddleware Middleware(Type rootQuery = null, Type rootMutation = null)
+        private FieldMiddleware Middleware(IReflect rootQuery = null, IReflect rootMutation = null)
         {
             return next => async context =>
             {
@@ -116,7 +121,7 @@ namespace ZES.GraphQL
             return Register(services, new[] {rootQuery}, new[] {rootMutation});
         }
 
-        public IServiceCollection Register(IServiceCollection services, Type[] rootQuery, Type[] rootMutation)
+        public IServiceCollection Register(IServiceCollection services, IEnumerable<Type> rootQuery, IEnumerable<Type> rootMutation)
         {
             var baseSchema = Schema.Create(c =>
             {

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Reactive.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using SimpleInjector;
@@ -7,6 +8,7 @@ using Xunit;
 using Xunit.Abstractions;
 using ZES.Infrastructure;
 using ZES.Infrastructure.Alerts;
+using ZES.Interfaces;
 using ZES.Interfaces.Domain;
 using ZES.Interfaces.Pipes;
 using ZES.Tests.Domain;
@@ -37,11 +39,16 @@ namespace ZES.Tests
         public async void CannotSaveTwice()
         {
             var container = CreateContainer();
-            var bus = container.GetInstance<IBus>(); 
+            var bus = container.GetInstance<IBus>();
+            var errorLog = container.GetInstance<IErrorLog>();
+
+            IError error = null;
+            errorLog.Errors.Subscribe(e => error = e);
             
             var command = new CreateRoot("Root");
             await await bus.CommandAsync(command);
             await await bus.CommandAsync(command);
+            Assert.NotNull(error); 
         }
 
         [Fact]

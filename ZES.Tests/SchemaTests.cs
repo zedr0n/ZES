@@ -6,7 +6,7 @@ using ZES.GraphQL;
 using ZES.Interfaces;
 using ZES.Interfaces.Pipes;
 using ZES.Tests.Domain.Commands;
-using static ZES.Tests.Domain.Schema;
+using static ZES.Tests.Domain.Config;
 
 namespace ZES.Tests
 {
@@ -23,8 +23,8 @@ namespace ZES.Tests
             var schemaProvider = container.GetInstance<ISchemaProvider>();
             var log = container.GetInstance<ILog>();
             
-            var schema = schemaProvider.Generate(typeof(Query),
-            typeof(Mutation)).Schema;
+            var schema = schemaProvider.Generate(typeof(Queries),
+            typeof(Mutations)).Schema;
             log.Info(schema.ToString());
         }
 
@@ -40,7 +40,7 @@ namespace ZES.Tests
             
             var schemaProvider = container.GetInstance<ISchemaProvider>();
             
-            var executor = schemaProvider.Generate(typeof(Query));
+            var executor = schemaProvider.Generate(typeof(Queries));
             var createdAtResult = await executor.ExecuteAsync(@"{ createdAt( query: { id : ""Root"" } ) { timestamp }  }") as IReadOnlyQueryResult;
             dynamic createdAtDict = createdAtResult?.Data["createdAt"];
             log.Info(createdAtDict);
@@ -62,7 +62,7 @@ namespace ZES.Tests
             
             var schemaProvider = container.GetInstance<ISchemaProvider>();
             
-            var executor = schemaProvider.Generate(typeof(Query), typeof(Mutation));
+            var executor = schemaProvider.Generate(typeof(Queries), typeof(Mutations));
 
             await executor.ExecuteAsync(@"mutation { createRoot( command : { target : ""Root"" } ) }");
             

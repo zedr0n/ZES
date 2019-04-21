@@ -51,20 +51,6 @@ namespace ZES.GraphQL
             var schemaProvider = container.GetInstance<ISchemaProvider>();
             schemaProvider.Register(services, rootQueries.ToArray(), rootMutations.ToArray()); 
         }
-        
-        public static void WireGraphQl(this IServiceCollection services, Container container, Action<Container> config,
-            Type rootQuery, Type rootMutation)
-        {
-            container.Options.DefaultScopedLifestyle = new AsyncScopedLifestyle();
-            new CompositionRoot().ComposeApplication(container);
-            container.Register<ISchemaProvider,SchemaProvider>(Lifestyle.Singleton);
-            config(container);
-            
-            container.Verify(); 
-            
-            var schemaProvider = container.GetInstance<ISchemaProvider>();
-            schemaProvider.Register(services, rootQuery, rootMutation);
-        }
     }
     
     public class SchemaProvider : ISchemaProvider
@@ -139,8 +125,8 @@ namespace ZES.GraphQL
                 c.RegisterQueryType(typeof(BaseQuery));
             });
 
-            var domainSchemas = rootQuery.Zip(rootMutation, (a,b) => (a,b)).Select(t => Schema.Create(c =>
-            
+            var domainSchemas = rootQuery.Zip(rootMutation, (a,b) => (a,b))
+                .Select(t => Schema.Create(c =>            
             {
                 c.RegisterExtendedScalarTypes();
                 c.Use(Middleware(t.Item1, t.Item2));

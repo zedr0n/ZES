@@ -4,7 +4,6 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.DependencyInjection;
 using SimpleInjector;
 using ZES.Tests.Domain;
-using static ZES.Tests.Domain.Schema;
 
 namespace ZES.GraphQL.AspNetCore
 {

@@ -4,12 +4,34 @@ using System.Linq;
 using System.Reflection;
 using HotChocolate;
 using HotChocolate.Types;
+using Microsoft.Extensions.DependencyInjection;
+using SimpleInjector;
+using SimpleInjector.Lifestyles;
 using ZES.Interfaces.Domain;
 using ZES.Interfaces.Pipes;
 
 namespace ZES.GraphQL
 {
+    public static class Startup
+    {
+        public static ISchema WireGraphQl(Container container, Action<Container> config,
+            Type queryType, Type mutationType)
+        {
+            container.Options.DefaultScopedLifestyle = new AsyncScopedLifestyle();
+            new CompositionRoot().ComposeApplication(container);
+            container.Register<ISchemaProvider,SchemaProvider>(Lifestyle.Singleton);
+            config(container);
+            
+            container.Verify();
 
+            var schemaProvider = container.GetInstance<ISchemaProvider>();
+            schemaProvider.SetQuery(queryType);
+            schemaProvider.SetMutation(mutationType);
+
+            var schema = schemaProvider.Generate();
+            return schema;
+        }
+    }
     
     public class SchemaProvider : ISchemaProvider
     {

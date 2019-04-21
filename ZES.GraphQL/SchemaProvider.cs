@@ -26,6 +26,7 @@ namespace ZES.GraphQL
 
             var schemaProvider = container.GetInstance<ISchemaProvider>();
             var schema = schemaProvider.Generate(rootQuery, rootMutation);
+            
             return schema;
         }
     }

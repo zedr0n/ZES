@@ -19,8 +19,8 @@ namespace ZES.Infrastructure.Domain
             instance.Id = id;
             return instance as T;
         }
-        
-        public int Version { get; private set; }
+
+        public int Version { get; private set; } = -1;
 
         protected void Register<TEvent>(Action<TEvent> handler) where TEvent : class, IEvent
         {

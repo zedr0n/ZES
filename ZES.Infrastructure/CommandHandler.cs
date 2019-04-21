@@ -11,14 +11,16 @@ namespace ZES.Infrastructure
         private readonly ICommandHandler<T> _handler;
         private readonly ICommandLog _commandLog;
         private readonly ILog _log;
+        private readonly IErrorLog _errorLog;
         private readonly ITimeline _timeline;
         
-        public CommandHandler(ICommandHandler<T> handler, ILog log, ITimeline timeline, ICommandLog commandLog)
+        public CommandHandler(ICommandHandler<T> handler, ILog log, ITimeline timeline, ICommandLog commandLog, IErrorLog errorLog)
         {
             _handler = handler;
             _log = log;
             _timeline = timeline;
             _commandLog = commandLog;
+            _errorLog = errorLog;
         }
 
         public async Task Handle(T command)
@@ -32,12 +34,13 @@ namespace ZES.Infrastructure
             }
             catch (Exception e)
             {
-                _log.Error(e.Message,this);
+                _errorLog.Add(e.Message, this);
+                //_log.Error(e.Message,this);
                 
                 // retry the command in case of concurrency exception
                 //if(e is ConcurrencyException)
                 //    await _handler.Handle(command);
-                throw;
+                //throw;
             }
 
             await _commandLog.AppendCommand(command);

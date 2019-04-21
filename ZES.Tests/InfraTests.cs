@@ -34,6 +34,17 @@ namespace ZES.Tests
         }
 
         [Fact]
+        public async void CannotSaveTwice()
+        {
+            var container = CreateContainer();
+            var bus = container.GetInstance<IBus>(); 
+            
+            var command = new CreateRoot("Root");
+            await await bus.CommandAsync(command);
+            await await bus.CommandAsync(command);
+        }
+
+        [Fact]
         public async void CanSaveMultipleRoots()
         {
             var container = CreateContainer();

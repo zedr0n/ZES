@@ -1,3 +1,4 @@
+using System;
 using System.Linq;
 using System.Reactive.Linq;
 using System.Threading.Tasks;
@@ -34,6 +35,8 @@ namespace ZES.Infrastructure
                 return;
             
             var stream = _streams.GetOrAdd(es);
+            if(stream.Version >= 0 && es.Version <= stream.Version )
+                throw new InvalidOperationException();
             //if (stream.Version >= 0 && (await _eventStore.ReadStream(stream, stream.Version)))
             //    throw new InvalidOperationException();
 

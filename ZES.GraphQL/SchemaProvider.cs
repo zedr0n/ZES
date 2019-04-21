@@ -15,6 +15,7 @@ using Microsoft.Extensions.DependencyInjection;
 using SimpleInjector;
 using SimpleInjector.Lifestyles;
 using ZES.Infrastructure;
+using ZES.Infrastructure.Attributes;
 using ZES.Interfaces;
 using ZES.Interfaces.Domain;
 using ZES.Interfaces.Pipes;
@@ -23,7 +24,35 @@ namespace ZES.GraphQL
 {
     public static class Startup
     {
-        public static void WireGraphQL(this IServiceCollection services, Container container, Action<Container> config,
+        public static void WireGraphQl(this IServiceCollection services, Container container, Type[] configs)
+        {
+            container.Options.DefaultScopedLifestyle = new AsyncScopedLifestyle();
+            new CompositionRoot().ComposeApplication(container);
+            container.Register<ISchemaProvider,SchemaProvider>(Lifestyle.Singleton);
+            
+            // load root queries and mutations
+            var rootQueries = new List<Type>();
+            var rootMutations = new List<Type>();
+            foreach (var t in configs)
+            {
+                rootQueries.Add(t.GetNestedTypes()
+                    .SingleOrDefault(x => x.GetCustomAttribute<RootQueryAttribute>() != null));
+                rootMutations.Add(t.GetNestedTypes()
+                    .SingleOrDefault(x => x.GetCustomAttribute<RootMutationAttribute>() != null));
+
+                var regMethod = t.GetMethods(BindingFlags.Static | BindingFlags.Public)
+                    .SingleOrDefault(x => x.GetCustomAttribute<RegistrationAttribute>() != null);
+
+                regMethod?.Invoke(null, new object[] {container});
+            }
+            
+            container.Verify();
+            
+            var schemaProvider = container.GetInstance<ISchemaProvider>();
+            schemaProvider.Register(services, rootQueries.ToArray(), rootMutations.ToArray()); 
+        }
+        
+        public static void WireGraphQl(this IServiceCollection services, Container container, Action<Container> config,
             Type rootQuery, Type rootMutation)
         {
             container.Options.DefaultScopedLifestyle = new AsyncScopedLifestyle();
@@ -35,23 +64,6 @@ namespace ZES.GraphQL
             
             var schemaProvider = container.GetInstance<ISchemaProvider>();
             schemaProvider.Register(services, rootQuery, rootMutation);
-        }
-        
-        
-        public static IQueryExecutor WireGraphQL(Container container, Action<Container> config,
-            Type rootQuery, Type rootMutation)
-        {
-            container.Options.DefaultScopedLifestyle = new AsyncScopedLifestyle();
-            new CompositionRoot().ComposeApplication(container);
-            container.Register<ISchemaProvider,SchemaProvider>(Lifestyle.Singleton);
-            config(container);
-            
-            container.Verify();
-
-            var schemaProvider = container.GetInstance<ISchemaProvider>();
-            var executor = schemaProvider.Generate(rootQuery, rootMutation);
-            
-            return executor;
         }
     }
     
@@ -115,28 +127,45 @@ namespace ZES.GraphQL
 
         public IServiceCollection Register(IServiceCollection services, Type rootQuery, Type rootMutation)
         {
+            return Register(services, new[] {rootQuery}, new[] {rootMutation});
+        }
+
+        public IServiceCollection Register(IServiceCollection services, Type[] rootQuery, Type[] rootMutation)
+        {
             var baseSchema = Schema.Create(c =>
             {
                 c.RegisterExtendedScalarTypes();
                 c.Use(Middleware());
                 c.RegisterQueryType(typeof(BaseQuery));
             });
+
+            var domainSchemas = rootQuery.Zip(rootMutation, (a,b) => (a,b)).Select(t => Schema.Create(c =>
             
-            var domainSchema = Schema.Create(c =>
             {
                 c.RegisterExtendedScalarTypes();
-                c.Use(Middleware(rootQuery, rootMutation));
-                if (rootQuery != null)
-                    c.RegisterQueryType(typeof(ObjectType<>).MakeGenericType(rootQuery)); 
-                
-                if(rootMutation != null)
-                    c.RegisterMutationType(typeof(ObjectType<>).MakeGenericType(rootMutation)); 
-            });
+                c.Use(Middleware(t.Item1, t.Item2));
+                if (t.Item1 != null)
+                    c.RegisterQueryType(typeof(ObjectType<>).MakeGenericType(t.Item1));
+
+                if (t.Item2 != null)
+                    c.RegisterMutationType(typeof(ObjectType<>).MakeGenericType(t.Item2));
+            })).ToList();
+
+            void AggregateSchemas(IStitchingBuilder b)
+            {
+                b.AddSchema("Base", baseSchema);
+                var i = 0;
+                foreach (var s in domainSchemas)
+                {
+                    b = b.AddSchema($"Domain{i}", s);
+                    i++;
+                }
+            }
            
             if(services == null)
                 services = new ServiceCollection();
-            services.AddStitchedSchema(builder => builder.AddSchema("Base", baseSchema)
-                .AddSchema("Domain", domainSchema));
+            
+            services.AddStitchedSchema(AggregateSchemas);
 
             return services;
         }

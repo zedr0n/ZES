@@ -9,5 +9,6 @@ namespace ZES.GraphQL
     {
         IQueryExecutor Generate(Type rootQuery = null, Type rootMutation = null);
         IServiceCollection Register(IServiceCollection services, Type rootQuery, Type rootMutation);
+        IServiceCollection Register(IServiceCollection services, Type[] rootQuery, Type[] rootMutation);
     }
 }

@@ -5,8 +5,6 @@ namespace ZES.GraphQL
 {
     public interface ISchemaProvider
     {
-        ISchema Generate();
-        void SetQuery(Type queryType);
-        void SetMutation(Type mutationType);
+        ISchema Generate(Type rootQuery = null, Type rootMutation = null);
     }
 }

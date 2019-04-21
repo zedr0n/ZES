@@ -1,13 +1,12 @@
-using System;
 using HotChocolate;
 using HotChocolate.Execution;
 using Xunit;
 using Xunit.Abstractions;
 using ZES.GraphQL;
 using ZES.Interfaces;
-using ZES.Interfaces.Domain;
 using ZES.Interfaces.Pipes;
 using ZES.Tests.Domain.Commands;
+using static ZES.Tests.Domain.Schema;
 
 namespace ZES.Tests
 {
@@ -24,9 +23,8 @@ namespace ZES.Tests
             var schemaProvider = container.GetInstance<ISchemaProvider>();
             var log = container.GetInstance<ILog>();
             
-            schemaProvider.SetQuery(typeof(ZES.Tests.Domain.Schema.Query));
-            schemaProvider.SetMutation(typeof(ZES.Tests.Domain.Schema.Mutation));
-            var schema = schemaProvider.Generate();
+            var schema = schemaProvider.Generate(typeof(Query),
+            typeof(Mutation));
             log.Info(schema.ToString());
         }
 
@@ -41,9 +39,8 @@ namespace ZES.Tests
             await await bus.CommandAsync(command);
             
             var schemaProvider = container.GetInstance<ISchemaProvider>();
-            schemaProvider.SetQuery(typeof(ZES.Tests.Domain.Schema.Query));
             
-            var schema = schemaProvider.Generate();
+            var schema = schemaProvider.Generate(typeof(Query));
             var executor = schema.MakeExecutable();
             var createdAtResult = await executor.ExecuteAsync(@"{ createdAt( query: { id : ""Root"" } ) { timestamp }  }") as IReadOnlyQueryResult;
             dynamic createdAtDict = createdAtResult?.Data["createdAt"];
@@ -65,10 +62,8 @@ namespace ZES.Tests
             var log = container.GetInstance<ILog>(); 
             
             var schemaProvider = container.GetInstance<ISchemaProvider>();
-            schemaProvider.SetQuery(typeof(ZES.Tests.Domain.Schema.Query)); 
-            schemaProvider.SetMutation(typeof(ZES.Tests.Domain.Schema.Mutation));
             
-            var schema = schemaProvider.Generate();
+            var schema = schemaProvider.Generate(typeof(Query), typeof(Mutation));
             var executor = schema.MakeExecutable();
 
             await executor.ExecuteAsync(@"mutation { createRoot( command : { target : ""Root"" } ) }");

@@ -15,7 +15,7 @@ namespace ZES.GraphQL
     public static class Startup
     {
         public static ISchema WireGraphQl(Container container, Action<Container> config,
-            Type queryType, Type mutationType)
+            Type rootQuery, Type rootMutation)
         {
             container.Options.DefaultScopedLifestyle = new AsyncScopedLifestyle();
             new CompositionRoot().ComposeApplication(container);
@@ -25,10 +25,7 @@ namespace ZES.GraphQL
             container.Verify();
 
             var schemaProvider = container.GetInstance<ISchemaProvider>();
-            schemaProvider.SetQuery(queryType);
-            schemaProvider.SetMutation(mutationType);
-
-            var schema = schemaProvider.Generate();
+            var schema = schemaProvider.Generate(rootQuery, rootMutation);
             return schema;
         }
     }
@@ -36,32 +33,20 @@ namespace ZES.GraphQL
     public class SchemaProvider : ISchemaProvider
     {
         private readonly IBus _bus;
-        private Type _queryType;
-        private Type _mutationType;
 
         public SchemaProvider(IBus bus)
         {
             _bus = bus;
         }
 
-        public void SetQuery(Type queryType)
-        {
-            _queryType = queryType;
-        }
-
-        public void SetMutation(Type mutationType)
-        {
-            _mutationType = mutationType;
-        }
-
-        public ISchema Generate()
+        public ISchema Generate(Type rootQuery = null, Type rootMutation = null)
         {
             var schema = Schema.Create(c =>
             {
                 c.RegisterExtendedScalarTypes();
                 c.Use(next => async context =>
                 {
-                    var fields = _queryType?.GetMethods(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly);
+                    var fields = rootQuery?.GetMethods(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly);
                     var field = fields?.SingleOrDefault(x =>
                         string.Compare(x.Name, context.Field.Name, StringComparison.OrdinalIgnoreCase) == 0);
                     if (field != null)
@@ -72,7 +57,7 @@ namespace ZES.GraphQL
                         return;
                     }
 
-                    var commandFields = _mutationType?.GetMethods(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly);
+                    var commandFields = rootMutation?.GetMethods(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly);
                     field = commandFields?.SingleOrDefault(x =>
                         string.Compare(x.Name, context.Field.Name, StringComparison.OrdinalIgnoreCase) == 0);
 
@@ -87,18 +72,12 @@ namespace ZES.GraphQL
 
                     await next.Invoke(context);
                 });
-                /*foreach (var q in _queries.Select(x => x.ClrType).Where(x => x != null))
-                {
-                    var result = q.GetInterfaces().SingleOrDefault(g => g.IsGenericType)?.GetGenericArguments().SingleOrDefault();  
-                    if(result != null)
-                        c.RegisterType(typeof(ObjectType<>).MakeGenericType(result)); 
-                }*/
 
-                if (_queryType != null)
-                    c.RegisterQueryType(typeof(ObjectType<>).MakeGenericType(_queryType)); 
+                if (rootQuery != null)
+                    c.RegisterQueryType(typeof(ObjectType<>).MakeGenericType(rootQuery)); 
                 
-                if(_mutationType != null)
-                    c.RegisterMutationType(typeof(ObjectType<>).MakeGenericType(_mutationType));
+                if(rootMutation != null)
+                    c.RegisterMutationType(typeof(ObjectType<>).MakeGenericType(rootMutation));
             });
             return schema;
         }

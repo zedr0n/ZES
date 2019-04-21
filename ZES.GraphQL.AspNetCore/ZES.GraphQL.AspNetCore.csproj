@@ -19,6 +19,8 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\ZES.GraphQL\ZES.GraphQL.csproj" />
+    <ProjectReference Include="..\ZES.Tests.Domain\ZES.Tests.Domain.csproj" />
     <ProjectReference Include="..\ZES\ZES.csproj" />
   </ItemGroup>
 

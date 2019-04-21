@@ -14,13 +14,11 @@ namespace ZES.GraphQL
     public class SchemaProvider : ISchemaProvider
     {
         private readonly IBus _bus;
-        private readonly IEnumerable<ITypeProvider<IQuery>> _queries;
         private Type _queryType;
         private Type _mutationType;
 
-        public SchemaProvider(IEnumerable<ITypeProvider<IQuery>> queries, IBus bus)
+        public SchemaProvider(IBus bus)
         {
-            _queries = queries;
             _bus = bus;
         }
 

@@ -1,12 +1,15 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reactive.Linq;
 using System.Reflection;
 using HotChocolate;
 using HotChocolate.Types;
 using Microsoft.Extensions.DependencyInjection;
 using SimpleInjector;
 using SimpleInjector.Lifestyles;
+using ZES.Infrastructure;
+using ZES.Interfaces;
 using ZES.Interfaces.Domain;
 using ZES.Interfaces.Pipes;
 
@@ -34,10 +37,12 @@ namespace ZES.GraphQL
     public class SchemaProvider : ISchemaProvider
     {
         private readonly IBus _bus;
+        private readonly IErrorLog _errorLog;
 
-        public SchemaProvider(IBus bus)
+        public SchemaProvider(IBus bus, IErrorLog errorLog)
         {
             _bus = bus;
+            _errorLog = errorLog;
         }
 
         public ISchema Generate(Type rootQuery = null, Type rootMutation = null)
@@ -47,6 +52,13 @@ namespace ZES.GraphQL
                 c.RegisterExtendedScalarTypes();
                 c.Use(next => async context =>
                 {
+                    if (string.Compare(context.Field.Name,nameof(ErrorLog.Error),StringComparison.OrdinalIgnoreCase) == 0)
+                    {
+                        var error = await _errorLog.Errors.FirstAsync();
+                        context.Result = error;
+                        return;
+                    }
+                    
                     var fields = rootQuery?.GetMethods(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly);
                     var field = fields?.SingleOrDefault(x =>
                         string.Compare(x.Name, context.Field.Name, StringComparison.OrdinalIgnoreCase) == 0);

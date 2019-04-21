@@ -1,6 +1,6 @@
 using System;
 using System.Reactive.Linq;
-using SqlStreamStore.Infrastructure;
+using System.Reactive.Subjects;
 using ZES.Interfaces;
 
 namespace ZES.Infrastructure
@@ -12,6 +12,7 @@ namespace ZES.Infrastructure
             public string Message { get; set; }
             public long? Timestamp { get; set; }
 
+            public Error() {}
             public Error(string error)
             {
                 Message = error;
@@ -20,7 +21,7 @@ namespace ZES.Infrastructure
         }
         
         private readonly ILog _log;
-        private readonly Subject<IError> _errors = new Subject<IError>();
+        private readonly BehaviorSubject<IError> _errors = new BehaviorSubject<IError>(null); 
 
         public ErrorLog(ILog log)
         {

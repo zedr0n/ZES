@@ -1,3 +1,4 @@
+using ZES.Infrastructure;
 using ZES.Tests.Domain.Commands;
 using ZES.Tests.Domain.Queries;
 
@@ -9,6 +10,7 @@ namespace ZES.Tests.Domain
         {
             public CreatedAt CreatedAt(CreatedAtQuery query) => null;
             public Stats Stats(StatsQuery query) => null;
+            public ErrorLog.Error Error() => null;
         }
 
         public class Mutation

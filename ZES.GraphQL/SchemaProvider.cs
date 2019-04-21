@@ -4,8 +4,13 @@ using System.Linq;
 using System.Reactive.Linq;
 using System.Reflection;
 using HotChocolate;
+using HotChocolate.Execution;
+using HotChocolate.Language;
 using HotChocolate.Resolvers;
+using HotChocolate.Stitching;
+using HotChocolate.Stitching.Merge;
 using HotChocolate.Types;
+using HotChocolate.Utilities;
 using Microsoft.Extensions.DependencyInjection;
 using SimpleInjector;
 using SimpleInjector.Lifestyles;
@@ -18,7 +23,7 @@ namespace ZES.GraphQL
 {
     public static class Startup
     {
-        public static ISchema WireGraphQl(Container container, Action<Container> config,
+        public static IQueryExecutor WireGraphQl(Container container, Action<Container> config,
             Type rootQuery, Type rootMutation)
         {
             container.Options.DefaultScopedLifestyle = new AsyncScopedLifestyle();
@@ -29,9 +34,9 @@ namespace ZES.GraphQL
             container.Verify();
 
             var schemaProvider = container.GetInstance<ISchemaProvider>();
-            var schema = schemaProvider.Generate(rootQuery, rootMutation);
+            var executor = schemaProvider.Generate(rootQuery, rootMutation);
             
-            return schema;
+            return executor;
         }
     }
     
@@ -93,30 +98,33 @@ namespace ZES.GraphQL
             };
         }
 
-        public ISchema Generate(Type rootQuery = null, Type rootMutation = null)
+        public IQueryExecutor Generate(Type rootQuery = null, Type rootMutation = null)
         {
             var baseSchema = Schema.Create(c =>
             {
                 c.RegisterExtendedScalarTypes();
                 c.Use(Middleware());
-
                 c.RegisterQueryType(typeof(BaseQuery));
             });
             
-            var schema = Schema.Create(c =>
+            var domainSchema = Schema.Create(c =>
             {
                 c.RegisterExtendedScalarTypes();
-                c.Use(Middleware(rootQuery,rootMutation));
-
+                c.Use(Middleware(rootQuery, rootMutation));
                 if (rootQuery != null)
                     c.RegisterQueryType(typeof(ObjectType<>).MakeGenericType(rootQuery)); 
                 
                 if(rootMutation != null)
-                    c.RegisterMutationType(typeof(ObjectType<>).MakeGenericType(rootMutation));
+                    c.RegisterMutationType(typeof(ObjectType<>).MakeGenericType(rootMutation)); 
             });
             
+            var services = new ServiceCollection();
+            services.AddStitchedSchema(builder => builder.AddSchema("Base", baseSchema)
+                .AddSchema("Domain", domainSchema));
+                    
+            var executor = services.BuildServiceProvider().GetService<IQueryExecutor>();
             
-            return schema;
+            return executor;
         }
     }
 }

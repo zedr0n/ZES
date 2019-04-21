@@ -24,7 +24,7 @@ namespace ZES.Tests
             var log = container.GetInstance<ILog>();
             
             var schema = schemaProvider.Generate(typeof(Query),
-            typeof(Mutation));
+            typeof(Mutation)).Schema;
             log.Info(schema.ToString());
         }
 
@@ -40,8 +40,7 @@ namespace ZES.Tests
             
             var schemaProvider = container.GetInstance<ISchemaProvider>();
             
-            var schema = schemaProvider.Generate(typeof(Query));
-            var executor = schema.MakeExecutable();
+            var executor = schemaProvider.Generate(typeof(Query));
             var createdAtResult = await executor.ExecuteAsync(@"{ createdAt( query: { id : ""Root"" } ) { timestamp }  }") as IReadOnlyQueryResult;
             dynamic createdAtDict = createdAtResult?.Data["createdAt"];
             log.Info(createdAtDict);
@@ -63,8 +62,7 @@ namespace ZES.Tests
             
             var schemaProvider = container.GetInstance<ISchemaProvider>();
             
-            var schema = schemaProvider.Generate(typeof(Query), typeof(Mutation));
-            var executor = schema.MakeExecutable();
+            var executor = schemaProvider.Generate(typeof(Query), typeof(Mutation));
 
             await executor.ExecuteAsync(@"mutation { createRoot( command : { target : ""Root"" } ) }");
             

@@ -15,9 +15,9 @@ namespace ZES.GraphQL.AspNetCore
         public void ConfigureServices(IServiceCollection services)
         {
             var container = new Container();
-            var schema = ZES.GraphQL.Startup.WireGraphQl(container, Config.RegisterAll,
+            var executor = ZES.GraphQL.Startup.WireGraphQl(container, Config.RegisterAll,
                 typeof(Tests.Domain.Schema.Query), typeof(Tests.Domain.Schema.Mutation));
-            services.AddGraphQL(schema);
+            services.AddGraphQL(executor);
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.

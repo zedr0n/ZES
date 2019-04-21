@@ -9,13 +9,15 @@ namespace ZES.Infrastructure
     {
         public class Error : IError
         {
+            public string ErrorType { get; set; }
             public string Message { get; set; }
             public long? Timestamp { get; set; }
 
             public Error() {}
-            public Error(string error)
+            public Error(Exception error)
             {
-                Message = error;
+                Message = error.Message;
+                ErrorType = error.GetType().Name;
                 Timestamp = DateTime.UtcNow.Ticks;
             }
         }
@@ -28,9 +30,9 @@ namespace ZES.Infrastructure
             _log = log;
         }
 
-        public void Add(string error,object instance)
+        public void Add(Exception error,object instance)
         {
-            _log.Error(error, instance);
+            _log.Error(error.Message, instance);
             _errors.OnNext(new Error(error));
         }
 

@@ -36,7 +36,8 @@ namespace ZES.Infrastructure
             
             var stream = _streams.GetOrAdd(es);
             if(stream.Version >= 0 && es.Version <= stream.Version )
-                throw new InvalidOperationException();
+                throw new InvalidOperationException($"Aggregate root version {es.Version} is not ahead of stream version {stream.Version}"); 
+                //throw new InvalidOperationException();
             //if (stream.Version >= 0 && (await _eventStore.ReadStream(stream, stream.Version)))
             //    throw new InvalidOperationException();
 

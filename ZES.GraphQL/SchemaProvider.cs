@@ -78,8 +78,14 @@ namespace ZES.GraphQL
                     {
                         var commandType = field.GetParameters().FirstOrDefault();
                         dynamic command = context.Argument<object>(commandType.Name);
+                        var isError = false;
+                        _errorLog.Errors.Subscribe(e =>
+                        {
+                            if (e.ErrorType == typeof(InvalidOperationException).Name)
+                                isError = true;
+                        });
                         await await _bus.CommandAsync(command);
-                        context.Result = true;
+                        context.Result = !isError;
                         return;
                     }
 

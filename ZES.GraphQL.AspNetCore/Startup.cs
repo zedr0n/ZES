@@ -1,10 +1,10 @@
-﻿using HotChocolate;
-using HotChocolate.AspNetCore;
+﻿using HotChocolate.AspNetCore;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.DependencyInjection;
 using SimpleInjector;
 using ZES.Tests.Domain;
+using static ZES.Tests.Domain.Schema;
 
 namespace ZES.GraphQL.AspNetCore
 {
@@ -15,9 +15,7 @@ namespace ZES.GraphQL.AspNetCore
         public void ConfigureServices(IServiceCollection services)
         {
             var container = new Container();
-            var executor = ZES.GraphQL.Startup.WireGraphQl(container, Config.RegisterAll,
-                typeof(Tests.Domain.Schema.Query), typeof(Tests.Domain.Schema.Mutation));
-            services.AddGraphQL(executor);
+            services.WireGraphQL(container, Config.RegisterAll, typeof(Query), typeof(Mutation));
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.

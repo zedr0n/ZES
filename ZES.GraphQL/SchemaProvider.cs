@@ -23,7 +23,22 @@ namespace ZES.GraphQL
 {
     public static class Startup
     {
-        public static IQueryExecutor WireGraphQl(Container container, Action<Container> config,
+        public static void WireGraphQL(this IServiceCollection services, Container container, Action<Container> config,
+            Type rootQuery, Type rootMutation)
+        {
+            container.Options.DefaultScopedLifestyle = new AsyncScopedLifestyle();
+            new CompositionRoot().ComposeApplication(container);
+            container.Register<ISchemaProvider,SchemaProvider>(Lifestyle.Singleton);
+            config(container);
+            
+            container.Verify(); 
+            
+            var schemaProvider = container.GetInstance<ISchemaProvider>();
+            schemaProvider.Register(services, rootQuery, rootMutation);
+        }
+        
+        
+        public static IQueryExecutor WireGraphQL(Container container, Action<Container> config,
             Type rootQuery, Type rootMutation)
         {
             container.Options.DefaultScopedLifestyle = new AsyncScopedLifestyle();
@@ -98,7 +113,7 @@ namespace ZES.GraphQL
             };
         }
 
-        public IQueryExecutor Generate(Type rootQuery = null, Type rootMutation = null)
+        public IServiceCollection Register(IServiceCollection services, Type rootQuery, Type rootMutation)
         {
             var baseSchema = Schema.Create(c =>
             {
@@ -117,13 +132,20 @@ namespace ZES.GraphQL
                 if(rootMutation != null)
                     c.RegisterMutationType(typeof(ObjectType<>).MakeGenericType(rootMutation)); 
             });
-            
-            var services = new ServiceCollection();
+           
+            if(services == null)
+                services = new ServiceCollection();
             services.AddStitchedSchema(builder => builder.AddSchema("Base", baseSchema)
                 .AddSchema("Domain", domainSchema));
+
+            return services;
+        }
+        
+        public IQueryExecutor Generate(Type rootQuery = null, Type rootMutation = null)
+        {
+            var services = Register(null, rootQuery, rootMutation);
                     
             var executor = services.BuildServiceProvider().GetService<IQueryExecutor>();
-            
             return executor;
         }
     }

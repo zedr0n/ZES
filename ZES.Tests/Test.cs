@@ -11,12 +11,12 @@ using ZES.Tests.Domain;
 
 namespace ZES.Tests
 {
-    public class Test
+    public class Test : IDisposable
     {
         private readonly object _lock = new object();
         private readonly ILogger _logger;
 
-        protected void Dispose()
+        public void Dispose()
         {
             lock (_lock)
             {

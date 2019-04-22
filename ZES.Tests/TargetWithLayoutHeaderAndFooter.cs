@@ -1,6 +1,7 @@
 using NLog.Config;
 using NLog.Layouts;
 using NLog.Targets;
+// ReSharper disable InconsistentNaming
 
 namespace ZES.Tests 
 {
@@ -11,64 +12,31 @@ namespace ZES.Tests
         [RequiredParameter]
         public override Layout Layout
         {
-            get
-            {
-                return this.LHF.Layout;
-            }
+            get => LHF.Layout;
             set
             {
                 if (value is LayoutWithHeaderAndFooter)
                     base.Layout = value;
-                else if (this.LHF == null)
-                    this.LHF = new LayoutWithHeaderAndFooter()
+                else if (LHF == null)
+                    LHF = new LayoutWithHeaderAndFooter
                     {
                         Layout = value
                     };
                 else
-                    this.LHF.Layout = value;
+                    LHF.Layout = value;
             }
         }
 
-        /// <summary>Gets or sets the footer.</summary>
-        /// <docgen category="Layout Options" order="3" />
-        public Layout Footer
-        {
-            get
-            {
-                return this.LHF.Footer;
-            }
-            set
-            {
-                this.LHF.Footer = value;
-            }
-        }
+        public Layout Footer => LHF.Footer;
 
-        /// <summary>Gets or sets the header.</summary>
-        /// <docgen category="Layout Options" order="2" />
-        public Layout Header
-        {
-            get
-            {
-                return this.LHF.Header;
-            }
-            set
-            {
-                this.LHF.Header = value;
-            }
-        }
+        public Layout Header => LHF.Header;
 
         /// <summary>Gets or sets the layout with header and footer.</summary>
         /// <value>The layout with header and footer.</value>
         private LayoutWithHeaderAndFooter LHF
         {
-            get
-            {
-                return (LayoutWithHeaderAndFooter) base.Layout;
-            }
-            set
-            {
-                base.Layout = (Layout) value;
-            }
+            get => (LayoutWithHeaderAndFooter) base.Layout;
+            set => base.Layout = value;
         }
     }
 }

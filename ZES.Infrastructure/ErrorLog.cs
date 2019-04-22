@@ -13,7 +13,7 @@ namespace ZES.Infrastructure
             public string Message { get; set; }
             public long? Timestamp { get; set; }
 
-            public Error() {}
+            //public Error() {}
             public Error(Exception error)
             {
                 Message = error.Message;
@@ -30,9 +30,9 @@ namespace ZES.Infrastructure
             _log = log;
         }
 
-        public void Add(Exception error,object instance)
+        public void Add(Exception error)
         {
-            _log.Error(error.Message, instance);
+            _log.Error(error.Message, error.StackTrace.Split(new[] {"in", "at","(",")","[","]"},StringSplitOptions.RemoveEmptyEntries)[1]+ ' ');
             _errors.OnNext(new Error(error));
         }
 

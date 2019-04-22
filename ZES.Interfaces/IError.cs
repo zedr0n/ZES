@@ -1,5 +1,3 @@
-using System;
-
 namespace ZES.Interfaces
 {
     public interface IError

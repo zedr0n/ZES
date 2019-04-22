@@ -9,12 +9,12 @@ namespace ZES.Infrastructure
                                                                                         where TResult : class
     {
         private readonly IQueryHandler<TQuery, TResult> _handler;
-        private readonly ILog _log;
+        private readonly IErrorLog _errorLog;
 
-        public DecoratorQueryHandler(IQueryHandler<TQuery, TResult> handler, ILog log)
+        public DecoratorQueryHandler(IQueryHandler<TQuery, TResult> handler, IErrorLog errorLog)
         {
             _handler = handler;
-            _log = log;
+            _errorLog = errorLog;
         }
 
         public override async Task<TResult> HandleAsync(TQuery query)
@@ -28,7 +28,7 @@ namespace ZES.Infrastructure
             catch (Exception e)
             {
                 if(!(e is NotImplementedException))
-                    _log.Error(e.Message,_handler);
+                    _errorLog.Add(e);
                 return Handle(query); 
             }
         }

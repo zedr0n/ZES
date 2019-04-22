@@ -14,8 +14,8 @@ namespace ZES
     {
         private readonly Container _container;
         private readonly CommandProcessor _commandProcessor;
-        private readonly ILog _log;
-        private ConcurrentDictionary<ICommand, TaskCompletionSource<bool>> _executing = new ConcurrentDictionary<ICommand, TaskCompletionSource<bool>>();
+        private readonly ConcurrentDictionary<ICommand, TaskCompletionSource<bool>> _executing = new ConcurrentDictionary<ICommand, TaskCompletionSource<bool>>();
+        private readonly IErrorLog _errorLog;
 
         private class CommandFlow : Dataflow<ICommand>
         {
@@ -74,8 +74,7 @@ namespace ZES
             }
             catch (Exception e)
             {
-                //_log.WriteLine("Failed to create handler " + type.Name );
-                _log.Error(e.Message,this);
+                _errorLog.Add(e); 
                 if (e is ActivationException)
                     return null;
                 throw;
@@ -83,10 +82,10 @@ namespace ZES
             
         }
         
-        public Bus(Container container, ILog log)
+        public Bus(Container container, IErrorLog errorLog)
         {
             _container = container;
-            _log = log;
+            _errorLog = errorLog;
             _commandProcessor = new CommandProcessor(HandleCommand, _executing); 
         }
 

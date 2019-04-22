@@ -1,4 +1,3 @@
-using System;
 using Stateless;
 using ZES.Infrastructure.Sagas;
 using ZES.Interfaces;
@@ -22,11 +21,15 @@ namespace ZES.Tests.Domain.Sagas
 
         public new static string SagaId(IEvent e)
         {
-            if (e is RootCreated created)
-                return created.RootId;
-            if (e is RootUpdated updated)
-                return updated.RootId;
-            return null;
+            switch (e)
+            {
+                case RootCreated created:
+                    return created.RootId;
+                case RootUpdated updated:
+                    return updated.RootId;
+                default:
+                    return null;
+            }
         }
 
         private void When(RootUpdated e)

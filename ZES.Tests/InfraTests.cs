@@ -1,8 +1,6 @@
 using System;
 using System.Collections.Generic;
-using System.Reactive.Linq;
 using System.Threading;
-using System.Threading.Tasks;
 using SimpleInjector;
 using Xunit;
 using Xunit.Abstractions;
@@ -14,7 +12,6 @@ using ZES.Interfaces.Pipes;
 using ZES.Tests.Domain;
 using ZES.Tests.Domain.Commands;
 using ZES.Tests.Domain.Queries;
-using static ZES.ObservableExtensions;
 
 namespace ZES.Tests
 {
@@ -49,6 +46,8 @@ namespace ZES.Tests
             await await bus.CommandAsync(command);
             await await bus.CommandAsync(command);
             Assert.Equal(typeof(InvalidOperationException).Name,error.ErrorType); 
+            Assert.Contains("ahead", error.Message);
+            Assert.NotNull(error.Timestamp);
         }
 
         [Fact]

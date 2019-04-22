@@ -1,4 +1,3 @@
-using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using SimpleInjector;
@@ -8,14 +7,14 @@ namespace ZES
 {
     public static class SimpleInjectorExtensions
     {
-        public static void RegisterConditionalSingleton<TService>(
+        /*public static void RegisterConditionalSingleton<TService>(
             this Container container, TService instance, Predicate<PredicateContext> predicate)
             where TService : class
         {
             container.RegisterConditional(typeof(TService),
                 Lifestyle.Singleton.CreateRegistration(() => instance, container),
                 predicate);
-        }
+        }*/
         
         public static void RegisterParameterConventions(this ContainerOptions options,IEnumerable<IParameterConvention> conventions)
         {

@@ -39,7 +39,8 @@ namespace ZES.Logging
             const string callSite = @"${callsite:className=True:skipFrames=1:includeNamespace=False:cleanNamesOfAnonymousDelegates=True:cleanNamesOfAsyncContinuations=True:fileName=False:includeSourcePath=False:methodName=True";
             const string trace = @"<${threadid:padding=2}> |${level:format=FirstCharacter}| ${date:format=HH\:mm\:ss.ff} " +
                                   //@" ${event-properties:dtype} " +
-                                  callSite + @":when:when='${event-properties:dtype}' != ''}"  +
+                                  callSite + @":when:when='${event-properties:dtype}' != '' and level<=LogLevel.Info}"  +
+                                  //callSite +
                                   //@"${callsite:className=True:skipFrames=1:includeNamespace=False:cleanNamesOfAnonymousDelegates=True:cleanNamesOfAsyncContinuations=True:fileName=False:includeSourcePath=False:methodName=True:}" +
                                   //@"( ${event-properties:dtype} )" +
                                   @"${literal:text=(:when:when='${event-properties:dtype}' != ''}" +@"${event-properties:msg}"+ @"${literal:text=):when:when='${event-properties:dtype}' != ''} "+
@@ -88,17 +89,14 @@ namespace ZES.Logging
 
         public void Error(object message, object instance = null)
         {
-            _logger.Error("{dtype} {msg}",instance?.GetType().GetName() ?? "",message);
-        }
-
-        public void Error(Exception e, string message)
-        {
-            _logger.Error(e,message);
+            var type = instance is string ? instance : instance?.GetType().GetName(); 
+            _logger.Error("{dtype} {msg}", type ?? "",message);
         }
 
         public void Fatal(object message, object instance = null)
         {
-            _logger.Fatal("{dtype} {msg}",instance?.GetType().GetName() ?? "",message);
+            var type = instance is string ? instance : instance?.GetType().GetName(); 
+            _logger.Fatal("{dtype} {msg}", type ?? "",message);
         }
     }
 }

@@ -1,4 +1,4 @@
-using HotChocolate;
+using System;
 using HotChocolate.Execution;
 using Xunit;
 using Xunit.Abstractions;
@@ -7,6 +7,7 @@ using ZES.Interfaces;
 using ZES.Interfaces.Pipes;
 using ZES.Tests.Domain.Commands;
 using static ZES.Tests.Domain.Config;
+using IError = ZES.Interfaces.IError;
 
 namespace ZES.Tests
 {
@@ -41,7 +42,7 @@ namespace ZES.Tests
             var schemaProvider = container.GetInstance<ISchemaProvider>();
             
             var executor = schemaProvider.Generate(typeof(Queries));
-            var createdAtResult = await executor.ExecuteAsync(@"{ createdAt( query: { id : ""Root"" } ) { timestamp }  }") as IReadOnlyQueryResult;
+            var createdAtResult = await executor.ExecuteAsync(@"{ createdAt( query: { id : ""Root"" } ) { rootId, timestamp }  }") as IReadOnlyQueryResult;
             dynamic createdAtDict = createdAtResult?.Data["createdAt"];
             log.Info(createdAtDict);
             Assert.NotNull(createdAtDict);
@@ -71,6 +72,27 @@ namespace ZES.Tests
             log.Info(statsDict);
             Assert.NotNull(statsDict);
             Assert.Equal(1, statsDict["numberOfRoots"]); 
+        }
+
+        [Fact]
+        public async void CanQueryError()
+        {
+            var container = CreateContainer();
+            var errorLog = container.GetInstance<IErrorLog>();
+            
+            IError error = null;
+            errorLog.Errors.Subscribe(e => error = e);
+            
+            var schemaProvider = container.GetInstance<ISchemaProvider>();
+            var executor = schemaProvider.Generate(typeof(Queries), typeof(Mutations));
+
+            await executor.ExecuteAsync(@"mutation { createRoot( command : { target : ""Root"" } ) }"); 
+            await executor.ExecuteAsync(@"mutation { createRoot( command : { target : ""Root"" } ) }");
+
+            var errorResult = await executor.ExecuteAsync(@"query{ error { message } }") as IReadOnlyQueryResult;
+            dynamic messageDict = errorResult?.Data["error"];
+            Assert.NotNull(messageDict);
+            Assert.Contains("ahead",messageDict["message"]);
         }
     }
 }

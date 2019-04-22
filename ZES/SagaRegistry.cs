@@ -28,8 +28,11 @@ namespace ZES
             foreach (var s in sagas)
             {
                 var method = s.GetMethod(nameof(Saga.SagaId));
-                if(method != null)
-                    Register(s, e => (string) method.Invoke(null,new object[] {e}));
+                if (method == null) 
+                    continue;
+                
+                var d = (Func<IEvent, string>) Delegate.CreateDelegate(typeof(Func<IEvent, string>), null, method);
+                Register(s, d);
             }
         }
     }

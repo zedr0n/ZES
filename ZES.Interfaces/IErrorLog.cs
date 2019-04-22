@@ -4,7 +4,7 @@ namespace ZES.Interfaces
 {
     public interface IErrorLog
     {
-        void Add(Exception error, object instance);
+        void Add(Exception error);
         IObservable<IError> Errors { get; }
     }
 }

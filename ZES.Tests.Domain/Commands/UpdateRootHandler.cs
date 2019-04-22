@@ -1,6 +1,5 @@
 using System.Threading.Tasks;
 using ZES.Interfaces.Domain;
-using ZES.Tests.Domain.Events;
 
 namespace ZES.Tests.Domain.Commands
 {

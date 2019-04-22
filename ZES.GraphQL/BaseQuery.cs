@@ -2,8 +2,8 @@ using static ZES.Infrastructure.ErrorLog;
 
 namespace ZES.GraphQL
 {
-    public class BaseQuery
+    public abstract class BaseQuery
     {
-        public Error Error() => null; 
+        public abstract Error Error();
     }
 }

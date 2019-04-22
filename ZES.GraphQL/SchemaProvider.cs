@@ -5,19 +5,15 @@ using System.Reactive.Linq;
 using System.Reflection;
 using HotChocolate;
 using HotChocolate.Execution;
-using HotChocolate.Language;
 using HotChocolate.Resolvers;
 using HotChocolate.Stitching;
-using HotChocolate.Stitching.Merge;
 using HotChocolate.Types;
-using HotChocolate.Utilities;
 using Microsoft.Extensions.DependencyInjection;
 using SimpleInjector;
 using SimpleInjector.Lifestyles;
 using ZES.Infrastructure;
 using ZES.Infrastructure.Attributes;
 using ZES.Interfaces;
-using ZES.Interfaces.Domain;
 using ZES.Interfaces.Pipes;
 
 namespace ZES.GraphQL

@@ -148,7 +148,7 @@ namespace ZES.GraphQL
                 var i = 0;
                 foreach (var s in domainSchemas)
                 {
-                    b = b.AddSchema($"Domain{i}", s);
+                    b = b.AddSchema($"Domain{i}", s);//.IgnoreField($"Domain{i}","CreateRootInput","timestamp");
                     i++;
                 }
             }

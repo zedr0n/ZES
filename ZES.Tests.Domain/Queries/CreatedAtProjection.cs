@@ -5,9 +5,9 @@ using ZES.Interfaces.EventStore;
 using ZES.Interfaces.Pipes;
 using ZES.Tests.Domain.Events;
 
-namespace ZES.Tests.Domain.Projections
+namespace ZES.Tests.Domain.Queries
 {
-    public class RootProjection : Projection<RootProjection.StateType>
+    public class CreatedAtProjection : Projection<CreatedAtProjection.StateType>
     {
         public class StateType
         {
@@ -32,7 +32,7 @@ namespace ZES.Tests.Domain.Projections
             return state;
         }
 
-        public RootProjection(IEventStore<IAggregate> eventStore, ILog log, IMessageQueue messageQueue) : base(eventStore, log, messageQueue)
+        public CreatedAtProjection(IEventStore<IAggregate> eventStore, ILog log, IMessageQueue messageQueue) : base(eventStore, log, messageQueue)
         {
             State = new StateType();
             Register<RootCreated>(When);

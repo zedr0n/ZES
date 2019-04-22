@@ -1,14 +1,13 @@
 using ZES.Infrastructure;
 using ZES.Interfaces.Domain;
-using ZES.Tests.Domain.Projections;
 
 namespace ZES.Tests.Domain.Queries
 {
     public class CreatedAtQueryHandler : QueryHandler<CreatedAtQuery, CreatedAt>
     {
-        private IProjection<RootProjection.StateType> _projection;
+        private IProjection<CreatedAtProjection.StateType> _projection;
 
-        public CreatedAtQueryHandler(IProjection<RootProjection.StateType> projection)
+        public CreatedAtQueryHandler(IProjection<CreatedAtProjection.StateType> projection)
         {
             _projection = projection;
         }
@@ -16,7 +15,7 @@ namespace ZES.Tests.Domain.Queries
         public override IProjection Projection
         {
             get => _projection;
-            set => _projection = value as IProjection<RootProjection.StateType>;
+            set => _projection = value as IProjection<CreatedAtProjection.StateType>;
         }
 
         public override CreatedAt Handle(CreatedAtQuery query) => new CreatedAt(query.Id,_projection.State.Get(query.Id));

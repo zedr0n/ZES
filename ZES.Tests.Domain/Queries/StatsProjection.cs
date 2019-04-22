@@ -3,9 +3,8 @@ using ZES.Interfaces;
 using ZES.Interfaces.EventStore;
 using ZES.Interfaces.Pipes;
 using ZES.Tests.Domain.Events;
-using ZES.Tests.Domain.Queries;
 
-namespace ZES.Tests.Domain.Projections
+namespace ZES.Tests.Domain.Queries
 {
     public class StatsProjection : Projection<ValueState<Stats>>
     {

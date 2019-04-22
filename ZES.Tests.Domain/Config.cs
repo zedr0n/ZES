@@ -9,16 +9,16 @@ namespace ZES.Tests.Domain
     public static class Config
     {
         [RootQuery]
-        public class Queries
+        public abstract class Queries
         {
-            public CreatedAt CreatedAt(CreatedAtQuery query) => null;
-            public Stats Stats(StatsQuery query) => null;
+            public abstract CreatedAt CreatedAt(CreatedAtQuery query);
+            public abstract Stats Stats(StatsQuery query);
         }
         
         [RootMutation]
-        public class Mutations
+        public abstract class Mutations
         {
-            public bool CreateRoot(CreateRoot command) => true;
+            public abstract bool CreateRoot(CreateRoot command);
         }
         
         [Registration]

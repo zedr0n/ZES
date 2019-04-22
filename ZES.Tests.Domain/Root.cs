@@ -10,6 +10,7 @@ namespace ZES.Tests.Domain
         public Root()
         {
             Register<RootCreated>(ApplyEvent);
+            Register<RootUpdated>(ApplyEvent);
         }
 
         public Root(string id) : this()

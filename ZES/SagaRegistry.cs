@@ -10,14 +10,7 @@ namespace ZES
 {
     public class SagaRegistry : ISagaRegistry
     {
-        private readonly ConcurrentDictionary<Type, Func<IEvent,string> > _dictionary = new ConcurrentDictionary<Type, Func<IEvent, string>>();
-
-        public void Register(Type saga, Func<IEvent, string> id)
-        {
-            _dictionary.TryAdd(saga, id);
-        }
-
-        public Func<IEvent, string> SagaId<TSaga>() => _dictionary[typeof(TSaga)];
+        private readonly ConcurrentDictionary<Type, Func<IEvent, string>> _dictionary = new ConcurrentDictionary<Type, Func<IEvent, string>>();
 
         public SagaRegistry(Container c)
         {
@@ -31,9 +24,16 @@ namespace ZES
                 if (method == null) 
                     continue;
                 
-                var d = (Func<IEvent, string>) Delegate.CreateDelegate(typeof(Func<IEvent, string>), null, method);
+                var d = (Func<IEvent, string>)Delegate.CreateDelegate(typeof(Func<IEvent, string>), null, method);
                 Register(s, d);
             }
         }
+        
+        public void Register(Type saga, Func<IEvent, string> id)
+        {
+            _dictionary.TryAdd(saga, id);
+        }
+
+        public Func<IEvent, string> SagaId<TSaga>() => _dictionary[typeof(TSaga)];
     }
 }

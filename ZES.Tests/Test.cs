@@ -7,7 +7,6 @@ using SimpleInjector;
 using Xunit.Abstractions;
 using ZES.GraphQL;
 using ZES.Logging;
-using ZES.Tests.Domain;
 
 namespace ZES.Tests
 {
@@ -16,18 +15,11 @@ namespace ZES.Tests
         private readonly object _lock = new object();
         private readonly ILogger _logger;
 
-        public void Dispose()
-        {
-            lock (_lock)
-            {
-                _logger.RemoveTestOutputHelper();
-            }
-        }
-        
         protected Test(ITestOutputHelper outputHelper)
         { 
             var config = NLogger.Configure();
             var layout = config.AllTargets.OfType<TargetWithLayout>().First().Layout;
+
             // Step 2. Create targets
             var testTarget = new TestOutputTarget 
             {
@@ -38,13 +30,13 @@ namespace ZES.Tests
             
             foreach (var target in config.AllTargets)
             {
-                if(Environment.GetEnvironmentVariable("TRACE") == "1")
+                if (Environment.GetEnvironmentVariable("TRACE") == "1")
                     config.AddRuleForOneLevel(LogLevel.Trace, target);
-                if(Environment.GetEnvironmentVariable("DEBUG") == "1")
+                if (Environment.GetEnvironmentVariable("DEBUG") == "1")
                     config.AddRuleForOneLevel(LogLevel.Debug, target);
-                if(Environment.GetEnvironmentVariable("ERROR") == "1")
+                if (Environment.GetEnvironmentVariable("ERROR") == "1")
                     config.AddRuleForOneLevel(LogLevel.Error, target);
-                if(Environment.GetEnvironmentVariable("INFO") == "1")
+                if (Environment.GetEnvironmentVariable("INFO") == "1")
                     config.AddRuleForOneLevel(LogLevel.Info, target);
             }
             
@@ -52,12 +44,15 @@ namespace ZES.Tests
             _logger = outputHelper.GetNLogLogger();
         }
         
-        private static CompositionRoot CreateRoot()
+        public void Dispose()
         {
-            return new CompositionRoot();
+            lock (_lock)
+            {
+                _logger.RemoveTestOutputHelper();
+            }
         }
-
-        protected virtual Container CreateContainer( List<Action<Container>> registrations = null) 
+        
+        protected virtual Container CreateContainer(List<Action<Container>> registrations = null) 
         {
             lock (_lock)
             {
@@ -66,41 +61,19 @@ namespace ZES.Tests
                 container.Register<ISchemaProvider, SchemaProvider>(Lifestyle.Singleton);
 
                 container.Options.AllowOverridingRegistrations = true;
-                container.Register(typeof(ILogger),() => _logger,Lifestyle.Singleton);
+                container.Register(typeof(ILogger), () => _logger, Lifestyle.Singleton);
                 container.Options.AllowOverridingRegistrations = false;
                 
-                if(registrations == null)
+                if (registrations == null)
                     registrations = new List<Action<Container>>();
-                foreach(var reg in registrations)
+                foreach (var reg in registrations)
                     reg(container);
 
                 container.Verify();
                 return container;
             }
         }
-    }
-    
-    public class ZesTest : Test
-    {
-        protected override Container CreateContainer(List<Action<Container>> registrations = null)
-        {
-            var regs = new List<Action<Container>>
-            {
-                c =>
-                {
-                    Config.RegisterCommands(c);
-                    Config.RegisterQueries(c);
-                    Config.RegisterProjections(c);
-                }
-            };
-            if(registrations != null)
-                regs.AddRange(registrations);
-
-            return base.CreateContainer(regs);
-        }
-
-        protected ZesTest(ITestOutputHelper outputHelper) : base(outputHelper)
-        {
-        }
+        
+        private static CompositionRoot CreateRoot() => new CompositionRoot();
     }
 }

@@ -8,19 +8,6 @@ namespace ZES.Tests.Domain
 {
     public static class Config
     {
-        [RootQuery]
-        public abstract class Queries
-        {
-            public abstract CreatedAt CreatedAt(CreatedAtQuery query);
-            public abstract Stats Stats(StatsQuery query);
-        }
-        
-        [RootMutation]
-        public abstract class Mutations
-        {
-            public abstract bool CreateRoot(CreateRoot command);
-        }
-        
         [Registration]
         public static void RegisterAll(Container c)
         {
@@ -45,6 +32,19 @@ namespace ZES.Tests.Domain
         public static void RegisterQueries(Container c)
         {
             c.RegisterQueries(Assembly.GetExecutingAssembly());
+        }
+        
+        [RootQuery]
+        public abstract class Queries
+        {
+            public abstract CreatedAt CreatedAt(CreatedAtQuery query);
+            public abstract Stats Stats(StatsQuery query);
+        }
+        
+        [RootMutation]
+        public abstract class Mutations
+        {
+            public abstract bool CreateRoot(CreateRoot command);
         }
     }
 }

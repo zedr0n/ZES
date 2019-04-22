@@ -13,14 +13,15 @@ namespace ZES.Tests.Domain
             Register<RootUpdated>(ApplyEvent);
         }
 
-        public Root(string id) : this()
+        public Root(string id)
+            : this()
         {
-            base.When(new RootCreated(id));    
+            When(new RootCreated(id));    
         }
 
         public void Update()
         {
-            base.When(new RootUpdated(Id));
+            When(new RootUpdated(Id));
         }
 
         private void ApplyEvent(RootUpdated e)

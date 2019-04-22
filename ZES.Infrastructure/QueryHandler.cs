@@ -4,7 +4,9 @@ using ZES.Interfaces.Domain;
 
 namespace ZES.Infrastructure
 {
-    public abstract class QueryHandler<TQuery,TResult> : IQueryHandler<TQuery,TResult> where TQuery : class, IQuery<TResult> where TResult : class
+    public abstract class QueryHandler<TQuery, TResult> : IQueryHandler<TQuery, TResult>
+        where TQuery : class, IQuery<TResult>
+        where TResult : class
     {
         public virtual IProjection Projection { get; set; }
 
@@ -12,7 +14,7 @@ namespace ZES.Infrastructure
         {
             throw new NotImplementedException();
         }
-        
+
         public TResult Handle(IQuery<TResult> query)
         {
             return Handle(query as TQuery);

@@ -14,15 +14,15 @@ namespace ZES.Tests
         public void Add(ITestOutputHelper testOutputHelper, string loggerName)
         {
             if (string.IsNullOrWhiteSpace(loggerName))
-                throw new ArgumentNullException(nameof (loggerName));
+                throw new ArgumentNullException(nameof(loggerName));
             if (!_map.TryAdd(loggerName, testOutputHelper))
-                throw new ArgumentException("LoggerName already in use", nameof (loggerName));
+                throw new ArgumentException("LoggerName already in use", nameof(loggerName));
         }
 
         public bool Remove(string loggerName)
         {
             if (string.IsNullOrWhiteSpace(loggerName))
-                throw new ArgumentNullException(nameof (loggerName));
+                throw new ArgumentNullException(nameof(loggerName));
             return _map.TryRemove(loggerName, out _);
         }
 

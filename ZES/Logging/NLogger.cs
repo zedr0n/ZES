@@ -1,5 +1,3 @@
-using System;
-using System.Linq;
 using NLog;
 using NLog.Config;
 using NLog.Targets;
@@ -7,30 +5,14 @@ using ZES.Interfaces;
 
 namespace ZES.Logging
 {
-    public static class TypeExtensions
-    {
-        public static string GetName(this Type type)
-        {
-            var genericArguments = type.GetGenericArguments();
-            var str = type.Name.Split('`')[0];
-            if (genericArguments.Length > 0)
-                str = $"{str}<";
-            foreach (var arg in genericArguments)
-            {
-                str = $"{str}{arg.GetName()}";
-                if (arg != genericArguments.Last())
-                    str = $"{str},";
-            }
-
-            if (genericArguments.Length > 0)
-                str = $"{str}>";
-            return str;
-        }
-    }
-    
     public class NLogger : ILog
     {
         private readonly ILogger _logger;
+        
+        public NLogger(ILogger logger)
+        {
+            _logger = logger;
+        }
 
         public static LoggingConfiguration Configure()
         {
@@ -38,12 +20,8 @@ namespace ZES.Logging
 
             const string callSite = @"${callsite:className=True:skipFrames=1:includeNamespace=False:cleanNamesOfAnonymousDelegates=True:cleanNamesOfAsyncContinuations=True:fileName=False:includeSourcePath=False:methodName=True";
             const string trace = @"<${threadid:padding=2}> |${level:format=FirstCharacter}| ${date:format=HH\:mm\:ss.ff} " +
-                                  //@" ${event-properties:dtype} " +
-                                  callSite + @":when:when='${event-properties:dtype}' != '' and level<=LogLevel.Info}"  +
-                                  //callSite +
-                                  //@"${callsite:className=True:skipFrames=1:includeNamespace=False:cleanNamesOfAnonymousDelegates=True:cleanNamesOfAsyncContinuations=True:fileName=False:includeSourcePath=False:methodName=True:}" +
-                                  //@"( ${event-properties:dtype} )" +
-                                  @"${literal:text=(:when:when='${event-properties:dtype}' != ''}" +@"${event-properties:msg}"+ @"${literal:text=):when:when='${event-properties:dtype}' != ''} "+
+                                  callSite + @":when:when='${event-properties:dtype}' != '' and level<=LogLevel.Info}" +
+                                  @"${literal:text=(:when:when='${event-properties:dtype}' != ''}" + @"${event-properties:msg}" + @"${literal:text=):when:when='${event-properties:dtype}' != ''} " +
                                   @"${literal:text=[:when:when='${event-properties:dtype}' != ''}" + @"${event-properties:dtype}" + @"${literal:text=]:when:when='${event-properties:dtype}' != ''} " +
                                   @"${exception}";
             
@@ -52,51 +30,43 @@ namespace ZES.Logging
                 Name = "Console",
                 Layout = trace  
             };
+            
             config.AddTarget(consoleTarget);
-
-            //config.AddRuleForAllLevels(consoleTarget); // all to console
             LogManager.Configuration = config;
             
             return config;
         }
-        
-        public NLogger(ILogger logger)
-        {
-            _logger = logger;
-        }
 
         public void Trace(object message)
         {
-            _logger.Trace(" {msg}",message);
+            _logger.Trace(" {msg}", message);
         }
         
         public void Trace(object message, object instance)
-            //public void Trace(object message)
         {
-            _logger.Trace("{dtype} {msg}",instance?.GetType().GetName(),message);
-            //_logger.Trace($"[{instance?.GetType().Name??""}]{message}");
+            _logger.Trace("{dtype} {msg}", instance?.GetType().GetName(), message);
         }
 
         public void Debug(object message)
         {
-            _logger.Debug("{msg}",message);
+            _logger.Debug("{msg}", message);
         }
 
         public void Info(object message)
         {
-            _logger.Info("{msg}",message);
+            _logger.Info("{msg}", message);
         }
 
         public void Error(object message, object instance = null)
         {
             var type = instance is string ? instance : instance?.GetType().GetName(); 
-            _logger.Error("{dtype} {msg}", type ?? "",message);
+            _logger.Error("{dtype} {msg}", type ?? string.Empty, message);
         }
 
         public void Fatal(object message, object instance = null)
         {
             var type = instance is string ? instance : instance?.GetType().GetName(); 
-            _logger.Fatal("{dtype} {msg}", type ?? "",message);
+            _logger.Fatal("{dtype} {msg}", type ?? string.Empty, message);
         }
     }
 }

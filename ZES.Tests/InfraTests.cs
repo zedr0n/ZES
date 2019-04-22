@@ -17,7 +17,11 @@ namespace ZES.Tests
 {
     public class InfraTests : ZesTest
     {
-
+        public InfraTests(ITestOutputHelper outputHelper)
+            : base(outputHelper)
+        {
+        }
+        
         [Fact]
         public async void CanSaveRoot()
         {
@@ -29,7 +33,7 @@ namespace ZES.Tests
             await await bus.CommandAsync(command);
 
             var root = await repository.Find<Root>("Root");
-            Assert.Equal("Root",root.Id);
+            Assert.Equal("Root", root.Id);
         }
 
         [Fact]
@@ -45,7 +49,7 @@ namespace ZES.Tests
             var command = new CreateRoot("Root");
             await await bus.CommandAsync(command);
             await await bus.CommandAsync(command);
-            Assert.Equal(typeof(InvalidOperationException).Name,error.ErrorType); 
+            Assert.Equal(typeof(InvalidOperationException).Name, error.ErrorType); 
             Assert.Contains("ahead", error.Message);
             Assert.NotNull(error.Timestamp);
         }
@@ -80,7 +84,7 @@ namespace ZES.Tests
             Thread.Sleep(10);
             
             var query = new CreatedAtQuery("Root");
-            var createdAt = await bus.QueryUntil(query, c => c?.Timestamp != 0 );
+            var createdAt = await bus.QueryUntil(query, c => c?.Timestamp != 0);
             Assert.NotEqual(0, createdAt?.Timestamp);
         }
         
@@ -95,11 +99,11 @@ namespace ZES.Tests
 
             var statsQuery = new StatsQuery();
             
-            var historicalQuery = new HistoricalQuery<StatsQuery,Stats>(statsQuery, 0);
+            var historicalQuery = new HistoricalQuery<StatsQuery, Stats>(statsQuery, 0);
             var historicalStats = await bus.QueryAsync(historicalQuery);
             Assert.Equal(0, historicalStats.NumberOfRoots);
             
-            var liveQuery = new HistoricalQuery<StatsQuery,Stats>(statsQuery, DateTime.UtcNow.Ticks);
+            var liveQuery = new HistoricalQuery<StatsQuery, Stats>(statsQuery, DateTime.UtcNow.Ticks);
             var liveStats = await bus.QueryAsync(liveQuery);
             Assert.Equal(1, liveStats.NumberOfRoots);
         }
@@ -131,7 +135,7 @@ namespace ZES.Tests
         [Fact]
         public async void CanUseSaga()
         {
-            var container = CreateContainer(new List<Action<Container>> {Config.RegisterSagas});
+            var container = CreateContainer(new List<Action<Container>> { Config.RegisterSagas });
             var bus = container.GetInstance<IBus>();
             
             var command = new CreateRoot("Root");
@@ -147,7 +151,7 @@ namespace ZES.Tests
         [InlineData(10)]
         public async void CanParallelizeSagas(int numRoots)
         {
-            var container = CreateContainer(new List<Action<Container>> {Config.RegisterSagas});
+            var container = CreateContainer(new List<Action<Container>> { Config.RegisterSagas });
             var bus = container.GetInstance<IBus>(); 
             
             var rootId = numRoots; 
@@ -200,11 +204,7 @@ namespace ZES.Tests
             await bus.CommandAsync(newCommand);
             stats = await bus.QueryUntil(statsQuery, s => s?.NumberOfRoots > numberOfRoots);
             
-            Assert.Equal(numberOfRoots+1 , stats?.NumberOfRoots);
-        }
-
-        public InfraTests(ITestOutputHelper outputHelper) : base(outputHelper)
-        {
+            Assert.Equal(numberOfRoots + 1, stats?.NumberOfRoots);
         }
     }
 }

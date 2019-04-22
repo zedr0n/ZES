@@ -10,7 +10,7 @@ namespace ZES.Infrastructure.Domain
             EventType = GetType().Name;
             EventId = Guid.NewGuid();
         }
-        
+
         public Guid EventId { get; }
         public string EventType { get; }
         public long Timestamp { get; set; }

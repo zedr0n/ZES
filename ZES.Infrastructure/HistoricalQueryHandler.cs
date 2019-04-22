@@ -4,8 +4,10 @@ using ZES.Interfaces.Domain;
 
 namespace ZES.Infrastructure
 {
-    public class HistoricalQueryHandler<TQuery, TResult,TState> : QueryHandler<HistoricalQuery<TQuery,TResult>, TResult>,
-                                                                  IQueryHandler<TQuery,TResult> where TQuery : class, IQuery<TResult> where TResult : class
+    public class HistoricalQueryHandler<TQuery, TResult, TState> : QueryHandler<HistoricalQuery<TQuery, TResult>, TResult>,
+                                                                  IQueryHandler<TQuery, TResult>
+        where TQuery : class, IQuery<TResult>
+        where TResult : class
     {
         private readonly IQueryHandler<TQuery, TResult> _handler;
         private readonly IProjection<TState> _projection;
@@ -16,10 +18,10 @@ namespace ZES.Infrastructure
             _projection = projection;
         }
 
-        public override async Task<TResult> HandleAsync(HistoricalQuery<TQuery,TResult> query)
+        public override async Task<TResult> HandleAsync(HistoricalQuery<TQuery, TResult> query)
         {
             _handler.Projection = _projection;
-            var projection = _projection as IHistoricalProjection;
+            var projection = (IHistoricalProjection)_projection;
             await projection.Init(query.Timestamp);
             return await _handler.HandleAsync(query.Query);
         }

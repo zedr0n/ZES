@@ -13,7 +13,6 @@ namespace ZES.GraphQL.AspNetCore
         public void ConfigureServices(IServiceCollection services)
         {
             services.WireGraphQl(typeof(Config));
-            //services.WireGraphQl(container, Config.RegisterAll, typeof(Query), typeof(Mutation));
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.

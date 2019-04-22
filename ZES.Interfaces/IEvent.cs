@@ -5,23 +5,27 @@ namespace ZES.Interfaces
     public interface IEvent
     {
         /// <summary>
-        /// Unique event id
+        /// Gets unique event id
         /// </summary>
         Guid EventId { get; }
+        
         /// <summary>
-        /// Event type
+        /// Gets event type
         /// </summary>
         string EventType { get; }
+        
         /// <summary>
-        /// Event Unix epoch timestamp
+        /// Gets event unix epoch timestamp
         /// </summary>
         long Timestamp { get; } 
+        
         /// <summary>
-        /// Event version in appropriate stream
+        /// Gets event version in appropriate stream
         /// </summary>
         int Version { get; }
+        
         /// <summary>
-        /// Originating stream key
+        /// Gets originating stream key
         /// </summary>
         string Stream { get;  }
     }

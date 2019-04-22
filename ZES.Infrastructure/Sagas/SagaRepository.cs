@@ -7,7 +7,8 @@ namespace ZES.Infrastructure.Sagas
 {
     public class SagaRepository : EsRepository<ISaga>, ISagaRepository
     {
-        public SagaRepository(IEventStore<ISaga> eventStore, IStreamLocator<ISaga> streams, ITimeline timeline, IBus bus) : base(eventStore, streams, timeline, bus)
+        public SagaRepository(IEventStore<ISaga> eventStore, IStreamLocator<ISaga> streams, ITimeline timeline, IBus bus)
+            : base(eventStore, streams, timeline, bus)
         {
         }
     }

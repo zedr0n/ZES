@@ -16,14 +16,16 @@ namespace ZES
                 predicate);
         }*/
         
-        public static void RegisterParameterConventions(this ContainerOptions options,IEnumerable<IParameterConvention> conventions)
+        public static void RegisterParameterConventions(this ContainerOptions options, IEnumerable<IParameterConvention> conventions)
         {
             if (conventions == null)
                 return;
-            foreach(var c in conventions)
-                RegisterParameterConvention(options,c);
+            foreach (var c in conventions)
+                RegisterParameterConvention(options, c);
         }
-        public static void RegisterParameterConvention(this ContainerOptions options,
+        
+        public static void RegisterParameterConvention(
+            this ContainerOptions options,
             IParameterConvention convention)
         {
             options.DependencyInjectionBehavior = new ConventionDependencyInjectionBehavior(
@@ -64,6 +66,5 @@ namespace ZES
                     _container);
             }
         }
-
     }
 }

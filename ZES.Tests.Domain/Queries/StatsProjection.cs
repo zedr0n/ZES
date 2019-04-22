@@ -8,18 +8,20 @@ namespace ZES.Tests.Domain.Queries
 {
     public class StatsProjection : Projection<ValueState<Stats>>
     {
+        public StatsProjection(IEventStore<IAggregate> eventStore, ILog log, IMessageQueue messageQueue)
+            : base(eventStore, log, messageQueue)
+        {
+            Register<RootCreated>(When);
+        }
+        
         private static ValueState<Stats> When(RootCreated e, ValueState<Stats> state)
         {
             lock (state)
             {
                 state.Value.NumberOfRoots++; 
             }
+            
             return state;
-        }
-
-        public StatsProjection(IEventStore<IAggregate> eventStore, ILog log, IMessageQueue messageQueue) : base(eventStore, log, messageQueue)
-        {
-            Register<RootCreated>(When);
         }
     }
 }

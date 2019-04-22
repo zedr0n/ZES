@@ -13,6 +13,21 @@ namespace ZES.Infrastructure.Sagas
         where TSaga : class, ISaga, new()
     {
         private readonly ConcurrentDictionary<string, SagaFlow> _flows = new ConcurrentDictionary<string, SagaFlow>();
+        public SagaHandler(IMessageQueue messageQueue, ISagaRepository repository, ISagaRegistry sagaRegistry, ILog log)
+        {
+            var sagaBlock = new ActionBlock<IEvent>(
+                async e =>
+            {
+                var sagaId = sagaRegistry.SagaId<TSaga>()(e);
+                if (sagaId == null)
+                    return;
+
+                var flow = _flows.GetOrAdd(sagaId, new SagaFlow(repository, sagaId, log));
+                await flow.InputBlock.SendAsync(e); 
+            }, new ExecutionDataflowBlockOptions { MaxDegreeOfParallelism = 8 }); 
+
+            messageQueue.Messages.Subscribe(async e => await sagaBlock.SendAsync(e));
+        }
         
         private class SagaFlow : Dataflow<IEvent>
         {
@@ -21,7 +36,9 @@ namespace ZES.Infrastructure.Sagas
 
             private readonly string _id;
             private readonly ActionBlock<IEvent> _inputBlock;
-            public SagaFlow(ISagaRepository repository, string id, ILog log) : base(DataflowOptions.Default)
+            
+            public SagaFlow(ISagaRepository repository, string id, ILog log)
+                : base(DataflowOptions.Default)
             {
                 _repository = repository;
                 _id = id;
@@ -30,6 +47,8 @@ namespace ZES.Infrastructure.Sagas
                 
                 RegisterChild(_inputBlock);
             }
+            
+            public override ITargetBlock<IEvent> InputBlock => _inputBlock;
 
             private async Task Handle(IEvent e)
             {
@@ -38,26 +57,6 @@ namespace ZES.Infrastructure.Sagas
                 saga.When(e);
                 await _repository.Save(saga);  
             }
-
-            public override ITargetBlock<IEvent> InputBlock => _inputBlock;
-        }
-        
-        public SagaHandler(IMessageQueue messageQueue, ISagaRepository repository, ISagaRegistry sagaRegistry, ILog log)
-        {
-            var sagaBlock = new ActionBlock<IEvent>(async e =>
-            {
-                var sagaId = sagaRegistry.SagaId<TSaga>()(e);
-                if (sagaId == null)
-                    return;
-
-                var flow = _flows.GetOrAdd(sagaId, new SagaFlow(repository, sagaId, log));
-                await flow.InputBlock.SendAsync(e); 
-            }, new ExecutionDataflowBlockOptions
-            {
-                MaxDegreeOfParallelism = 8
-            }); 
-
-            messageQueue.Messages.Subscribe(async e => await sagaBlock.SendAsync(e));
         }
     }
 }

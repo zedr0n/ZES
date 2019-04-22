@@ -5,8 +5,9 @@ using ZES.Interfaces.Domain;
 
 namespace ZES.Infrastructure
 {
-    public class DecoratorQueryHandler<TQuery, TResult> : QueryHandler<TQuery, TResult> where TQuery : class, IQuery<TResult>
-                                                                                        where TResult : class
+    public class DecoratorQueryHandler<TQuery, TResult> : QueryHandler<TQuery, TResult>
+        where TQuery : class, IQuery<TResult>
+        where TResult : class
     {
         private readonly IQueryHandler<TQuery, TResult> _handler;
         private readonly IErrorLog _errorLog;
@@ -21,15 +22,15 @@ namespace ZES.Infrastructure
         {
             try
             {
-                if(_handler.Projection != null)
+                if (_handler.Projection != null)
                     await _handler.Projection.Complete;
                 return await _handler.HandleAsync(query);
             }
             catch (Exception e)
             {
-                if(!(e is NotImplementedException))
+                if (!(e is NotImplementedException))
                     _errorLog.Add(e);
-                return Handle(query); 
+                return Handle(query);
             }
         }
     }

@@ -9,7 +9,8 @@ using ZES.Interfaces.Pipes;
 
 namespace ZES.Infrastructure.Streams
 {
-    public class StreamLocator<I> : IStreamLocator<I> where I : IEventSourced
+    public class StreamLocator<I> : IStreamLocator<I>
+        where I : IEventSourced
     {
         private readonly ConcurrentDictionary<string, IStream> _streams = new ConcurrentDictionary<string, IStream>();
         private readonly IEventStore<I> _eventStore;
@@ -24,14 +25,8 @@ namespace ZES.Infrastructure.Streams
             Restart();
         }
 
-        private void Restart()
-        {
-            _log.Trace("", this);
-            _subscription?.Dispose();
-            _subscription = _eventStore.AllStreams.Subscribe(stream => GetOrAdd(stream));            
-        }
-
-        public IStream Find<T>(string id, string timeline = "master") where T : I
+        public IStream Find<T>(string id, string timeline = "master")
+            where T : I
         {
             var aStream = new Stream(id, typeof(T).Name, ExpectedVersion.NoStream, timeline);
             return _streams.TryGetValue(aStream.Key, out var stream) ? stream : default(IStream);
@@ -42,13 +37,20 @@ namespace ZES.Infrastructure.Streams
             if (es == null)
                 return default(IStream);
 
-            var stream = new Stream(es.Id, es.GetType().Name, ExpectedVersion.NoStream,timeline);
+            var stream = new Stream(es.Id, es.GetType().Name, ExpectedVersion.NoStream, timeline);
             return _streams.GetOrAdd(stream.Key, stream);
         }
 
         public IStream GetOrAdd(IStream stream)
         {
             return _streams.GetOrAdd(stream.Key, stream);
+        }
+        
+        private void Restart()
+        {
+            _log.Trace(string.Empty, this);
+            _subscription?.Dispose();
+            _subscription = _eventStore.AllStreams.Subscribe(stream => GetOrAdd(stream));            
         }
     }
 }

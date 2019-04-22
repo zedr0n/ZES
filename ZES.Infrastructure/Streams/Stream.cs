@@ -6,6 +6,9 @@ namespace ZES.Infrastructure.Streams
 {
     public class Stream : IStream
     {
+        private readonly string _id;
+        private readonly string _type;
+        
         public Stream(string id, string type, int version, string timeline = "")
         {
             _id = id;
@@ -26,16 +29,15 @@ namespace ZES.Infrastructure.Streams
             Version = version;
         }
 
-        public static Stream Branch(string key, string timeline)
-        {
-            return new Stream(key) { Timeline = timeline};
-        }
-        
         public string Key => $"{Timeline}:{_type}:{_id}";
-        private readonly string _id;
-        private readonly string _type;
+
         public int Version { get; set; }
         public int UpdatedOn { get; set; }
         public string Timeline { get; set; }
+        
+        public static Stream Branch(string key, string timeline)
+        {
+            return new Stream(key) { Timeline = timeline };
+        }
     }
 }

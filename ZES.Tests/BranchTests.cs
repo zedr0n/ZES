@@ -12,7 +12,8 @@ namespace ZES.Tests
 {
     public class BranchTests : ZesTest
     {
-        public BranchTests(ITestOutputHelper outputHelper) : base(outputHelper)
+        public BranchTests(ITestOutputHelper outputHelper)
+            : base(outputHelper)
         {
         }
 
@@ -27,15 +28,15 @@ namespace ZES.Tests
             await await bus.CommandAsync(command);
 
             var timeline = container.GetInstance<ITimeline>();
-            Assert.Equal("master",timeline.Id);
+            Assert.Equal("master", timeline.Id);
            
             var timeTraveller = container.GetInstance<ITimeTraveller>();
             await timeTraveller.Branch("test", timeline.Now);
                      
-            Assert.Equal("test",timeline.Id);
+            Assert.Equal("test", timeline.Id);
             var root = await repository.Find<Root>("Root");
            
-            Assert.Equal("Root",root.Id);
+            Assert.Equal("Root", root.Id);
         }
 
         [Fact]
@@ -50,12 +51,12 @@ namespace ZES.Tests
 
             await repository.Find<Root>("Root");
             var timeline = container.GetInstance<ITimeline>();
-            Assert.Equal("master",timeline.Id);
+            Assert.Equal("master", timeline.Id);
            
             var timeTraveller = container.GetInstance<ITimeTraveller>();
             await timeTraveller.Branch("test", 0);
                      
-            Assert.Equal("test",timeline.Id);
+            Assert.Equal("test", timeline.Id);
 
             var query = new StatsQuery();
             var stats = await bus.QueryUntil(query, s => s?.NumberOfRoots == 0);
@@ -63,7 +64,7 @@ namespace ZES.Tests
 
             timeTraveller.Reset();
             
-            Assert.Equal("master",timeline.Id);
+            Assert.Equal("master", timeline.Id);
             await RetryUntil(async () => await repository.Find<Root>("Root"));
             stats = await bus.QueryUntil(query, s => s?.NumberOfRoots == 1);
             Assert.Equal(1, stats?.NumberOfRoots); 

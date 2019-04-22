@@ -13,7 +13,8 @@ namespace ZES.Tests
 {
     public class SchemaTests : ZesTest
     {
-        public SchemaTests(ITestOutputHelper outputHelper) : base(outputHelper)
+        public SchemaTests(ITestOutputHelper outputHelper)
+            : base(outputHelper)
         {
         }
 
@@ -24,8 +25,9 @@ namespace ZES.Tests
             var schemaProvider = container.GetInstance<ISchemaProvider>();
             var log = container.GetInstance<ILog>();
             
-            var schema = schemaProvider.Generate(typeof(Queries),
-            typeof(Mutations)).Schema;
+            var schema = schemaProvider.Generate(
+                typeof(Queries),
+                typeof(Mutations)).Schema;
             log.Info(schema.ToString());
         }
 
@@ -92,7 +94,7 @@ namespace ZES.Tests
             var errorResult = await executor.ExecuteAsync(@"query{ error { message } }") as IReadOnlyQueryResult;
             dynamic messageDict = errorResult?.Data["error"];
             Assert.NotNull(messageDict);
-            Assert.Contains("ahead",messageDict["message"]);
+            Assert.Contains("ahead", messageDict["message"]);
         }
     }
 }

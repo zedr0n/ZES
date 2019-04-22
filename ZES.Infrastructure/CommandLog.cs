@@ -23,14 +23,14 @@ namespace ZES.Infrastructure
             _log = log;
         }
 
-        private NewStreamMessage Encode(ICommand command) => 
-            new NewStreamMessage(Guid.NewGuid(),command.GetType().Name,_serializer.Serialize(command),_serializer.Metadata(command.Timestamp));
-
         public async Task AppendCommand(ICommand command)
         {
             var message = Encode(command);
             _log.Debug(message.JsonData);
             await _streamStore.AppendToStream($"{_timeline.Id}:Command:commands", ExpectedVersion.Any, message);
         }
+
+        private NewStreamMessage Encode(ICommand command) =>
+            new NewStreamMessage(Guid.NewGuid(), command.GetType().Name, _serializer.Serialize(command), _serializer.Metadata(command.Timestamp));
     }
 }

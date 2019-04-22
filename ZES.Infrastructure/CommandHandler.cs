@@ -6,14 +6,15 @@ using ZES.Interfaces.Domain;
 
 namespace ZES.Infrastructure
 {
-    public class CommandHandler<T> : ICommandHandler<T> where T : ICommand
+    public class CommandHandler<T> : ICommandHandler<T>
+        where T : ICommand
     {
         private readonly ICommandHandler<T> _handler;
         private readonly ICommandLog _commandLog;
         private readonly ILog _log;
         private readonly IErrorLog _errorLog;
         private readonly ITimeline _timeline;
-        
+
         public CommandHandler(ICommandHandler<T> handler, ILog log, ITimeline timeline, ICommandLog commandLog, IErrorLog errorLog)
         {
             _handler = handler;
@@ -35,12 +36,6 @@ namespace ZES.Infrastructure
             catch (Exception e)
             {
                 _errorLog.Add(e);
-                //_log.Error(e.Message,this);
-
-                // retry the command in case of concurrency exception
-                //if(e is ConcurrencyException)
-                //    await _handler.Handle(command);
-                //throw;
             }
 
             await _commandLog.AppendCommand(command);

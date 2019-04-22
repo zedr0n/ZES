@@ -27,14 +27,12 @@ namespace ZES
                 .Retry());
         }
 
-        public static async Task<TResult> QueryUntil<TResult>(this IBus bus, IQuery<TResult> query, Func<TResult,bool> predicate = null,TimeSpan timeout = default(TimeSpan), TimeSpan delay = default(TimeSpan))
+        public static async Task<TResult> QueryUntil<TResult>(this IBus bus, IQuery<TResult> query, Func<TResult, bool> predicate = null, TimeSpan timeout = default(TimeSpan), TimeSpan delay = default(TimeSpan))
         {
-            //if (timeout == default(TimeSpan))
-            //    timeout = TimeSpan.FromSeconds(5);
             return await RetryUntil(async () => await bus.QueryAsync(query), predicate, timeout, delay);
         }
 
-        public static async Task<T> RetryUntil<T>(Func<Task<T>> action,Func<T,bool> predicate = null, TimeSpan timeout = default(TimeSpan), TimeSpan delay = default(TimeSpan))
+        public static async Task<T> RetryUntil<T>(Func<Task<T>> action, Func<T, bool> predicate = null, TimeSpan timeout = default(TimeSpan), TimeSpan delay = default(TimeSpan))
         {
             if (delay == default(TimeSpan))
                 delay = Delay;
@@ -43,7 +41,6 @@ namespace ZES
             if (predicate == null)
                 predicate = x => !Equals(x, default(T));
 
-            
             var obs = Observable.Create(async (IObserver<T> o) =>
             {
                 var r = await action();
@@ -53,15 +50,15 @@ namespace ZES
                     o.OnCompleted(); 
                 }
                 else
+                {
                     o.OnError(new ArgumentNullException());
+                }
             });
 
             obs = obs.RetryWithDelay(delay);
-            if(timeout != TimeSpan.MaxValue)
+            if (timeout != TimeSpan.MaxValue)
                 obs = obs.Timeout(timeout);
             return await obs.Catch(Observable.Return(default(T)));
         }
     }
-    
-
 }

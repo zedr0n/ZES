@@ -4,34 +4,40 @@ using System.Threading.Tasks;
 
 namespace ZES.Interfaces.EventStore
 {
-    public interface IEventStore<I> where I : IEventSourced
+    public interface IEventStore<I>
+        where I : IEventSourced
     {
         /// <summary>
-        /// Get currently stored streams
+        /// Gets currently stored streams
         /// </summary>
-        /// <returns></returns>
+        /// <returns>Stream observable</returns>
         IObservable<IStream> AllStreams { get; }
+        
         /// <summary>
-        /// Stream details channel 
+        /// Gets stream details channel 
         /// </summary>
         IObservable<IStream> Streams { get; }       
+        
         /// <summary>
-        /// Cold observable of all current events in the domain log
+        /// Gets cold observable of all current events in the domain log
         /// </summary>
         IObservable<IEvent> Events { get; }
+        
         /// <summary>
         /// Read specified number of events from the stream forward from starting version 
         /// </summary>
         /// <param name="stream">Target stream</param>
         /// <param name="start">Starting version for the read</param>
         /// <param name="count">Number of events to read</param>
-        /// <returns></returns>
+        /// <returns>Cold observable of read events</returns>
         IObservable<IEvent> ReadStream(IStream stream, int start, int count = -1);
+        
         /// <summary>
         /// Append events to stream
         /// </summary>
         /// <param name="stream">Target stream</param>
         /// <param name="events">Events to append</param>
+        /// <returns>Task representing the append operation</returns>
         Task AppendToStream(IStream stream, IEnumerable<IEvent> events);
     }
 }

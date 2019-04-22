@@ -20,6 +20,7 @@ namespace ZES
             c.RegisterProjections(assembly);
             c.RegisterSagas(assembly);
         }
+        
         public static IEnumerable<Type> GetTypesFromInterface(this Assembly assembly, Type t)
         {
             var types = assembly.GetTypes()
@@ -33,7 +34,6 @@ namespace ZES
             foreach (var s in sagas)
             {
                 var iSaga = typeof(ISagaHandler<>).MakeGenericType(s);
-                //var handler = assembly.GetTypesFromInterface(iSaga).SingleOrDefault();
                 var handler = typeof(SagaHandler<>).MakeGenericType(s);
                 c.Register(iSaga, handler, Lifestyle.Singleton);
             }
@@ -44,11 +44,12 @@ namespace ZES
             var queries = assembly.GetTypesFromInterface(typeof(IQuery));
             foreach (var q in queries)
             {
-                c.Collection.Append(typeof(ITypeProvider<IQuery>),
+                c.Collection.Append(
+                    typeof(ITypeProvider<IQuery>),
                     Lifestyle.Singleton.CreateRegistration(() => new TypeProvider<IQuery>(q), c));
                 
                 var result = q.GetInterfaces().SingleOrDefault(g => g.IsGenericType)?.GetGenericArguments().SingleOrDefault(); 
-                if(result == null)
+                if (result == null)
                     continue;
                 
                 var iQueryHandler = typeof(IQueryHandler<,>).MakeGenericType(q, result);
@@ -58,24 +59,13 @@ namespace ZES
                 var tState = parameters?.First(p => p.ParameterType.GetInterfaces().Contains(typeof(IProjection)))
                     .ParameterType.GenericTypeArguments[0];
 
-                var iHistoricalQuery = typeof(HistoricalQuery<,>).MakeGenericType(q,result);
+                var iHistoricalQuery = typeof(HistoricalQuery<,>).MakeGenericType(q, result);
                 var iHistoricalQueryHandler = typeof(IQueryHandler<,>).MakeGenericType(iHistoricalQuery, result);
                 
-                var historicalHandler = typeof(HistoricalQueryHandler<,,>).MakeGenericType(q, result,tState);
+                var historicalHandler = typeof(HistoricalQueryHandler<,,>).MakeGenericType(q, result, tState);
 
                 c.RegisterConditional(iQueryHandler, handler, Lifestyle.Transient, x => !x.Handled);
                 c.RegisterConditional(iHistoricalQueryHandler, historicalHandler, Lifestyle.Transient, x => !x.Handled);
-                //c.RegisterDecorator(iQueryHandler, historicalHandler, p => 
-                //    p.ServiceType.GenericTypeArguments[0].GetInterfaces().Contains(iHistoricalQuery) );
-                //c.RegisterConditional(iQueryHandler, historicalHandler, Lifestyle.Transient,
-                //    p => p.ImplementationType.GenericTypeArguments[0].GetInterfaces().Contains(iHistoricalQuery));
-
-                //var iHistoricalHandler = typeof(IQueryHandler<,>).MakeGenericType(q, result); 
-
-
-                //c.Register(iHistoricalHandler, historicalHandler, Lifestyle.Transient);
-                //c.RegisterConditional(iQuery,historicalHandler, Lifestyle.Transient,x => q.GetInterfaces().Contains(typeof(IHistoricalQuery)));
-                //c.RegisterConditional(iQuery, handler, Lifestyle.Transient, x => !q.GetInterfaces().Contains(typeof(IHistoricalQuery)));
             }
         }
         
@@ -87,11 +77,12 @@ namespace ZES
                 var projectionInterface = p.GetInterfaces().First(x => x.Name.StartsWith(nameof(IProjection)));
                 var tState = projectionInterface.GenericTypeArguments[0];
 
-                //c.Register(projectionInterface, p, Lifestyle.Singleton);
-                c.RegisterConditional(projectionInterface, typeof(HistoricalDecorator<>).MakeGenericType(tState),
+                c.RegisterConditional(
+                    projectionInterface,
+                    typeof(HistoricalDecorator<>).MakeGenericType(tState),
                     Lifestyle.Transient,
                     x => x.Consumer.ImplementationType.IsClosedTypeOf(typeof(HistoricalQueryHandler<,,>)));
-                c.RegisterConditional(projectionInterface,p,Lifestyle.Singleton, x => !x.Handled); 
+                c.RegisterConditional(projectionInterface, p, Lifestyle.Singleton, x => !x.Handled); 
             }
         }
 
@@ -106,5 +97,4 @@ namespace ZES
             }
         }
     }
-
 }

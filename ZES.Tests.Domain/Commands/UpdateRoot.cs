@@ -4,7 +4,8 @@ namespace ZES.Tests.Domain.Commands
 {
     public class UpdateRoot : Command
     {
-        public UpdateRoot(string target) : base(target)
+        public UpdateRoot(string target)
+            : base(target)
         {
         }
     }

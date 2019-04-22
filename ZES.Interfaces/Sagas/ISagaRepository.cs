@@ -1,7 +1,4 @@
 namespace ZES.Interfaces.Sagas
 {
-    public interface ISagaRepository : IEsRepository<ISaga>
-    {
-
-    }
+    public interface ISagaRepository : IEsRepository<ISaga> { }
 }

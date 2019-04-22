@@ -14,82 +14,17 @@ using ZES.Interfaces.Pipes;
 
 namespace ZES.Infrastructure.Projections
 {
-    public class Projection<TState> : IProjection<TState> where TState : new()
+    public class Projection<TState> : IProjection<TState>
+        where TState : new()
     {
-        protected readonly ILog Log;
         private readonly IMessageQueue _messageQueue;
 
         private readonly IEventStore<IAggregate> _eventStore;
-        private readonly ConcurrentDictionary<string,int> _streams = new ConcurrentDictionary<string, int>();
-        internal readonly Dictionary<Type, Func<IEvent,TState,TState>> Handlers = new Dictionary<Type, Func<IEvent, TState, TState>>();
-
-        public Task Complete { get; private set; }
+        private readonly ConcurrentDictionary<string, int> _streams = new ConcurrentDictionary<string, int>();
 
         private CancellationTokenSource _streamSource;
         private CancellationTokenSource _rebuildSource;
-        
-        public TState State { get; protected set; } = new TState();
 
-        private class EventFlow : Dataflow<IObservable<IEvent>>
-        {
-            private readonly BufferBlock<IObservable<IEvent>> _inputBlock;
-            
-            public EventFlow(Action<IEvent> when, CancellationTokenSource tokenSource ) : base(DataflowOptions.Default)
-            {
-                _inputBlock = new BufferBlock<IObservable<IEvent>>();
-                var updateBlock = new ActionBlock<IObservable<IEvent>>(e => e.Finally(_inputBlock.Complete).Subscribe(when,tokenSource.Token),
-                    new ExecutionDataflowBlockOptions
-                    {
-                        CancellationToken = tokenSource.Token
-                    });
-
-                _inputBlock.LinkTo(updateBlock, new DataflowLinkOptions {PropagateCompletion = true});
-                
-                RegisterChild(_inputBlock);
-                RegisterChild(updateBlock);
-            }
-
-            public override ITargetBlock<IObservable<IEvent>> InputBlock => _inputBlock;
-        }
-        
-        private class StreamFlow : Dataflow<IStream>
-        {
-            private readonly ConcurrentDictionary<string, int> _streams;
-            private readonly BufferBlock<IStream> _inputBlock;
-
-            private int LocalVersion(IStream s) => _streams.GetOrAdd(s.Key, -1);
-            
-            public StreamFlow(IEventStore<IAggregate> eventStore, ConcurrentDictionary<string, int> streams,
-                Action<IEvent> when, CancellationTokenSource tokenSource) : base(DataflowOptions.Default)
-            {
-                _streams = streams;
-
-                _inputBlock = new BufferBlock<IStream>();
-                var readBlock = new TransformBlock<IStream, IObservable<IEvent>>(s => eventStore.ReadStream(s, LocalVersion(s) + 1), 
-                    new ExecutionDataflowBlockOptions
-                    {
-                        CancellationToken = tokenSource.Token,
-                    });               
-                
-                var updateBlock = new ActionBlock<IObservable<IEvent>>(e => e.Subscribe(when,tokenSource.Token),
-                    new ExecutionDataflowBlockOptions
-                {
-                    CancellationToken = tokenSource.Token,
-                    MaxDegreeOfParallelism = 8
-                });
-
-                _inputBlock.LinkTo(readBlock, new DataflowLinkOptions {PropagateCompletion = true},
-                    s => LocalVersion(s) < s.Version);
-                readBlock.LinkTo(updateBlock);
-                
-                RegisterChild(_inputBlock);
-                RegisterChild(readBlock);
-                RegisterChild(updateBlock);
-            }
-
-            public override ITargetBlock<IStream> InputBlock => _inputBlock;
-        }
-        
         protected Projection(IEventStore<IAggregate> eventStore, ILog log, IMessageQueue messageQueue)
         {
             _eventStore = eventStore;
@@ -102,51 +37,58 @@ namespace ZES.Infrastructure.Projections
             OnInit();
         }
 
-        public virtual void OnInit()
+        public Task Complete { get; private set; }
+        public TState State { get; protected set; } = new TState();
+        public Dictionary<Type, Func<IEvent, TState, TState>> Handlers { get; } = new Dictionary<Type, Func<IEvent, TState, TState>>();
+
+        protected ILog Log { get; }
+
+        public async Task Start(bool rebuild = true)
+        {
+            if (rebuild)
+                await Rebuild();
+            else
+                ListenToStreams();
+            _messageQueue.Alerts.OfType<InvalidateProjections>().Subscribe(async s => await Rebuild());
+        }
+
+        protected virtual void OnInit()
         {
             Start();
         }
 
-        public async Task Start(bool rebuild = true)
+        protected void Register<TEvent>(Func<TEvent, TState, TState> when)
+            where TEvent : class
         {
-            if(rebuild)
-                await Rebuild();
-            else
-                ListenToStreams();
-            _messageQueue.Alerts.OfType<InvalidateProjections>().Subscribe(async s => await Rebuild()); 
+            Handlers.Add(typeof(TEvent), (e, s) => when(e as TEvent, s));
         }
 
-        private void ListenToStreams()
-        {
-            Log.Trace("",this);
-            _streamSource.Cancel();
-            _streamSource = new CancellationTokenSource();
-            var streamFlow = new StreamFlow(_eventStore, _streams, When, _streamSource );
-            _eventStore.Streams.Subscribe(async s => await streamFlow.InputBlock.SendAsync(s),_streamSource.Token); 
-        }
-        
-        protected void Register<TEvent>(Func<TEvent,TState,TState> when) where TEvent : class
-        {
-            Handlers.Add(typeof(TEvent), (e,s) => when(e as TEvent,s)); 
-        }
-
-        protected void Register(Type tEvent, Func<IEvent,TState,TState> when)
+        protected void Register(Type tEvent, Func<IEvent, TState, TState> when)
         {
             Handlers.Add(tEvent, when);
         }
 
-        protected async Task Rebuild()
+        private void ListenToStreams()
         {
-            Log.Trace("",this);
-            
+            Log.Trace(string.Empty, this);
+            _streamSource.Cancel();
+            _streamSource = new CancellationTokenSource();
+            var streamFlow = new StreamFlow(_eventStore, _streams, When, _streamSource);
+            _eventStore.Streams.Subscribe(async s => await streamFlow.InputBlock.SendAsync(s), _streamSource.Token);
+        }
+
+        private async Task Rebuild()
+        {
+            Log.Trace(string.Empty, this);
+
             _streamSource.Cancel();
             _rebuildSource.Cancel();
-            
-            lock(State)
+
+            lock (State)
                 State = new TState();
-            
+
             _rebuildSource = new CancellationTokenSource();
-            var eventFlow = new EventFlow(When,_rebuildSource);
+            var eventFlow = new EventFlow(When, _rebuildSource);
             await eventFlow.SendAsync(_eventStore.Events);
             Complete = eventFlow.CompletionTask;
             await eventFlow.CompletionTask;
@@ -161,15 +103,73 @@ namespace ZES.Infrastructure.Projections
                 return;
             }
 
-            Log.Trace("",this);
+            Log.Trace(string.Empty, this);
             if (e == null)
                 return;
 
-            if (!Handlers.TryGetValue(e.GetType(), out var handler)) 
+            if (!Handlers.TryGetValue(e.GetType(), out var handler))
                 return;
 
-            State = handler(e,State);    
+            State = handler(e, State);
             _streams[e.Stream] = e.Version;
+        }
+
+        private class EventFlow : Dataflow<IObservable<IEvent>>
+        {
+            private readonly BufferBlock<IObservable<IEvent>> _inputBlock;
+
+            public EventFlow(Action<IEvent> when, CancellationTokenSource tokenSource)
+                : base(DataflowOptions.Default)
+            {
+                _inputBlock = new BufferBlock<IObservable<IEvent>>();
+                var updateBlock = new ActionBlock<IObservable<IEvent>>(
+                    e => e.Finally(_inputBlock.Complete).Subscribe(when, tokenSource.Token),
+                    new ExecutionDataflowBlockOptions { CancellationToken = tokenSource.Token });
+
+                _inputBlock.LinkTo(updateBlock, new DataflowLinkOptions { PropagateCompletion = true });
+
+                RegisterChild(_inputBlock);
+                RegisterChild(updateBlock);
+            }
+
+            public override ITargetBlock<IObservable<IEvent>> InputBlock => _inputBlock;
+        }
+
+        private class StreamFlow : Dataflow<IStream>
+        {
+            private readonly BufferBlock<IStream> _inputBlock;
+
+            public StreamFlow(
+                IEventStore<IAggregate> eventStore,
+                ConcurrentDictionary<string, int> streams,
+                Action<IEvent> when,
+                CancellationTokenSource tokenSource)
+                : base(DataflowOptions.Default)
+            {
+                _inputBlock = new BufferBlock<IStream>();
+
+                int LocalVersion(IStream s) => streams.GetOrAdd(s.Key, -1);
+
+                var readBlock = new TransformBlock<IStream, IObservable<IEvent>>(
+                    s => eventStore.ReadStream(s, LocalVersion(s) + 1),
+                    new ExecutionDataflowBlockOptions { CancellationToken = tokenSource.Token });
+
+                var updateBlock = new ActionBlock<IObservable<IEvent>>(
+                    e => e.Subscribe(when, tokenSource.Token),
+                    new ExecutionDataflowBlockOptions { CancellationToken = tokenSource.Token, MaxDegreeOfParallelism = 8 });
+
+                _inputBlock.LinkTo(
+                    readBlock,
+                    new DataflowLinkOptions { PropagateCompletion = true },
+                    s => LocalVersion(s) < s.Version);
+                readBlock.LinkTo(updateBlock);
+
+                RegisterChild(_inputBlock);
+                RegisterChild(readBlock);
+                RegisterChild(updateBlock);
+            }
+
+            public override ITargetBlock<IStream> InputBlock => _inputBlock;
         }
     }
 }

@@ -8,6 +8,7 @@ namespace ZES.Tests.Domain.Events
         {
             RootId = rootId;
         }
+        
         public string RootId { get; }
     }
 }

@@ -7,6 +7,7 @@ namespace ZES.Tests.Domain.Queries
             RootId = id;
             Timestamp = timestamp;
         }
+        
         public string RootId { get; set; }
         public long Timestamp { get; set; }
     }

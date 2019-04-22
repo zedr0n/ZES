@@ -10,6 +10,7 @@ namespace ZES.Tests.Domain.Commands
         {
             _repository = repository;
         }
+        
         public async Task Handle(CreateRoot command)
         {
             var root = new Root(command.Target);

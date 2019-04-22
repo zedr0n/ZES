@@ -14,12 +14,11 @@ using ZES.Interfaces.Serialization;
 
 namespace ZES.Infrastructure
 {
-    public class SqlEventStore<I> : IEventStore<I> where I : IEventSourced
+    public class SqlEventStore<I> : IEventStore<I> 
+        where I : IEventSourced
     {
-        public IObservable<IStream> AllStreams { get; }
-        public IObservable<IStream> Streams => _streams.AsObservable();
-        public IObservable<IEvent> Events { get; }
-
+        private const int ReadSize = 100;
+        
         private readonly IStreamStore _streamStore;
         private readonly IEventSerializer _serializer;
         private readonly Subject<IStream> _streams = new Subject<IStream>();
@@ -27,9 +26,7 @@ namespace ZES.Infrastructure
         private readonly ILog _log;
 
         private readonly bool _isDomainStore;
-
-        private const int ReadSize = 100;
-
+        
         public SqlEventStore(IStreamStore streamStore, IEventSerializer serializer, IMessageQueue messageQueue, ILog log, ITimeline timeline)
         {
             _streamStore = streamStore;
@@ -43,14 +40,14 @@ namespace ZES.Infrastructure
                 var page = await _streamStore.ReadAllForwards(Position.Start, ReadSize);
                 while (true)
                 {
-                    foreach(var m in page.Messages)
+                    foreach (var m in page.Messages)
                     {
                         var stream = new Stream(m.StreamId);
                         if (stream.Timeline != timeline.Id) 
                             continue;
                         var payload = await m.GetJsonData();
                         var e = _serializer.Deserialize(payload);
-                        if(e != null)
+                        if (e != null)
                             observer.OnNext(e);
                     }
 
@@ -81,16 +78,19 @@ namespace ZES.Infrastructure
                 observer.OnCompleted();
             }).Concat(_streams.AsObservable());
         }
+        
+        public IObservable<IStream> AllStreams { get; }
+        public IObservable<IStream> Streams => _streams.AsObservable();
+        public IObservable<IEvent> Events { get; }
 
         public IObservable<IEvent> ReadStream(IStream stream, int start, int count = -1)
         {
-            //_log.Trace("",this);
             if (count == -1)
                 count = int.MaxValue;
 
             var observable = Observable.Create(async (IObserver<IEvent> observer) =>
             {
-                var page = await _streamStore.ReadStreamForwards(stream.Key,start,ReadSize);
+                var page = await _streamStore.ReadStreamForwards(stream.Key, start, ReadSize);
                 while (page.Messages.Length > 0 && count > 0)
                 {
                     foreach (var m in page.Messages)
@@ -110,16 +110,29 @@ namespace ZES.Infrastructure
             return observable;
         }
 
+        public async Task AppendToStream(IStream stream, IEnumerable<IEvent> enumerable)
+        {
+            var events = enumerable as IList<IEvent> ?? enumerable.ToList();
+            if (!events.Any())
+                return;
+
+            var streamMessages = events.Select(_serializer.Encode).ToArray();
+            var result = await _streamStore.AppendToStream(stream.Key, stream.Version, streamMessages);
+            LogEvents(streamMessages);
+
+            stream.Version = result.CurrentVersion;
+            _streams.OnNext(stream);
+
+            PublishEvents(events);    
+        }
+        
         private void LogEvents(IEnumerable<NewStreamMessage> messages)
         {
             if (!_isDomainStore)
                 return;
             
             foreach (var m in messages) 
-            {
-                //await _streamStore.AppendToStream("::DomainLog", ExpectedVersion.Any, m);
                 _log.Debug(m.JsonData);
-            }
         }
 
         private void PublishEvents(IEnumerable<IEvent> events)
@@ -129,23 +142,6 @@ namespace ZES.Infrastructure
 
             foreach (var e in events)
                 _messageQueue.Event(e);
-        }
-
-        public async Task AppendToStream(IStream stream, IEnumerable<IEvent> enumerable)
-        {
-            //_log.Trace("",this);
-            var events = enumerable as IList<IEvent> ?? enumerable.ToList();
-            if (!events.Any())
-                return;
-
-            var streamMessages = events.Select(_serializer.Encode).ToArray();
-            var result = await _streamStore.AppendToStream(stream.Key, stream.Version,streamMessages);
-            LogEvents(streamMessages);
-
-            stream.Version = result.CurrentVersion;
-            _streams.OnNext(stream);
-
-            PublishEvents(events);    
         }
     }
 }

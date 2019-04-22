@@ -1,7 +1,4 @@
 namespace ZES.Interfaces.Domain
 {
-    public interface IDomainRepository : IEsRepository<IAggregate>
-    {
-
-    }
+    public interface IDomainRepository : IEsRepository<IAggregate> { }
 }

@@ -1,7 +1,6 @@
 using NLog.Config;
 using NLog.Layouts;
 using NLog.Targets;
-// ReSharper disable InconsistentNaming
 
 namespace ZES.Tests 
 {
@@ -18,10 +17,7 @@ namespace ZES.Tests
                 if (value is LayoutWithHeaderAndFooter)
                     base.Layout = value;
                 else if (LHF == null)
-                    LHF = new LayoutWithHeaderAndFooter
-                    {
-                        Layout = value
-                    };
+                    LHF = new LayoutWithHeaderAndFooter { Layout = value };
                 else
                     LHF.Layout = value;
             }
@@ -35,7 +31,7 @@ namespace ZES.Tests
         /// <value>The layout with header and footer.</value>
         private LayoutWithHeaderAndFooter LHF
         {
-            get => (LayoutWithHeaderAndFooter) base.Layout;
+            get => (LayoutWithHeaderAndFooter)base.Layout;
             set => base.Layout = value;
         }
     }

@@ -8,9 +8,6 @@ namespace ZES.Tests.Domain.Sagas
 {
     public class TestSaga : StatelessSaga<TestSaga.State, TestSaga.Trigger>
     {
-        public enum Trigger { Created } 
-        public enum State { Open, Complete}
-
         private string _rootId;
         
         public TestSaga()
@@ -18,7 +15,10 @@ namespace ZES.Tests.Domain.Sagas
             Register<RootCreated>(Trigger.Created, When);
             Register<RootUpdated>(Trigger.Created, When);
         }
-
+        
+        public enum Trigger { Created } 
+        public enum State { Open, Complete }
+        
         public new static string SagaId(IEvent e)
         {
             switch (e)
@@ -31,17 +31,7 @@ namespace ZES.Tests.Domain.Sagas
                     return null;
             }
         }
-
-        private void When(RootUpdated e)
-        {
-            
-        }
-
-        private void When(RootCreated e)
-        {
-            _rootId = e.RootId;
-        }
-
+        
         protected override void ConfigureStateMachine()
         {
             StateMachine = new StateMachine<State, Trigger>(State.Open);
@@ -53,10 +43,15 @@ namespace ZES.Tests.Domain.Sagas
                 {
                     if (!_rootId.Contains("Copy"))
                         SendCommand(new CreateRoot($"{_rootId}Copy"));
-
                 });
+            
             base.ConfigureStateMachine();
         }
-    }
 
+        private void When(RootUpdated e) { }
+        private void When(RootCreated e)
+        {
+            _rootId = e.RootId;
+        }
+    }
 }

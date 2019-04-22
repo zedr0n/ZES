@@ -5,20 +5,21 @@ using ZES.Interfaces;
 
 namespace ZES.Infrastructure.Sagas
 {
-    public abstract class StatelessSaga<TState,TTrigger> : Saga
+    public abstract class StatelessSaga<TState, TTrigger> : Saga
     {
+        private readonly Dictionary<Type, TTrigger> _triggers = new Dictionary<Type, TTrigger>();
+        private StateMachine<TState, TTrigger> _stateMachine;
+        
         protected StateMachine<TState, TTrigger> StateMachine
         {
             get
             {
-                if(_stateMachine == null)
+                if (_stateMachine == null)
                     ConfigureStateMachine();
                 return _stateMachine;
             }
             set => _stateMachine = value;
         }
-        private StateMachine<TState, TTrigger> _stateMachine;
-        private readonly Dictionary<Type, TTrigger> _triggers = new Dictionary<Type, TTrigger>();
 
         public override void When(IEvent e)
         {

@@ -10,7 +10,8 @@ using ZES.Interfaces.Sagas;
 
 namespace ZES.Infrastructure
 {
-    public class EsRepository<I> : IEsRepository<I> where I : IEventSourced
+    public class EsRepository<I> : IEsRepository<I>
+        where I : IEventSourced
     {
         private readonly IEventStore<I> _eventStore;
         private readonly IStreamLocator<I> _streams;
@@ -24,8 +25,9 @@ namespace ZES.Infrastructure
             _timeline = timeline;
             _bus = bus;
         }
-        
-        public async Task Save<T>(T es) where T : class, I 
+
+        public async Task Save<T>(T es)
+            where T : class, I
         {
             if (es == null)
                 return;
@@ -33,21 +35,17 @@ namespace ZES.Infrastructure
             var events = es.GetUncommittedEvents().ToList();
             if (events.Count == 0)
                 return;
-            
+
             var stream = _streams.GetOrAdd(es);
             if (stream.Version >= 0 && es.Version - events.Count < stream.Version)
-                throw new InvalidOperationException(
-                    $"Stream ( {stream.Version} ) is ahead of aggregate root ( {es.Version - events.Count} ) ");
-                //throw new InvalidOperationException();
-            //if (stream.Version >= 0 && (await _eventStore.ReadStream(stream, stream.Version)))
-            //    throw new InvalidOperationException();
+                throw new InvalidOperationException($"Stream ( {stream.Version} ) is ahead of aggregate root ( {es.Version - events.Count} )");
 
             foreach (var e in events.OfType<Event>())
             {
                 e.Timestamp = _timeline.Now;
                 e.Stream = stream.Key;
             }
-                   
+
             await _eventStore.AppendToStream(stream, events);
             if (es is ISaga saga)
             {
@@ -57,13 +55,15 @@ namespace ZES.Infrastructure
             }
         }
 
-        public async Task<T> GetOrAdd<T>(string id) where T : class, I, new()
+        public async Task<T> GetOrAdd<T>(string id)
+            where T : class, I, new()
         {
             var instance = await Find<T>(id);
             return instance ?? EventSourced.Create<T>(id);
         }
 
-        public async Task<T> Find<T>(string id) where T : class, I, new()
+        public async Task<T> Find<T>(string id)
+            where T : class, I, new()
         {
             var stream = _streams.Find<T>(id, _timeline.Id);
             if (stream == null)
@@ -72,7 +72,7 @@ namespace ZES.Infrastructure
             var events = await _eventStore.ReadStream(stream, 0).ToList();
             var aggregate = EventSourced.Create<T>(id);
             aggregate.LoadFrom<T>(events);
-            
+
             return aggregate;
         }
     }

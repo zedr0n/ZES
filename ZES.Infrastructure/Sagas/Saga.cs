@@ -12,9 +12,9 @@ namespace ZES.Infrastructure.Sagas
 
         public static string SagaId(IEvent e) => null;
         
-        private void ClearUncommittedCommands()
+        public void ClearUncommittedCommands()
         {
-            lock(_undispatchedCommands) 
+            lock (_undispatchedCommands) 
                 _undispatchedCommands.Clear();
         }
         
@@ -26,7 +26,7 @@ namespace ZES.Infrastructure.Sagas
 
         public void SendCommand(ICommand command)
         {
-            lock(_undispatchedCommands)
+            lock (_undispatchedCommands)
                 _undispatchedCommands.Add(command);
         }
 

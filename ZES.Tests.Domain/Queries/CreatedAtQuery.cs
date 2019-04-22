@@ -4,7 +4,7 @@ namespace ZES.Tests.Domain.Queries
 {
     public class CreatedAtQuery : Query<CreatedAt>
     {
-        public CreatedAtQuery() {}
+        public CreatedAtQuery() { }
         public CreatedAtQuery(string id)
         {
             Id = id;

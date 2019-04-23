@@ -1,6 +1,7 @@
 namespace ZES.Interfaces
 {
-    public class ICompositionRoot
-    {
-    }
+    /// <summary>
+    /// Composition root for SimpleInjector 
+    /// </summary>
+    public interface ICompositionRoot { }
 }

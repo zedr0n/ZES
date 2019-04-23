@@ -4,10 +4,12 @@ using SimpleInjector;
 
 namespace ZES
 {
+    /// <inheritdoc />
     public abstract class BaseParameterConvention : IParameterConvention
     {
-        public Type Consumer { get; set; }
+        private Type Consumer { get; set; }
 
+        /// <inheritdoc />
         public bool Handles(InjectionConsumerInfo consumer)
         {
             if (Consumer == null)
@@ -15,7 +17,10 @@ namespace ZES
             return Consumer.IsAssignableFrom(consumer.ImplementationType);
         }
 
+        /// <inheritdoc />
         public abstract bool CanResolve(InjectionTargetInfo target);
+
+        /// <inheritdoc />
         public abstract Expression BuildExpression(InjectionConsumerInfo consumer);
     }
 }

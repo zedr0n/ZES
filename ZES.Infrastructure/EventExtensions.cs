@@ -4,9 +4,18 @@ using ZES.Interfaces.Serialization;
 
 namespace ZES.Infrastructure
 {
+    /// <summary>
+    /// Encoding extensions for <see cref="SqlStreamStore"/> serialization
+    /// </summary>
     public static class EventExtensions
     {
-        public static NewStreamMessage Encode(this IEventSerializer serializer, IEvent e)
+        /// <summary>
+        /// Extend the serializer to encode for <see cref="SqlStreamStore"/>
+        /// </summary>
+        /// <param name="serializer">Serializer instance</param>
+        /// <param name="e">Event to encode</param>
+        /// <returns>Encoded message</returns>
+        public static NewStreamMessage Encode(this ISerializer<IEvent> serializer, IEvent e)
         {
             return new NewStreamMessage(e.EventId, e.EventType, serializer.Serialize(e), serializer.Metadata(e.Timestamp));
         }

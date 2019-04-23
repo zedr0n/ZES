@@ -9,11 +9,20 @@ using ZES.Interfaces.Sagas;
 
 namespace ZES.Infrastructure.Sagas
 {
+    /// <inheritdoc />
     public class SagaHandler<TSaga> : ISagaHandler<TSaga>
         where TSaga : class, ISaga, new()
     {
         private readonly ConcurrentDictionary<string, SagaFlow> _flows = new ConcurrentDictionary<string, SagaFlow>();
-        public SagaHandler(IMessageQueue messageQueue, ISagaRepository repository, ISagaRegistry sagaRegistry, ILog log)
+        
+        /// <summary>
+        /// Initializes a new instance of the <see cref="SagaHandler{TSaga}"/> class.
+        /// </summary>
+        /// <param name="messageQueue">Message queue</param>
+        /// <param name="repository">Saga repository</param>
+        /// <param name="sagaRegistry">Saga registry</param>
+        /// <param name="log">Application log</param>
+        public SagaHandler(IMessageQueue messageQueue, IEsRepository<ISaga> repository, ISagaRegistry sagaRegistry, ILog log)
         {
             var sagaBlock = new ActionBlock<IEvent>(
                 async e =>
@@ -31,13 +40,13 @@ namespace ZES.Infrastructure.Sagas
         
         private class SagaFlow : Dataflow<IEvent>
         {
-            private readonly ISagaRepository _repository;
+            private readonly IEsRepository<ISaga> _repository;
             private readonly ILog _log;
 
             private readonly string _id;
             private readonly ActionBlock<IEvent> _inputBlock;
             
-            public SagaFlow(ISagaRepository repository, string id, ILog log)
+            public SagaFlow(IEsRepository<ISaga> repository, string id, ILog log)
                 : base(DataflowOptions.Default)
             {
                 _repository = repository;

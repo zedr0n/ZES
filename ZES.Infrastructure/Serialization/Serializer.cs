@@ -9,11 +9,16 @@ using ZES.Interfaces.Serialization;
 
 namespace ZES.Infrastructure.Serialization
 {
+    /// <inheritdoc />
     public class Serializer<T> : ISerializer<T>
         where T : class
     {
         private readonly JsonSerializer _serializer;
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="Serializer{T}"/> class.
+        /// <para> Uses <see cref="TypeNameHandling.All"/> for JSON serialisation </para>
+        /// </summary>
         public Serializer()
         {
             _serializer = JsonSerializer.Create(new JsonSerializerSettings
@@ -27,7 +32,8 @@ namespace ZES.Infrastructure.Serialization
                 DateParseHandling = DateParseHandling.None
             });
         }
-        
+
+        /// <inheritdoc />
         public string Serialize(T e)
         {
             using (var writer = new StringWriter())
@@ -42,6 +48,7 @@ namespace ZES.Infrastructure.Serialization
             }
         }
 
+        /// <inheritdoc />
         public string Metadata(long? timestamp)
         {
             var array = new JObject(new JProperty(nameof(Command.Timestamp), timestamp));
@@ -49,6 +56,7 @@ namespace ZES.Infrastructure.Serialization
             return s;
         }
 
+        /// <inheritdoc />
         public T Deserialize(string payload)
         {
             using (var reader = new StringReader(payload))

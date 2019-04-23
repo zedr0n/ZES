@@ -10,6 +10,7 @@ using ZES.Interfaces.Sagas;
 
 namespace ZES.Infrastructure
 {
+    /// <inheritdoc />
     public class EsRepository<I> : IEsRepository<I>
         where I : IEventSourced
     {
@@ -18,7 +19,14 @@ namespace ZES.Infrastructure
         private readonly ITimeline _timeline;
         private readonly IBus _bus;
 
-        protected EsRepository(IEventStore<I> eventStore, IStreamLocator<I> streams, ITimeline timeline, IBus bus)
+        /// <summary>
+        /// Initializes a new instance of the <see cref="EsRepository{I}"/> class.
+        /// </summary>
+        /// <param name="eventStore">Event store</param>
+        /// <param name="streams">Stream locator</param>
+        /// <param name="timeline">Active timeline tracker</param>
+        /// <param name="bus">Message bus</param>
+        public EsRepository(IEventStore<I> eventStore, IStreamLocator<I> streams, ITimeline timeline, IBus bus)
         {
             _eventStore = eventStore;
             _streams = streams;
@@ -26,6 +34,7 @@ namespace ZES.Infrastructure
             _bus = bus;
         }
 
+        /// <inheritdoc />
         public async Task Save<T>(T es)
             where T : class, I
         {
@@ -55,6 +64,7 @@ namespace ZES.Infrastructure
             }
         }
 
+        /// <inheritdoc />
         public async Task<T> GetOrAdd<T>(string id)
             where T : class, I, new()
         {
@@ -62,6 +72,7 @@ namespace ZES.Infrastructure
             return instance ?? EventSourced.Create<T>(id);
         }
 
+        /// <inheritdoc />
         public async Task<T> Find<T>(string id)
             where T : class, I, new()
         {

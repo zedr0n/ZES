@@ -1,15 +1,24 @@
 namespace ZES.Interfaces
 {
+    /// <summary>
+    /// Timeline tracker 
+    /// </summary>
     public interface ITimeline
     {
         /// <summary>
-        /// id of the alternate timeline we are in at the moment
+        /// Gets id of the alternate timeline we are in at the moment
         /// </summary>
+        /// <value>
+        /// Id of the alternate timeline we are in at the moment
+        /// </value>
         string Id { get; }
-        
+
         /// <summary>
-        /// Current timestamp in the timeline
+        /// Gets current time in the timeline
         /// </summary>
+        /// <value>
+        /// Current time in the timeline
+        /// </value>
         long Now { get; }
     }
 }

@@ -2,16 +2,25 @@ using System.Collections.Generic;
 
 namespace ZES.Interfaces
 {
+    /// <summary>
+    /// Event sourced instance
+    /// </summary>
     public interface IEventSourced
     {
         /// <summary>
-        /// Gets unique identifier
+        /// Gets event sourced id 
         /// </summary>
+        /// <value>
+        /// Unique string identifier
+        /// </value>
         string Id { get; }
-        
+
         /// <summary>
         /// Gets event sourced version ( for optimistic concurrency )
         /// </summary>
+        /// <value>
+        /// Event sourced version 
+        /// </value>
         int Version { get; }
 
         /// <summary>
@@ -29,5 +38,8 @@ namespace ZES.Interfaces
             where T : class, IEventSourced;
     }
     
+    /// <summary>
+    /// Aggregate root
+    /// </summary>
     public interface IAggregate : IEventSourced { }
 }

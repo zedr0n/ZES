@@ -6,6 +6,10 @@ using ZES.Interfaces.Domain;
 
 namespace ZES.Infrastructure
 {
+    /// <summary>
+    /// Command decorator 
+    /// </summary>
+    /// <typeparam name="T">Command type</typeparam>
     public class CommandHandler<T> : ICommandHandler<T>
         where T : ICommand
     {
@@ -15,6 +19,14 @@ namespace ZES.Infrastructure
         private readonly IErrorLog _errorLog;
         private readonly ITimeline _timeline;
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="CommandHandler{T}"/> class.
+        /// </summary>
+        /// <param name="handler">Underlying handler to decorate</param>
+        /// <param name="log">Application logger</param>
+        /// <param name="timeline">Active timeline</param>
+        /// <param name="commandLog">Command log</param>
+        /// <param name="errorLog">Error log</param>
         public CommandHandler(ICommandHandler<T> handler, ILog log, ITimeline timeline, ICommandLog commandLog, IErrorLog errorLog)
         {
             _handler = handler;
@@ -24,6 +36,10 @@ namespace ZES.Infrastructure
             _errorLog = errorLog;
         }
 
+        /// <inheritdoc />
+        /// <summary>
+        /// Wrap the handler and redirect all exception to <see cref="IErrorLog"/>
+        /// </summary>
         public async Task Handle(T command)
         {
             _log.Trace($"{_handler.GetType().Name}.Handle({command.GetType().Name})");

@@ -1,13 +1,14 @@
 using System.Threading.Tasks;
+using ZES.Interfaces;
 using ZES.Interfaces.Domain;
 
 namespace ZES.Tests.Domain.Commands
 {
     public class UpdateRootHandler : ICommandHandler<UpdateRoot>
     {
-        private readonly IDomainRepository _repository;
+        private readonly IEsRepository<IAggregate> _repository;
 
-        public UpdateRootHandler(IDomainRepository repository)
+        public UpdateRootHandler(IEsRepository<IAggregate> repository)
         {
             _repository = repository;
         }

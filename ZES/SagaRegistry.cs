@@ -8,10 +8,15 @@ using ZES.Interfaces.Sagas;
 
 namespace ZES
 {
+    /// <inheritdoc />
     public class SagaRegistry : ISagaRegistry
     {
         private readonly ConcurrentDictionary<Type, Func<IEvent, string>> _dictionary = new ConcurrentDictionary<Type, Func<IEvent, string>>();
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="SagaRegistry"/> class.
+        /// </summary>
+        /// <param name="c"><see cref="SimpleInjector"/> container</param>
         public SagaRegistry(Container c)
         {
             var sagas = c.GetCurrentRegistrations()
@@ -29,11 +34,12 @@ namespace ZES
             }
         }
         
-        public void Register(Type saga, Func<IEvent, string> id)
+        /// <inheritdoc />
+        public Func<IEvent, string> SagaId<TSaga>() => _dictionary[typeof(TSaga)];
+
+        private void Register(Type saga, Func<IEvent, string> id)
         {
             _dictionary.TryAdd(saga, id);
         }
-
-        public Func<IEvent, string> SagaId<TSaga>() => _dictionary[typeof(TSaga)];
     }
 }

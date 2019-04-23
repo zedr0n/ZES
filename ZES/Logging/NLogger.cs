@@ -5,15 +5,24 @@ using ZES.Interfaces;
 
 namespace ZES.Logging
 {
+    /// <inheritdoc />
     public class NLogger : ILog
     {
         private readonly ILogger _logger;
-        
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="NLogger"/> class.
+        /// </summary>
+        /// <param name="logger"><see cref="ILogger"/></param>
         public NLogger(ILogger logger)
         {
             _logger = logger;
         }
 
+        /// <summary>
+        /// Layout configuration for <see cref="NLogger"/> 
+        /// </summary>
+        /// <returns><see cref="LoggingConfiguration"/></returns>
         public static LoggingConfiguration Configure()
         {
             var config = new LoggingConfiguration();
@@ -37,32 +46,38 @@ namespace ZES.Logging
             return config;
         }
 
+        /// <inheritdoc />
         public void Trace(object message)
         {
             _logger.Trace(" {msg}", message);
         }
-        
+
+        /// <inheritdoc />
         public void Trace(object message, object instance)
         {
             _logger.Trace("{dtype} {msg}", instance?.GetType().GetName(), message);
         }
 
+        /// <inheritdoc />
         public void Debug(object message)
         {
             _logger.Debug("{msg}", message);
         }
 
+        /// <inheritdoc />
         public void Info(object message)
         {
             _logger.Info("{msg}", message);
         }
 
+        /// <inheritdoc />
         public void Error(object message, object instance = null)
         {
             var type = instance is string ? instance : instance?.GetType().GetName(); 
             _logger.Error("{dtype} {msg}", type ?? string.Empty, message);
         }
 
+        /// <inheritdoc />
         public void Fatal(object message, object instance = null)
         {
             var type = instance is string ? instance : instance?.GetType().GetName(); 

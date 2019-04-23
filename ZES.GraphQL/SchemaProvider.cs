@@ -15,22 +15,24 @@ using ZES.Interfaces.Pipes;
 
 namespace ZES.GraphQL
 {
+    /// <inheritdoc />
     public class SchemaProvider : ISchemaProvider
     {
         private readonly IBus _bus;
         private readonly IErrorLog _errorLog;
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="SchemaProvider"/> class.
+        /// </summary>
+        /// <param name="bus">Message bus</param>
+        /// <param name="errorLog">Application error log</param>
         public SchemaProvider(IBus bus, IErrorLog errorLog)
         {
             _bus = bus;
             _errorLog = errorLog;
         }
 
-        public IServiceCollection Register(IServiceCollection services, Type rootQuery, Type rootMutation)
-        {
-            return Register(services, new[] { rootQuery }, new[] { rootMutation });
-        }
-
+        /// <inheritdoc />
         public IServiceCollection Register(IServiceCollection services, IEnumerable<Type> rootQuery, IEnumerable<Type> rootMutation)
         {
             var baseSchema = Schema.Create(c =>
@@ -71,13 +73,19 @@ namespace ZES.GraphQL
 
             return services;
         }
-        
+
+        /// <inheritdoc />
         public IQueryExecutor Generate(Type rootQuery = null, Type rootMutation = null)
         {
             var services = Register(null, rootQuery, rootMutation);
                     
             var executor = services.BuildServiceProvider().GetService<IQueryExecutor>();
             return executor;
+        }
+        
+        private IServiceCollection Register(IServiceCollection services, Type rootQuery, Type rootMutation)
+        {
+            return Register(services, new[] { rootQuery }, new[] { rootMutation });
         }
         
         private FieldMiddleware Middleware(IReflect rootQuery = null, IReflect rootMutation = null)

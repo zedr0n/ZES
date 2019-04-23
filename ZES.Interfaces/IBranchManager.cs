@@ -2,7 +2,11 @@ using System.Threading.Tasks;
 
 namespace ZES.Interfaces
 {
-    public interface ITimeTraveller
+    /// <summary>
+    /// Timeline manager
+    /// ( currently supports clone ) 
+    /// </summary>
+    public interface IBranchManager
     {
         /// <summary>
         /// Branch the current timeline at a certain point in the past

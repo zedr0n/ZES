@@ -5,7 +5,7 @@ using SimpleInjector.Advanced;
 
 namespace ZES
 {
-    public static class SimpleInjectorExtensions
+    internal static class SimpleInjectorExtensions
     {
         /*public static void RegisterConditionalSingleton<TService>(
             this Container container, TService instance, Predicate<PredicateContext> predicate)
@@ -23,8 +23,8 @@ namespace ZES
             foreach (var c in conventions)
                 RegisterParameterConvention(options, c);
         }
-        
-        public static void RegisterParameterConvention(
+
+        private static void RegisterParameterConvention(
             this ContainerOptions options,
             IParameterConvention convention)
         {

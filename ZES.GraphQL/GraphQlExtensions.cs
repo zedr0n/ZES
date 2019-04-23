@@ -9,14 +9,28 @@ using ZES.Infrastructure.Attributes;
 
 namespace ZES.GraphQL
 {
+    /// <summary>
+    /// AspNet.Core GraphQL wiring for <see cref="SimpleInjector"/>
+    /// </summary>
     public static class GraphQlExtensions
     {
+        /// <summary>
+        /// Wires the root queries and mutations for a single config type
+        /// </summary>
+        /// <param name="services"><see cref="IServiceCollection"/></param>
+        /// <param name="config">Config type containing the domain registration, root queries and mutations</param>
         public static void WireGraphQl(this IServiceCollection services, Type config)
         {
             var container = new Container();
             WireGraphQl(services, container, new[] { config });
         }
-        
+
+        /// <summary>
+        /// Wires the root queries and mutations for multiple domains defined by their respective config types 
+        /// </summary>
+        /// <param name="services"><see cref="IServiceCollection"/></param>
+        /// <param name="container"><see cref="SimpleInjector"/> container</param>
+        /// <param name="configs">Config types containing the domain registration, root queries and mutations</param>
         public static void WireGraphQl(this IServiceCollection services, Container container, IEnumerable<Type> configs)
         {
             container.Options.DefaultScopedLifestyle = new AsyncScopedLifestyle();

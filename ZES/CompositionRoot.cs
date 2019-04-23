@@ -19,10 +19,15 @@ using ILog = ZES.Interfaces.ILog;
 
 namespace ZES
 {
+    /// <inheritdoc />
     public sealed class CompositionRoot : ICompositionRoot
     {
-        private readonly bool _isMemoryStore = true;
+        // private readonly bool _isMemoryStore = true;
 
+        /// <summary>
+        /// Register the services with container
+        /// </summary>
+        /// <param name="container"><see cref="SimpleInjector"/> container</param>
         public void ComposeApplication(Container container)
         {
             container.Options.RegisterParameterConventions(new List<IParameterConvention>
@@ -37,7 +42,7 @@ namespace ZES
                 GetStore(container),
                 c => 
                      c.Consumer.ImplementationType.GetGenericArguments().Contains(typeof(IAggregate)) ||
-                     c.Consumer.ImplementationType.GetInterfaces().Contains(typeof(ITimeTraveller)) || 
+                     c.Consumer.ImplementationType.GetInterfaces().Contains(typeof(IBranchManager)) || 
                      c.Consumer.ImplementationType == typeof(CommandLog));
             
             container.RegisterConditional(
@@ -46,8 +51,6 @@ namespace ZES
                 c => c.Consumer.ImplementationType.GetGenericArguments().Contains(typeof(ISaga))); 
             
             container.Register(typeof(ISerializer<>), typeof(Serializer<>), Lifestyle.Singleton);
-            container.Register<IEventSerializer, EventSerializer>(Lifestyle.Singleton);
-            container.Register<ICommandSerializer, CommandSerializer>(Lifestyle.Singleton);
             container.Register(typeof(IEventStore<>), typeof(SqlEventStore<>), Lifestyle.Singleton);
             
             container.Register<ITimeline, Timeline>(Lifestyle.Singleton);
@@ -59,8 +62,7 @@ namespace ZES
             container.Register<IErrorLog, ErrorLog>(Lifestyle.Singleton);
 
             container.Register(typeof(IStreamLocator<>), typeof(StreamLocator<>), Lifestyle.Singleton);    
-            container.Register<IDomainRepository, DomainRepository>(Lifestyle.Singleton);
-            container.Register<ISagaRepository, SagaRepository>(Lifestyle.Singleton);
+            container.Register(typeof(IEsRepository<>), typeof(EsRepository<>), Lifestyle.Singleton);
             container.Register<ISagaRegistry, SagaRegistry>(Lifestyle.Singleton);
 
             container.RegisterDecorator(
@@ -77,7 +79,7 @@ namespace ZES
                     (!c.Consumer.ImplementationType.IsClosedTypeOf(typeof(HistoricalQueryHandler<,,>)) && 
                     !c.Consumer.ImplementationType.IsClosedTypeOf(typeof(DecoratorQueryHandler<,>))));
             
-            container.Register<ITimeTraveller, TimeTraveller>(Lifestyle.Singleton);
+            container.Register<IBranchManager, BranchManager>(Lifestyle.Singleton);
         }
         
         private Registration GetStore(Container container)

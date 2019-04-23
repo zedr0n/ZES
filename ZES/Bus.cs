@@ -10,6 +10,7 @@ using ZES.Interfaces.Pipes;
 
 namespace ZES
 {
+    /// <inheritdoc />
     public class Bus : IBus
     {
         private readonly Container _container;
@@ -17,6 +18,11 @@ namespace ZES
         private readonly ConcurrentDictionary<ICommand, TaskCompletionSource<bool>> _executing = new ConcurrentDictionary<ICommand, TaskCompletionSource<bool>>();
         private readonly IErrorLog _errorLog;
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="Bus"/> class.
+        /// </summary>
+        /// <param name="container"><see cref="SimpleInjector"/> container</param>
+        /// <param name="errorLog">Application error log</param>
         public Bus(Container container, IErrorLog errorLog)
         {
             _container = container;
@@ -24,6 +30,7 @@ namespace ZES
             _commandProcessor = new CommandProcessor(HandleCommand, _executing); 
         }
 
+        /// <inheritdoc />
         public async Task<Task> CommandAsync(ICommand command)
         {
             var source = new TaskCompletionSource<bool>();
@@ -33,6 +40,7 @@ namespace ZES
             return source.Task;
         }
 
+        /// <inheritdoc />
         public async Task<TResult> QueryAsync<TResult>(IQuery<TResult> query)
         {
             var handlerType = typeof(IQueryHandler<,>).MakeGenericType(query.GetType(), typeof(TResult));

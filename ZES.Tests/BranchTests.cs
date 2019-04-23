@@ -22,7 +22,7 @@ namespace ZES.Tests
         {
             var container = CreateContainer();
             var bus = container.GetInstance<IBus>();
-            var repository = container.GetInstance<IDomainRepository>();
+            var repository = container.GetInstance<IEsRepository<IAggregate>>();
             
             var command = new CreateRoot("Root");
             await await bus.CommandAsync(command);
@@ -30,7 +30,7 @@ namespace ZES.Tests
             var timeline = container.GetInstance<ITimeline>();
             Assert.Equal("master", timeline.Id);
            
-            var timeTraveller = container.GetInstance<ITimeTraveller>();
+            var timeTraveller = container.GetInstance<IBranchManager>();
             await timeTraveller.Branch("test", timeline.Now);
                      
             Assert.Equal("test", timeline.Id);
@@ -44,7 +44,7 @@ namespace ZES.Tests
         {
             var container = CreateContainer();
             var bus = container.GetInstance<IBus>();
-            var repository = container.GetInstance<IDomainRepository>();
+            var repository = container.GetInstance<IEsRepository<IAggregate>>();
             
             var command = new CreateRoot("Root");
             await await bus.CommandAsync(command);
@@ -53,7 +53,7 @@ namespace ZES.Tests
             var timeline = container.GetInstance<ITimeline>();
             Assert.Equal("master", timeline.Id);
            
-            var timeTraveller = container.GetInstance<ITimeTraveller>();
+            var timeTraveller = container.GetInstance<IBranchManager>();
             await timeTraveller.Branch("test", 0);
                      
             Assert.Equal("test", timeline.Id);
@@ -65,7 +65,7 @@ namespace ZES.Tests
             timeTraveller.Reset();
             
             Assert.Equal("master", timeline.Id);
-            await RetryUntil(async () => await repository.Find<Root>("Root"));
+            await repository.FindUntil<Root>("Root");
             stats = await bus.QueryUntil(query, s => s?.NumberOfRoots == 1);
             Assert.Equal(1, stats?.NumberOfRoots); 
         }

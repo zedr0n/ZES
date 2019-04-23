@@ -6,11 +6,22 @@ using ZES.Interfaces.Pipes;
 
 namespace ZES.Infrastructure.Projections
 {
+    /// <summary>
+    /// Historical projection decorator
+    /// </summary>
+    /// <typeparam name="TState">Projection state</typeparam>
     public class HistoricalDecorator<TState> : Projection<TState>, IHistoricalProjection
         where TState : new()
     {
         private long _timestamp;
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="HistoricalDecorator{TState}"/> class.
+        /// </summary>
+        /// <param name="eventStore">Aggregate event store</param>
+        /// <param name="log">Application log</param>
+        /// <param name="messageQueue">Message queue</param>
+        /// <param name="iProjection">Original projection</param>
         public HistoricalDecorator(IEventStore<IAggregate> eventStore, ILog log, IMessageQueue messageQueue, IProjection<TState> iProjection)
             : base(eventStore, log, messageQueue)
         {
@@ -19,6 +30,7 @@ namespace ZES.Infrastructure.Projections
                 Register(h.Key, (e, s) => e.Timestamp <= _timestamp ? h.Value(e, s) : s);
         }
 
+        /// <inheritdoc />
         public async Task Init(long timestamp)
         {
             Log.Trace(string.Empty, this);
@@ -26,6 +38,7 @@ namespace ZES.Infrastructure.Projections
             await Start();
         }
 
-        protected override void OnInit() { }
+        /// <inheritdoc />
+        internal override void OnInit() { }
     }
 }

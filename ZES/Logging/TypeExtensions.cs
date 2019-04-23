@@ -3,7 +3,7 @@ using System.Linq;
 
 namespace ZES.Logging
 {
-    public static class TypeExtensions
+    internal static class TypeExtensions
     {
         public static string GetName(this Type type)
         {

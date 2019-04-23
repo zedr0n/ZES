@@ -14,6 +14,7 @@ using ZES.Interfaces.Pipes;
 
 namespace ZES.Infrastructure.Projections
 {
+    /// <inheritdoc />
     public class Projection<TState> : IProjection<TState>
         where TState : new()
     {
@@ -25,6 +26,12 @@ namespace ZES.Infrastructure.Projections
         private CancellationTokenSource _streamSource;
         private CancellationTokenSource _rebuildSource;
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="Projection{TState}"/> class.
+        /// </summary>
+        /// <param name="eventStore">Aggregate event store</param>
+        /// <param name="log">Application log</param>
+        /// <param name="messageQueue">Application message queue</param>
         protected Projection(IEventStore<IAggregate> eventStore, ILog log, IMessageQueue messageQueue)
         {
             _eventStore = eventStore;
@@ -37,13 +44,23 @@ namespace ZES.Infrastructure.Projections
             OnInit();
         }
 
+        /// <inheritdoc />
         public Task Complete { get; private set; }
+
+        /// <inheritdoc />
         public TState State { get; protected set; } = new TState();
+
+        /// <summary>
+        /// Gets registered handlers ( State, Event ) -> State
+        /// </summary>
+        /// <value>
+        /// Registered handlers ( State, Event ) -> State
+        /// </value>
         public Dictionary<Type, Func<IEvent, TState, TState>> Handlers { get; } = new Dictionary<Type, Func<IEvent, TState, TState>>();
 
-        protected ILog Log { get; }
+        internal ILog Log { get; }
 
-        public async Task Start(bool rebuild = true)
+        internal async Task Start(bool rebuild = true)
         {
             if (rebuild)
                 await Rebuild();
@@ -52,17 +69,27 @@ namespace ZES.Infrastructure.Projections
             _messageQueue.Alerts.OfType<InvalidateProjections>().Subscribe(async s => await Rebuild());
         }
 
-        protected virtual void OnInit()
+        internal virtual void OnInit()
         {
             Start();
         }
 
+        /// <summary>
+        /// Register the mapping for the event of the type 
+        /// </summary>
+        /// <param name="when">(State, Event) -> State handler</param>
+        /// <typeparam name="TEvent">Event type</typeparam>
         protected void Register<TEvent>(Func<TEvent, TState, TState> when)
             where TEvent : class
         {
             Handlers.Add(typeof(TEvent), (e, s) => when(e as TEvent, s));
         }
 
+        /// <summary>
+        /// Register the mapping for the event of the type 
+        /// </summary>
+        /// <param name="tEvent">Event type</param>
+        /// <param name="when">(State, Event) -> State handler</param>
         protected void Register(Type tEvent, Func<IEvent, TState, TState> when)
         {
             Handlers.Add(tEvent, when);

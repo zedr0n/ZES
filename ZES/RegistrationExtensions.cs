@@ -11,8 +11,16 @@ using ZES.Interfaces.Sagas;
 
 namespace ZES
 {
+    /// <summary>
+    /// Domain registration methods for <see cref="SimpleInjector"/> DI
+    /// </summary>
     public static class RegistrationExtensions
     {
+        /// <summary>
+        /// Registers commands, queries, projections and sagas with <see cref="SimpleInjector"/> container
+        /// </summary>
+        /// <param name="c"><see cref="SimpleInjector"/> container</param>
+        /// <param name="assembly">Assembly containing the domain to register</param>
         public static void RegisterAll(this Container c, Assembly assembly)
         {
             c.RegisterCommands(assembly);
@@ -20,14 +28,12 @@ namespace ZES
             c.RegisterProjections(assembly);
             c.RegisterSagas(assembly);
         }
-        
-        public static IEnumerable<Type> GetTypesFromInterface(this Assembly assembly, Type t)
-        {
-            var types = assembly.GetTypes()
-                .Where(p => p.GetInterfaces().Contains(t));
-            return types;
-        }
 
+        /// <summary>
+        /// Registers sagas with <see cref="SimpleInjector"/> container
+        /// </summary>
+        /// <param name="c"><see cref="SimpleInjector"/> container</param>
+        /// <param name="assembly">Assembly containing the domain to register</param>
         public static void RegisterSagas(this Container c, Assembly assembly)
         {
             var sagas = assembly.GetTypesFromInterface(typeof(ISaga)).Where(t => !t.IsAbstract);
@@ -39,15 +45,16 @@ namespace ZES
             }
         }
 
+        /// <summary>
+        /// Registers queries with <see cref="SimpleInjector"/> container
+        /// </summary>
+        /// <param name="c"><see cref="SimpleInjector"/> container</param>
+        /// <param name="assembly">Assembly containing the domain to register</param>
         public static void RegisterQueries(this Container c, Assembly assembly)
         {
-            var queries = assembly.GetTypesFromInterface(typeof(IQuery));
+            var queries = assembly.GetTypes().Where(t => t.IsClosedTypeOf(typeof(IQuery<>)));
             foreach (var q in queries)
             {
-                c.Collection.Append(
-                    typeof(ITypeProvider<IQuery>),
-                    Lifestyle.Singleton.CreateRegistration(() => new TypeProvider<IQuery>(q), c));
-                
                 var result = q.GetInterfaces().SingleOrDefault(g => g.IsGenericType)?.GetGenericArguments().SingleOrDefault(); 
                 if (result == null)
                     continue;
@@ -69,6 +76,11 @@ namespace ZES
             }
         }
         
+        /// <summary>
+        /// Registers projections with <see cref="SimpleInjector"/> container
+        /// </summary>
+        /// <param name="c"><see cref="SimpleInjector"/> container</param>
+        /// <param name="assembly">Assembly containing the domain to register</param>
         public static void RegisterProjections(this Container c, Assembly assembly)
         {
             var projections = assembly.GetTypesFromInterface(typeof(IProjection));
@@ -86,6 +98,11 @@ namespace ZES
             }
         }
 
+        /// <summary>
+        /// Registers commands with <see cref="SimpleInjector"/> container
+        /// </summary>
+        /// <param name="c"><see cref="SimpleInjector"/> container</param>
+        /// <param name="assembly">Assembly containing the domain to register</param>
         public static void RegisterCommands(this Container c, Assembly assembly)
         {
             var commands = assembly.GetTypesFromInterface(typeof(ICommand));
@@ -95,6 +112,13 @@ namespace ZES
                 var handler = assembly.GetTypesFromInterface(iHandler).SingleOrDefault();
                 c.Register(iHandler, handler, Lifestyle.Singleton);
             }
+        }
+        
+        private static IEnumerable<Type> GetTypesFromInterface(this Assembly assembly, Type t)
+        {
+            var types = assembly.GetTypes()
+                .Where(p => p.GetInterfaces().Contains(t));
+            return types;
         }
     }
 }

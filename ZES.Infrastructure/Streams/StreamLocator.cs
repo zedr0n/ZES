@@ -9,6 +9,7 @@ using ZES.Interfaces.Pipes;
 
 namespace ZES.Infrastructure.Streams
 {
+    /// <inheritdoc />
     public class StreamLocator<I> : IStreamLocator<I>
         where I : IEventSourced
     {
@@ -17,14 +18,21 @@ namespace ZES.Infrastructure.Streams
         private readonly ILog _log;
         private IDisposable _subscription;
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="StreamLocator{I}"/> class.
+        /// </summary>
+        /// <param name="eventStore">Event store</param>
+        /// <param name="messageQueue">Message queue</param>
+        /// <param name="log">Application log</param>
         public StreamLocator(IEventStore<I> eventStore, IMessageQueue messageQueue, ILog log)
         {
             _eventStore = eventStore;
             _log = log;
-            messageQueue.Alerts.OfType<TimelineChanged>().Subscribe(e => Restart());
+            messageQueue.Alerts.OfType<OnTimelineChange>().Subscribe(e => Restart());
             Restart();
         }
 
+        /// <inheritdoc />
         public IStream Find<T>(string id, string timeline = "master")
             where T : I
         {
@@ -32,6 +40,7 @@ namespace ZES.Infrastructure.Streams
             return _streams.TryGetValue(aStream.Key, out var stream) ? stream : default(IStream);
         }
 
+        /// <inheritdoc />
         public IStream GetOrAdd(I es, string timeline = "master")
         {
             if (es == null)
@@ -41,6 +50,7 @@ namespace ZES.Infrastructure.Streams
             return _streams.GetOrAdd(stream.Key, stream);
         }
 
+        /// <inheritdoc />
         public IStream GetOrAdd(IStream stream)
         {
             return _streams.GetOrAdd(stream.Key, stream);

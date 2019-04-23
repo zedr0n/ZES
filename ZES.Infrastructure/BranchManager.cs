@@ -12,7 +12,8 @@ using ZES.Interfaces.Pipes;
 
 namespace ZES.Infrastructure
 {
-    public class TimeTraveller : ITimeTraveller
+    /// <inheritdoc />
+    public class BranchManager : IBranchManager
     {
         private readonly ILog _log;
         private readonly ConcurrentDictionary<string, Timeline> _branches = new ConcurrentDictionary<string, Timeline>();
@@ -20,16 +21,30 @@ namespace ZES.Infrastructure
         private readonly IMessageQueue _messageQueue;
         private readonly IStreamStore _streamStore;
 
-        public TimeTraveller(ILog log, ITimeline activeTimeline, IMessageQueue messageQueue, IStreamStore streamStore)
+        /// <summary>
+        /// Initializes a new instance of the <see cref="BranchManager"/> class.
+        /// </summary>
+        /// <param name="log">Application logger</param>
+        /// <param name="activeTimeline">Root timeline</param>
+        /// <param name="messageQueue">Message queue</param>
+        /// <param name="streamStore">Stream store</param>
+        public BranchManager(ILog log, ITimeline activeTimeline, IMessageQueue messageQueue, IStreamStore streamStore)
         {
             _log = log;
             _activeTimeline = activeTimeline as Timeline;
             _messageQueue = messageQueue;
             _streamStore = streamStore;
         }
-        
+
+        /// <summary>
+        /// Gets root timeline id
+        /// </summary>
+        /// <value>
+        /// Root timeline id
+        /// </value>
         public static string Master { get; } = "master";
 
+        /// <inheritdoc />
         public async Task<ITimeline> Branch(string branchId, long time)
         {
             var timeline = _branches.GetOrAdd(branchId, b => new Timeline { Id = branchId, Now = time });
@@ -47,19 +62,20 @@ namespace ZES.Infrastructure
             await Clone(branchId, time);
             
             // refresh the stream locator
-            _messageQueue.Alert(new Alerts.TimelineChanged());
+            _messageQueue.Alert(new Alerts.OnTimelineChange());
             
             // rebuild all projections
             _messageQueue.Alert(new Alerts.InvalidateProjections());
                 
             return _activeTimeline;
         }
-        
+
+        /// <inheritdoc />
         public ITimeline Reset()
         {
             _activeTimeline.Id = Master;
 
-            _messageQueue.Alert(new Alerts.TimelineChanged());
+            _messageQueue.Alert(new Alerts.OnTimelineChange());
             _messageQueue.Alert(new Alerts.InvalidateProjections());
 
             return _activeTimeline;

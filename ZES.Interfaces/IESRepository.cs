@@ -2,6 +2,10 @@ using System.Threading.Tasks;
 
 namespace ZES.Interfaces
 {
+    /// <summary>
+    /// Event-sourced repository
+    /// </summary>
+    /// <typeparam name="I">Event-sourced instance type</typeparam>
     public interface IEsRepository<in I>
         where I : IEventSourced
     {

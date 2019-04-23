@@ -14,20 +14,29 @@ using ZES.Interfaces.Serialization;
 
 namespace ZES.Infrastructure
 {
+    /// <inheritdoc />
     public class SqlEventStore<I> : IEventStore<I> 
         where I : IEventSourced
     {
         private const int ReadSize = 100;
         
         private readonly IStreamStore _streamStore;
-        private readonly IEventSerializer _serializer;
+        private readonly ISerializer<IEvent> _serializer;
         private readonly Subject<IStream> _streams = new Subject<IStream>();
         private readonly IMessageQueue _messageQueue;
         private readonly ILog _log;
 
         private readonly bool _isDomainStore;
         
-        public SqlEventStore(IStreamStore streamStore, IEventSerializer serializer, IMessageQueue messageQueue, ILog log, ITimeline timeline)
+        /// <summary>
+        /// Initializes a new instance of the <see cref="SqlEventStore{I}"/> class
+        /// </summary>
+        /// <param name="streamStore">Stream store</param>
+        /// <param name="serializer">Event serializer</param>
+        /// <param name="messageQueue">Message queue</param>
+        /// <param name="log">Application log</param>
+        /// <param name="timeline">Active timeline tracker</param>
+        public SqlEventStore(IStreamStore streamStore, ISerializer<IEvent> serializer, IMessageQueue messageQueue, ILog log, ITimeline timeline)
         {
             _streamStore = streamStore;
             _serializer = serializer;
@@ -78,11 +87,17 @@ namespace ZES.Infrastructure
                 observer.OnCompleted();
             }).Concat(_streams.AsObservable());
         }
-        
+
+        /// <inheritdoc />
         public IObservable<IStream> AllStreams { get; }
+
+        /// <inheritdoc />
         public IObservable<IStream> Streams => _streams.AsObservable();
+
+        /// <inheritdoc />
         public IObservable<IEvent> Events { get; }
 
+        /// <inheritdoc />
         public IObservable<IEvent> ReadStream(IStream stream, int start, int count = -1)
         {
             if (count == -1)
@@ -110,6 +125,7 @@ namespace ZES.Infrastructure
             return observable;
         }
 
+        /// <inheritdoc />
         public async Task AppendToStream(IStream stream, IEnumerable<IEvent> enumerable)
         {
             var events = enumerable as IList<IEvent> ?? enumerable.ToList();

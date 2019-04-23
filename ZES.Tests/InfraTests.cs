@@ -27,7 +27,7 @@ namespace ZES.Tests
         {
             var container = CreateContainer();
             var bus = container.GetInstance<IBus>();
-            var repository = container.GetInstance<IDomainRepository>();
+            var repository = container.GetInstance<IEsRepository<IAggregate>>();
             
             var command = new CreateRoot("Root");
             await await bus.CommandAsync(command);
@@ -59,7 +59,7 @@ namespace ZES.Tests
         {
             var container = CreateContainer();
             var bus = container.GetInstance<IBus>();
-            var repository = container.GetInstance<IDomainRepository>();
+            var repository = container.GetInstance<IEsRepository<IAggregate>>();
             
             var command = new CreateRoot("Root1");
             await await bus.CommandAsync(command);  

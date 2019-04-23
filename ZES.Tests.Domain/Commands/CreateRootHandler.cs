@@ -1,12 +1,14 @@
 using System.Threading.Tasks;
+using ZES.Interfaces;
 using ZES.Interfaces.Domain;
 
 namespace ZES.Tests.Domain.Commands
 {
     public class CreateRootHandler : ICommandHandler<CreateRoot>
     {
-        private readonly IDomainRepository _repository;
-        public CreateRootHandler(IDomainRepository repository)
+        private readonly IEsRepository<IAggregate> _repository;
+        
+        public CreateRootHandler(IEsRepository<IAggregate> repository)
         {
             _repository = repository;
         }

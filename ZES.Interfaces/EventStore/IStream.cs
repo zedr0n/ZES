@@ -1,23 +1,39 @@
 namespace ZES.Interfaces.EventStore
 {
+    /// <summary>
+    /// Object representing the event stream
+    /// </summary>
     public interface IStream
     {
         /// <summary>
         /// Gets unique key identifying the stream
         /// </summary>
+        /// <value>
+        /// Unique key identifying the stream
+        /// </value>
         string Key { get; }
-        
+
         /// <summary>
         /// Gets or sets last stream event version
         /// </summary>
+        /// <value>
+        /// Last stream event version
+        /// </value>
         int Version { get; set; }
-        
+
         /// <summary>
-        /// Stream timeline id
+        /// Gets or sets stream timeline id
         /// </summary>
+        /// <value>
+        /// Stream timeline id
+        /// </value>
         string Timeline { get; set; }
     }
     
+    /// <summary>
+    /// Stream details cache
+    /// </summary>
+    /// <typeparam name="I">Event sourced type( can be aggregate or saga )</typeparam>
     public interface IStreamLocator<in I>
         where I : IEventSourced
     {

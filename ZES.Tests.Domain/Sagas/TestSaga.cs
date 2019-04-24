@@ -12,7 +12,7 @@ namespace ZES.Tests.Domain.Sagas
         
         public TestSaga()
         {
-            Register<RootCreated>(e => e.RootId, Trigger.Created, When);
+            Register<RootCreated>(e => e.RootId, Trigger.Created, e => _rootId = e.RootId);
             Register<RootUpdated>(e => e.RootId, Trigger.Created);
         }
         
@@ -33,11 +33,6 @@ namespace ZES.Tests.Domain.Sagas
                 });
             
             base.ConfigureStateMachine();
-        }
-
-        private void When(RootCreated e)
-        {
-            _rootId = e.RootId;
         }
     }
 }

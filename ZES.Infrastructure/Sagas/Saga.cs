@@ -11,7 +11,7 @@ namespace ZES.Infrastructure.Sagas
     public class Saga : EventSourced, ISaga
     {
         private readonly List<ICommand> _undispatchedCommands = new List<ICommand>();
-        private Dictionary<Type, Func<IEvent, string>> _sagaId = new Dictionary<Type, Func<IEvent, string>>();
+        private readonly Dictionary<Type, Func<IEvent, string>> _sagaId = new Dictionary<Type, Func<IEvent, string>>();
 
         /// <inheritdoc />
         public IEnumerable<ICommand> GetUncommittedCommands()

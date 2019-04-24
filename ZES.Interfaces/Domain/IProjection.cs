@@ -17,7 +17,8 @@ namespace ZES.Interfaces.Domain
     }
 
     /// <summary>
-    /// CQRS projection with a set state generated from a set of streams
+    /// Projections are singleton services which build the state from events
+    /// sourced from a set of streams
     /// </summary>
     /// <typeparam name="TState">Type of the projection state</typeparam>
     public interface IProjection<out TState> : IProjection

@@ -6,7 +6,7 @@ namespace ZES.Infrastructure
 {
     /// <summary>
     /// Base query handler
-    /// ( bridges <see cref="IQuery{TResult}"/> to typed query and provides async/sync base handlers ) 
+    /// <para> - Bridges <see cref="IQuery{TResult}"/> to typed query and provides async/sync base handlers </para>
     /// </summary>
     /// <typeparam name="TQuery">Underlying query</typeparam>
     /// <typeparam name="TResult">Query result</typeparam>

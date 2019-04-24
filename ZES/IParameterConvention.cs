@@ -5,7 +5,7 @@ using SimpleInjector;
 namespace ZES
 {
     /// <summary>
-    /// Parameter convention to inject scalar types
+    /// Parameter convention to inject arguments not represented by services
     /// </summary>
     public interface IParameterConvention
     {

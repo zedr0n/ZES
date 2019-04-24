@@ -3,7 +3,7 @@ using System.Threading.Tasks;
 namespace ZES.Interfaces.Domain
 {
     /// <summary>
-    /// CQRS Query handler
+    /// Query handlers are used to (asynchronously) provide the results to the client 
     /// </summary>
     /// <typeparam name="TQuery">Query type</typeparam>
     /// <typeparam name="TResult">Query result type</typeparam>

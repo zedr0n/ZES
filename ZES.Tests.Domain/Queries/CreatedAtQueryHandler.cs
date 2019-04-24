@@ -18,6 +18,7 @@ namespace ZES.Tests.Domain.Queries
             set => _projection = value as IProjection<CreatedAtProjection.StateType>;
         }
 
-        public override CreatedAt Handle(CreatedAtQuery query) => new CreatedAt(query.Id, _projection.State.Get(query.Id));
+        public override CreatedAt Handle(CreatedAtQuery query) =>
+            new CreatedAt(query.Id, _projection.State.Get(query.Id));
     }
 }

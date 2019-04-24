@@ -43,7 +43,7 @@ namespace ZES.Infrastructure.Domain
         /// <summary>
         /// Base event handler
         /// <para>* Applies the event to the event sourced instance 
-        /// <para>* Update the version and persist to the event
+        /// <para>* Updates the version of the event
         /// </para></para>
         /// </summary>
         /// <param name="e">Generated event</param>

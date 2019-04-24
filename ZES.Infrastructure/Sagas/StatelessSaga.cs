@@ -41,7 +41,9 @@ namespace ZES.Infrastructure.Sagas
         }
 
         /// <summary>
-        /// Register Event -> Trigger mapping
+        /// Associate the event with the specified trigger
+        /// and handle using the provided action
+        /// <para> - Actions normally deal with saga state and can be null </para>
         /// </summary>
         /// <param name="t">Trigger type</param>
         /// <param name="action">Event handler</param>

@@ -41,18 +41,19 @@ namespace ZES.Infrastructure.Sagas
         }
 
         /// <summary>
-        /// Associate the event with the specified trigger
+        /// Associate the event with the specified trigger, saga id resolver
         /// and handle using the provided action
         /// <para> - Actions normally deal with saga state and can be null </para>
         /// </summary>
-        /// <param name="t">Trigger type</param>
+        /// <param name="sagaId">Id of saga handling this event</param>
+        /// <param name="t">Trigger value</param>
         /// <param name="action">Event handler</param>
         /// <typeparam name="TEvent">Handled event type</typeparam>
-        protected void Register<TEvent>(TTrigger t, Action<TEvent> action = null)
+        protected void Register<TEvent>(Func<TEvent, string> sagaId, TTrigger t, Action<TEvent> action = null)
             where TEvent : class, IEvent
         {
             _triggers[typeof(TEvent)] = t;
-            base.Register(action);
+            base.Register(sagaId, action);
         }
 
         /// <summary>

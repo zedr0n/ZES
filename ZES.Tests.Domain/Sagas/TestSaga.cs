@@ -12,25 +12,12 @@ namespace ZES.Tests.Domain.Sagas
         
         public TestSaga()
         {
-            Register<RootCreated>(Trigger.Created, When);
-            Register<RootUpdated>(Trigger.Created, When);
+            Register<RootCreated>(e => e.RootId, Trigger.Created, When);
+            Register<RootUpdated>(e => e.RootId, Trigger.Created);
         }
         
         public enum Trigger { Created } 
         public enum State { Open, Complete }
-        
-        public new static string SagaId(IEvent e)
-        {
-            switch (e)
-            {
-                case RootCreated created:
-                    return created.RootId;
-                case RootUpdated updated:
-                    return updated.RootId;
-                default:
-                    return null;
-            }
-        }
         
         protected override void ConfigureStateMachine()
         {
@@ -48,7 +35,6 @@ namespace ZES.Tests.Domain.Sagas
             base.ConfigureStateMachine();
         }
 
-        private void When(RootUpdated e) { }
         private void When(RootCreated e)
         {
             _rootId = e.RootId;

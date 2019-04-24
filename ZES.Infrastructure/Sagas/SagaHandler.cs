@@ -20,16 +20,13 @@ namespace ZES.Infrastructure.Sagas
         /// </summary>
         /// <param name="messageQueue">Message queue</param>
         /// <param name="repository">Saga repository</param>
-        /// <param name="sagaRegistry">Saga registry</param>
         /// <param name="log">Application log</param>
-        public SagaHandler(IMessageQueue messageQueue, IEsRepository<ISaga> repository, ISagaRegistry sagaRegistry, ILog log)
+        public SagaHandler(IMessageQueue messageQueue, IEsRepository<ISaga> repository, ILog log)
         {
             var sagaBlock = new ActionBlock<IEvent>(
                 async e =>
             {
-                var sagaId = sagaRegistry.SagaId<TSaga>()(e);
-                if (sagaId == null)
-                    return;
+                var sagaId = new TSaga().SagaId(e);
 
                 var flow = _flows.GetOrAdd(sagaId, new SagaFlow(repository, sagaId, log));
                 await flow.InputBlock.SendAsync(e); 

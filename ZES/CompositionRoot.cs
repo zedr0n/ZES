@@ -63,7 +63,6 @@ namespace ZES
 
             container.Register(typeof(IStreamLocator<>), typeof(StreamLocator<>), Lifestyle.Singleton);    
             container.Register(typeof(IEsRepository<>), typeof(EsRepository<>), Lifestyle.Singleton);
-            container.Register<ISagaRegistry, SagaRegistry>(Lifestyle.Singleton);
 
             container.RegisterDecorator(
                 typeof(ICommandHandler<>),

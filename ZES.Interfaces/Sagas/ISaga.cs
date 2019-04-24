@@ -21,6 +21,13 @@ namespace ZES.Interfaces.Sagas
         void SendCommand(ICommand command);
 
         /// <summary>
+        /// Gets the saga id or returns null if event is not handled by the saga
+        /// </summary>
+        /// <param name="e">Event to pass to saga</param>
+        /// <returns>Saga id or null if saga does not handle this event</returns>
+        string SagaId(IEvent e);
+        
+        /// <summary>
         /// Process event
         /// </summary>
         /// <param name="e">IEvent</param>

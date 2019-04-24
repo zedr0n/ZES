@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using ZES.Infrastructure.Domain;
 using ZES.Interfaces;
@@ -10,13 +11,7 @@ namespace ZES.Infrastructure.Sagas
     public class Saga : EventSourced, ISaga
     {
         private readonly List<ICommand> _undispatchedCommands = new List<ICommand>();
-
-        /// <summary>
-        /// Saga mapper
-        /// </summary>
-        /// <param name="e">Event</param>
-        /// <returns>Saga identifier</returns>
-        public static string SagaId(IEvent e) => null;
+        private Dictionary<Type, Func<IEvent, string>> _sagaId = new Dictionary<Type, Func<IEvent, string>>();
 
         /// <inheritdoc />
         public IEnumerable<ICommand> GetUncommittedCommands()
@@ -33,10 +28,31 @@ namespace ZES.Infrastructure.Sagas
         }
 
         /// <inheritdoc />
+        public string SagaId(IEvent e)
+        {
+            return _sagaId.TryGetValue(e.GetType(), out var sagaId) ? sagaId(e) : null;
+        }
+        
+        /// <inheritdoc />
         public override void LoadFrom<T>(IEnumerable<IEvent> pastEvents)
         {
             base.LoadFrom<T>(pastEvents);
             ClearUncommittedCommands();
+        }
+
+        /// <summary>
+        /// Associate the event with the specified saga id resolver
+        /// and handle using the provided action
+        /// <para> - Actions normally deal with saga state and can be null </para>
+        /// </summary>
+        /// <param name="sagaId">Id of saga handling this event</param>
+        /// <param name="action">Handler applying the event to saga</param>
+        /// <typeparam name="TEvent">Event type</typeparam>
+        protected void Register<TEvent>(Func<TEvent, string> sagaId, Action<TEvent> action = null)
+            where TEvent : class, IEvent
+        {
+            _sagaId[typeof(TEvent)] = e => sagaId(e as TEvent);
+            base.Register(action);
         }
 
         private void ClearUncommittedCommands()

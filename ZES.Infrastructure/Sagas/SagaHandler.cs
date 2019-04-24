@@ -27,10 +27,12 @@ namespace ZES.Infrastructure.Sagas
                 async e =>
             {
                 var sagaId = new TSaga().SagaId(e);
-
-                var flow = _flows.GetOrAdd(sagaId, new SagaFlow(repository, sagaId, log));
-                await flow.InputBlock.SendAsync(e); 
-            }, new ExecutionDataflowBlockOptions { MaxDegreeOfParallelism = 8 }); 
+                if (sagaId != null)
+                {
+                    var flow = _flows.GetOrAdd(sagaId, new SagaFlow(repository, sagaId, log));
+                    await flow.InputBlock.SendAsync(e);  
+                }
+            }, new ExecutionDataflowBlockOptions { MaxDegreeOfParallelism = 1 }); 
 
             messageQueue.Messages.Subscribe(async e => await sagaBlock.SendAsync(e));
         }

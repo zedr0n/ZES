@@ -17,7 +17,7 @@ namespace ZES.Tests
 
         protected Test(ITestOutputHelper outputHelper)
         { 
-            var config = NLogger.Configure();
+            var config = Logging.NLog.Configure();
             var layout = config.AllTargets.OfType<TargetWithLayout>().First().Layout;
 
             // Step 2. Create targets

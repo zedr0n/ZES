@@ -1,3 +1,4 @@
+using System;
 using Stateless;
 using ZES.Infrastructure.Sagas;
 using ZES.Interfaces;
@@ -12,11 +13,11 @@ namespace ZES.Tests.Domain.Sagas
         
         public TestSaga()
         {
-            Register<RootCreated>(e => e.RootId, Trigger.Created, e => _rootId = e.RootId);
-            Register<RootUpdated>(e => e.RootId, Trigger.Created);
+            Register<RootCreated>(e => e.RootId, Trigger.Create, e => _rootId = e.RootId);
+            Register<RootUpdated>(e => e.RootId, Trigger.Update);
         }
         
-        public enum Trigger { Created } 
+        public enum Trigger { Create, Update } 
         public enum State { Open, Complete }
         
         protected override void ConfigureStateMachine()
@@ -24,10 +25,13 @@ namespace ZES.Tests.Domain.Sagas
             StateMachine = new StateMachine<State, Trigger>(State.Open);
 
             StateMachine.Configure(State.Open)
-                .Permit(Trigger.Created, State.Complete);
+                .Permit(Trigger.Create, State.Complete);
             StateMachine.Configure(State.Complete)
+                .Ignore(Trigger.Update)
                 .OnEntry(() =>
                 {
+                    if (_rootId == string.Empty)
+                        throw new InvalidOperationException();
                     if (!_rootId.Contains("Copy"))
                         SendCommand(new CreateRoot($"{_rootId}Copy"));
                 });

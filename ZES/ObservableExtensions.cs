@@ -73,7 +73,6 @@ namespace ZES
             if (timeout != TimeSpan.MaxValue)
                 obs = obs.Timeout(timeout, Observable.Return(action().Result));
 
-            //return await obs.Catch<T, TimeoutException<T>>(e => Observable.Return(e.Last));
             return await obs;
         }
         

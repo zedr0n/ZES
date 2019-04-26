@@ -105,6 +105,7 @@ namespace ZES.Infrastructure
 
             var observable = Observable.Create(async (IObserver<IEvent> observer) =>
             {
+                // _log.Trace($"{stream.Key} : from [{start}]");
                 var page = await _streamStore.ReadStreamForwards(stream.Key, start, ReadSize);
                 while (page.Messages.Length > 0 && count > 0)
                 {

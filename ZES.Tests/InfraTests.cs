@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Security.Cryptography;
 using System.Threading;
 using SimpleInjector;
 using Xunit;
@@ -148,11 +149,12 @@ namespace ZES.Tests
         }
 
         [Theory]
-        [InlineData(10)]
+        [InlineData(100)]
         public async void CanParallelizeSagas(int numRoots)
         {
             var container = CreateContainer(new List<Action<Container>> { Config.RegisterSagas });
-            var bus = container.GetInstance<IBus>(); 
+            var bus = container.GetInstance<IBus>();
+            var repository = container.GetInstance<IEsRepository<IAggregate>>();
             
             var rootId = numRoots; 
             while (rootId > 0)
@@ -171,8 +173,10 @@ namespace ZES.Tests
                 await bus.CommandAsync(updateCommand);
                 rootId--;
             }
-            
-            Thread.Sleep(50);
+
+            await repository.FindUntil<Root>("Root1Copy");
+            var stats = await bus.QueryUntil(new StatsQuery(), s => s != null && s.NumberOfRoots == 2 * numRoots);
+            Assert.Equal(2 * numRoots, stats?.NumberOfRoots);
         }
         
         [Theory]

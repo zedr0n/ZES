@@ -6,21 +6,21 @@ using ZES.Interfaces;
 namespace ZES.Logging
 {
     /// <inheritdoc />
-    public class NLogger : ILog
+    public class NLog : ILog
     {
         private readonly ILogger _logger;
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="NLogger"/> class.
+        /// Initializes a new instance of the <see cref="NLog"/> class.
         /// </summary>
         /// <param name="logger"><see cref="ILogger"/></param>
-        public NLogger(ILogger logger)
+        public NLog(ILogger logger)
         {
             _logger = logger;
         }
 
         /// <summary>
-        /// Layout configuration for <see cref="NLogger"/> 
+        /// Layout configuration for <see cref="NLog"/> 
         /// </summary>
         /// <returns><see cref="LoggingConfiguration"/></returns>
         public static LoggingConfiguration Configure()

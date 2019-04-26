@@ -21,11 +21,11 @@ namespace ZES.Infrastructure.Projections
         private readonly IMessageQueue _messageQueue;
 
         private readonly IEventStore<IAggregate> _eventStore;
-        private readonly ConcurrentDictionary<string, int> _streams = new ConcurrentDictionary<string, int>();
+        private StreamDispatcher _streamDispatcher;
 
         private CancellationTokenSource _streamSource;
         private CancellationTokenSource _rebuildSource;
-
+        
         /// <summary>
         /// Initializes a new instance of the <see cref="Projection{TState}"/> class.
         /// </summary>
@@ -100,8 +100,9 @@ namespace ZES.Infrastructure.Projections
             Log.Trace(string.Empty, this);
             _streamSource.Cancel();
             _streamSource = new CancellationTokenSource();
-            var streamFlow = new StreamFlow(_eventStore, _streams, When, _streamSource);
-            _eventStore.Streams.Subscribe(async s => await streamFlow.InputBlock.SendAsync(s), _streamSource.Token);
+            
+            _streamDispatcher = new StreamDispatcher(new DataflowOptions { RecommendedParallelismIfMultiThreaded = 8 }, When, _streamSource, _eventStore, Log);
+            _eventStore.Streams.Subscribe(async s => await _streamDispatcher.SendAsync(s), _streamSource.Token);
         }
 
         private async Task Rebuild()
@@ -130,15 +131,15 @@ namespace ZES.Infrastructure.Projections
                 return;
             }
 
-            Log.Trace(string.Empty, this);
             if (e == null)
                 return;
 
             if (!Handlers.TryGetValue(e.GetType(), out var handler))
                 return;
+            
+            Log.Trace($"Stream {e.Stream}", this);
 
             State = handler(e, State);
-            _streams[e.Stream] = e.Version;
         }
 
         private class EventFlow : Dataflow<IObservable<IEvent>>
@@ -162,41 +163,96 @@ namespace ZES.Infrastructure.Projections
             public override ITargetBlock<IObservable<IEvent>> InputBlock => _inputBlock;
         }
 
+        private class StreamDispatcher : ParallelDataDispatcher<IStream, string>
+        {
+            private readonly IEventStore<IAggregate> _store;
+            private readonly Action<IEvent> _when;
+            private readonly CancellationTokenSource _source;
+            private readonly ILog _log;
+
+            private int _parallelCount;
+            
+            public StreamDispatcher(DataflowOptions option, Action<IEvent> when, CancellationTokenSource source, IEventStore<IAggregate> store, ILog log) 
+                : base(s => s.Key, option)
+            {
+                _when = when;
+                _source = source;
+                _store = store;
+                _log = log;
+            }
+
+            protected override Dataflow<IStream> CreateChildFlow(string dispatchKey) =>
+                new StreamFlow(_when, _source, _store);
+
+            protected override async Task SendToChild(Dataflow<IStream> dataflow, IStream input)
+            {
+                Interlocked.Increment(ref _parallelCount);
+                _log.Debug($"Projection parallel count : {_parallelCount}");
+                
+                await ((StreamFlow)dataflow).ProcessAsync(input);
+                
+                Interlocked.Decrement(ref _parallelCount);
+            }
+        }
+
         private class StreamFlow : Dataflow<IStream>
         {
             private readonly BufferBlock<IStream> _inputBlock;
-
+            private int _version = -1;
+            private TaskCompletionSource<bool> _next = new TaskCompletionSource<bool>();
+            
             public StreamFlow(
-                IEventStore<IAggregate> eventStore,
-                ConcurrentDictionary<string, int> streams,
                 Action<IEvent> when,
-                CancellationTokenSource tokenSource)
+                CancellationTokenSource tokenSource,
+                IEventStore<IAggregate> eventStore) 
                 : base(DataflowOptions.Default)
             {
-                _inputBlock = new BufferBlock<IStream>();
-
-                int LocalVersion(IStream s) => streams.GetOrAdd(s.Key, -1);
-
+                _inputBlock = new BufferBlock<IStream>();                
+                
                 var readBlock = new TransformBlock<IStream, IObservable<IEvent>>(
-                    s => eventStore.ReadStream(s, LocalVersion(s) + 1),
-                    new ExecutionDataflowBlockOptions { CancellationToken = tokenSource.Token });
-
+                    s => eventStore.ReadStream(s, _version + 1),
+                    new ExecutionDataflowBlockOptions { CancellationToken = tokenSource.Token }); 
+                
                 var updateBlock = new ActionBlock<IObservable<IEvent>>(
-                    e => e.Subscribe(when, tokenSource.Token),
-                    new ExecutionDataflowBlockOptions { CancellationToken = tokenSource.Token, MaxDegreeOfParallelism = 8 });
+                    async o =>
+                    {
+                        o.Subscribe(
+                            e =>
+                        {
+                            when(e);
+                            _version = e.Version;
+                        }, tokenSource.Token);
+                        await o;
+                        
+                        _next.SetResult(true);
+                        _next = new TaskCompletionSource<bool>();
+                    },
+                    new ExecutionDataflowBlockOptions { CancellationToken = tokenSource.Token, MaxDegreeOfParallelism = 1 });
 
                 _inputBlock.LinkTo(
                     readBlock,
                     new DataflowLinkOptions { PropagateCompletion = true },
-                    s => LocalVersion(s) < s.Version);
+                    s => _version < s.Version);
                 readBlock.LinkTo(updateBlock);
-
+                
                 RegisterChild(_inputBlock);
                 RegisterChild(readBlock);
                 RegisterChild(updateBlock);
             }
 
             public override ITargetBlock<IStream> InputBlock => _inputBlock;
+            
+            /// <summary>
+            /// Processes a single event asynchronously by the dataflow 
+            /// </summary>
+            /// <param name="s">Updated stream</param>
+            /// <returns>Task indicating whether the event was processed by the dataflow</returns>
+            public async Task<bool> ProcessAsync(IStream s)
+            {
+                if (!await _inputBlock.SendAsync(s))
+                    return false; 
+                return await _next.Task;
+            }
         }
     }
 }

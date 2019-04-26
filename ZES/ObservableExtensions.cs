@@ -71,8 +71,10 @@ namespace ZES
 
             obs = obs.RetryWithDelay(delay);
             if (timeout != TimeSpan.MaxValue)
-                obs = obs.Timeout(timeout);
-            return await obs.Catch(Observable.Return(default(T)));
+                obs = obs.Timeout(timeout, Observable.Return(action().Result));
+
+            //return await obs.Catch<T, TimeoutException<T>>(e => Observable.Return(e.Last));
+            return await obs;
         }
         
         private static IObservable<T> RetryWithDelay<T>(this IObservable<T> source, TimeSpan timeSpan = default(TimeSpan))

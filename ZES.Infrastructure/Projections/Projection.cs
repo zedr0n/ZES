@@ -119,11 +119,10 @@ namespace ZES.Infrastructure.Projections
             });
             
             var buffer = new BufferBlock<IStream>();
-            var action = new ActionBlock<IStream>(async s => await _streamDispatcher.Value.SendAsync(s));
             start?.ContinueWith(t =>
             {
                 Log.Trace("Listening to streams...", this);
-                buffer.LinkTo(action);
+                buffer.LinkTo(_streamDispatcher.Value.InputBlock);
             });
             
             _eventStore.Streams.Subscribe(
@@ -143,7 +142,6 @@ namespace ZES.Infrastructure.Projections
         private async Task Rebuild()
         {
             Log.Trace("Rebuild started", this);
-            // Log.Trace(string.Empty, this);
 
             _streamSource.Cancel();
             _rebuildSource.Cancel();

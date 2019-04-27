@@ -19,9 +19,11 @@ namespace ZES.Infrastructure.Projections
         where TState : new()
     {
         private readonly IMessageQueue _messageQueue;
-
         private readonly IEventStore<IAggregate> _eventStore;
-        private StreamDispatcher _streamDispatcher;
+        
+        private readonly ConcurrentDictionary<string, int> _versions = new ConcurrentDictionary<string, int>();
+        
+        private Lazy<StreamDispatcher> _streamDispatcher;
 
         private CancellationTokenSource _streamSource;
         private CancellationTokenSource _rebuildSource;
@@ -95,19 +97,53 @@ namespace ZES.Infrastructure.Projections
             Handlers.Add(tEvent, when);
         }
 
-        private void ListenToStreams()
+        private void ListenToStreams() => ListenToStreams(Task.FromResult(0));
+        
+        private void ListenToStreams(Task start)
         {
-            Log.Trace(string.Empty, this);
             _streamSource.Cancel();
             _streamSource = new CancellationTokenSource();
             
-            _streamDispatcher = new StreamDispatcher(new DataflowOptions { RecommendedParallelismIfMultiThreaded = 8 }, When, _streamSource, _eventStore, Log);
-            _eventStore.Streams.Subscribe(async s => await _streamDispatcher.SendAsync(s), _streamSource.Token);
+            _streamDispatcher = new Lazy<StreamDispatcher>(() =>
+            {
+                var dispatcher = new StreamDispatcher(
+                    _versions,
+                    new DataflowOptionsEx { RecommendedParallelismIfMultiThreaded = 8, Timeout = TimeSpan.FromMilliseconds(1000) },
+                    When,
+                    _streamSource,
+                    _eventStore,
+                    Log);
+
+                dispatcher.CompletionTask.ContinueWith(t => Rebuild());
+                return dispatcher;
+            });
+            
+            var buffer = new BufferBlock<IStream>();
+            var action = new ActionBlock<IStream>(async s => await _streamDispatcher.Value.SendAsync(s));
+            start?.ContinueWith(t =>
+            {
+                Log.Trace("Listening to streams...", this);
+                buffer.LinkTo(action);
+            });
+            
+            _eventStore.Streams.Subscribe(
+                async s =>
+            {
+                try
+                {
+                    await buffer.SendAsync(s);
+                }
+                catch (Exception)
+                {
+                    // ignored
+                }
+            }, _streamSource.Token);
         }
 
         private async Task Rebuild()
         {
-            Log.Trace(string.Empty, this);
+            Log.Trace("Rebuild started", this);
+            // Log.Trace(string.Empty, this);
 
             _streamSource.Cancel();
             _rebuildSource.Cancel();
@@ -118,9 +154,13 @@ namespace ZES.Infrastructure.Projections
             _rebuildSource = new CancellationTokenSource();
             var eventFlow = new EventFlow(When, _rebuildSource);
             await eventFlow.SendAsync(_eventStore.Events);
+            
             Complete = eventFlow.CompletionTask;
+            
+            ListenToStreams(eventFlow.CompletionTask);
             await eventFlow.CompletionTask;
-            ListenToStreams();
+            
+            Log.Trace("Rebuild complete", this);
         }
 
         private void When(IEvent e)
@@ -140,6 +180,7 @@ namespace ZES.Infrastructure.Projections
             Log.Trace($"Stream {e.Stream}", this);
 
             State = handler(e, State);
+            _versions[e.Stream] = e.Version;
         }
 
         private class EventFlow : Dataflow<IObservable<IEvent>>
@@ -169,12 +210,14 @@ namespace ZES.Infrastructure.Projections
             private readonly Action<IEvent> _when;
             private readonly CancellationTokenSource _source;
             private readonly ILog _log;
+            private readonly ConcurrentDictionary<string, int> _versions;
 
             private int _parallelCount;
             
-            public StreamDispatcher(DataflowOptions option, Action<IEvent> when, CancellationTokenSource source, IEventStore<IAggregate> store, ILog log) 
+            public StreamDispatcher(ConcurrentDictionary<string, int> versions, DataflowOptions option, Action<IEvent> when, CancellationTokenSource source, IEventStore<IAggregate> store, ILog log) 
                 : base(s => s.Key, option)
             {
+                _versions = versions;
                 _when = when;
                 _source = source;
                 _store = store;
@@ -182,31 +225,40 @@ namespace ZES.Infrastructure.Projections
             }
 
             protected override Dataflow<IStream> CreateChildFlow(string dispatchKey) =>
-                new StreamFlow(_when, _source, _store);
+                new StreamFlow(_versions.GetOrAdd(dispatchKey, -1), _when, _source, _store);
 
             protected override async Task SendToChild(Dataflow<IStream> dataflow, IStream input)
             {
                 Interlocked.Increment(ref _parallelCount);
                 _log.Debug($"Projection parallel count : {_parallelCount}");
-                
+
                 await ((StreamFlow)dataflow).ProcessAsync(input);
                 
                 Interlocked.Decrement(ref _parallelCount);
+            }
+
+            protected override void CleanUp(Exception dataflowException)
+            {
+                if (dataflowException != null)
+                    _log.Error($"Dataflow error : {dataflowException}");
+                base.CleanUp(dataflowException);
             }
         }
 
         private class StreamFlow : Dataflow<IStream>
         {
             private readonly BufferBlock<IStream> _inputBlock;
-            private int _version = -1;
+            private int _version;
             private TaskCompletionSource<bool> _next = new TaskCompletionSource<bool>();
             
             public StreamFlow(
+                int version,
                 Action<IEvent> when,
                 CancellationTokenSource tokenSource,
                 IEventStore<IAggregate> eventStore) 
                 : base(DataflowOptions.Default)
             {
+                _version = version;
                 _inputBlock = new BufferBlock<IStream>();                
                 
                 var readBlock = new TransformBlock<IStream, IObservable<IEvent>>(
@@ -222,8 +274,9 @@ namespace ZES.Infrastructure.Projections
                             when(e);
                             _version = e.Version;
                         }, tokenSource.Token);
-                        await o;
-                        
+                        if (!await o.IsEmpty())
+                            await o;
+
                         _next.SetResult(true);
                         _next = new TaskCompletionSource<bool>();
                     },

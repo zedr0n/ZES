@@ -38,6 +38,8 @@ namespace ZES.Tests
                     config.AddRuleForOneLevel(LogLevel.Error, target);
                 if (Environment.GetEnvironmentVariable("INFO") == "1")
                     config.AddRuleForOneLevel(LogLevel.Info, target);
+                if (Environment.GetEnvironmentVariable("FATAL") == "1")
+                    config.AddRuleForOneLevel(LogLevel.Fatal, target);
             }
             
             LogManager.Configuration = config;

@@ -26,7 +26,7 @@ namespace ZES.Infrastructure
         /// <inheritdoc />
         public void Add(Exception error)
         {
-            _log.Error(error.Message, error.StackTrace.Split(new[] { "in", "at", "(", ")", "[", "]" }, StringSplitOptions.RemoveEmptyEntries)[1] + ' ');
+            _log.Error(error.Message, error.StackTrace?.Split(new[] { "in", "at", "(", ")", "[", "]" }, StringSplitOptions.RemoveEmptyEntries)[1] + ' ');
             _errors.OnNext(new Error(error));
         }
 

@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Concurrent;
-using System.Collections.Generic;
 using System.Reactive.Linq;
 using System.Reactive.Subjects;
 using System.Threading;
@@ -17,6 +16,13 @@ namespace ZES.Infrastructure.Sagas
     public class SagaHandler<TSaga> : ISagaHandler<TSaga>
         where TSaga : class, ISaga, new()
     {
+        private readonly IMessageQueue _messageQueue;
+        private readonly IEsRepository<ISaga> _repository;
+        private readonly ILog _log;
+        private readonly IErrorLog _errorLog;
+
+        private CancellationTokenSource _source;
+
         /// <summary>
         /// Initializes a new instance of the <see cref="SagaHandler{TSaga}"/> class.
         /// </summary>
@@ -26,8 +32,47 @@ namespace ZES.Infrastructure.Sagas
         /// <param name="errorLog">Application error log</param>
         public SagaHandler(IMessageQueue messageQueue, IEsRepository<ISaga> repository, ILog log, IErrorLog errorLog)
         {
-            var dispatcher = new SagaDispatcher(new DataflowOptions { RecommendedParallelismIfMultiThreaded = 8 }, repository, log, errorLog);
-            messageQueue.Messages.Subscribe(async e => await dispatcher.SendAsync(e));
+            _messageQueue = messageQueue;
+            _repository = repository;
+            _log = log;
+            _errorLog = errorLog;
+
+            Start();
+        }
+
+        private void Start()
+        {
+            _log.Trace(string.Empty, this);
+            _source?.Cancel();
+            _source = new CancellationTokenSource();
+            var dispatcher = new SagaDispatcher(
+                new DataflowOptionsEx
+                {
+                    RecommendedParallelismIfMultiThreaded = 8
+                }, 
+                _repository,
+                _log,
+                _errorLog);
+
+            var obs = _messageQueue.Messages;
+            obs.Subscribe(
+                async e =>
+                {
+                    try
+                    { 
+                        await dispatcher.SendAsync(e);    
+                    }
+                    catch (Exception)
+                    {
+                        // ignored
+                    }
+                }, _source.Token);
+            dispatcher.CompletionTask.ContinueWith(t =>
+            {
+                _source.Cancel();
+                _errorLog.Add(t.Exception);
+                _log.Fatal($"SagaHandler<{typeof(TSaga)}> failed"); 
+            });
         }
 
         private class SagaDispatcher : ParallelDataDispatcher<IEvent, string>
@@ -104,7 +149,7 @@ namespace ZES.Infrastructure.Sagas
 
             private async Task Handle(IEvent e)
             {
-                _log.Trace($"{typeof(TSaga).Name}::When({e.EventType})");
+                _log.Trace($"{typeof(TSaga).Name}::When({e.EventType}[{e.Stream}])");
                 
                 try
                 {

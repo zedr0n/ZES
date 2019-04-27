@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Reactive.Linq;
 using System.Threading.Tasks;
 using System.Threading.Tasks.Dataflow;
 using Gridsum.DataflowEx;
@@ -63,12 +64,19 @@ namespace ZES.Infrastructure
         childFlow.RegisterDependency(_dispatcherBlock);
         return childFlow;
       });
+      var timeout = option is DataflowOptionsEx optionEx ? optionEx.Timeout : TimeSpan.MaxValue;
       _dispatcherBlock = new ActionBlock<TIn>(
         async input =>
         {
-          await SendToChild(
-            parallelDataDispatcher._destinations.GetOrAdd(dispatchFunc(input), parallelDataDispatcher._initer).Value,
-            input).ConfigureAwait(false);
+          var obs = Observable.FromAsync(async () => await SendToChild(
+              parallelDataDispatcher._destinations.GetOrAdd(
+                dispatchFunc(input),
+                parallelDataDispatcher._initer).Value,
+              input).ConfigureAwait(false));
+          if (timeout != TimeSpan.MaxValue)  
+            obs = obs.Timeout(timeout);
+          
+          await obs;
         }, option.ToExecutionBlockOption(true));
 
       RegisterChild(_dispatcherBlock);

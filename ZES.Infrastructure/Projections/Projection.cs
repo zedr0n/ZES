@@ -62,12 +62,9 @@ namespace ZES.Infrastructure.Projections
 
         internal ILog Log { get; }
 
-        internal async Task Start(bool rebuild = true)
+        internal async Task Start()
         {
-            if (rebuild)
-                await Rebuild();
-            else
-                ListenToStreams();
+            await Rebuild();
             _messageQueue.Alerts.OfType<InvalidateProjections>().Subscribe(async s => await Rebuild());
         }
 
@@ -97,8 +94,6 @@ namespace ZES.Infrastructure.Projections
             Handlers.Add(tEvent, when);
         }
 
-        private void ListenToStreams() => ListenToStreams(Task.FromResult(0));
-        
         private void ListenToStreams(Task start)
         {
             _streamSource.Cancel();

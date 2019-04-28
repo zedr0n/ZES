@@ -41,21 +41,5 @@ namespace ZES.Infrastructure.Serialization
             var stream = new Stream((string)key, (int)version);
             return stream;
         }
-        
-        public static long? ParseTimestamp(this string json)
-        {
-            var jarray = JObject.Parse(json);
-            jarray.TryGetValue(nameof(IMessage.Timestamp), out var timestamp);
-
-            return (long?)timestamp;
-        }
-
-        public static int? ParseVersion(this string json)
-        {
-            var jarray = JObject.Parse(json);
-            jarray.TryGetValue(nameof(IEvent.Version), out var version);
-
-            return (int?)version;
-        }
     }
 }

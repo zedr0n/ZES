@@ -47,18 +47,26 @@ namespace ZES.Infrastructure
             
             Events = Observable.Create(async (IObserver<IEvent> observer) =>
             {
+                var streams = await ListStreams().ToList();
+                
                 var page = await _streamStore.ReadAllForwards(Position.Start, ReadSize);
                 while (true)
                 {
                     foreach (var m in page.Messages)
                     {
-                        var stream = new Stream(m.StreamId);
-                        if (stream.Timeline != timeline.Id) 
+                        var thisStreams = streams.Where(s => s.Id == new Stream(m.StreamId).Id);
+                        var timelineStream = thisStreams.SingleOrDefault(s => s.Timeline == timeline.Id);
+                        
+                        if (timelineStream == null)
                             continue;
-                        var payload = await m.GetJsonData();
-                        var e = _serializer.Deserialize(payload);
-                        if (e != null)
-                            observer.OnNext(e);
+
+                        if (timelineStream.Ancestors.Any(s => s.Key == m.StreamId) || timelineStream.Key == m.StreamId)
+                        {
+                            var payload = await m.GetJsonData();
+                            var e = _serializer.Deserialize(payload);
+                            if (e != null && e.Version <= timelineStream.Version )
+                                observer.OnNext(e); 
+                        }
                     }
 
                     if (page.IsEnd)

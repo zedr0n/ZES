@@ -14,7 +14,7 @@ namespace ZES.Interfaces
         /// <param name="branchId">Branch unique identifier</param>
         /// <param name="time">Timestamp to branch at</param>
         /// <returns>Task representing the newly branched timeline</returns>
-        Task<ITimeline> Branch(string branchId, long time);
+        Task<ITimeline> Branch(string branchId, long time = default(long));
 
         /// <summary>
         /// Reset the timeline

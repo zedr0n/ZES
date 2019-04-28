@@ -40,6 +40,7 @@ namespace ZES.Tests.Domain.Queries
             public void SetCreatedAt(string id, long timestamp)
             {
                 _createdAt[id] = timestamp;
+                _updatedAt[id] = timestamp;
             }
             
             public void SetUpdatedAt(string id, long timestamp)

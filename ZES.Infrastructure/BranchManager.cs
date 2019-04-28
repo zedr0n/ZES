@@ -20,12 +20,20 @@ namespace ZES.Infrastructure
     /// <inheritdoc />
     public class BranchManager : IBranchManager
     {
-        private readonly ILog _log;
+        /// <summary>
+        /// Gets root timeline id
+        /// </summary>
+        /// <value>
+        /// Root timeline id
+        /// </value>
+        public const string Master = "master";
+        
+        private readonly IErrorLog _log;
         private readonly ConcurrentDictionary<string, Timeline> _branches = new ConcurrentDictionary<string, Timeline>();
         private readonly Timeline _activeTimeline;
         private readonly IMessageQueue _messageQueue;
         private readonly IEventStore<IAggregate> _eventStore;
-
+        
         /// <summary>
         /// Initializes a new instance of the <see cref="BranchManager"/> class.
         /// </summary>
@@ -33,7 +41,7 @@ namespace ZES.Infrastructure
         /// <param name="activeTimeline">Root timeline</param>
         /// <param name="messageQueue">Message queue</param>
         /// <param name="eventStore">Event store</param>
-        public BranchManager(ILog log, ITimeline activeTimeline, IMessageQueue messageQueue, IEventStore<IAggregate> eventStore)
+        public BranchManager(IErrorLog log, ITimeline activeTimeline, IMessageQueue messageQueue, IEventStore<IAggregate> eventStore)
         {
             _log = log;
             _activeTimeline = activeTimeline as Timeline;
@@ -41,30 +49,26 @@ namespace ZES.Infrastructure
             _eventStore = eventStore;
         }
 
-        /// <summary>
-        /// Gets root timeline id
-        /// </summary>
-        /// <value>
-        /// Root timeline id
-        /// </value>
-        public static string Master { get; } = "master";
-
         /// <inheritdoc />
-        public async Task<ITimeline> Branch(string branchId, long time)
+        public async Task<ITimeline> Branch(string branchId, long time = default(long))
         {
+            var newBranch = !_branches.ContainsKey(branchId);
+            
             var timeline = _branches.GetOrAdd(branchId, b => new Timeline { Id = branchId, Now = time });
-            if (timeline.Now != time)
+            if (timeline.Now != time && time != default(long))
             {
-                _log.Error($"Branch ${branchId} already exists!");
-                throw new InvalidOperationException();    
+                _log.Add(new InvalidOperationException($"Branch ${branchId} already exists!"));
+                return null;
             }
             
             // copy the events
-            await Clone(branchId, time);
+            if (newBranch)
+                await Clone(branchId, time);
             
             // update current timeline
             _activeTimeline.Id = timeline.Id;
-            _activeTimeline.Now = time;
+            if (time != default(long))
+                _activeTimeline.Now = time;
             
             // refresh the stream locator
             _messageQueue.Alert(new Alerts.OnTimelineChange());
@@ -77,6 +81,16 @@ namespace ZES.Infrastructure
 
         /// <inheritdoc />
         public ITimeline Reset()
+        {
+            _activeTimeline.Id = Master;
+
+            _messageQueue.Alert(new Alerts.OnTimelineChange());
+            _messageQueue.Alert(new Alerts.InvalidateProjections());
+
+            return _activeTimeline;
+        }
+        
+        private ITimeline Reset(string timeline = Master)
         {
             _activeTimeline.Id = Master;
 
@@ -100,37 +114,24 @@ namespace ZES.Infrastructure
             await cloneFlow.CompletionTask;
         }
 
-        private long GetTime(string id)
-        {
-            if (id == Master)
-                return DateTime.UtcNow.Ticks;
-            if (_branches.TryGetValue(id, out var timeline))
-                return timeline.Now;
-            _log.Error($"Branch {id} does not exist!", this);
-            throw new InvalidOperationException();
-        }
-
         private class CloneFlow : Dataflow<IStream>
         {
             private readonly ActionBlock<IStream> _inputBlock;
 
-            private readonly IEventStore<IAggregate> _eventStore;
-            
             public CloneFlow(string timeline, long time, IEventStore<IAggregate> eventStore) 
                 : base(DataflowOptions.Default)
             {
-                _eventStore = eventStore;
                 _inputBlock = new ActionBlock<IStream>(
                     async s =>
                 {
-                    var metadata = await _eventStore.ReadStream<IEventMetadata>(s, 0)
+                    var metadata = await eventStore.ReadStream<IEventMetadata>(s, 0)
                         .LastOrDefaultAsync(e => e.Timestamp <= time);
 
                     if (metadata == null)
                         return;
 
                     var clone = s.Branch(timeline, metadata.Version);
-                    await _eventStore.AppendToStream(clone);
+                    await eventStore.AppendToStream(clone);
                 }, new ExecutionDataflowBlockOptions { MaxDegreeOfParallelism = 8 });
 
                 RegisterChild(_inputBlock);

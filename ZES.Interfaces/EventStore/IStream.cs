@@ -1,3 +1,5 @@
+using System.Collections.Generic;
+
 namespace ZES.Interfaces.EventStore
 {
     /// <summary>
@@ -32,7 +34,18 @@ namespace ZES.Interfaces.EventStore
         /// <summary>
         /// Gets or sets the parent stream
         /// </summary>
+        /// <value>
+        /// The parent stream
+        /// </value>
         IStream Parent { get; set; }
+        
+        /// <summary>
+        /// Gets the ancestors( set of all parents ) 
+        /// </summary>
+        /// <value>
+        /// Set of all parents 
+        /// </value>
+        IEnumerable<IStream> Ancestors { get; }
         
         /// <summary>
         /// Gets or sets stream timeline id

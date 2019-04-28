@@ -1,4 +1,6 @@
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using SqlStreamStore.Streams;
 using ZES.Interfaces.EventStore;
 
@@ -8,6 +10,7 @@ namespace ZES.Infrastructure.Streams
     public class Stream : IStream
     {
         private readonly string _type;
+        private readonly List<IStream> _ancestors = new List<IStream>();
 
         /// <summary>
         /// Initializes a new instance of the <see cref="Stream"/> class.
@@ -55,6 +58,25 @@ namespace ZES.Infrastructure.Streams
 
         /// <inheritdoc />
         public IStream Parent { get; set; }
+
+        /// <inheritdoc />
+        public IEnumerable<IStream> Ancestors
+        {
+            get
+            {
+                if (_ancestors.Count > 0 || Parent == null)
+                    return _ancestors.ToList();
+                
+                var parent = Parent;
+                while (parent != null)
+                {
+                    _ancestors.Add(parent);
+                    parent = Parent?.Parent;
+                }
+
+                return _ancestors.ToList();
+            }
+        }
 
         // public int UpdatedOn { get; set; }
 

@@ -4,7 +4,19 @@ using ZES.Interfaces;
 namespace ZES.Infrastructure.Domain
 {
     /// <inheritdoc />
-    public class Event : IEvent
+    public class EventMetadata : IEventMetadata
+    {
+        /// <inheritdoc />
+        public int Version { get; set; } 
+        
+        /// <inheritdoc />
+        public long Timestamp { get; set; }
+
+        long? IMessage.Timestamp => Timestamp;
+    }
+
+    /// <inheritdoc cref="IEvent" />
+    public class Event : EventMetadata, IEvent 
     {
         /// <summary>
         /// Initializes a new instance of the <see cref="Event"/> class.
@@ -20,12 +32,6 @@ namespace ZES.Infrastructure.Domain
 
         /// <inheritdoc />
         public string EventType { get; }
-
-        /// <inheritdoc />
-        public long Timestamp { get; set; }
-
-        /// <inheritdoc />
-        public int Version { get; set; }
 
         /// <inheritdoc />
         public string Stream { get; set; }

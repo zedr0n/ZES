@@ -3,7 +3,7 @@ namespace ZES.Interfaces.Domain
     /// <summary>
     /// CQRS Command definition
     /// </summary>
-    public interface ICommand
+    public interface ICommand : IMessage
     {
         /// <summary>
         /// Gets aggregate target id
@@ -12,13 +12,5 @@ namespace ZES.Interfaces.Domain
         /// Aggregate target id
         /// </value>
         string Target { get;  }
-
-        /// <summary>
-        /// Gets command timestamp
-        /// </summary>
-        /// <value>
-        /// Command timestamp
-        /// </value>
-        long? Timestamp { get;  }
     }
 }

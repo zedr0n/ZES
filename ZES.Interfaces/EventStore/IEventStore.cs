@@ -12,15 +12,6 @@ namespace ZES.Interfaces.EventStore
         where I : IEventSourced
     {
         /// <summary>
-        /// Gets the current streams in the store 
-        /// </summary>
-        /// <returns>Stream observable</returns>
-        /// <value>
-        /// Cold observable representing the streams as of call time
-        /// </value>
-        IObservable<IStream> AllStreams { get; }
-
-        /// <summary>
         /// Gets stream details channel 
         /// </summary>
         /// <value>
@@ -37,13 +28,20 @@ namespace ZES.Interfaces.EventStore
         IObservable<IEvent> Events { get; }
         
         /// <summary>
+        /// Gets the current streams in the store 
+        /// </summary>
+        /// <returns>Stream observable</returns>
+        IObservable<IStream> ListStreams();
+        
+        /// <summary>
         /// Read specified number of events from the stream forward from starting version 
         /// </summary>
         /// <param name="stream">Target stream</param>
         /// <param name="start">Starting version for the read</param>
         /// <param name="count">Number of events to read</param>
         /// <returns>Cold observable of read events</returns>
-        IObservable<IEvent> ReadStream(IStream stream, int start, int count = -1);
+        IObservable<T> ReadStream<T>(IStream stream, int start, int count = -1)
+            where T : IEventMetadata;
         
         /// <summary>
         /// Append events to stream
@@ -51,6 +49,13 @@ namespace ZES.Interfaces.EventStore
         /// <param name="stream">Target stream</param>
         /// <param name="events">Events to append</param>
         /// <returns>Task representing the append operation</returns>
-        Task AppendToStream(IStream stream, IEnumerable<IEvent> events);
+        Task AppendToStream(IStream stream, IEnumerable<IEvent> events = null);
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="stream"></param>
+        /// <returns></returns>
+        Task AddStream(IStream stream);
     }
 }

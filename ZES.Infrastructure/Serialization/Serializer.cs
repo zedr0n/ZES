@@ -5,13 +5,14 @@ using System.Runtime.Serialization;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using ZES.Infrastructure.Domain;
+using ZES.Interfaces;
 using ZES.Interfaces.Serialization;
 
 namespace ZES.Infrastructure.Serialization
 {
     /// <inheritdoc />
     public class Serializer<T> : ISerializer<T>
-        where T : class
+        where T : class, IMessage
     {
         private readonly JsonSerializer _serializer;
 
@@ -49,11 +50,24 @@ namespace ZES.Infrastructure.Serialization
         }
 
         /// <inheritdoc />
-        public string Metadata(long? timestamp)
+        public string EncodeMetadata(T message)
         {
-            var array = new JObject(new JProperty(nameof(Command.Timestamp), timestamp));
+            var array = new JObject(message.JTimestamp(), message.JVersion());
+            
             var s = array.ToString();
             return s;
+        }
+
+        /// <inheritdoc />
+        public IEventMetadata DecodeMetadata(string json)
+        {
+            var jarray = JObject.Parse(json);
+            if (!jarray.TryGetValue(nameof(IEventMetadata.Timestamp), out var timestamp))
+                return null;
+            if (!jarray.TryGetValue(nameof(IEventMetadata.Version), out var version))
+                return null;
+            
+            return new EventMetadata { Timestamp = (long)timestamp, Version = (int)version};
         }
 
         /// <inheritdoc />

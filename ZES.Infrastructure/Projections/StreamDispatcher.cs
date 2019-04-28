@@ -75,7 +75,7 @@ namespace ZES.Infrastructure.Projections
                     _version = version;
 
                     var readBlock = new TransformBlock<IStream, IObservable<IEvent>>(
-                        s => eventStore.ReadStream(s, _version + 1),
+                        s => eventStore.ReadStream<IEvent>(s, _version + 1),
                         new ExecutionDataflowBlockOptions { CancellationToken = tokenSource.Token });
 
                     var updateBlock = new ActionBlock<IObservable<IEvent>>(

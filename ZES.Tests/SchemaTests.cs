@@ -44,11 +44,11 @@ namespace ZES.Tests
             var schemaProvider = container.GetInstance<ISchemaProvider>();
             
             var executor = schemaProvider.Generate(typeof(Queries));
-            var createdAtResult = await executor.ExecuteAsync(@"{ createdAt( query: { id : ""Root"" } ) { rootId, timestamp }  }") as IReadOnlyQueryResult;
-            dynamic createdAtDict = createdAtResult?.Data["createdAt"];
-            log.Info(createdAtDict);
-            Assert.NotNull(createdAtDict);
-            Assert.NotEqual(0, createdAtDict["timestamp"]);
+            var rootInfoResult = await executor.ExecuteAsync(@"{ rootInfo( query: { id : ""Root"" } ) { rootId, createdAt, updatedAt }  }") as IReadOnlyQueryResult;
+            dynamic rootInfoDict = rootInfoResult?.Data["rootInfo"];
+            log.Info(rootInfoDict);
+            Assert.NotNull(rootInfoDict);
+            Assert.NotEqual(0, rootInfoDict["createdAt"]);
 
             var statsResult = await executor.ExecuteAsync(@"{ stats( query : {  } ) { numberOfRoots } }") as IReadOnlyQueryResult;
             dynamic statsDict = statsResult?.Data["stats"];

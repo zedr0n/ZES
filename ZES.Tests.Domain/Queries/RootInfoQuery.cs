@@ -2,10 +2,10 @@ using ZES.Infrastructure;
 
 namespace ZES.Tests.Domain.Queries
 {
-    public class CreatedAtQuery : Query<CreatedAt>
+    public class RootInfoQuery : Query<RootInfo>
     {
-        public CreatedAtQuery() { }
-        public CreatedAtQuery(string id)
+        public RootInfoQuery() { }
+        public RootInfoQuery(string id)
         {
             Id = id;
         }

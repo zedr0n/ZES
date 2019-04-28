@@ -4,9 +4,9 @@ using ZES.Tests.Domain.Events;
 
 namespace ZES.Tests.Domain
 {
-    public class Root : EventSourced, IAggregate
+    public sealed class Root : EventSourced, IAggregate
     {
-        private int _updateCount;
+        private long _updatedAt;
         public Root()
         {
             Register<RootCreated>(ApplyEvent);
@@ -26,7 +26,7 @@ namespace ZES.Tests.Domain
 
         private void ApplyEvent(RootUpdated e)
         {
-            _updateCount++;
+            _updatedAt = e.Timestamp;
         }
         
         private void ApplyEvent(RootCreated e)

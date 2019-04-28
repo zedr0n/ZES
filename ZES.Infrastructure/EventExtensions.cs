@@ -17,7 +17,7 @@ namespace ZES.Infrastructure
         /// <returns>Encoded message</returns>
         public static NewStreamMessage Encode(this ISerializer<IEvent> serializer, IEvent e)
         {
-            return new NewStreamMessage(e.EventId, e.EventType, serializer.Serialize(e), serializer.Metadata(e.Timestamp));
+            return new NewStreamMessage(e.EventId, e.EventType, serializer.Serialize(e), serializer.EncodeMetadata(e));
         }
     }
 }

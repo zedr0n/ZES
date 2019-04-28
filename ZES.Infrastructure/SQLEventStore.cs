@@ -6,6 +6,7 @@ using System.Reactive.Subjects;
 using System.Threading.Tasks;
 using SqlStreamStore;
 using SqlStreamStore.Streams;
+using ZES.Infrastructure.Serialization;
 using ZES.Infrastructure.Streams;
 using ZES.Interfaces;
 using ZES.Interfaces.EventStore;
@@ -14,6 +15,40 @@ using ZES.Interfaces.Serialization;
 
 namespace ZES.Infrastructure
 {
+    
+    public static class SqlStreamStoreExtensions
+    {
+        private const int ReadSize = 100;
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="streamStore"></param>
+        /// <param name="key"></param>
+        /// <returns></returns>
+        public static async Task<IStream> GetStream(
+            this IStreamStore streamStore, string key)
+        {
+            var metadata = await streamStore.GetStreamMetadata(key);
+            var parent = metadata.MetadataJson.ParseParent();
+            var version = parent?.Version ?? 0;  
+            
+            var page = await streamStore.ReadStreamBackwards(key, StreamVersion.End, 1);
+            version += page.Messages.SingleOrDefault().StreamVersion;
+            
+            var theStream = new Stream(key, version) { Parent = parent };
+            while (parent != null)
+            {
+                var parentMetadata = await streamStore.GetStreamMetadata(parent.Key);
+                var grandParent = parentMetadata.MetadataJson.ParseParent();
+                parent.Parent = grandParent;
+                parent = grandParent;
+            }
+
+            return theStream;
+        }
+    }
+    
     /// <inheritdoc />
     public class SqlEventStore<I> : IEventStore<I> 
         where I : IEventSourced
@@ -67,17 +102,19 @@ namespace ZES.Infrastructure
                 }
                 observer.OnCompleted();
             });
+        }
 
-            AllStreams = Observable.Create(async (IObserver<IStream> observer) =>
+        /// <inheritdoc />
+        public IObservable<IStream> ListStreams()
+        {
+            return Observable.Create(async (IObserver<IStream> observer) =>
             {
                 var page = await _streamStore.ListStreams();
                 while (page.StreamIds.Length > 0)
                 {
-                    foreach (var s in page.StreamIds.Where(x => !x.Contains("Command")))
+                    foreach (var s in page.StreamIds.Where(x => !x.Contains("Command") && !x.StartsWith("$")))
                     {
-                        var version = (await _streamStore.ReadStreamBackwards(s, StreamVersion.End, 1))
-                            .LastStreamVersion;
-                        var stream = new Stream(s, version);
+                        var stream = await _streamStore.GetStream(s);
                         observer.OnNext(stream);
                     }
 
@@ -85,11 +122,8 @@ namespace ZES.Infrastructure
                 }
 
                 observer.OnCompleted();
-            }).Concat(_streams.AsObservable());
+            });
         }
-
-        /// <inheritdoc />
-        public IObservable<IStream> AllStreams { get; }
 
         /// <inheritdoc />
         public IObservable<IStream> Streams => _streams.AsObservable();
@@ -98,47 +132,100 @@ namespace ZES.Infrastructure
         public IObservable<IEvent> Events { get; }
 
         /// <inheritdoc />
-        public IObservable<IEvent> ReadStream(IStream stream, int start, int count = -1)
+        public IObservable<T> ReadStream<T>(IStream stream, int start, int count = -1) 
+            where T : IEventMetadata
         {
             if (count == -1)
                 count = int.MaxValue;
 
-            var observable = Observable.Create(async (IObserver<IEvent> observer) =>
+            var allObservables = new List<IObservable<T>>(); 
+
+            while (stream != null)
             {
-                // _log.Trace($"{stream.Key} : from [{start}]");
-                var page = await _streamStore.ReadStreamForwards(stream.Key, start, ReadSize);
-                while (page.Messages.Length > 0 && count > 0)
+                var cStream = stream;
+                var observable = Observable.Create(async (IObserver<T> observer) =>
                 {
-                    foreach (var m in page.Messages)
+                    // _log.Trace($"{stream.Key} : from [{start}]");
+                    var position = cStream.Position(start);
+                    if (position <= ExpectedVersion.EmptyStream)
                     {
-                        var payload = await m.GetJsonData();
-                        var @event = _serializer.Deserialize(payload);
-                        observer.OnNext(@event);
-                        count--;
-                        if (count == 0)
-                            break;
+                        observer.OnCompleted();
+                        return;
                     }
-                    page = await page.ReadNext();
-                } 
-                observer.OnCompleted();
-            });
-            
-            return observable;
+
+                    var page = await _streamStore.ReadStreamForwards(cStream.Key, position, ReadSize);
+                    while (page.Messages.Length > 0 && count > 0)
+                    {
+                        foreach (var m in page.Messages)
+                        {
+                            if (typeof(T) == typeof(IEvent))
+                            {
+                                var payload = await m.GetJsonData();
+                                var @event = _serializer.Deserialize(payload);
+                                observer.OnNext((T)@event);
+                            }
+                            else
+                            {
+                                var payload = m.JsonMetadata;
+                                var metadata = _serializer.DecodeMetadata(payload);
+                                observer.OnNext((T)metadata);
+                            }
+
+                            count--;
+                            if (count == 0)
+                                break;
+                        }
+                        page = await page.ReadNext();
+                    } 
+                    observer.OnCompleted();
+                });
+                
+                allObservables.Add(observable);
+
+                stream = stream.Parent;
+            }
+
+            return allObservables.Aggregate((r, c) => r.Concat(c));
         }
 
-        /// <inheritdoc />
-        public async Task AppendToStream(IStream stream, IEnumerable<IEvent> enumerable)
+        public async Task AddStream(IStream stream)
         {
-            var events = enumerable as IList<IEvent> ?? enumerable.ToList();
-            if (!events.Any())
+            if (stream?.Parent == null)
                 return;
+            
+            await _streamStore.SetStreamMetadata(
+                stream.Key,
+                metadataJson: JExtensions.JParent(stream.Parent.Key, stream.Parent.Version));
+            
+            _streams.OnNext(stream);
+        }
+        
+        /// <inheritdoc />
+        public async Task AppendToStream(IStream stream, IEnumerable<IEvent> enumerable = null)
+        {
+            var events = enumerable as IList<IEvent> ?? enumerable?.ToList();
 
-            var streamMessages = events.Select(_serializer.Encode).ToArray();
-            var result = await _streamStore.AppendToStream(stream.Key, stream.Version, streamMessages);
+            var streamMessages = events?.Select(_serializer.Encode).ToArray() ?? new NewStreamMessage[] { };
+            var result = await _streamStore.AppendToStream(stream.Key, stream.Position(), streamMessages);
             LogEvents(streamMessages);
 
-            stream.Version = result.CurrentVersion;
-            _streams.OnNext(stream);
+            var version = result.CurrentVersion;
+            
+            if (stream.Parent != null)
+            {
+                await _streamStore.SetStreamMetadata(
+                    stream.Key,
+                    metadataJson: JExtensions.JParent(stream.Parent.Key, stream.Parent.Version));
+                
+                // cloned stream starts with version + 1
+                version += stream.Parent.Version + 1;
+            }
+
+            if (version > stream.Version || result.CurrentVersion == -1)
+            {
+                stream.Version = version;
+                _streams.OnNext(stream); 
+            }
 
             PublishEvents(events);    
         }
@@ -154,7 +241,7 @@ namespace ZES.Infrastructure
 
         private void PublishEvents(IEnumerable<IEvent> events)
         {
-            if (!_isDomainStore)
+            if (!_isDomainStore || events == null)
                 return;
 
             foreach (var e in events)

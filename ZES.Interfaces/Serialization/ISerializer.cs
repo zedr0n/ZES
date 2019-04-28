@@ -7,7 +7,7 @@ namespace ZES.Interfaces.Serialization
     /// </summary>
     /// <typeparam name="T"><see cref="ICommand"/>/<see cref="IEvent"/></typeparam>
     public interface ISerializer<T>
-        where T : class
+        where T : class, IMessage
     {
         /// <summary>
         /// Serializes the instance to json string
@@ -15,13 +15,20 @@ namespace ZES.Interfaces.Serialization
         /// <param name="e">Instance to serialize</param>
         /// <returns>JSON serialization string</returns>
         string Serialize(T e);
-        
+
         /// <summary>
         /// Serialize the metadata to json 
         /// </summary>
-        /// <param name="timestamp">Timestamp</param>
+        /// <param name="message">Underlying message</param>
         /// <returns>JSON serialized string</returns>
-        string Metadata(long? timestamp);
+        string EncodeMetadata(T message);
+
+        /// <summary>
+        /// Deserialize the metadata
+        /// </summary>
+        /// <param name="json">Serialized json</param>
+        /// <returns>Event metadata</returns>
+        IEventMetadata DecodeMetadata(string json); 
         
         /// <summary>
         /// Deserialize the json string to an object instance

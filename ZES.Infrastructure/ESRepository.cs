@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Reactive.Linq;
 using System.Threading.Tasks;
@@ -45,7 +46,7 @@ namespace ZES.Infrastructure
             if (events.Count == 0)
                 return;
 
-            var stream = _streams.GetOrAdd(es);
+            var stream = _streams.GetOrAdd(es, _timeline.Id);
             if (stream.Version >= 0 && es.Version - events.Count < stream.Version)
                 throw new InvalidOperationException($"Stream ( {stream.Version} ) is ahead of aggregate root ( {es.Version - events.Count} )");
 
@@ -80,7 +81,7 @@ namespace ZES.Infrastructure
             if (stream == null)
                 return null;
 
-            var events = await _eventStore.ReadStream(stream, 0).ToList();
+            var events = await _eventStore.ReadStream<IEvent>(stream, 0).ToList();
             var aggregate = EventSourced.Create<T>(id);
             aggregate.LoadFrom<T>(events);
 

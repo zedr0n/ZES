@@ -37,7 +37,7 @@ namespace ZES.Tests.Domain
         [RootQuery]
         public abstract class Queries
         {
-            public abstract CreatedAt CreatedAt(CreatedAtQuery query);
+            public abstract RootInfo RootInfo(RootInfoQuery query);
             public abstract Stats Stats(StatsQuery query);
         }
         

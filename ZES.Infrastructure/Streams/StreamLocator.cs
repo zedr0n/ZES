@@ -53,14 +53,19 @@ namespace ZES.Infrastructure.Streams
         /// <inheritdoc />
         public IStream GetOrAdd(IStream stream)
         {
-            return _streams.GetOrAdd(stream.Key, stream);
+            if (stream.Key.StartsWith("$$"))
+                return null;
+            
+            var cStream = _streams.GetOrAdd(stream.Key, stream);
+            cStream.Version = stream.Version;
+            return cStream;
         }
         
         private void Restart()
         {
             _log.Trace(string.Empty, this);
             _subscription?.Dispose();
-            _subscription = _eventStore.AllStreams.Subscribe(stream => GetOrAdd(stream));            
+            _subscription = _eventStore.ListStreams().Concat(_eventStore.Streams).Subscribe(stream => GetOrAdd(stream));            
         }
     }
 }

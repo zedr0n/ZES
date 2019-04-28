@@ -40,6 +40,6 @@ namespace ZES.Infrastructure
         }
 
         private NewStreamMessage Encode(ICommand command) =>
-            new NewStreamMessage(Guid.NewGuid(), command.GetType().Name, _serializer.Serialize(command), _serializer.Metadata(command.Timestamp));
+            new NewStreamMessage(Guid.NewGuid(), command.GetType().Name, _serializer.Serialize(command), _serializer.EncodeMetadata(command));
     }
 }

@@ -6,6 +6,14 @@ namespace ZES.Interfaces.EventStore
     public interface IStream
     {
         /// <summary>
+        /// Gets the underlying stream id
+        /// </summary>
+        /// <value>
+        /// The underlying stream id
+        /// </value>
+        string Id { get; }
+        
+        /// <summary>
         /// Gets unique key identifying the stream
         /// </summary>
         /// <value>
@@ -22,12 +30,32 @@ namespace ZES.Interfaces.EventStore
         int Version { get; set; }
 
         /// <summary>
+        /// Gets the local position in the stream
+        /// </summary>
+        /// <param name="expectedVersion">Real event sourced version</param>
+        /// <returns>Local position in stream</returns>
+        int Position(int? expectedVersion = null); 
+        
+        /// <summary>
+        /// Gets or sets the parent stream
+        /// </summary>
+        IStream Parent { get; set; }
+        
+        /// <summary>
         /// Gets or sets stream timeline id
         /// </summary>
         /// <value>
         /// Stream timeline id
         /// </value>
         string Timeline { get; set; }
+
+        /// <summary>
+        /// Create a branch in new timeline
+        /// </summary>
+        /// <param name="timeline">New timeline</param>
+        /// <param name="version"></param>
+        /// <returns>Stream descriptor</returns>
+        IStream Branch(string timeline, int version);
     }
     
     /// <summary>

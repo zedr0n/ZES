@@ -84,9 +84,25 @@ namespace ZES.Tests
             await await bus.CommandAsync(command); 
             Thread.Sleep(10);
             
-            var query = new CreatedAtQuery("Root");
-            var createdAt = await bus.QueryUntil(query, c => c?.Timestamp != 0);
-            Assert.NotEqual(0, createdAt?.Timestamp);
+            var query = new RootInfoQuery("Root");
+            var rootInfo = await bus.QueryUntil(query, c => c?.CreatedAt != 0);
+            Assert.NotEqual(0, rootInfo?.CreatedAt);
+        }
+        
+        [Fact]
+        public async void CanUpdateRoot()
+        {
+            var container = CreateContainer();
+            var bus = container.GetInstance<IBus>();
+            
+            var command = new CreateRoot("Root");
+            await await bus.CommandAsync(command);
+            
+            var updateCommand = new UpdateRoot("Root");
+            await await bus.CommandAsync(updateCommand);
+
+            var rootInfo = await bus.QueryUntil(new RootInfoQuery("Root"), r => r.UpdatedAt > 0);
+            Assert.True(rootInfo.UpdatedAt > rootInfo.CreatedAt);
         }
         
         [Fact]
@@ -124,9 +140,9 @@ namespace ZES.Tests
                 rootId--;
             }
 
-            var query = new CreatedAtQuery("Root1");
-            var createdAt = await bus.QueryUntil(query, c => c?.Timestamp > 0);
-            Assert.NotEqual(0, createdAt?.Timestamp); 
+            var query = new RootInfoQuery("Root1");
+            var rootInfo = await bus.QueryUntil(query, c => c?.CreatedAt > 0);
+            Assert.NotEqual(0, rootInfo?.CreatedAt); 
             
             var statsQuery = new StatsQuery();
             var stats = await bus.QueryUntil(statsQuery, s => s?.NumberOfRoots == numRoots);
@@ -142,10 +158,10 @@ namespace ZES.Tests
             var command = new CreateRoot("Root");
             await bus.CommandAsync(command);
 
-            var query = new CreatedAtQuery("RootCopy");
-            var createdAt = await bus.QueryUntil(query, x => x.Timestamp > 0); 
+            var query = new RootInfoQuery("RootCopy");
+            var rootInfo = await bus.QueryUntil(query, x => x.CreatedAt > 0); 
             
-            Assert.NotEqual(0, createdAt.Timestamp);
+            Assert.NotEqual(0, rootInfo.CreatedAt);
         }
 
         [Theory]
@@ -164,7 +180,7 @@ namespace ZES.Tests
                 rootId--;
             }
 
-            await bus.QueryUntil(new CreatedAtQuery("Root1"));  
+            await bus.QueryUntil(new RootInfoQuery("Root1"));  
             
             rootId = numRoots;
             while (rootId > 0)
@@ -195,8 +211,8 @@ namespace ZES.Tests
                 rootId--;
             }
             
-            var query = new CreatedAtQuery("Root1");
-            await bus.QueryUntil(query, c => c.Timestamp > 0);
+            var query = new RootInfoQuery("Root1");
+            await bus.QueryUntil(query, c => c.CreatedAt > 0);
             
             var statsQuery = new StatsQuery();
             messageQueue.Alert(new InvalidateProjections());

@@ -7,7 +7,6 @@ namespace ZES.Infrastructure.Streams
     /// <inheritdoc />
     public class Stream : IStream
     {
-        private readonly string _id;
         private readonly string _type;
 
         /// <summary>
@@ -19,7 +18,7 @@ namespace ZES.Infrastructure.Streams
         /// <param name="timeline">Stream timeline</param>
         public Stream(string id, string type, int version, string timeline = "")
         {
-            _id = id;
+            Id = id;
             _type = type;
             Version = version;
             Timeline = timeline;
@@ -30,8 +29,9 @@ namespace ZES.Infrastructure.Streams
         /// </summary>
         /// <param name="key">Stream key</param>
         /// <param name="version">Event sourced version</param>
+        /// <param name="parent">Parent stream info</param>
         /// <exception cref="InvalidOperationException">if key is not of expected format</exception>
-        public Stream(string key, int version = ExpectedVersion.NoStream)
+        public Stream(string key, int version = ExpectedVersion.NoStream, IStream parent = null) 
         {
             var tokens = key.Split(':');
             if (tokens.Length != 3)
@@ -39,30 +39,52 @@ namespace ZES.Infrastructure.Streams
             
             Timeline = tokens[0];
             _type = tokens[1];
-            _id = tokens[2];
+            Id = tokens[2];
             Version = version;
+            Parent = parent;
         }
 
         /// <inheritdoc />
-        public string Key => $"{Timeline}:{_type}:{_id}";
+        public string Id { get; }
+
+        /// <inheritdoc />
+        public string Key => $"{Timeline}:{_type}:{Id}";
 
         /// <inheritdoc />
         public int Version { get; set; }
-        
+
+        /// <inheritdoc />
+        public IStream Parent { get; set; }
+
         // public int UpdatedOn { get; set; }
 
         /// <inheritdoc />
         public string Timeline { get; set; }
-        
-        /// <summary>
-        /// Creates the stream descriptor for the parallel branch
-        /// </summary>
-        /// <param name="key">Stream identifier</param>
-        /// <param name="timeline">Timeline of the stream</param>
-        /// <returns>New stream object</returns>
-        public static Stream Branch(string key, string timeline)
+
+        /// <inheritdoc />
+        public int Position(int? expectedVersion = null)
         {
-            return new Stream(key) { Timeline = timeline };
+            if (expectedVersion == null)
+                expectedVersion = Version;
+
+            var version = expectedVersion.Value;
+            if (Parent == null) 
+                return version;
+            
+            version -= Parent.Version;
+            return version == 0 ? ExpectedVersion.Any : version + ExpectedVersion.EmptyStream;
+        }
+
+        /// <inheritdoc />
+        public IStream Branch(string timeline, int version)
+        {
+            if (version <= ExpectedVersion.EmptyStream)
+                return null;
+            
+            return new Stream(Key, version, this)
+            {
+                Timeline = timeline
+            };
         }
     }
 }

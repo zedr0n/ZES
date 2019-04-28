@@ -81,7 +81,7 @@ namespace ZES.Infrastructure.Streams
             if (version <= ExpectedVersion.EmptyStream)
                 return null;
             
-            return new Stream(Key, version, this)
+            return new Stream(Key, version, new Stream(Key, version))
             {
                 Timeline = timeline
             };

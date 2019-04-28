@@ -29,14 +29,25 @@ namespace ZES.Tests
 
             var timeline = container.GetInstance<ITimeline>();
             Assert.Equal("master", timeline.Id);
+
+            var now = timeline.Now;
+
+            await await bus.CommandAsync(new UpdateRoot("Root"));
            
             var timeTraveller = container.GetInstance<IBranchManager>();
-            await timeTraveller.Branch("test", timeline.Now);
+            await timeTraveller.Branch("test", now);
                      
             Assert.Equal("test", timeline.Id);
             var root = await repository.Find<Root>("Root");
            
             Assert.Equal("Root", root.Id);
+
+            var rootInfo = await bus.QueryAsync(new RootInfoQuery("Root"));
+            Assert.Equal(0, rootInfo.UpdatedAt);
+
+            timeTraveller.Reset();
+            rootInfo = await bus.QueryAsync(new RootInfoQuery("Root"));
+            Assert.NotEqual(0, rootInfo.UpdatedAt); 
         }
 
         [Fact]

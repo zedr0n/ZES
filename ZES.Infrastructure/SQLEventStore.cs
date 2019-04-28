@@ -143,6 +143,7 @@ namespace ZES.Infrastructure
             while (stream != null)
             {
                 var cStream = stream;
+                var cCount = count;
                 var observable = Observable.Create(async (IObserver<T> observer) =>
                 {
                     // _log.Trace($"{stream.Key} : from [{start}]");
@@ -154,7 +155,7 @@ namespace ZES.Infrastructure
                     }
 
                     var page = await _streamStore.ReadStreamForwards(cStream.Key, position, ReadSize);
-                    while (page.Messages.Length > 0 && count > 0)
+                    while (page.Messages.Length > 0 && cCount > 0)
                     {
                         foreach (var m in page.Messages)
                         {
@@ -171,8 +172,8 @@ namespace ZES.Infrastructure
                                 observer.OnNext((T)metadata);
                             }
 
-                            count--;
-                            if (count == 0)
+                            cCount--;
+                            if (cCount == 0)
                                 break;
                         }
                         page = await page.ReadNext();
@@ -183,6 +184,11 @@ namespace ZES.Infrastructure
                 allObservables.Add(observable);
 
                 stream = stream.Parent;
+
+                if (stream?.Parent != null)
+                    count = stream.Version - stream.Parent.Version + 1;
+                else
+                    count = stream?.Version + 1 ?? 0;
             }
 
             return allObservables.Aggregate((r, c) => r.Concat(c));

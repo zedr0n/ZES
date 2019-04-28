@@ -36,6 +36,7 @@ namespace ZES.Interfaces.EventStore
         /// <summary>
         /// Read specified number of events from the stream forward from starting version 
         /// </summary>
+        /// <typeparam name="T">Event or just metadata</typeparam>
         /// <param name="stream">Target stream</param>
         /// <param name="start">Starting version for the read</param>
         /// <param name="count">Number of events to read</param>
@@ -50,12 +51,5 @@ namespace ZES.Interfaces.EventStore
         /// <param name="events">Events to append</param>
         /// <returns>Task representing the append operation</returns>
         Task AppendToStream(IStream stream, IEnumerable<IEvent> events = null);
-
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="stream"></param>
-        /// <returns></returns>
-        Task AddStream(IStream stream);
     }
 }

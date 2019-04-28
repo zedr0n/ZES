@@ -15,40 +15,6 @@ using ZES.Interfaces.Serialization;
 
 namespace ZES.Infrastructure
 {
-    
-    public static class SqlStreamStoreExtensions
-    {
-        private const int ReadSize = 100;
-
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="streamStore"></param>
-        /// <param name="key"></param>
-        /// <returns></returns>
-        public static async Task<IStream> GetStream(
-            this IStreamStore streamStore, string key)
-        {
-            var metadata = await streamStore.GetStreamMetadata(key);
-            var parent = metadata.MetadataJson.ParseParent();
-            var version = parent?.Version ?? 0;  
-            
-            var page = await streamStore.ReadStreamBackwards(key, StreamVersion.End, 1);
-            version += page.Messages.SingleOrDefault().StreamVersion;
-            
-            var theStream = new Stream(key, version) { Parent = parent };
-            while (parent != null)
-            {
-                var parentMetadata = await streamStore.GetStreamMetadata(parent.Key);
-                var grandParent = parentMetadata.MetadataJson.ParseParent();
-                parent.Parent = grandParent;
-                parent = grandParent;
-            }
-
-            return theStream;
-        }
-    }
-    
     /// <inheritdoc />
     public class SqlEventStore<I> : IEventStore<I> 
         where I : IEventSourced
@@ -105,6 +71,12 @@ namespace ZES.Infrastructure
         }
 
         /// <inheritdoc />
+        public IObservable<IStream> Streams => _streams.AsObservable();
+
+        /// <inheritdoc />
+        public IObservable<IEvent> Events { get; }
+        
+        /// <inheritdoc />
         public IObservable<IStream> ListStreams()
         {
             return Observable.Create(async (IObserver<IStream> observer) =>
@@ -124,12 +96,6 @@ namespace ZES.Infrastructure
                 observer.OnCompleted();
             });
         }
-
-        /// <inheritdoc />
-        public IObservable<IStream> Streams => _streams.AsObservable();
-
-        /// <inheritdoc />
-        public IObservable<IEvent> Events { get; }
 
         /// <inheritdoc />
         public IObservable<T> ReadStream<T>(IStream stream, int start, int count = -1) 
@@ -194,18 +160,6 @@ namespace ZES.Infrastructure
             return allObservables.Aggregate((r, c) => r.Concat(c));
         }
 
-        public async Task AddStream(IStream stream)
-        {
-            if (stream?.Parent == null)
-                return;
-            
-            await _streamStore.SetStreamMetadata(
-                stream.Key,
-                metadataJson: JExtensions.JParent(stream.Parent.Key, stream.Parent.Version));
-            
-            _streams.OnNext(stream);
-        }
-        
         /// <inheritdoc />
         public async Task AppendToStream(IStream stream, IEnumerable<IEvent> enumerable = null)
         {

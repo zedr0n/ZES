@@ -67,7 +67,7 @@ namespace ZES.Infrastructure.Serialization
             if (!jarray.TryGetValue(nameof(IEventMetadata.Version), out var version))
                 return null;
             
-            return new EventMetadata { Timestamp = (long)timestamp, Version = (int)version};
+            return new EventMetadata { Timestamp = (long)timestamp, Version = (int)version };
         }
 
         /// <inheritdoc />

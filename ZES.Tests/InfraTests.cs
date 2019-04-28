@@ -101,7 +101,7 @@ namespace ZES.Tests
             var updateCommand = new UpdateRoot("Root");
             await await bus.CommandAsync(updateCommand);
 
-            var rootInfo = await bus.QueryUntil(new RootInfoQuery("Root"), r => r.UpdatedAt > 0);
+            var rootInfo = await bus.QueryUntil(new RootInfoQuery("Root"), r => r.UpdatedAt > r.CreatedAt);
             Assert.True(rootInfo.UpdatedAt > rootInfo.CreatedAt);
         }
         

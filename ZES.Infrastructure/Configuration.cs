@@ -13,7 +13,7 @@ namespace ZES.Infrastructure
             "InMemoryStreamStore"
         };
 
-        public static TimeSpan Timeout => TimeSpan.FromSeconds(Debugger.IsAttached ? 600 : 1);
+        public static TimeSpan Timeout => TimeSpan.FromSeconds(Debugger.IsAttached ? 600 : 5);
         public static int ThreadsPerInstance => 8;
         
         public static bool LogEnabled(string name)

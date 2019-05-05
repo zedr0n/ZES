@@ -48,7 +48,7 @@ namespace ZES.Infrastructure
 
             var stream = _streams.GetOrAdd(es, _timeline.Id);
             if (stream.Version >= 0 && es.Version - events.Count < stream.Version)
-                throw new InvalidOperationException($"Stream ( {stream.Version} ) is ahead of aggregate root ( {es.Version - events.Count} )");
+                throw new InvalidOperationException($"Stream ( {stream.Key}@{stream.Version} ) is ahead of aggregate root ( {es.Version - events.Count} )");
 
             foreach (var e in events.OfType<Event>())
             {

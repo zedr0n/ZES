@@ -115,7 +115,7 @@ namespace ZES.Tests
             var container = CreateContainer();
             var bus = container.GetInstance<IBus>();
             
-            var command = new CreateRoot("Root");
+            var command = new CreateRoot("HistoricalRoot");
             await await bus.CommandAsync(command); 
 
             var statsQuery = new StatsQuery();

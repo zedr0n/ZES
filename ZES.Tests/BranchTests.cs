@@ -42,7 +42,7 @@ namespace ZES.Tests
            
             Assert.Equal("Root", root.Id);
 
-            var rootInfo = await bus.QueryAsync(new RootInfoQuery("Root"));
+            var rootInfo = await bus.QueryUntil(new RootInfoQuery("Root"));
             Assert.True(rootInfo?.CreatedAt > 0);
             Assert.True(rootInfo.CreatedAt == rootInfo.UpdatedAt);
 

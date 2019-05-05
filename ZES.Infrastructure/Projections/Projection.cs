@@ -119,6 +119,7 @@ namespace ZES.Infrastructure.Projections
                         ? 2 * Configuration.ThreadsPerInstance
                         : 1,
                     MonitorInterval = TimeSpan.FromMilliseconds(1000),
+                    FlowMonitorEnabled = false
                     /*FlowMonitorEnabled = true,
                     BlockMonitorEnabled = true,
                     PerformanceMonitorMode = DataflowOptions.PerformanceLogMode.Verbose*/
@@ -135,12 +136,13 @@ namespace ZES.Infrastructure.Projections
                         : 1,
                     FlowMonitorEnabled = false
                 })
+                .DelayUntil(new Lazy<Task>(() => Complete))
                 .Bind(this)
                 .OnError(async t => await Rebuild());
 
             rebuildDispatcher.CompletionTask.ContinueWith(t => _taskCompletion.TrySetResult(null));
 
-            _eventStore.ListStreams().Where(s => s.Timeline == _timeline.Id ).Subscribe(rebuildDispatcher.InputBlock.AsObserver(), _cancellationSource.Token);
+            _eventStore.ListStreams(_timeline.Id).Subscribe(rebuildDispatcher.InputBlock.AsObserver(), _cancellationSource.Token);
             _eventStore.Streams.Subscribe(liveDispatcher.InputBlock.AsObserver(), _cancellationSource.Token);
 
             await Complete;

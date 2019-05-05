@@ -200,7 +200,7 @@ namespace ZES.Tests
         }
         
         [Theory]
-        [InlineData(1)]         
+        [InlineData(10)]         
         public async void CanRebuildProjection(int numberOfRoots)
         {
             var container = CreateContainer();

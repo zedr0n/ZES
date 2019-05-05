@@ -56,14 +56,16 @@ namespace ZES.Infrastructure.Projections
                 private readonly StreamFlow.Builder _streamFlow;
                 private readonly ILog _log;
 
-                private Lazy<Task> _delayUntil = new Lazy<Task>(() => Task.CompletedTask);
-                private DataflowOptions _options = DataflowOptions.Default;
-                private CancellationTokenSource _cancellation = new CancellationTokenSource();
+                private Lazy<Task> _delayUntil;
+                private DataflowOptions _options;
+                private CancellationTokenSource _cancellation; 
 
                 public Builder(StreamFlow.Builder streamFlow, ILog log)
                 {
                     _streamFlow = streamFlow;
                     _log = log;
+                    
+                    Reset();
                 }
 
                 public Builder WithOptions(DataflowOptions options)
@@ -89,7 +91,16 @@ namespace ZES.Infrastructure.Projections
                     if (projection == null)
                         throw new ArgumentNullException();
                     
-                    return new ProjectionDispatcher(_options, projection, _cancellation, _delayUntil, _streamFlow, _log);    
+                    var dispatcher = new ProjectionDispatcher(_options, projection, _cancellation, _delayUntil, _streamFlow, _log);
+                    Reset();
+                    return dispatcher;
+                }
+
+                private void Reset()
+                {
+                    _delayUntil = new Lazy<Task>(() => Task.CompletedTask);
+                    _options = DataflowOptions.Default;
+                    _cancellation = new CancellationTokenSource(); 
                 }
             }
         }

@@ -98,13 +98,14 @@ namespace ZES.Infrastructure.Sagas
                 private readonly ILog _log;
                 private readonly IErrorLog _errorLog;
                 private readonly SagaFlow.Builder _sagaFlow;
-                private DataflowOptions _options = DataflowOptions.Default;
+                private DataflowOptions _options; 
 
                 public Builder(ILog log, IErrorLog errorLog, SagaFlow.Builder sagaFlow)
                 {
                     _log = log;
                     _errorLog = errorLog;
                     _sagaFlow = sagaFlow;
+                    Reset();
                 }
 
                 public Builder WithOptions(DataflowOptions options)
@@ -113,7 +114,17 @@ namespace ZES.Infrastructure.Sagas
                     return this;
                 }
 
-                public SagaDispatcher Bind() => new SagaDispatcher(_options, _log, _errorLog, _sagaFlow);
+                public SagaDispatcher Bind()
+                {
+                    var dispatcher = new SagaDispatcher(_options, _log, _errorLog, _sagaFlow);
+                    Reset();
+                    return dispatcher;
+                }
+
+                private void Reset()
+                {
+                    _options = DataflowOptions.Default;
+                }
             }
             
             public class SagaFlow : Dataflow<IEvent, Task>
@@ -169,14 +180,16 @@ namespace ZES.Infrastructure.Sagas
                     private readonly IEsRepository<ISaga> _repository;
                     private readonly ILog _log;
                     private readonly IErrorLog _errorLog;
-                    
-                    private DataflowOptions _options = DataflowOptions.Default;
+
+                    private DataflowOptions _options;
 
                     public Builder(IEsRepository<ISaga> repository, ILog log, IErrorLog errorLog)
                     {
                         _repository = repository;
                         _log = log;
                         _errorLog = errorLog;
+                        
+                        Reset();
                     }
 
                     public Builder WithOptions(DataflowOptions options)
@@ -187,7 +200,14 @@ namespace ZES.Infrastructure.Sagas
 
                     public SagaFlow Bind(string sagaId)
                     {
-                        return new SagaFlow(_options, sagaId, _repository, _log, _errorLog);
+                        var flow = new SagaFlow(_options, sagaId, _repository, _log, _errorLog);
+                        Reset();
+                        return flow;
+                    }
+
+                    private void Reset()
+                    {
+                        _options = DataflowOptions.Default;
                     }
                 }
             } 

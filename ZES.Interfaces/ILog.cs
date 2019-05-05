@@ -1,3 +1,5 @@
+using System.Runtime.CompilerServices;
+
 namespace ZES.Interfaces
 {
     /// <summary>
@@ -22,7 +24,9 @@ namespace ZES.Interfaces
         /// Writes the diagnostic message at the <c>Debug</c> level.
         /// </summary>
         /// <param name="message">Log message</param>
-        void Debug(object message);
+        /// <param name="instance"></param>
+        /// <param name="_"></param>
+        void Debug(object message, object instance = null, [CallerMemberName] string _ = "");
 
         /// <summary>
         /// Writes the diagnostic message at the <c>Info</c> level.

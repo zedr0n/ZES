@@ -32,3 +32,4 @@ nuget:
   project_feed: true
 install:
  - nuget sources add -Name Account -Source https://ci.appveyor.com/nuget/zinnos -UserName %nuget_user% -Password %nuget_password%
+ - nuget sources add -Name MyGet -Source https://www.myget.org/F/zinnos-public/api/v3/index.json

@@ -22,8 +22,15 @@ namespace ZES.Infrastructure.Projections
         /// <param name="log">Application log</param>
         /// <param name="messageQueue">Message queue</param>
         /// <param name="iProjection">Original projection</param>
-        public HistoricalDecorator(IEventStore<IAggregate> eventStore, ILog log, IMessageQueue messageQueue, IProjection<TState> iProjection)
-            : base(eventStore, log, messageQueue)
+        /// <param name="builder">Fluent builder</param>
+        public HistoricalDecorator(
+            IEventStore<IAggregate> eventStore,
+            ILog log,
+            IMessageQueue messageQueue,
+            IProjection<TState> iProjection,
+            ITimeline timeline,
+            ProjectionDispatcher.Builder builder)
+            : base(eventStore, log, messageQueue, timeline, builder)
         {
             var projection = (Projection<TState>)iProjection;
             foreach (var h in projection.Handlers)

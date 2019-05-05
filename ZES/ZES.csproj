@@ -9,7 +9,8 @@
     </PropertyGroup>
 
     <ItemGroup>
-      <PackageReference Include="NLog" Version="4.5.11" />
+      <PackageReference Include="Common.Logging.NLog45" Version="3.4.1" />
+      <PackageReference Include="NLog" Version="4.5.1" />
       <PackageReference Include="SimpleInjector" Version="4.4.2" />
     </ItemGroup>
 

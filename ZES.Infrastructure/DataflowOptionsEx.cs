@@ -12,6 +12,6 @@ namespace ZES.Infrastructure
         /// <value>
         /// Timeout on input dispatch to children
         /// </value>
-        public TimeSpan Timeout { get; set; } = TimeSpan.MaxValue;   
+        public TimeSpan Timeout { get; set; } = TimeSpan.FromMilliseconds(-1);
     }
 }

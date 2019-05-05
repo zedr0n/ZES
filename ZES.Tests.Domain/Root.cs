@@ -6,7 +6,6 @@ namespace ZES.Tests.Domain
 {
     public sealed class Root : EventSourced, IAggregate
     {
-        private long _updatedAt;
         public Root()
         {
             Register<RootCreated>(ApplyEvent);
@@ -18,6 +17,8 @@ namespace ZES.Tests.Domain
         {
             When(new RootCreated(id));    
         }
+        
+        public long UpdatedAt { get; private set; }
 
         public void Update()
         {
@@ -26,7 +27,7 @@ namespace ZES.Tests.Domain
 
         private void ApplyEvent(RootUpdated e)
         {
-            _updatedAt = e.Timestamp;
+            UpdatedAt = e.Timestamp;
         }
         
         private void ApplyEvent(RootCreated e)

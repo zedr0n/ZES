@@ -107,7 +107,7 @@ namespace ZES.Infrastructure
         {
             var cloneFlow = new CloneFlow(timeline, time, _eventStore);
             var streams = _eventStore.ListStreams()
-                .Where(s => s.Key.StartsWith(_activeTimeline.Id))
+                .Where(s => s.Timeline == _activeTimeline.Id)
                 .Select(async s => { await cloneFlow.SendAsync(s); });
 
             streams.Finally(() => cloneFlow.Complete()).Subscribe(async t => await t);
@@ -132,7 +132,7 @@ namespace ZES.Infrastructure
 
                     var clone = s.Branch(timeline, metadata.Version);
                     await eventStore.AppendToStream(clone);
-                }, new ExecutionDataflowBlockOptions { MaxDegreeOfParallelism = 8 });
+                }, new ExecutionDataflowBlockOptions { MaxDegreeOfParallelism = Configuration.ThreadsPerInstance });
 
                 RegisterChild(_inputBlock);
             }

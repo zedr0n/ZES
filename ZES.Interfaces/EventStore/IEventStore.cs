@@ -20,18 +20,11 @@ namespace ZES.Interfaces.EventStore
         IObservable<IStream> Streams { get; }
 
         /// <summary>
-        /// Gets cold observable of all current events in the domain log
-        /// </summary>
-        /// <value>
-        /// Cold observable of all current events in the domain log
-        /// </value>
-        IObservable<IEvent> Events { get; }
-        
-        /// <summary>
         /// Gets the current streams in the store 
         /// </summary>
+        /// <param name="branch"></param>
         /// <returns>Stream observable</returns>
-        IObservable<IStream> ListStreams();
+        IObservable<IStream> ListStreams(string branch = null);
         
         /// <summary>
         /// Read specified number of events from the stream forward from starting version 

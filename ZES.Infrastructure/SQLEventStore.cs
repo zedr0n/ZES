@@ -44,48 +44,13 @@ namespace ZES.Infrastructure
             _messageQueue = messageQueue;
             _log = log;
             _isDomainStore = typeof(I) == typeof(IAggregate);
-            
-            Events = Observable.Create(async (IObserver<IEvent> observer) =>
-            {
-                var streams = await ListStreams().ToList();
-                
-                var page = await _streamStore.ReadAllForwards(Position.Start, ReadSize);
-                while (true)
-                {
-                    foreach (var m in page.Messages)
-                    {
-                        var thisStreams = streams.Where(s => s.Id == new Stream(m.StreamId).Id);
-                        var timelineStream = thisStreams.SingleOrDefault(s => s.Timeline == timeline.Id);
-                        
-                        if (timelineStream == null)
-                            continue;
-
-                        if (timelineStream.Ancestors.Any(s => s.Key == m.StreamId) || timelineStream.Key == m.StreamId)
-                        {
-                            var payload = await m.GetJsonData();
-                            var e = _serializer.Deserialize(payload);
-                            if (e != null && e.Version <= timelineStream.Version )
-                                observer.OnNext(e); 
-                        }
-                    }
-
-                    if (page.IsEnd)
-                        break;
-                    
-                    page = await page.ReadNext();
-                }
-                observer.OnCompleted();
-            });
         }
 
         /// <inheritdoc />
         public IObservable<IStream> Streams => _streams.AsObservable();
 
         /// <inheritdoc />
-        public IObservable<IEvent> Events { get; }
-        
-        /// <inheritdoc />
-        public IObservable<IStream> ListStreams()
+        public IObservable<IStream> ListStreams(string branch = null)
         {
             return Observable.Create(async (IObserver<IStream> observer) =>
             {
@@ -95,7 +60,8 @@ namespace ZES.Infrastructure
                     foreach (var s in page.StreamIds.Where(x => !x.Contains("Command") && !x.StartsWith("$")))
                     {
                         var stream = await _streamStore.GetStream(s);
-                        observer.OnNext(stream);
+                        if (stream.Timeline == branch || branch == null)
+                            observer.OnNext(stream);
                     }
 
                     page = await page.Next();
@@ -127,6 +93,7 @@ namespace ZES.Infrastructure
                         observer.OnCompleted();
                         return;
                     }
+                    // _log.Trace($"Reading {cCount} from stream {cStream.Key} from version {position}");
 
                     var page = await _streamStore.ReadStreamForwards(cStream.Key, position, ReadSize);
                     while (page.Messages.Length > 0 && cCount > 0)
@@ -137,6 +104,7 @@ namespace ZES.Infrastructure
                             {
                                 var payload = await m.GetJsonData();
                                 var @event = _serializer.Deserialize(payload);
+                                // _log.Trace($"Processing event {@event.Version} on stream {@event.Stream}");
                                 observer.OnNext((T)@event);
                             }
                             else

@@ -42,6 +42,11 @@ namespace ZES
                 var iSaga = typeof(ISagaHandler<>).MakeGenericType(s);
                 var handler = typeof(SagaHandler<>).MakeGenericType(s);
                 c.Register(iSaga, handler, Lifestyle.Singleton);
+
+                var dispatcherType = typeof(SagaHandler<>.SagaDispatcher.Builder).MakeGenericType(s);
+                var flowType = typeof(SagaHandler<>.SagaDispatcher.SagaFlow.Builder).MakeGenericType(s);
+                c.Register(dispatcherType, dispatcherType, Lifestyle.Singleton);
+                c.Register(flowType, flowType, Lifestyle.Singleton);
             }
         }
 
@@ -83,18 +88,26 @@ namespace ZES
         /// <param name="assembly">Assembly containing the domain to register</param>
         public static void RegisterProjections(this Container c, Assembly assembly)
         {
-            var projections = assembly.GetTypesFromInterface(typeof(IProjection));
-            foreach (var p in projections)
+            var projections = assembly.GetTypesFromInterface(typeof(IProjection))
+                .Where(p => p.IsClosedTypeOf(typeof(IProjection<>)));
+            foreach (var p in projections.Where(p => !p.IsAbstract))
             {
-                var projectionInterface = p.GetInterfaces().First(x => x.Name.StartsWith(nameof(IProjection)));
+                var projectionInterface = p.GetInterfaces().Where(i => i.IsGenericType).First(x => x.Name.StartsWith(nameof(IProjection)));
                 var tState = projectionInterface.GenericTypeArguments[0];
 
+                //c.Register(typeof(Projection<>.StreamDispatcher).MakeGenericType(tState), p.BaseType.GetNestedType("StreamDispatcher"));
+                //c.Register(typeof(Func<>).MakeGenericType(typeof(Projection<>.StreamDispatcher).MakeGenericType(tState)));
                 c.RegisterConditional(
                     projectionInterface,
                     typeof(HistoricalDecorator<>).MakeGenericType(tState),
                     Lifestyle.Transient,
                     x => x.Consumer.ImplementationType.IsClosedTypeOf(typeof(HistoricalQueryHandler<,,>)));
-                c.RegisterConditional(projectionInterface, p, Lifestyle.Singleton, x => !x.Handled); 
+                c.RegisterConditional(projectionInterface, p, Lifestyle.Singleton, x => !x.Handled);
+
+                var builderType = typeof(Projection<>.ProjectionDispatcher.Builder).MakeGenericType(tState);
+                var streamType = typeof(Projection<>.ProjectionDispatcher.StreamFlow.Builder).MakeGenericType(tState);
+                c.Register(builderType, builderType, Lifestyle.Singleton);
+                c.Register(streamType, streamType, Lifestyle.Singleton);
             }
         }
 

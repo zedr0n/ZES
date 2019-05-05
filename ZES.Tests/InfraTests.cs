@@ -9,6 +9,7 @@ using ZES.Infrastructure;
 using ZES.Infrastructure.Alerts;
 using ZES.Interfaces;
 using ZES.Interfaces.Domain;
+using ZES.Interfaces.EventStore;
 using ZES.Interfaces.Pipes;
 using ZES.Tests.Domain;
 using ZES.Tests.Domain.Commands;
@@ -63,13 +64,13 @@ namespace ZES.Tests
             var repository = container.GetInstance<IEsRepository<IAggregate>>();
             
             var command = new CreateRoot("Root1");
-            await await bus.CommandAsync(command);  
+            await bus.CommandAsync(command);  
             
             var command2 = new CreateRoot("Root2");
-            await await bus.CommandAsync(command2);
+            await bus.CommandAsync(command2);
 
-            var root = await repository.Find<Root>("Root1");
-            var root2 = await repository.Find<Root>("Root2");
+            var root = await repository.FindUntil<Root>("Root1");
+            var root2 = await repository.FindUntil<Root>("Root2");
 
             Assert.NotEqual(root.Id, root2.Id);
         }
@@ -94,14 +95,17 @@ namespace ZES.Tests
         {
             var container = CreateContainer();
             var bus = container.GetInstance<IBus>();
+            var repository = container.GetInstance<IEsRepository<IAggregate>>();
             
-            var command = new CreateRoot("Root");
+            var command = new CreateRoot("Root"); 
             await await bus.CommandAsync(command);
             
             var updateCommand = new UpdateRoot("Root");
             await await bus.CommandAsync(updateCommand);
 
+            var root = await repository.FindUntil<Root>("Root");
             var rootInfo = await bus.QueryUntil(new RootInfoQuery("Root"), r => r.UpdatedAt > r.CreatedAt);
+            Assert.True(rootInfo.UpdatedAt == root.UpdatedAt);
             Assert.True(rootInfo.UpdatedAt > rootInfo.CreatedAt);
         }
         
@@ -196,7 +200,7 @@ namespace ZES.Tests
         }
         
         [Theory]
-        [InlineData(50)]         
+        [InlineData(1)]         
         public async void CanRebuildProjection(int numberOfRoots)
         {
             var container = CreateContainer();

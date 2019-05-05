@@ -8,6 +8,8 @@ namespace ZES.Interfaces.Pipes
     /// </summary>
     public interface IBus
     {
+        // <remarks>Command will only be processed once ( based on object's hash code )</remarks>
+        
         /// <summary>
         /// Send the command to the bus
         /// </summary>

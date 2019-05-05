@@ -35,7 +35,8 @@ namespace ZES.Infrastructure
         public async Task AppendCommand(ICommand command)
         {
             var message = Encode(command);
-            _log.Debug(message.JsonData);
+            if (Environment.GetEnvironmentVariable("LOG") != null)
+                _log.Debug(message.JsonData);
             await _streamStore.AppendToStream($"{_timeline.Id}:Command:commands", ExpectedVersion.Any, message);
         }
 

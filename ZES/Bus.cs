@@ -1,9 +1,10 @@
 using System;
-using System.Collections.Concurrent;
+using System.Reactive.Linq;
 using System.Threading.Tasks;
 using System.Threading.Tasks.Dataflow;
 using Gridsum.DataflowEx;
 using SimpleInjector;
+using ZES.Infrastructure;
 using ZES.Interfaces;
 using ZES.Interfaces.Domain;
 using ZES.Interfaces.Pipes;
@@ -14,8 +15,7 @@ namespace ZES
     public class Bus : IBus
     {
         private readonly Container _container;
-        private readonly CommandProcessor _commandProcessor;
-        private readonly ConcurrentDictionary<ICommand, TaskCompletionSource<bool>> _executing = new ConcurrentDictionary<ICommand, TaskCompletionSource<bool>>();
+        private readonly CommandDispatcher _commandDispatcher;
         private readonly IErrorLog _errorLog;
 
         /// <summary>
@@ -27,17 +27,23 @@ namespace ZES
         {
             _container = container;
             _errorLog = errorLog;
-            _commandProcessor = new CommandProcessor(HandleCommand, _executing); 
+            _commandDispatcher = new CommandDispatcher(
+                HandleCommand, 
+                new DataflowOptions 
+                {
+                    RecommendedParallelismIfMultiThreaded = Configuration.ThreadsPerInstance,
+                    /*FlowMonitorEnabled = true,
+                    BlockMonitorEnabled = true,
+                    PerformanceMonitorMode = DataflowOptions.PerformanceLogMode.Verbose,
+                    MonitorInterval = TimeSpan.FromMilliseconds(5)*/
+                });
         }
 
         /// <inheritdoc />
         public async Task<Task> CommandAsync(ICommand command)
         {
-            var source = new TaskCompletionSource<bool>();
-            _executing[command] = source;
-            if (!await _commandProcessor.InputBlock.SendAsync(command))
-                return Task.FromResult(false);
-            return source.Task;
+            await _commandDispatcher.SendAsync(command);
+            return _commandDispatcher.ReceiveAsync(command);
         }
 
         /// <inheritdoc />
@@ -73,54 +79,50 @@ namespace ZES
             var handlerType = typeof(ICommandHandler<>).MakeGenericType(command.GetType());
             dynamic handler = GetInstance(handlerType);
             if (handler != null)
-                await handler.Handle(command as dynamic);
+                await handler.Handle(command as dynamic).ConfigureAwait(false);
         }
-        
-        private class CommandFlow : Dataflow<ICommand>
-        {
-            private readonly ActionBlock<ICommand> _inputBlock;
-            private TaskCompletionSource<bool> _next = new TaskCompletionSource<bool>();
-            
-            public CommandFlow(Func<ICommand, Task> handler)
-                : base(DataflowOptions.Default)
-            {
-                _inputBlock = new ActionBlock<ICommand>(async c =>
-                {
-                    await handler(c);
-                    _next.SetResult(true);
-                    _next = new TaskCompletionSource<bool>();
-                });
-                RegisterChild(_inputBlock);
-            }
 
-            public override ITargetBlock<ICommand> InputBlock => _inputBlock;
-            public Task Next => _next.Task;
-        }
-                        
-        private class CommandProcessor : Dataflow<ICommand>
+        private class CommandFlow : Dataflow<ICommand, Task>
         {
-            private readonly ActionBlock<ICommand> _commandBlock;
-            private readonly ConcurrentDictionary<string, CommandFlow> _flows = new ConcurrentDictionary<string, CommandFlow>();
-            private readonly ConcurrentDictionary<ICommand, TaskCompletionSource<bool>> _executing;
-            
-            public CommandProcessor(Func<ICommand, Task> handler, ConcurrentDictionary<ICommand, TaskCompletionSource<bool>> executing)
-                : base(DataflowOptions.Default)
+            public CommandFlow(Func<ICommand, Task> handler, DataflowOptions options)
+                : base(options)
             {
-                _executing = executing;
-                _commandBlock = new ActionBlock<ICommand>(
+                var outputBlock = new BufferBlock<Task>();
+                var inputBlock = new ActionBlock<ICommand>(
                     async c =>
                     {
-                        var flow = _flows.GetOrAdd(c.Target, new CommandFlow(handler));
-                        await flow.SendAsync(c);
-                        await flow.Next;            
-                        _executing.TryRemove(c, out var source);
-                        source.SetResult(true);
-                    }, new ExecutionDataflowBlockOptions { MaxDegreeOfParallelism = 8 });
+                        var task = handler(c);
+                        await outputBlock.SendAsync(task); 
+                        await task; 
+                    }, options.ToExecutionBlockOption());
                 
-                RegisterChild(_commandBlock);
+                RegisterChild(inputBlock);
+                RegisterChild(outputBlock);
+                
+                InputBlock = inputBlock;
+                OutputBlock = outputBlock;
             }
 
-            public override ITargetBlock<ICommand> InputBlock => _commandBlock;
+            public override ITargetBlock<ICommand> InputBlock { get; }
+            public override ISourceBlock<Task> OutputBlock { get; }
+        }
+        
+        private class CommandDispatcher : ParallelDataDispatcher<string, ICommand, Task>
+        {
+            private readonly Func<ICommand, Task> _handler;
+
+            public CommandDispatcher(Func<ICommand, Task> handler, DataflowOptions options) 
+                : base(c => c.Target, options)
+            {
+                _handler = handler;
+            }
+            
+            public async Task ReceiveAsync(ICommand command) => await OutputBlock(command.Target).ReceiveAsync();
+
+            protected override Dataflow<ICommand, Task> CreateChildFlow(string target)
+            {
+                return new CommandFlow(_handler, DataflowOptions);
+            }
         }
     }
 }

@@ -1,6 +1,10 @@
+using System;
+using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 using NLog;
 using NLog.Config;
 using NLog.Targets;
+using ZES.Infrastructure;
 using ZES.Interfaces;
 
 namespace ZES.Logging
@@ -17,6 +21,11 @@ namespace ZES.Logging
         public NLog(ILogger logger)
         {
             _logger = logger;
+            var props = new Common.Logging.Configuration.NameValueCollection
+            {
+                { "ConfigType", "INLINE" }
+            };
+            Common.Logging.LogManager.Adapter = new Common.Logging.NLog.NLogLoggerFactoryAdapter(props);
         }
 
         /// <summary>
@@ -32,6 +41,7 @@ namespace ZES.Logging
                                   callSite + @":when:when='${event-properties:dtype}' != '' and level<=LogLevel.Info}" +
                                   @"${literal:text=(:when:when='${event-properties:dtype}' != ''}" + @"${event-properties:msg}" + @"${literal:text=):when:when='${event-properties:dtype}' != ''} " +
                                   @"${literal:text=[:when:when='${event-properties:dtype}' != ''}" + @"${event-properties:dtype}" + @"${literal:text=]:when:when='${event-properties:dtype}' != ''} " +
+                                  @"${message:when='${event-properties:msg}' == ''}" + 
                                   @"${exception}";
             
             var consoleTarget = new ColoredConsoleTarget
@@ -55,13 +65,16 @@ namespace ZES.Logging
         /// <inheritdoc />
         public void Trace(object message, object instance)
         {
-            _logger.Trace("{dtype} {msg}", instance?.GetType().GetName(), message);
+            var type = instance is string ? instance : instance?.GetType().GetFriendlyName();
+            _logger.Trace("{dtype} {msg}", type, message);
         }
 
         /// <inheritdoc />
-        public void Debug(object message)
+        public void Debug(object message, object instance = null, [CallerMemberName] string caller = "")
         {
-            _logger.Debug("{msg}", message);
+            var type = instance is string ? instance : instance?.GetType().GetFriendlyName();
+            if (Configuration.LogEnabled(caller))
+                _logger.Debug("{dtype} {msg}", type ?? string.Empty, message);
         }
 
         /// <inheritdoc />
@@ -73,14 +86,14 @@ namespace ZES.Logging
         /// <inheritdoc />
         public void Error(object message, object instance = null)
         {
-            var type = instance is string ? instance : instance?.GetType().GetName(); 
+            var type = instance is string ? instance : instance?.GetType().GetFriendlyName();
             _logger.Error("{dtype} {msg}", type ?? string.Empty, message);
         }
 
         /// <inheritdoc />
         public void Fatal(object message, object instance = null)
         {
-            var type = instance is string ? instance : instance?.GetType().GetName(); 
+            var type = instance is string ? instance : instance?.GetType().GetFriendlyName();
             _logger.Fatal("{dtype} {msg}", type ?? string.Empty, message);
         }
     }

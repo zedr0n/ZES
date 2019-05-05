@@ -6,6 +6,7 @@ using NLog.Targets;
 using SimpleInjector;
 using Xunit.Abstractions;
 using ZES.GraphQL;
+using ZES.Infrastructure;
 using ZES.Logging;
 
 namespace ZES.Tests
@@ -27,6 +28,15 @@ namespace ZES.Tests
                 Layout = layout 
             };  
             config.AddTarget(testTarget);
+
+            if (Configuration.LogEnabled("GridSum"))
+            {
+                TestOutputHelpers.AddTestOutputHelper(outputHelper, "Gridsum.DataflowEx", false);
+                TestOutputHelpers.AddTestOutputHelper(outputHelper, "Gridsum.DataflowEx.PerfMon", false);   
+            }
+            
+            if (Configuration.LogEnabled("InMemoryStreamStore"))
+                TestOutputHelpers.AddTestOutputHelper(outputHelper, "InMemoryStreamStore", false);   
             
             foreach (var target in config.AllTargets)
             {

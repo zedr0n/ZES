@@ -15,12 +15,12 @@ namespace ZES.Tests
             string loggerName,
             bool addNumericSuffix)
         {
-            IEnumerable<TestOutputTarget> testOutputTargets = LogManager.Configuration.AllTargets.OfType<TestOutputTarget>();
+            var testOutputTargets = LogManager.Configuration.AllTargets.OfType<TestOutputTarget>();
             if (string.IsNullOrWhiteSpace(loggerName))
                 loggerName = "Test";
             if (addNumericSuffix)
                 loggerName += Interlocked.Increment(ref _loggerId).ToString();
-            foreach (TestOutputTarget testOutputTarget in testOutputTargets)
+            foreach (var testOutputTarget in testOutputTargets)
                 testOutputTarget.Add(testOutputHelper, loggerName);
             return loggerName;
         }

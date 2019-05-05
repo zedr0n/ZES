@@ -108,5 +108,10 @@ namespace ZES.Infrastructure.Streams
                 Timeline = timeline
             };
         }
+
+        public override string ToString()
+        {
+            return $"{Key}@{Version}";
+        }
     }
 }

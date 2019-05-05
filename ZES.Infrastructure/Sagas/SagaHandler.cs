@@ -2,6 +2,7 @@ using System;
 using System.Collections.Concurrent;
 using System.Reactive.Linq;
 using System.Reactive.Subjects;
+using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Threading.Tasks.Dataflow;
@@ -17,9 +18,7 @@ namespace ZES.Infrastructure.Sagas
         where TSaga : class, ISaga, new()
     {
         private readonly IMessageQueue _messageQueue;
-        private readonly IEsRepository<ISaga> _repository;
-        private readonly ILog _log;
-        private readonly IErrorLog _errorLog;
+        private readonly SagaDispatcher.Builder _dispatcher;
 
         private CancellationTokenSource _source;
 
@@ -27,32 +26,22 @@ namespace ZES.Infrastructure.Sagas
         /// Initializes a new instance of the <see cref="SagaHandler{TSaga}"/> class.
         /// </summary>
         /// <param name="messageQueue">Message queue</param>
-        /// <param name="repository">Saga repository</param>
-        /// <param name="log">Application log</param>
-        /// <param name="errorLog">Application error log</param>
-        public SagaHandler(IMessageQueue messageQueue, IEsRepository<ISaga> repository, ILog log, IErrorLog errorLog)
+        /// <param name="dispatcher">Dispatcher factory</param>
+        public SagaHandler(IMessageQueue messageQueue, SagaDispatcher.Builder dispatcher)
         {
             _messageQueue = messageQueue;
-            _repository = repository;
-            _log = log;
-            _errorLog = errorLog;
+            _dispatcher = dispatcher;
 
             Start();
         }
 
         private void Start()
         {
-            _log.Trace(string.Empty, this);
             _source?.Cancel();
             _source = new CancellationTokenSource();
-            var dispatcher = new SagaDispatcher(
-                new DataflowOptionsEx
-                {
-                    RecommendedParallelismIfMultiThreaded = 8
-                }, 
-                _repository,
-                _log,
-                _errorLog);
+            var dispatcher = _dispatcher
+                .WithOptions(new DataflowOptionsEx{ RecommendedParallelismIfMultiThreaded = Configuration.ThreadsPerInstance })
+                .Bind(); 
 
             var obs = _messageQueue.Messages;
             obs.Subscribe(
@@ -70,98 +59,138 @@ namespace ZES.Infrastructure.Sagas
             dispatcher.CompletionTask.ContinueWith(t =>
             {
                 _source.Cancel();
-                _errorLog.Add(t.Exception);
-                _log.Fatal($"SagaHandler<{typeof(TSaga)}> failed"); 
             });
         }
 
-        private class SagaDispatcher : ParallelDataDispatcher<IEvent, string>
+        public class SagaDispatcher : ParallelDataDispatcher<string, IEvent, Task>
         {
-            private readonly IEsRepository<ISaga> _repository;
-            private readonly ILog _log;
-            private readonly IErrorLog _errorLog;
-            
-            private int _parallelCount;
-            
-            public SagaDispatcher(DataflowOptions options, IEsRepository<ISaga> repository, ILog log, IErrorLog errorLog)
-                : base(e => new TSaga().SagaId(e), options)
-            {
-                _repository = repository;
-                _log = log;
-                _errorLog = errorLog;
-            }
-
-            protected override Dataflow<IEvent> CreateChildFlow(string sagaId) 
-                => new SagaFlow(sagaId, _repository, _log, _errorLog);
-
-            protected override async Task SendToChild(Dataflow<IEvent> dataflow, IEvent input)
-            {
-                Interlocked.Increment(ref _parallelCount);
-                _log.Debug($"Saga parallel count : {_parallelCount}");
-                
-                await ((SagaFlow)dataflow).ProcessAsync(input);
-                
-                Interlocked.Decrement(ref _parallelCount);
-            }
-        }
-        
-        private class SagaFlow : Dataflow<IEvent>
-        {
-            private readonly IEsRepository<ISaga> _repository;
             private readonly ILog _log;
             private readonly IErrorLog _errorLog;
 
-            private readonly string _id;
-            private readonly ActionBlock<IEvent> _inputBlock;
-            private TaskCompletionSource<bool> _next = new TaskCompletionSource<bool>();
-            
-            public SagaFlow(string id, IEsRepository<ISaga> repository, ILog log, IErrorLog errorLog)
-                : base(DataflowOptions.Default)
-            {
-                _repository = repository;
-                _id = id;
-                _log = log;
-                _errorLog = errorLog;
-
-                _inputBlock = new ActionBlock<IEvent>(async e =>
-                {
-                    await Handle(e);
-                    _next.SetResult(true);
-                    _next = new TaskCompletionSource<bool>();
-                });
-                
-                RegisterChild(_inputBlock);
-            }
-            
-            public override ITargetBlock<IEvent> InputBlock => _inputBlock;
+            private readonly SagaFlow.Builder _sagaFlow;
 
             /// <summary>
-            /// Processes a single event asynchronously by the dataflow 
+            /// Initializes a new instance of the <see cref="SagaDispatcher"/> class.
             /// </summary>
-            /// <param name="e">Event to send to saga</param>
-            /// <returns>Task indicating whether the event was processed by the dataflow</returns>
-            public async Task<bool> ProcessAsync(IEvent e)
+            /// <param name="options">Dataflow options</param>
+            /// <param name="log">Log helper</param>
+            /// <param name="errorLog">Error log helper</param>
+            /// <param name="sagaFlow">Fluent builder</param>
+            private SagaDispatcher(DataflowOptions options, ILog log, IErrorLog errorLog, SagaFlow.Builder sagaFlow)
+                : base(e => new TSaga().SagaId(e), options, typeof(TSaga))
             {
-                if (!await _inputBlock.SendAsync(e))
-                    return false; 
-                return await _next.Task;
+                _log = log;
+                _errorLog = errorLog;
+                _sagaFlow = sagaFlow;
             }
 
-            private async Task Handle(IEvent e)
+            protected override Dataflow<IEvent, Task> CreateChildFlow(string sagaId)
+                => _sagaFlow.WithOptions(DataflowOptions).Bind(sagaId);
+
+            protected override void CleanUp(Exception dataflowException)
             {
-                _log.Trace($"{typeof(TSaga).Name}::When({e.EventType}[{e.Stream}])");
-                
-                try
-                {
-                    var saga = await _repository.GetOrAdd<TSaga>(_id);  
-                    saga?.When(e);
-                    await _repository.Save(saga);
-                }
-                catch (Exception exception)
-                {
-                    _errorLog.Add(exception);
-                }
+                _errorLog.Add(dataflowException.InnerException);
+                _log.Fatal($"SagaHandler<{typeof(TSaga)}> failed");  
             }
+
+            public class Builder
+            {
+                private readonly ILog _log;
+                private readonly IErrorLog _errorLog;
+                private readonly SagaFlow.Builder _sagaFlow;
+                private DataflowOptions _options = DataflowOptions.Default;
+
+                public Builder(ILog log, IErrorLog errorLog, SagaFlow.Builder sagaFlow)
+                {
+                    _log = log;
+                    _errorLog = errorLog;
+                    _sagaFlow = sagaFlow;
+                }
+
+                public Builder WithOptions(DataflowOptions options)
+                {
+                    _options = options;
+                    return this;
+                }
+
+                public SagaDispatcher Bind() => new SagaDispatcher(_options, _log, _errorLog, _sagaFlow);
+            }
+            
+            public class SagaFlow : Dataflow<IEvent, Task>
+            {
+                private readonly IEsRepository<ISaga> _repository;
+                private readonly ILog _log;
+                private readonly IErrorLog _errorLog;
+
+                private readonly string _id;
+
+                private SagaFlow(DataflowOptions options, string id, IEsRepository<ISaga> repository, ILog log, IErrorLog errorLog)
+                    : base(options)
+                {
+                    _id = id;
+                    _repository = repository; 
+                    _log = log;
+                    _errorLog = errorLog;
+
+                    var block = new TransformBlock<IEvent, Task>(
+                        async e =>
+                        { 
+                            var task = Handle(e);
+                            await task;
+                            return task;
+                        }, options.ToExecutionBlockOption());
+                
+                    RegisterChild(block);
+                    InputBlock = block;
+                    OutputBlock = block;
+                }
+
+                public override ITargetBlock<IEvent> InputBlock { get; }
+                public override ISourceBlock<Task> OutputBlock { get; }
+
+                private async Task Handle(IEvent e)
+                {
+                    _log.Trace($"{typeof(TSaga).Name}::When({e.EventType}[{e.Stream}])");
+                
+                    try
+                    {
+                        var saga = await _repository.GetOrAdd<TSaga>(_id);  
+                        saga?.When(e);
+                        await _repository.Save(saga);
+                    }
+                    catch (Exception exception)
+                    {
+                        _errorLog.Add(exception);
+                    }
+                }
+
+                public class Builder
+                {
+                    private readonly IEsRepository<ISaga> _repository;
+                    private readonly ILog _log;
+                    private readonly IErrorLog _errorLog;
+                    
+                    private DataflowOptions _options = DataflowOptions.Default;
+
+                    public Builder(IEsRepository<ISaga> repository, ILog log, IErrorLog errorLog)
+                    {
+                        _repository = repository;
+                        _log = log;
+                        _errorLog = errorLog;
+                    }
+
+                    public Builder WithOptions(DataflowOptions options)
+                    {
+                        _options = options;
+                        return this;
+                    }
+
+                    public SagaFlow Bind(string sagaId)
+                    {
+                        return new SagaFlow(_options, sagaId, _repository, _log, _errorLog);
+                    }
+                }
+            } 
         }
     }
 }

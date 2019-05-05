@@ -1,6 +1,8 @@
 using System;
+using System.Diagnostics;
 using System.Reactive.Linq;
 using System.Threading.Tasks;
+using ZES.Infrastructure;
 using ZES.Interfaces;
 using ZES.Interfaces.Domain;
 using ZES.Interfaces.Pipes;
@@ -13,7 +15,7 @@ namespace ZES
     public static class ObservableExtensions
     {
         private static readonly TimeSpan Delay = TimeSpan.FromMilliseconds(25);
-        private static readonly TimeSpan Timeout = TimeSpan.FromMilliseconds(1000);
+        //private static readonly TimeSpan Timeout = TimeSpan.FromMilliseconds(Debugger.IsAttached ? -1 : 1000);
 
         /// <summary>
         /// Repeated query until condition is satisfied or timeout is reached 
@@ -51,7 +53,7 @@ namespace ZES
             if (delay == default(TimeSpan))
                 delay = Delay;
             if (timeout == default(TimeSpan))
-                timeout = Timeout;
+                timeout = Configuration.Timeout;
             if (predicate == null)
                 predicate = x => !Equals(x, default(T));
 
@@ -70,7 +72,7 @@ namespace ZES
             });
 
             obs = obs.RetryWithDelay(delay);
-            if (timeout != TimeSpan.MaxValue)
+            if (timeout != TimeSpan.FromMilliseconds(-1))
                 obs = obs.Timeout(timeout, Observable.Return(action().Result));
 
             return await obs;

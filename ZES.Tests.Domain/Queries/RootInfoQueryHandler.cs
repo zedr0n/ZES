@@ -1,8 +1,29 @@
+using System;
+using System.Threading.Tasks;
 using ZES.Infrastructure;
 using ZES.Interfaces.Domain;
+using ZES.Interfaces.EventStore;
 
 namespace ZES.Tests.Domain.Queries
 {
+    /*public class ProjectionProxy<T> : IProjection<T>
+    {
+        private readonly Lazy<IProjection<T>> _projection;
+
+        public ProjectionProxy(Lazy<IProjection<T>> projection)
+        {
+            _projection = projection;
+        }
+
+        public Task Complete => _projection.Value.Complete;
+        public string Key(IStream stream)
+        {
+            throw new NotImplementedException();
+        }
+
+        public T State => _projection.Value.State;
+    }*/
+    
     public class RootInfoQueryHandler : QueryHandler<RootInfoQuery, RootInfo>
     {
         private IProjection<RootInfoProjection.StateType> _projection;

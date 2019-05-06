@@ -31,7 +31,6 @@ namespace ZES.Infrastructure.Projections
         private readonly BehaviorSubject<ProjectionStatus> _statusSubject = new BehaviorSubject<ProjectionStatus>(SLEEPING);
         
         private CancellationTokenSource _cancellationSource;
-        private TaskCompletionSource<IStream> _taskCompletion = new TaskCompletionSource<IStream>();
 
         private int _build = 0;
 
@@ -51,6 +50,7 @@ namespace ZES.Infrastructure.Projections
             _streamDispatcher = streamDispatcher;
             _timeline = timeline;
 
+            _statusSubject.Subscribe(s => Log?.Trace(s.ToString(), this));
             OnInit();
         }
 
@@ -110,7 +110,7 @@ namespace ZES.Infrastructure.Projections
 
         private async Task Rebuild()
         {
-            Log.Trace("Rebuild started", this);
+            // Log.Trace("Rebuild started", this);
 
             Interlocked.Increment(ref _build);
             _statusSubject.OnNext(BUILDING);
@@ -160,8 +160,7 @@ namespace ZES.Infrastructure.Projections
             if (task.IsCompleted)
             {
                 _statusSubject.OnNext(_build == 0 ? LISTENING : BUILDING);
-                if (_build == 0)
-                    Log?.Trace("Rebuild completed", this);
+                // Log?.Trace("Rebuild completed", this);
             }
             else if (task.IsCanceled)
             {

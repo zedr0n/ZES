@@ -1,6 +1,4 @@
 using System;
-using System.Collections;
-using System.Collections.Generic;
 using System.Threading.Tasks;
 using ZES.Interfaces.EventStore;
 
@@ -38,8 +36,6 @@ namespace ZES.Interfaces.Domain
         /// <param name="stream">Originating stream</param>
         /// <returns>Read model key</returns>
         string Key(IStream stream);
-
-        //void When(IEvent e);
     }
 
     /// <summary>

@@ -14,38 +14,24 @@ namespace ZES.Infrastructure
         where TQuery : class, IQuery<TResult>
         where TResult : class
     {
-        /// <inheritdoc />
-        public virtual IProjection Projection { get; set; }
+        /// <summary>
+        /// Gets the projection as common base interface
+        /// </summary>
+        /// <value>
+        /// The projection as common base interface
+        /// </value>
+        protected virtual IProjection Projection { get; } = null;
 
         /// <summary>
         /// Unimplemented 
         /// </summary>
+        /// <param name="projection">Projection to use</param>
         /// <param name="query">CQRS query</param>
         /// <returns>Query result</returns>
         /// <exception cref="NotImplementedException">Base unimplemented method</exception>
-        public virtual TResult Handle(TQuery query)
+        public virtual TResult Handle(IProjection projection, TQuery query)
         {
             throw new NotImplementedException();
-        }
-
-        /// <summary>
-        /// Bridge generic <see cref="IQuery{TResult}"/> to explicit query type 
-        /// </summary>
-        /// <param name="query">Generic query</param>
-        /// <returns>Query result</returns>
-        public TResult Handle(IQuery<TResult> query)
-        {
-            return Handle(query as TQuery);
-        }
-
-        /// <summary>
-        /// Convert synchronous handler to async method
-        /// </summary>
-        /// <param name="query">Typed query</param>
-        /// <returns>Task from synchronous result</returns>
-        public virtual Task<TResult> HandleAsync(TQuery query)
-        {
-            return Task.FromResult(Handle(query));
         }
 
         /// <summary>
@@ -56,6 +42,17 @@ namespace ZES.Infrastructure
         public async Task<TResult> HandleAsync(IQuery<TResult> query)
         {
             return await HandleAsync(query as TQuery);
+        }
+        
+        /// <summary>
+        /// Convert synchronous handler to async method
+        /// </summary>
+        /// <param name="query">Typed query</param>
+        /// <returns>Task from synchronous result</returns>
+        protected virtual async Task<TResult> HandleAsync(TQuery query)
+        {
+            await Projection.Complete;
+            return Handle(Projection, query);
         }
     }
 }

@@ -6,18 +6,15 @@ namespace ZES.Tests.Domain.Queries
 {
     public class StatsQueryHandler : QueryHandler<StatsQuery, Stats>
     {
-        private IProjection<ValueState<Stats>> _projection;
+        private readonly IProjection<ValueState<Stats>> _projection;
         public StatsQueryHandler(IProjection<ValueState<Stats>> projection)
         {
             _projection = projection;
         }
 
-        public override IProjection Projection
-        {
-            get => _projection;
-            set => _projection = value as IProjection<ValueState<Stats>>;
-        }
+        protected override IProjection Projection => _projection;
 
-        public override Stats Handle(StatsQuery query) => _projection.State.Value;
+        public override Stats Handle(IProjection projection, StatsQuery query) => 
+            (projection as IProjection<ValueState<Stats>>)?.State.Value;
     }
 }

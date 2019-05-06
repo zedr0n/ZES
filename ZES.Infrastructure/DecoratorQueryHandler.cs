@@ -34,24 +34,20 @@ namespace ZES.Infrastructure
         /// Decorator query handler delaying after the <see cref="IProjection"/> has been rebuilt
         /// <para>
         /// * redirect exceptions to <see cref="IErrorLog"/>
-        /// <para>* uses synchronous handler if asynchronous is not available </para></para>
+        /// </para>
         /// </summary>
         /// <param name="query">Typed query</param>
         /// <returns>Task representing the result of asynchronous query processing </returns>
-        public override async Task<TResult> HandleAsync(TQuery query)
+        protected override async Task<TResult> HandleAsync(TQuery query)
         {
             try
             {
-                if (_handler.Projection != null)
-                    await _handler.Projection.Status.Where(s => s == ProjectionStatus.LISTENING).FirstAsync();
-                    // await _handler.Projection.Complete;
                 return await _handler.HandleAsync(query);
             }
             catch (Exception e)
             {
-                if (!(e is NotImplementedException))
-                    _errorLog.Add(e);
-                return Handle(query);
+                _errorLog.Add(e);
+                return default(TResult);
             }
         }
     }

@@ -12,21 +12,6 @@ namespace ZES.Interfaces.Domain
         where TResult : class
     {
         /// <summary>
-        /// Gets or sets the projection used by the query handler
-        /// </summary>
-        /// <value>
-        /// The projection used by the query handler
-        /// </value>
-        IProjection Projection { get; set; }
-        
-        /// <summary>
-        /// Query handler processor ( can be overriden via decorators )
-        /// </summary>
-        /// <param name="query"> Query object </param>
-        /// <returns>Query result</returns>
-        TResult Handle(IQuery<TResult> query);
-        
-        /// <summary>
         /// Query handler processor ( can be overriden via decorators )
         /// </summary>
         /// <param name="query"> Query object </param>

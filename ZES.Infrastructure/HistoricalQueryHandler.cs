@@ -30,17 +30,17 @@ namespace ZES.Infrastructure
         }
 
         /// <summary>
-        /// Using an injected <see cref="HistoricalDecorator{TState}"/> instance resolve the query at specified point in time
+        /// Using an injected <see cref="HistoricalProjection{TState}"/> instance resolve the query at specified point in time
         /// </summary>
         /// <param name="query">Historical query</param>
         /// <returns>Task representing the asynchronous execution of historical query</returns>
-        public override async Task<TResult> HandleAsync(HistoricalQuery<TQuery, TResult> query)
+        protected override async Task<TResult> HandleAsync(HistoricalQuery<TQuery, TResult> query)
         {
-            _handler.Projection = _projection;
             var projection = (IHistoricalProjection)_projection;
             await projection.Init(query.Timestamp);
             await projection.Complete;
-            return await _handler.HandleAsync(query.Query);
+            
+            return (_handler as QueryHandler<TQuery, TResult>)?.Handle(projection, query.Query);
         }
     }
 }

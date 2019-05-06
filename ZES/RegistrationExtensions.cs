@@ -76,7 +76,7 @@ namespace ZES
                 
                 var historicalHandler = typeof(HistoricalQueryHandler<,,>).MakeGenericType(q, result, tState);
 
-                c.RegisterConditional(iQueryHandler, handler, Lifestyle.Transient, x => !x.Handled);
+                c.RegisterConditional(iQueryHandler, handler, Lifestyle.Singleton, x => !x.Handled);
                 c.RegisterConditional(iHistoricalQueryHandler, historicalHandler, Lifestyle.Transient, x => !x.Handled);
             }
         }
@@ -99,7 +99,7 @@ namespace ZES
                 //c.Register(typeof(Func<>).MakeGenericType(typeof(Projection<>.StreamDispatcher).MakeGenericType(tState)));
                 c.RegisterConditional(
                     projectionInterface,
-                    typeof(HistoricalDecorator<>).MakeGenericType(tState),
+                    typeof(HistoricalProjection<>).MakeGenericType(tState),
                     Lifestyle.Transient,
                     x => x.Consumer.ImplementationType.IsClosedTypeOf(typeof(HistoricalQueryHandler<,,>)));
                 c.RegisterConditional(projectionInterface, p, Lifestyle.Singleton, x => !x.Handled);

@@ -10,13 +10,13 @@ namespace ZES.Infrastructure.Projections
     /// Historical projection decorator
     /// </summary>
     /// <typeparam name="TState">Projection state</typeparam>
-    public class HistoricalDecorator<TState> : Projection<TState>, IHistoricalProjection
+    public class HistoricalProjection<TState> : Projection<TState>, IHistoricalProjection
         where TState : new()
     {
         private long _timestamp;
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="HistoricalDecorator{TState}"/> class.
+        /// Initializes a new instance of the <see cref="HistoricalProjection{TState}"/> class.
         /// </summary>
         /// <param name="eventStore">Aggregate event store</param>
         /// <param name="log">Application log</param>
@@ -24,7 +24,7 @@ namespace ZES.Infrastructure.Projections
         /// <param name="iProjection">Original projection</param>
         /// <param name="timeline">Active branch</param>
         /// <param name="builder">Fluent builder</param>
-        public HistoricalDecorator(
+        public HistoricalProjection(
             IEventStore<IAggregate> eventStore,
             ILog log,
             IMessageQueue messageQueue,

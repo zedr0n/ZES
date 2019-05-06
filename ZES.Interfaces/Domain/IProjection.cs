@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Threading.Tasks;
@@ -5,9 +6,11 @@ using ZES.Interfaces.EventStore;
 
 namespace ZES.Interfaces.Domain
 {
-    public interface IKey 
+    public enum ProjectionStatus
     {
-        string Get(IStream stream);
+        SLEEPING,
+        BUILDING,
+        LISTENING
     }
     
     /// <summary>
@@ -15,6 +18,9 @@ namespace ZES.Interfaces.Domain
     /// </summary>
     public interface IProjection 
     {
+        
+        IObservable<ProjectionStatus> Status { get; }
+
         /// <summary>
         /// Gets the task representing the projection rebuild
         /// </summary>

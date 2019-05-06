@@ -39,6 +39,7 @@ namespace ZES.Infrastructure
             _handler.Projection = _projection;
             var projection = (IHistoricalProjection)_projection;
             await projection.Init(query.Timestamp);
+            await projection.Complete;
             return await _handler.HandleAsync(query.Query);
         }
     }

@@ -1,4 +1,5 @@
 using System;
+using System.Reactive.Linq;
 using System.Threading.Tasks;
 using ZES.Interfaces;
 using ZES.Interfaces.Domain;
@@ -42,7 +43,8 @@ namespace ZES.Infrastructure
             try
             {
                 if (_handler.Projection != null)
-                    await _handler.Projection.Complete;
+                    await _handler.Projection.Status.Where(s => s == ProjectionStatus.LISTENING).FirstAsync();
+                    // await _handler.Projection.Complete;
                 return await _handler.HandleAsync(query);
             }
             catch (Exception e)

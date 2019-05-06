@@ -63,7 +63,7 @@ namespace ZES.Infrastructure.Streams
         
         private void Restart()
         {
-            _log.Trace(string.Empty, this);
+            // _log.Trace(string.Empty, this);
             _subscription?.Dispose();
             _subscription = _eventStore.ListStreams().Concat(_eventStore.Streams).Subscribe(stream => GetOrAdd(stream));            
         }

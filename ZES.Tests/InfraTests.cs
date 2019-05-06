@@ -125,7 +125,7 @@ namespace ZES.Tests
             Assert.Equal(0, historicalStats.NumberOfRoots);
             
             var liveQuery = new HistoricalQuery<StatsQuery, Stats>(statsQuery, DateTime.UtcNow.Ticks);
-            var liveStats = await bus.QueryUntil(liveQuery, s => s.NumberOfRoots > 0);
+            var liveStats = await bus.QueryAsync(liveQuery);
             Assert.Equal(1, liveStats.NumberOfRoots);
         }
 

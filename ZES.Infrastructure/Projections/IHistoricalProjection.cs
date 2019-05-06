@@ -1,11 +1,12 @@
 using System.Threading.Tasks;
+using ZES.Interfaces.Domain;
 
 namespace ZES.Infrastructure.Projections
 {
     /// <summary>
     /// Historical projection
     /// </summary>
-    public interface IHistoricalProjection
+    public interface IHistoricalProjection : IProjection
     {
         /// <summary>
         /// Initialize the historical projection up to timestamp

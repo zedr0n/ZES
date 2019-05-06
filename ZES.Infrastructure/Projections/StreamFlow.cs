@@ -136,7 +136,7 @@ namespace ZES.Infrastructure.Projections
                     var source = CancellationTokenSource.CreateLinkedTokenSource(_cancellation.Token);
                     _cancels.GetOrAdd(s.GetHashCode(), source);
 
-                    _log?.Trace($"Reading {streamVersion - version} events from {s.Key}", this);
+                    // _log?.Trace($"Reading {streamVersion - version} events from {s.Key}", this);
                     var o = _store.ReadStream<IEvent>(s, version + 1, streamVersion - version)
                         .Publish().RefCount();
 

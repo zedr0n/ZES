@@ -1,8 +1,8 @@
 using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Reactive.Concurrency;
 using System.Reactive.Linq;
+using System.Reactive.Subjects;
 using System.Reactive.Threading.Tasks;
 using System.Threading;
 using System.Threading.Tasks;
@@ -13,6 +13,8 @@ using ZES.Interfaces;
 using ZES.Interfaces.Domain;
 using ZES.Interfaces.EventStore;
 using ZES.Interfaces.Pipes;
+
+using static ZES.Interfaces.Domain.ProjectionStatus;
 
 namespace ZES.Infrastructure.Projections
 {
@@ -26,10 +28,12 @@ namespace ZES.Infrastructure.Projections
 
         private readonly ProjectionDispatcher.Builder _streamDispatcher;
 
-        private readonly ConcurrentQueue<Task> _tasks;
+        private readonly BehaviorSubject<ProjectionStatus> _statusSubject = new BehaviorSubject<ProjectionStatus>(SLEEPING);
         
         private CancellationTokenSource _cancellationSource;
         private TaskCompletionSource<IStream> _taskCompletion = new TaskCompletionSource<IStream>();
+
+        private int _build = 0;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="Projection{TState}"/> class.
@@ -51,8 +55,10 @@ namespace ZES.Infrastructure.Projections
         }
 
         /// <inheritdoc />
-        public Task Complete => Observable.FromAsync(async () => await _taskCompletion.Task)
-            .Timeout(Configuration.Timeout == TimeSpan.FromMilliseconds(-1) ? TimeSpan.MaxValue : Configuration.Timeout).ToTask(); 
+        public IObservable<ProjectionStatus> Status => _statusSubject.AsObservable();
+
+        /// <inheritdoc />
+        public Task Complete => Status.Timeout(Configuration.Timeout).FirstAsync(s => s == LISTENING).ToTask();
 
         /// <inheritdoc />
         public TState State { get; protected set; } = new TState();
@@ -106,15 +112,14 @@ namespace ZES.Infrastructure.Projections
         {
             Log.Trace("Rebuild started", this);
 
+            Interlocked.Increment(ref _build);
+            _statusSubject.OnNext(BUILDING);
+            
             _cancellationSource?.Cancel();
             _cancellationSource = new CancellationTokenSource();
 
             lock (State)
                 State = new TState();
-
-            var completion = new TaskCompletionSource<IStream>();
-            _tasks.Enqueue(completion.Task);
-            _taskCompletion = new TaskCompletionSource<IStream>();
             
             var rebuildDispatcher = _streamDispatcher
                 .WithCancellation(_cancellationSource)
@@ -151,10 +156,12 @@ namespace ZES.Infrastructure.Projections
             var task = rebuildDispatcher.CompletionTask;
             await task;
 
+            Interlocked.Decrement(ref _build);
             if (task.IsCompleted)
             {
-                _taskCompletion.TrySetResult(null);
-                Log?.Trace("Rebuild completed", this);
+                _statusSubject.OnNext(_build == 0 ? LISTENING : BUILDING);
+                if (_build == 0)
+                    Log?.Trace("Rebuild completed", this);
             }
             else if (task.IsCanceled)
             {

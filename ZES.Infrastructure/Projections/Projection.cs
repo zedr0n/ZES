@@ -110,6 +110,8 @@ namespace ZES.Infrastructure.Projections
 
             lock (State)
                 State = new TState();
+
+            _taskCompletion = new TaskCompletionSource<IStream>();
             
             var rebuildDispatcher = _streamDispatcher
                 .WithCancellation(_cancellationSource)

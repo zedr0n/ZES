@@ -104,13 +104,18 @@ namespace ZES.Infrastructure.Projections
                         {
                             if (_eventBlock.TryReceiveAll(out var events))
                                 await _whenBlock.ToDataflow().ProcessAsync(events.OrderBy(e => e.Timestamp), false);
-                            
+
                             // _log.Trace("Listening to streams", this);
                             _eventBlock.LinkTo(_whenBlock, e => _start.Value.IsCompleted);
                         }
                     });
 
                     return this;
+                }
+
+                private async Task Rebuild()
+                {
+                    
                 }
 
                 private async Task<int> Transform(IStream s)
@@ -131,6 +136,7 @@ namespace ZES.Infrastructure.Projections
                     var source = CancellationTokenSource.CreateLinkedTokenSource(_cancellation.Token);
                     _cancels.GetOrAdd(s.GetHashCode(), source);
 
+                    _log?.Trace($"Reading {streamVersion - version} events from {s.Key}", this);
                     var o = _store.ReadStream<IEvent>(s, version + 1, streamVersion - version)
                         .Publish().RefCount();
 

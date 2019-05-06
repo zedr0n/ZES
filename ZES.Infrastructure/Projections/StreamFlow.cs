@@ -83,6 +83,7 @@ namespace ZES.Infrastructure.Projections
                     _eventBlock = new BufferBlock<IEvent>();
                     _whenBlock = new ActionBlock<IEvent>(e =>
                     {
+                        _log?.Trace($"{e.Stream}:{e.Version}", this);
                         if ( e.Timestamp < _timestamp )
                             throw new InvalidOperationException();
                                  

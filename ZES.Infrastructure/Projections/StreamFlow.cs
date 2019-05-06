@@ -150,53 +150,34 @@ namespace ZES.Infrastructure.Projections
                     return _version[s.Key]; 
                 }
 
-                public class Builder
+                public class Builder : FluentBuilder
                 {
                     private readonly ILog _log;
                     private readonly IEventStore<IAggregate> _store;
 
-                    private DataflowOptions _options;
-                    private CancellationTokenSource _cancellation;
-                    private Lazy<Task> _delay;
+                    private DataflowOptions _options = DataflowOptions.Default;
+                    private CancellationTokenSource _cancellation = new CancellationTokenSource();
+                    private Lazy<Task> _delay = new Lazy<Task>(() => Task.CompletedTask);
                     
                     public Builder(ILog log, IEventStore<IAggregate> store)
                     {
                         _log = log;
                         _store = store;
-                        
-                        Reset();
                     }
 
                     internal Builder WithOptions(DataflowOptions options)
-                    {
-                        _options = options;
-                        return this;
-                    }
+                        => Clone(this, b => b._options = options);
 
                     internal Builder WithCancellation(CancellationTokenSource source)
-                    {
-                        _cancellation = source;
-                        return this;
-                    }
+                        => Clone(this, b => b._cancellation = source);
 
                     internal Builder DelayUntil(Lazy<Task> delay)
-                    {
-                        _delay = delay;
-                        return this;
-                    }
+                        => Clone(this, b => b._delay = delay);
 
                     internal Dataflow<IStream, int> Bind(Action<IEvent> when)
                     {
                         var flow = new StreamFlow(_options, _cancellation, _delay, _store, _log);
-                        Reset();
                         return flow.Bind(when);
-                    }
-
-                    private void Reset()
-                    {
-                        _options = DataflowOptions.Default;
-                        _cancellation = new CancellationTokenSource();
-                        _delay = new Lazy<Task>(() => Task.CompletedTask);
                     }
                 }
             }

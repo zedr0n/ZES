@@ -1,4 +1,5 @@
 using System;
+using System.Linq.Expressions;
 using System.Threading;
 using System.Threading.Tasks;
 using Gridsum.DataflowEx;
@@ -51,56 +52,36 @@ namespace ZES.Infrastructure.Projections
                 base.CleanUp(dataflowException);
             }
 
-            public class Builder 
+            public class Builder : FluentBuilder
             {
                 private readonly StreamFlow.Builder _streamFlow;
                 private readonly ILog _log;
 
-                private Lazy<Task> _delayUntil;
-                private DataflowOptions _options;
-                private CancellationTokenSource _cancellation; 
+                private DataflowOptions _options = DataflowOptions.Default;
+                private CancellationTokenSource _cancellation = new CancellationTokenSource(); 
+                private Lazy<Task> _delayUntil = new Lazy<Task>(() => Task.CompletedTask);
 
                 public Builder(StreamFlow.Builder streamFlow, ILog log)
                 {
                     _streamFlow = streamFlow;
                     _log = log;
-                    
-                    Reset();
                 }
 
-                public Builder WithOptions(DataflowOptions options)
-                {
-                    _options = options;
-                    return this;
-                }
+                internal Builder WithOptions(DataflowOptions options) =>
+                    Clone(this, b => b._options = options);
 
-                public Builder WithCancellation(CancellationTokenSource source)
-                {
-                    _cancellation = source;
-                    return this;
-                }
+                internal Builder WithCancellation(CancellationTokenSource source) =>
+                    Clone(this, b => b._cancellation = source);
 
-                public Builder DelayUntil(Lazy<Task> delay)
-                {
-                    _delayUntil = delay;
-                    return this;
-                }
+                internal Builder DelayUntil(Lazy<Task> delay) =>
+                    Clone(this, b => b._delayUntil = delay);
 
-                public ParallelDataDispatcher<string, IStream, int> Bind(Projection<TState> projection)
+                internal ParallelDataDispatcher<string, IStream, int> Bind(Projection<TState> projection)
                 {
                     if (projection == null)
                         throw new ArgumentNullException();
                     
-                    var dispatcher = new ProjectionDispatcher(_options, projection, _cancellation, _delayUntil, _streamFlow, _log);
-                    Reset();
-                    return dispatcher;
-                }
-
-                private void Reset()
-                {
-                    _delayUntil = new Lazy<Task>(() => Task.CompletedTask);
-                    _options = DataflowOptions.Default;
-                    _cancellation = new CancellationTokenSource(); 
+                    return new ProjectionDispatcher(_options, projection, _cancellation, _delayUntil, _streamFlow, _log);
                 }
             }
         }

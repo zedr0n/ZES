@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Reactive.Concurrency;
 using System.Reactive.Linq;
@@ -25,6 +26,7 @@ namespace ZES.Infrastructure.Projections
 
         private readonly ProjectionDispatcher.Builder _streamDispatcher;
 
+        private readonly ConcurrentQueue<Task> _complete = new ConcurrentQueue<Task>();
         private CancellationTokenSource _cancellationSource;
         private TaskCompletionSource<IStream> _taskCompletion = new TaskCompletionSource<IStream>();
 
@@ -109,8 +111,6 @@ namespace ZES.Infrastructure.Projections
             lock (State)
                 State = new TState();
             
-            _taskCompletion = new TaskCompletionSource<IStream>();
-
             var rebuildDispatcher = _streamDispatcher
                 .WithCancellation(_cancellationSource)
                 .WithOptions(new DataflowOptionsEx
@@ -136,17 +136,25 @@ namespace ZES.Infrastructure.Projections
                         : 1,
                     FlowMonitorEnabled = false
                 })
-                .DelayUntil(new Lazy<Task>(() => Complete))
+                .DelayUntil(new Lazy<Task>(() => rebuildDispatcher.CompletionTask))
                 .Bind(this)
                 .OnError(async t => await Rebuild());
-
-            rebuildDispatcher.CompletionTask.ContinueWith(t => _taskCompletion.TrySetResult(null));
 
             _eventStore.ListStreams(_timeline.Id).Subscribe(rebuildDispatcher.InputBlock.AsObserver(), _cancellationSource.Token);
             _eventStore.Streams.Subscribe(liveDispatcher.InputBlock.AsObserver(), _cancellationSource.Token);
 
-            await Complete;
-            //await Observable.FromAsync(async () => await Complete).Timeout(Configuration.Timeout); 
+            var task = rebuildDispatcher.CompletionTask;
+            await task;
+
+            if (task.IsCompleted)
+            {
+                _taskCompletion.TrySetResult(null);
+                Log?.Debug("Rebuild completed", this);
+            }
+            else if (task.IsCanceled)
+            {
+                Log?.Debug("Rebuild cancelled", this);
+            }
         }
 
         private void When(IEvent e)

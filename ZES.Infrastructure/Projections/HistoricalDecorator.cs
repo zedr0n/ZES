@@ -22,6 +22,7 @@ namespace ZES.Infrastructure.Projections
         /// <param name="log">Application log</param>
         /// <param name="messageQueue">Message queue</param>
         /// <param name="iProjection">Original projection</param>
+        /// <param name="timeline">Active branch</param>
         /// <param name="builder">Fluent builder</param>
         public HistoricalDecorator(
             IEventStore<IAggregate> eventStore,

@@ -93,38 +93,25 @@ namespace ZES.Infrastructure.Sagas
                 _log.Fatal($"SagaHandler<{typeof(TSaga)}> failed");  
             }
 
-            public class Builder
+            public class Builder : FluentBuilder
             {
                 private readonly ILog _log;
                 private readonly IErrorLog _errorLog;
                 private readonly SagaFlow.Builder _sagaFlow;
-                private DataflowOptions _options; 
+                private DataflowOptions _options = DataflowOptions.Default; 
 
                 public Builder(ILog log, IErrorLog errorLog, SagaFlow.Builder sagaFlow)
                 {
                     _log = log;
                     _errorLog = errorLog;
                     _sagaFlow = sagaFlow;
-                    Reset();
                 }
 
-                public Builder WithOptions(DataflowOptions options)
-                {
-                    _options = options;
-                    return this;
-                }
+                internal Builder WithOptions(DataflowOptions options)
+                    => Clone(this, b => b._options = options);
 
-                public SagaDispatcher Bind()
-                {
-                    var dispatcher = new SagaDispatcher(_options, _log, _errorLog, _sagaFlow);
-                    Reset();
-                    return dispatcher;
-                }
-
-                private void Reset()
-                {
-                    _options = DataflowOptions.Default;
-                }
+                public SagaDispatcher Bind() =>
+                    new SagaDispatcher(_options, _log, _errorLog, _sagaFlow);
             }
             
             public class SagaFlow : Dataflow<IEvent, Task>
@@ -175,7 +162,7 @@ namespace ZES.Infrastructure.Sagas
                     }
                 }
 
-                public class Builder
+                public class Builder : FluentBuilder
                 {
                     private readonly IEsRepository<ISaga> _repository;
                     private readonly ILog _log;
@@ -188,27 +175,13 @@ namespace ZES.Infrastructure.Sagas
                         _repository = repository;
                         _log = log;
                         _errorLog = errorLog;
-                        
-                        Reset();
                     }
 
                     public Builder WithOptions(DataflowOptions options)
-                    {
-                        _options = options;
-                        return this;
-                    }
+                        => Clone(this, b => b._options = options);
 
-                    public SagaFlow Bind(string sagaId)
-                    {
-                        var flow = new SagaFlow(_options, sagaId, _repository, _log, _errorLog);
-                        Reset();
-                        return flow;
-                    }
-
-                    private void Reset()
-                    {
-                        _options = DataflowOptions.Default;
-                    }
+                    public SagaFlow Bind(string sagaId) =>
+                        new SagaFlow(_options, sagaId, _repository, _log, _errorLog);
                 }
             } 
         }

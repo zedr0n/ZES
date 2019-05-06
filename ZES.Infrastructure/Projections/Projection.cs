@@ -26,7 +26,8 @@ namespace ZES.Infrastructure.Projections
 
         private readonly ProjectionDispatcher.Builder _streamDispatcher;
 
-        private readonly ConcurrentQueue<Task> _complete = new ConcurrentQueue<Task>();
+        private readonly ConcurrentQueue<Task> _tasks;
+        
         private CancellationTokenSource _cancellationSource;
         private TaskCompletionSource<IStream> _taskCompletion = new TaskCompletionSource<IStream>();
 
@@ -111,6 +112,8 @@ namespace ZES.Infrastructure.Projections
             lock (State)
                 State = new TState();
 
+            var completion = new TaskCompletionSource<IStream>();
+            _tasks.Enqueue(completion.Task);
             _taskCompletion = new TaskCompletionSource<IStream>();
             
             var rebuildDispatcher = _streamDispatcher
@@ -151,11 +154,11 @@ namespace ZES.Infrastructure.Projections
             if (task.IsCompleted)
             {
                 _taskCompletion.TrySetResult(null);
-                Log?.Debug("Rebuild completed", this);
+                Log?.Trace("Rebuild completed", this);
             }
             else if (task.IsCanceled)
             {
-                Log?.Debug("Rebuild cancelled", this);
+                Log?.Trace("Rebuild cancelled", this);
             }
         }
 

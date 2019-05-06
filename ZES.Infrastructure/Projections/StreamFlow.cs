@@ -120,6 +120,7 @@ namespace ZES.Infrastructure.Projections
 
                 private async Task<int> Transform(IStream s)
                 {
+                    _log?.Trace($"{s.Key}@{s.Version}", this);
                     var version = _version.GetOrAdd(s.Key, ExpectedVersion.EmptyStream);
                     
                     // need to copy here as IStream object might get updated in the meantime 

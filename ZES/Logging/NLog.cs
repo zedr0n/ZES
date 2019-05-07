@@ -81,9 +81,10 @@ namespace ZES.Logging
         }
 
         /// <inheritdoc />
-        public void Info(object message)
+        public void Info(object message, object instance)
         {
-            _logger.Info("{msg}", message);
+            var type = instance is string ? instance : instance?.GetType().GetFriendlyName();
+            _logger.Info("{dtype} {msg}", type ?? string.Empty, message);
         }
 
         /// <inheritdoc />

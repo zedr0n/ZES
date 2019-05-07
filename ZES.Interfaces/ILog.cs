@@ -40,7 +40,8 @@ namespace ZES.Interfaces
         /// Writes the diagnostic message at the <c>Info</c> level.
         /// </summary>
         /// <param name="message">Log message</param>
-        void Info(object message);
+        /// <param name="instance">Object originating the error</param>
+        void Info(object message, object instance = null);
         
         /// <summary>
         /// Writes the diagnostic message at the <c>Error</c> level.

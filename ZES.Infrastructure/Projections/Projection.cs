@@ -50,7 +50,7 @@ namespace ZES.Infrastructure.Projections
             _streamDispatcher = streamDispatcher;
             _timeline = timeline;
 
-            _statusSubject.Subscribe(s => Log?.Trace(s.ToString(), this));
+            _statusSubject.Subscribe(s => Log?.Info($"{GetType().GetFriendlyName()} : {s.ToString()}" ));
             OnInit();
         }
 

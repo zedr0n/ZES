@@ -95,8 +95,6 @@ namespace ZES
                 var projectionInterface = p.GetInterfaces().Where(i => i.IsGenericType).First(x => x.Name.StartsWith(nameof(IProjection)));
                 var tState = projectionInterface.GenericTypeArguments[0];
 
-                //c.Register(typeof(Projection<>.StreamDispatcher).MakeGenericType(tState), p.BaseType.GetNestedType("StreamDispatcher"));
-                //c.Register(typeof(Func<>).MakeGenericType(typeof(Projection<>.StreamDispatcher).MakeGenericType(tState)));
                 c.RegisterConditional(
                     projectionInterface,
                     typeof(HistoricalProjection<>).MakeGenericType(tState),
@@ -105,7 +103,7 @@ namespace ZES
                 c.RegisterConditional(projectionInterface, p, Lifestyle.Singleton, x => !x.Handled);
 
                 var builderType = typeof(Projection<>.ProjectionDispatcher.Builder).MakeGenericType(tState);
-                var streamType = typeof(Projection<>.ProjectionDispatcher.StreamFlow.Builder).MakeGenericType(tState);
+                var streamType = typeof(Projection<>.StreamFlow.Builder).MakeGenericType(tState);
                 c.Register(builderType, builderType, Lifestyle.Singleton);
                 c.Register(streamType, streamType, Lifestyle.Singleton);
             }

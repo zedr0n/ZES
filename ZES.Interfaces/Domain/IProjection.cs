@@ -1,14 +1,27 @@
-using System;
 using System.Threading.Tasks;
 using ZES.Interfaces.EventStore;
 
 namespace ZES.Interfaces.Domain
 {
+    /// <summary>
+    /// Projections start sleeping, then process all events on rebuild
+    /// </summary>
     public enum ProjectionStatus
     {
-        SLEEPING,
-        BUILDING,
-        LISTENING
+        /// <summary>
+        /// Paused projection 
+        /// </summary>
+        Sleeping,
+        
+        /// <summary>
+        /// Projection in rebuild state
+        /// </summary>
+        Building,
+        
+        /// <summary>
+        /// Valid state, listening to incoming events 
+        /// </summary>
+        Listening
     }
     
     /// <summary>
@@ -16,9 +29,6 @@ namespace ZES.Interfaces.Domain
     /// </summary>
     public interface IProjection 
     {
-        
-        IObservable<ProjectionStatus> Status { get; }
-
         /// <summary>
         /// Gets the task representing the projection rebuild
         /// </summary>

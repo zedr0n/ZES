@@ -162,7 +162,6 @@ namespace ZES.Infrastructure
 
       Interlocked.Decrement(ref _parallelCount); 
     }
-
     
     private class OutputFlow : Dataflow<TOut, TOut>
     {

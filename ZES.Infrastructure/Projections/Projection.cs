@@ -28,7 +28,7 @@ namespace ZES.Infrastructure.Projections
 
         private readonly ProjectionDispatcher.Builder _streamDispatcher;
 
-        private readonly BehaviorSubject<ProjectionStatus> _statusSubject = new BehaviorSubject<ProjectionStatus>(SLEEPING);
+        private readonly BehaviorSubject<ProjectionStatus> _statusSubject = new BehaviorSubject<ProjectionStatus>(Sleeping);
         
         private CancellationTokenSource _cancellationSource;
 
@@ -40,8 +40,8 @@ namespace ZES.Infrastructure.Projections
         /// <param name="eventStore">Aggregate event store</param>
         /// <param name="log">Application log</param>
         /// <param name="messageQueue">Application message queue</param>
-        /// <param name="timeline"></param>
-        /// <param name="streamDispatcher"></param>
+        /// <param name="timeline">Active branch tracker</param>
+        /// <param name="streamDispatcher">Dispatcher fluent builder</param>
         protected Projection(IEventStore<IAggregate> eventStore, ILog log, IMessageQueue messageQueue, ITimeline timeline, ProjectionDispatcher.Builder streamDispatcher)
         {
             _eventStore = eventStore;
@@ -55,10 +55,7 @@ namespace ZES.Infrastructure.Projections
         }
 
         /// <inheritdoc />
-        public IObservable<ProjectionStatus> Status => _statusSubject.AsObservable();
-
-        /// <inheritdoc />
-        public Task Complete => Status.Timeout(Configuration.Timeout).FirstAsync(s => s == LISTENING).ToTask();
+        public Task Complete => _statusSubject.AsObservable().Timeout(Configuration.Timeout).FirstAsync(s => s == Listening).ToTask();
 
         /// <inheritdoc />
         public TState State { get; protected set; } = new TState();
@@ -110,10 +107,8 @@ namespace ZES.Infrastructure.Projections
 
         private async Task Rebuild()
         {
-            // Log.Trace("Rebuild started", this);
-
             Interlocked.Increment(ref _build);
-            _statusSubject.OnNext(BUILDING);
+            _statusSubject.OnNext(Building);
             
             _cancellationSource?.Cancel();
             _cancellationSource = new CancellationTokenSource();
@@ -158,7 +153,7 @@ namespace ZES.Infrastructure.Projections
             {
                 await task;
             }
-            catch (Exception e)
+            catch (Exception)
             {
                 // ignored
             }
@@ -174,7 +169,7 @@ namespace ZES.Infrastructure.Projections
             }
             else
             {
-                _statusSubject.OnNext(_build == 0 ? LISTENING : BUILDING);
+                _statusSubject.OnNext(_build == 0 ? Listening : Building);
             }
         }
 
@@ -182,11 +177,7 @@ namespace ZES.Infrastructure.Projections
         {
             Log.Trace($"Stream {e?.Stream}@{e?.Version}", this);
             if (_cancellationSource.IsCancellationRequested)
-            {
                 throw new InvalidOperationException();
-                Log.Error("Cancellation requested!");
-                return;
-            }
 
             if (e == null)
                 return;

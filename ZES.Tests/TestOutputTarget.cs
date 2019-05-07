@@ -15,8 +15,7 @@ namespace ZES.Tests
         {
             if (string.IsNullOrWhiteSpace(loggerName))
                 throw new ArgumentNullException(nameof(loggerName));
-            if (!_map.TryAdd(loggerName, testOutputHelper))
-                return;  //throw new ArgumentException("LoggerName already in use", nameof(loggerName));
+            _map.TryAdd(loggerName, testOutputHelper);
         }
 
         public bool Remove(string loggerName)

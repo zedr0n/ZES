@@ -32,9 +32,9 @@ namespace ZES.Interfaces
         /// Writes the diagnostic message at the <c>Debug</c> level.
         /// </summary>
         /// <param name="message">Log message</param>
-        /// <param name="instance"></param>
-        /// <param name="_"></param>
-        void Debug(object message, object instance = null, [CallerMemberName] string _ = "");
+        /// <param name="instance">Object originating the debug message</param>
+        /// <param name="caller">Compiler caller name</param>
+        void Debug(object message, object instance = null, [CallerMemberName] string caller = "");
 
         /// <summary>
         /// Writes the diagnostic message at the <c>Info</c> level.

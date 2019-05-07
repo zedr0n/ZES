@@ -22,7 +22,7 @@ namespace ZES.Interfaces.EventStore
         /// <summary>
         /// Gets the current streams in the store 
         /// </summary>
-        /// <param name="branch"></param>
+        /// <param name="branch">Branch to filter by</param>
         /// <returns>Stream observable</returns>
         IObservable<IStream> ListStreams(string branch = null);
         

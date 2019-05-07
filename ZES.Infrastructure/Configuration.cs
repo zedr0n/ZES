@@ -11,6 +11,7 @@ namespace ZES.Infrastructure
     {
         private static readonly HashSet<string> Variables = new HashSet<string>
         {
+            "AddCommand",
             "LogEvents",
             "GridSum",
             "InMemoryStreamStore"

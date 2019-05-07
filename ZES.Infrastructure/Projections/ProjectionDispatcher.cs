@@ -4,12 +4,15 @@ using System.Threading;
 using System.Threading.Tasks;
 using Gridsum.DataflowEx;
 using ZES.Interfaces;
+using ZES.Interfaces.Domain;
 using ZES.Interfaces.EventStore;
 
 namespace ZES.Infrastructure.Projections
 {
-    public abstract partial class Projection<TState>
+    /// <inheritdoc />
+    public abstract partial class Projection<TState> : IProjection<TState>
     {
+        /// <inheritdoc />
         public partial class ProjectionDispatcher : ParallelDataDispatcher<string, IStream, int>
         {
             private readonly StreamFlow.Builder _streamFlow;

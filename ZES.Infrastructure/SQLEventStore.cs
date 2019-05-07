@@ -86,14 +86,12 @@ namespace ZES.Infrastructure
                 var cCount = count;
                 var observable = Observable.Create(async (IObserver<T> observer) =>
                 {
-                    // _log.Trace($"{stream.Key} : from [{start}]");
                     var position = cStream.Position(start);
                     if (position <= ExpectedVersion.EmptyStream)
                     {
                         observer.OnCompleted();
                         return;
                     }
-                    // _log.Trace($"Reading {cCount} from stream {cStream.Key} from version {position}");
 
                     var page = await _streamStore.ReadStreamForwards(cStream.Key, position, ReadSize);
                     while (page.Messages.Length > 0 && cCount > 0)
@@ -104,7 +102,6 @@ namespace ZES.Infrastructure
                             {
                                 var payload = await m.GetJsonData();
                                 var @event = _serializer.Deserialize(payload);
-                                // _log.Trace($"Processing event {@event.Version} on stream {@event.Stream}");
                                 observer.OnNext((T)@event);
                             }
                             else

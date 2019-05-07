@@ -15,7 +15,6 @@ namespace ZES
     public static class ObservableExtensions
     {
         private static readonly TimeSpan Delay = TimeSpan.FromMilliseconds(25);
-        //private static readonly TimeSpan Timeout = TimeSpan.FromMilliseconds(Debugger.IsAttached ? -1 : 1000);
 
         /// <summary>
         /// Repeated query until condition is satisfied or timeout is reached 

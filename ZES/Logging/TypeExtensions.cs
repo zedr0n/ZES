@@ -7,7 +7,6 @@ namespace ZES.Logging
 {
     internal static class TypeExtensions
     {
-
         public static string GetFriendlyName(this Type type)
         {
             if (!type.IsGenericType)

@@ -109,6 +109,7 @@ namespace ZES.Infrastructure.Streams
             };
         }
 
+        /// <inheritdoc />
         public override string ToString()
         {
             return $"{Key}@{Version}";

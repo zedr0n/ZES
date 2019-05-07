@@ -19,8 +19,6 @@ namespace ZES.Tests.Domain.Queries
             Register<RootCreated>(When);
         }
 
-        // public override string Key(IStream stream) => "Stats";
-
         private static ValueState<Stats> When(RootCreated e, ValueState<Stats> state)
         {
             lock (state)

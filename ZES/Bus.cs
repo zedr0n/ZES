@@ -29,14 +29,7 @@ namespace ZES
             _errorLog = errorLog;
             _commandDispatcher = new CommandDispatcher(
                 HandleCommand, 
-                new DataflowOptions 
-                {
-                    RecommendedParallelismIfMultiThreaded = Configuration.ThreadsPerInstance,
-                    /*FlowMonitorEnabled = true,
-                    BlockMonitorEnabled = true,
-                    PerformanceMonitorMode = DataflowOptions.PerformanceLogMode.Verbose,
-                    MonitorInterval = TimeSpan.FromMilliseconds(5)*/
-                });
+                new DataflowOptions { RecommendedParallelismIfMultiThreaded = Configuration.ThreadsPerInstance });
         }
 
         /// <inheritdoc />

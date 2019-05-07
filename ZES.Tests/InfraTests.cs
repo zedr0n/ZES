@@ -169,7 +169,7 @@ namespace ZES.Tests
         }
 
         [Theory]
-        [InlineData(100)]
+        [InlineData(10)]
         public async void CanParallelizeSagas(int numRoots)
         {
             var container = CreateContainer(new List<Action<Container>> { Config.RegisterSagas });

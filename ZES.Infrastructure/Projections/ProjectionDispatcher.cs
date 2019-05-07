@@ -51,7 +51,7 @@ namespace ZES.Infrastructure.Projections
             /// <inheritdoc />
             protected override void CleanUp(Exception dataflowException)
             {
-                Log?.Errors.Add(dataflowException?.InnerException);
+                Log?.Errors.Add(dataflowException);
             }
 
             /// <inheritdoc />

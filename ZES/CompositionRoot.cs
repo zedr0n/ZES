@@ -59,29 +59,12 @@ namespace ZES
             container.Register<IMessageQueue, MessageQueue>(Lifestyle.Singleton);
             container.Register<ICommandLog, CommandLog>(Lifestyle.Singleton);
             container.Register(typeof(ILogger), () => LogManager.GetLogger(typeof(Logging.NLog).Name), Lifestyle.Singleton); 
-            // var logger = LogManager.GetLogger("Gridsum.DataflowEx*");
-            // Common.Logging.NLog.NLogLoggerFactoryAdapter
 
             container.Register<ILog, Logging.NLog>(Lifestyle.Singleton);
             container.Register<IErrorLog, ErrorLog>(Lifestyle.Singleton);
 
             container.Register(typeof(IStreamLocator<>), typeof(StreamLocator<>), Lifestyle.Singleton);    
             container.Register(typeof(IEsRepository<>), typeof(EsRepository<>), Lifestyle.Singleton);
-            
-            //container.Register(typeof(Projection<>.StreamDispatcher));
-            //container.Register<Func<StreamFlow>>(Lifestyle.Transient);
-            //container.Register<StreamFlow>(Lifestyle.Transient);
-            //container.RegisterInstance<Func<StreamFlow>>(() => new StreamFlow());
-            //container.Register<StreamFlow>(Lifestyle.Transient);
-            //container.Register<Func<StreamFlow>>(() => container.GetInstance<StreamFlow>, Lifestyle.Singleton);
-            //container.Register<Projection.ProjectionDispatcher>(Lifestyle.Transient);
-            //container.Register<Func<Projection.ProjectionDispatcher>>(() => container.GetInstance<Projection.ProjectionDispatcher>, Lifestyle.Singleton);
-            //container.Register(typeof(SagaHandler<>.SagaDispatcher), typeof(SagaHandler<>.SagaDispatcher), Lifestyle.Transient);
-            //container.Register<Func<SagaHandler<>.SagaDispatcher>>();
-            //container.Register<Func<Projection<>.StreamDispatcher>>(() => container.GetInstance<Projection<>.StreamDispatcher>, Lifestyle.Singleton);
-            
-            //container.Register<StreamFlow.Builder>(Lifestyle.Singleton);
-            //container.Register<Projection.ProjectionDispatcher.Builder>(Lifestyle.Singleton);
             
             container.RegisterDecorator(
                 typeof(ICommandHandler<>),

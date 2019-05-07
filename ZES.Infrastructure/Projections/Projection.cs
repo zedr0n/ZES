@@ -74,7 +74,7 @@ namespace ZES.Infrastructure.Projections
         internal ILog Log { get; }
 
         /// <inheritdoc />
-        public string Key(IStream stream) => stream.Key;
+        public virtual string Key(IStream stream) => stream.Key;
 
         internal async Task Start()
         {
@@ -120,7 +120,7 @@ namespace ZES.Infrastructure.Projections
 
             lock (State)
                 State = new TState();
-            
+
             var rebuildDispatcher = _streamDispatcher
                 .WithCancellation(_cancellationSource)
                 .WithOptions(new DataflowOptionsEx
@@ -134,8 +134,8 @@ namespace ZES.Infrastructure.Projections
                     BlockMonitorEnabled = true,
                     PerformanceMonitorMode = DataflowOptions.PerformanceLogMode.Verbose*/
                 }) // Timeout = TimeSpan.FromMilliseconds(1000) } )
-                .Bind(this);
-                //.OnError(async t => await Rebuild());
+                .Bind(this)
+                .OnError(async t => await Rebuild());
 
             var liveDispatcher = _streamDispatcher
                 .WithCancellation(_cancellationSource)
@@ -154,17 +154,27 @@ namespace ZES.Infrastructure.Projections
             _eventStore.Streams.Subscribe(liveDispatcher.InputBlock.AsObserver(), _cancellationSource.Token);
 
             var task = rebuildDispatcher.CompletionTask;
-            await task;
+            try
+            {
+                await task;
+            }
+            catch (Exception e)
+            {
+                // ignored
+            }
 
             Interlocked.Decrement(ref _build);
-            if (task.IsCompleted)
+            if (task.IsFaulted)
             {
-                _statusSubject.OnNext(_build == 0 ? LISTENING : BUILDING);
-                // Log?.Trace("Rebuild completed", this);
+                Log?.Trace("Rebuild faulted", this);
             }
             else if (task.IsCanceled)
             {
                 Log?.Trace("Rebuild cancelled", this);
+            }
+            else
+            {
+                _statusSubject.OnNext(_build == 0 ? LISTENING : BUILDING);
             }
         }
 

@@ -45,22 +45,27 @@ namespace ZES.Infrastructure.Projections
                     .Bind(_projection.When);
             }
 
+            /// <inheritdoc />
             protected override void CleanUp(Exception dataflowException)
             {
-                if (dataflowException != null)
-                    Log?.Error($"Dataflow error : {dataflowException}");
-                base.CleanUp(dataflowException);
+                Log?.Errors.Add(dataflowException?.InnerException);
             }
 
+            /// <inheritdoc />
             public class Builder : FluentBuilder
             {
                 private readonly StreamFlow.Builder _streamFlow;
                 private readonly ILog _log;
 
                 private DataflowOptions _options = DataflowOptions.Default;
-                private CancellationTokenSource _cancellation = new CancellationTokenSource(); 
-                private Lazy<Task> _delayUntil = new Lazy<Task>(() => Task.CompletedTask);
+                private CancellationTokenSource _cancellation = new CancellationTokenSource();
+                private Lazy<Task> _delayUntil;
 
+                /// <summary>
+                /// Initializes a new instance of the <see cref="Builder"/> class.
+                /// </summary>
+                /// <param name="streamFlow">Stream flow</param>
+                /// <param name="log">Log helper</param>
                 public Builder(StreamFlow.Builder streamFlow, ILog log)
                 {
                     _streamFlow = streamFlow;

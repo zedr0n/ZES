@@ -195,7 +195,7 @@ namespace ZES.Tests
             }
 
             await repository.FindUntil<Root>("Root1Copy");
-            var stats = await bus.QueryUntil(new StatsQuery(), s => s != null && s.NumberOfRoots == 2 * numRoots, TimeSpan.FromSeconds(2));
+            var stats = await bus.QueryUntil(new StatsQuery(), s => s != null && s.NumberOfRoots == 2 * numRoots);
             Assert.Equal(2 * numRoots, stats?.NumberOfRoots);
         }
         

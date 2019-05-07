@@ -18,6 +18,7 @@ namespace ZES.Infrastructure
         public ErrorLog(ILog log)
         {
             _log = log;
+            log.Errors = this;
         }
 
         /// <inheritdoc />
@@ -26,6 +27,8 @@ namespace ZES.Infrastructure
         /// <inheritdoc />
         public void Add(Exception error)
         {
+            if (error == null)
+                return;
             _log.Error(error.Message, error.StackTrace?.Split(new[] { "in", "at", "(", ")", "[", "]" }, StringSplitOptions.RemoveEmptyEntries)[1] + ' ');
             _errors.OnNext(new Error(error));
         }

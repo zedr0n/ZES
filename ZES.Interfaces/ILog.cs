@@ -8,6 +8,14 @@ namespace ZES.Interfaces
     public interface ILog
     {
         /// <summary>
+        /// Gets or sets gets error log
+        /// </summary>
+        /// <value>
+        /// Error log
+        /// </value>
+        IErrorLog Errors { get; set; }
+        
+        /// <summary>
         /// Writes the diagnostic message at the <c>Trace</c> level.
         /// </summary>
         /// <param name="message">Log message</param>

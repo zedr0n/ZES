@@ -17,9 +17,9 @@ namespace ZES.Infrastructure
   /// care of different groups independently. DataDispatcher also helps creating and maintaining child flows dynamically
   /// in a thread-safe way.
   /// </summary>
-  /// <typeparam name="TIn">Type of input items of this dispatcher flow</typeparam>
   /// <typeparam name="TKey">Type of the dispatch key to group input items</typeparam>
-  /// <typeparam name="TOut"></typeparam>
+  /// <typeparam name="TIn">Type of input items of this dispatcher flow</typeparam>
+  /// <typeparam name="TOut">Flow control output</typeparam>
   /// <remarks>
   /// This flow guarantees an input goes to only ONE of the child flows. Notice the difference comparing to DataBroadcaster, which
   /// gives the input to EVERY flow it is linked to.
@@ -32,6 +32,7 @@ namespace ZES.Infrastructure
     private readonly ConcurrentDictionary<TKey, Lazy<Dataflow<TOut, TOut>>> _outputs;
     private readonly Func<TKey, Lazy<Dataflow<TIn, TOut>>> _initer;
     private readonly Func<TKey, Lazy<Dataflow<TOut, TOut>>> _outIniter;
+    private readonly Type _declaringType;
     
     private int _parallelCount;
 
@@ -68,7 +69,7 @@ namespace ZES.Infrastructure
       : base(option)
     {
       _dispatchFunc = dispatchFunc;
-      DeclaringType = declaringType;
+      _declaringType = declaringType;
       _destinations = new ConcurrentDictionary<TKey, Lazy<Dataflow<TIn, TOut>>>(keyComparer);
       _outputs = new ConcurrentDictionary<TKey, Lazy<Dataflow<TOut, TOut>>>();
       _initer = key => new Lazy<Dataflow<TIn, TOut>>(() =>
@@ -92,37 +93,6 @@ namespace ZES.Infrastructure
       RegisterChild(_dispatcherBlock);
     }
 
-    internal ILog Log { get; set; }
-    internal Type DeclaringType { get; set; }
-
-    public ParallelDataDispatcher<TKey, TIn, TOut> OnError(Action<Task> action)
-    {
-      CompletionTask.ContinueWith(action);
-      return this;
-    }
-    
-    private async Task Dispatch(TIn input)
-    {
-      Interlocked.Increment(ref _parallelCount);
-      Log?.Trace($"Parallel {typeof(TIn).GetFriendlyName()} count : {_parallelCount}", (DeclaringType ?? GetType().DeclaringType)?.GetFriendlyName());
-
-      var copy = input.ToString();
-      
-      var key = _dispatchFunc(input);
-      var block = _destinations.GetOrAdd(key, _initer).Value;
-
-      await block.SendAsync(input);
-      
-      var timeout = DataflowOptions is DataflowOptionsEx optionEx ? optionEx.Timeout : TimeSpan.FromMilliseconds(-1); 
-      var output = await block.OutputBlock.ReceiveAsync(timeout);
-
-      var outBlock = _outputs.GetOrAdd(key, _outIniter).Value;
-      await outBlock.SendAsync(output);
-      
-      Log?.Debug($"{copy} -> {output}", (DeclaringType ?? GetType().DeclaringType)?.GetFriendlyName());
-      Interlocked.Decrement(ref _parallelCount); 
-    }
-
     /// <summary>
     /// Gets current number of parallel actions executing 
     /// </summary>
@@ -137,12 +107,25 @@ namespace ZES.Infrastructure
     /// <value><see cref="P:Gridsum.DataflowEx.Dataflow`1.InputBlock" /></value>
     public override ITargetBlock<TIn> InputBlock => _dispatcherBlock;
 
+    internal ILog Log { get; set; }
+    
+    /// <summary>
+    /// Binds an action on completion fault 
+    /// </summary>
+    /// <param name="action">Action to perform</param>
+    /// <returns>Fluent instance</returns>
+    public ParallelDataDispatcher<TKey, TIn, TOut> OnError(Action<Task> action)
+    {
+      CompletionTask.ContinueWith(t => t.IsFaulted ? action : null);
+      return this;
+    }
+
     /// <summary>
     /// Every child flow will have an attached buffer block containing its outputs which can be accessed or awaited 
     /// </summary>
     /// <param name="key">Dispatch key</param>
     /// <returns>Buffer block containing the outputs from child dataflows</returns>
-    public ISourceBlock<TOut> OutputBlock(TKey key) => _outputs.GetOrAdd(key, _outIniter).Value.OutputBlock;
+    protected ISourceBlock<TOut> OutputBlock(TKey key) => _outputs.GetOrAdd(key, _outIniter).Value.OutputBlock;
     
     /// <summary>Create the child flow on-the-fly by the dispatch key</summary>
     /// <param name="dispatchKey">The unique key to create and identify the child flow</param>
@@ -151,6 +134,35 @@ namespace ZES.Infrastructure
     /// The dispatch key should have a one-one relationship with child flow
     /// </remarks>
     protected abstract Dataflow<TIn, TOut> CreateChildFlow(TKey dispatchKey);
+    
+    private async Task Dispatch(TIn input)
+    {
+      Interlocked.Increment(ref _parallelCount);
+      Log?.Trace($"Parallel {typeof(TIn).GetFriendlyName()} count : {_parallelCount}", (_declaringType ?? GetType().DeclaringType)?.GetFriendlyName());
+
+      var copy = input.ToString();
+      
+      var key = _dispatchFunc(input);
+      var block = _destinations.GetOrAdd(key, _initer).Value;
+
+      await block.SendAsync(input);
+      
+      var timeout = DataflowOptions is DataflowOptionsEx optionEx ? optionEx.Timeout : TimeSpan.FromMilliseconds(-1);
+      try
+      {
+        var output = await block.OutputBlock.ReceiveAsync(timeout);
+        var outBlock = _outputs.GetOrAdd(key, _outIniter).Value;
+        await outBlock.SendAsync(output);
+        Log?.Debug($"{copy} -> {output}", (_declaringType ?? GetType().DeclaringType)?.GetFriendlyName());
+      }
+      catch (Exception)
+      {
+        // ignored
+      }
+
+      Interlocked.Decrement(ref _parallelCount); 
+    }
+
     
     private class OutputFlow : Dataflow<TOut, TOut>
     {
@@ -171,6 +183,5 @@ namespace ZES.Infrastructure
         base.Complete();
       }
     }
-
   }
 }

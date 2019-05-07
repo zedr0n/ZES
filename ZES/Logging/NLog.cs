@@ -27,6 +27,9 @@ namespace ZES.Logging
             };
             Common.Logging.LogManager.Adapter = new Common.Logging.NLog.NLogLoggerFactoryAdapter(props);
         }
+        
+        /// <inheritdoc />
+        public IErrorLog Errors { get; set; }
 
         /// <summary>
         /// Layout configuration for <see cref="NLog"/> 

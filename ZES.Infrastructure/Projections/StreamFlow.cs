@@ -56,13 +56,19 @@ namespace ZES.Infrastructure.Projections
                     _cancellation = cancelSource;
                 }
 
+                /// <inheritdoc />
                 public override ITargetBlock<IStream> InputBlock => _readBlock;
+
+                /// <inheritdoc />
                 public override ISourceBlock<int> OutputBlock => _readBlock;
 
+                /// <inheritdoc />
                 public override void Complete()
                 {
+                    ProcessEvents(Task.CompletedTask).Wait();
                     _eventBlock.Complete();
                     _whenBlock.Complete();
+                    
                     base.Complete();
                 }
 
@@ -84,9 +90,10 @@ namespace ZES.Infrastructure.Projections
                     _whenBlock = new ActionBlock<IEvent>(e =>
                     {
                         _log?.Trace($"{e.Stream}:{e.Version}", this);
+
                         if ( e.Timestamp < _timestamp )
-                            throw new InvalidOperationException();
-                                 
+                           throw new InvalidOperationException();
+
                         _when(e);
                         _timestamp = e.Timestamp;
                     });
@@ -98,25 +105,30 @@ namespace ZES.Infrastructure.Projections
                     RegisterChild(_readBlock);
                     RegisterChild(_eventBlock);
 
-                    // Start updating the projection only after streams were all read ( if during rebuild )
-                    _start.Value.ContinueWith(async t =>
-                    {
-                        if (!t.IsFaulted && !t.IsCanceled)
-                        {
-                            if (_eventBlock.TryReceiveAll(out var events))
-                                await _whenBlock.ToDataflow().ProcessAsync(events.OrderBy(e => e.Timestamp), false);
-
-                            // _log.Trace("Listening to streams", this);
-                            _eventBlock.LinkTo(_whenBlock, e => _start.Value.IsCompleted);
-                        }
-                    });
-
+                    // Start updating the projection only after precedence task ( e.g. rebuild ) was completed
+                    // guarantees that new events don't get processed before it was at least rebuilt
+                    if (_start == null)
+                        return this;
+                    
+                    _eventBlock.LinkTo(_whenBlock, e => _start.Value.IsCompleted && !_start.Value.IsCanceled && !_start.Value.IsFaulted); 
+                    _start.Value.ContinueWith(async t => await ProcessEvents(t));
+                    
                     return this;
                 }
 
-                private async Task Rebuild()
+                private async Task ProcessEvents(Task t)
                 {
+                    if (t.IsFaulted || t.IsCanceled)
+                        return;
                     
+                    if (_eventBlock.TryReceiveAll(out var events))
+                    {
+                        var count = events.Count;
+                        var processed = await _whenBlock.ToDataflow().ProcessAsync(events.OrderBy(e => e.Timestamp), false);
+                        if (processed != count)
+                            throw new InvalidOperationException();
+                        _log?.Trace($"Processed {count} events during rebuild", this);
+                    }
                 }
 
                 private async Task<int> Transform(IStream s)
@@ -146,7 +158,7 @@ namespace ZES.Infrastructure.Projections
                         .Subscribe(async e => await _eventBlock.SendAsync(e, source.Token), source.Token);
 
                     if (!_version.TryUpdate(s.Key, streamVersion, version))
-                        throw new InvalidOperationException();
+                        throw new InvalidOperationException($"Concurrent update of version for {s.Key} failed!");
 
                     await o.LastOrDefaultAsync();
                     return _version[s.Key]; 
@@ -159,7 +171,7 @@ namespace ZES.Infrastructure.Projections
 
                     private DataflowOptions _options = DataflowOptions.Default;
                     private CancellationTokenSource _cancellation = new CancellationTokenSource();
-                    private Lazy<Task> _delay = new Lazy<Task>(() => Task.CompletedTask);
+                    private Lazy<Task> _delay; 
                     
                     public Builder(ILog log, IEventStore<IAggregate> store)
                     {

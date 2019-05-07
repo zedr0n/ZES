@@ -138,7 +138,7 @@ namespace ZES.Infrastructure
     private async Task Dispatch(TIn input)
     {
       Interlocked.Increment(ref _parallelCount);
-      Log?.Trace($"Parallel {typeof(TIn).GetFriendlyName()} count : {_parallelCount}", (_declaringType ?? GetType().DeclaringType)?.GetFriendlyName());
+      Log?.Debug($"Parallel {typeof(TIn).GetFriendlyName()} count : {_parallelCount}", (_declaringType ?? GetType().DeclaringType)?.GetFriendlyName());
 
       var copy = input.ToString();
       

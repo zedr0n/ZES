@@ -33,26 +33,19 @@ namespace ZES.Infrastructure
     private readonly Func<TKey, Lazy<Dataflow<TIn, TOut>>> _initer;
     private readonly Func<TKey, Lazy<Dataflow<TOut, TOut>>> _outIniter;
     private readonly Type _declaringType;
+    private readonly CancellationToken _token;
     
     private int _parallelCount;
-
-    /// <summary>
-    /// Initializes a new instance of the <see cref="ParallelDataDispatcher{TIn, TOut, TKey}"/> class.Construct an DataDispatcher instance
-    /// </summary>
-    /// <param name="dispatchFunc">The dispatch function</param>
-    protected ParallelDataDispatcher(Func<TIn, TKey> dispatchFunc)
-      : this(dispatchFunc, DataflowOptions.Default)
-    {
-    }
 
     /// <summary>
     /// Initializes a new instance of the <see cref="ParallelDataDispatcher{TIn, TOut, TKey}"/> class.
     /// </summary>
     /// <param name="dispatchFunc">The dispatch function</param>
     /// <param name="options">Option for this dataflow</param>
+    /// <param name="token">Cancellation token</param>
     /// <param name="declaringType">Runtime type of the owner of this dispatcher</param>
-    protected ParallelDataDispatcher(Func<TIn, TKey> dispatchFunc, DataflowOptions options, Type declaringType = null)
-      : this(dispatchFunc, EqualityComparer<TKey>.Default, options, declaringType)
+    protected ParallelDataDispatcher(Func<TIn, TKey> dispatchFunc, DataflowOptions options, CancellationToken token, Type declaringType = null)
+      : this(dispatchFunc, EqualityComparer<TKey>.Default, options, token, declaringType)
     {
     }
 
@@ -60,14 +53,17 @@ namespace ZES.Infrastructure
     /// <param name="dispatchFunc">The dispatch function</param>
     /// <param name="keyComparer">The key comparer for this dataflow</param>
     /// <param name="option">Option for this dataflow</param>
+    /// <param name="token">Cancellation token</param>
     /// <param name="declaringType">Runtime type of the owner of this dispatcher</param>
     private ParallelDataDispatcher(
       Func<TIn, TKey> dispatchFunc,
       IEqualityComparer<TKey> keyComparer,
       DataflowOptions option,
+      CancellationToken token,
       Type declaringType)
       : base(option)
     {
+      _token = token;
       _dispatchFunc = dispatchFunc;
       _declaringType = declaringType;
       _destinations = new ConcurrentDictionary<TKey, Lazy<Dataflow<TIn, TOut>>>(keyComparer);
@@ -108,7 +104,19 @@ namespace ZES.Infrastructure
     public override ITargetBlock<TIn> InputBlock => _dispatcherBlock;
 
     internal ILog Log { get; set; }
-    
+
+    /// <inheritdoc />
+    public override void Complete()
+    {
+      foreach (var block in _destinations.Values.Select(x => x.Value) )
+      { 
+        while ( block.OutputBlock.GetBufferCount().Item2 > 0 )
+          block.OutputBlock.Receive();
+      }
+      
+      base.Complete();
+    }
+
     /// <summary>
     /// Binds an action on completion fault 
     /// </summary>
@@ -148,16 +156,17 @@ namespace ZES.Infrastructure
       await block.SendAsync(input);
       
       var timeout = DataflowOptions is DataflowOptionsEx optionEx ? optionEx.Timeout : TimeSpan.FromMilliseconds(-1);
+      //var timeout = TimeSpan.FromMilliseconds(100);
       try
       {
-        var output = await block.OutputBlock.ReceiveAsync(timeout);
+        var output = await block.OutputBlock.ReceiveAsync(timeout, _token);
         var outBlock = _outputs.GetOrAdd(key, _outIniter).Value;
         await outBlock.SendAsync(output);
-        Log?.Debug($"{copy} -> {output}", (_declaringType ?? GetType().DeclaringType)?.GetFriendlyName());
+        // Log?.Debug($"{copy} -> {output}", (_declaringType ?? GetType().DeclaringType)?.GetFriendlyName());
       }
-      catch (Exception)
+      catch (Exception e)
       {
-        // ignored
+        Log?.Errors.Add(e);
       }
 
       Interlocked.Decrement(ref _parallelCount); 

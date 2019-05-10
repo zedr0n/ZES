@@ -230,5 +230,32 @@ namespace ZES.Tests
             
             Assert.Equal(numberOfRoots + 1, stats?.NumberOfRoots);
         }
+        
+        [Theory]
+        [InlineData(10)]         
+        public async void CanCancelProjection(int numberOfRoots)
+        {
+            var container = CreateContainer();
+            var bus = container.GetInstance<IBus>();
+            var messageQueue = container.GetInstance<IMessageQueue>();
+
+            var rootId = numberOfRoots;
+            while (rootId > 0)
+            {
+                var command = new CreateRoot($"Root{rootId}");
+                await bus.CommandAsync(command);
+                rootId--;
+            }
+            
+            var statsQuery = new StatsQuery();
+            var stats = await bus.QueryUntil(statsQuery, s => s?.NumberOfRoots == numberOfRoots);
+            Assert.Equal(numberOfRoots, stats?.NumberOfRoots);
+            
+            messageQueue.Alert(new InvalidateProjections());
+            messageQueue.Alert(new InvalidateProjections());
+            
+            stats = await bus.QueryUntil(statsQuery, s => s?.NumberOfRoots == numberOfRoots);
+            Assert.Equal(numberOfRoots, stats?.NumberOfRoots);
+        }
     }
 }

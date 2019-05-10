@@ -1,5 +1,6 @@
 using System;
 using System.Reactive.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Threading.Tasks.Dataflow;
 using Gridsum.DataflowEx;
@@ -105,7 +106,7 @@ namespace ZES
             private readonly Func<ICommand, Task> _handler;
 
             public CommandDispatcher(Func<ICommand, Task> handler, DataflowOptions options) 
-                : base(c => c.Target, options)
+                : base(c => c.Target, options, CancellationToken.None)
             {
                 _handler = handler;
             }

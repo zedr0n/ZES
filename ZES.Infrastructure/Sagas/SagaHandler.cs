@@ -60,7 +60,7 @@ namespace ZES.Infrastructure.Sagas
             /// <param name="log">Log helper</param>
             /// <param name="sagaFlow">Fluent builder</param>
             private SagaDispatcher(DataflowOptions options, ILog log, SagaFlow.Builder sagaFlow)
-                : base(e => new TSaga().SagaId(e), options, typeof(TSaga))
+                : base(e => new TSaga().SagaId(e), options, CancellationToken.None, typeof(TSaga))
             {
                 Log = log;
                 _sagaFlow = sagaFlow;

@@ -16,7 +16,12 @@ namespace ZES.Interfaces.Domain
         /// <summary>
         /// Projection in rebuild state
         /// </summary>
-        Building,
+        Building, 
+        
+        /// <summary>
+        /// Projection execution being cancelled
+        /// </summary>
+        Cancelling,
         
         /// <summary>
         /// Valid state, listening to incoming events 

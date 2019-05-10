@@ -13,7 +13,7 @@ namespace ZES.Infrastructure.Projections
     public abstract partial class Projection<TState> : IProjection<TState>
     {
         /// <inheritdoc />
-        public partial class ProjectionDispatcher : ParallelDataDispatcher<string, IStream, int>
+        public class ProjectionDispatcher : ParallelDataDispatcher<string, IStream, int>
         {
             private readonly StreamFlow.Builder _streamFlow;
 
@@ -28,7 +28,7 @@ namespace ZES.Infrastructure.Projections
                 Lazy<Task> delay,
                 StreamFlow.Builder streamFlow,
                 ILog log)
-                : base(projection.Key, options, projection.GetType())
+                : base(projection.Key, options, cancel.Token, projection.GetType())
             {
                 _projection = projection;
                 _streamFlow = streamFlow;

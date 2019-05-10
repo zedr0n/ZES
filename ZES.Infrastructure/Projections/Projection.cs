@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Reactive.Concurrency;
 using System.Reactive.Linq;
 using System.Reactive.Subjects;
@@ -29,7 +30,7 @@ namespace ZES.Infrastructure.Projections
         private readonly ProjectionDispatcher.Builder _streamDispatcher;
 
         private readonly BehaviorSubject<ProjectionStatus> _statusSubject = new BehaviorSubject<ProjectionStatus>(Sleeping);
-        
+
         private CancellationTokenSource _cancellationSource;
 
         private int _build = 0;
@@ -107,12 +108,18 @@ namespace ZES.Infrastructure.Projections
 
         private async Task Rebuild()
         {
-            Interlocked.Increment(ref _build);
-            _statusSubject.OnNext(Building);
+            if ( await _statusSubject.AsObservable().FirstAsync() == Cancelling)
+                return;
             
+            Interlocked.Increment(ref _build);
+
             _cancellationSource?.Cancel();
+            await _statusSubject.AsObservable().Where(s => s == Sleeping).FirstAsync();
+
             _cancellationSource = new CancellationTokenSource();
 
+            _statusSubject.OnNext(Building);
+            
             lock (State)
                 State = new TState();
 
@@ -145,9 +152,24 @@ namespace ZES.Infrastructure.Projections
                 .Bind(this)
                 .OnError(async t => await Rebuild());
 
+            _cancellationSource.Token.Register(async () =>
+            {
+                _statusSubject.OnNext(Cancelling);
+                
+                liveDispatcher.Complete();
+                if (!liveDispatcher.CompletionTask.IsCompleted)
+                    await liveDispatcher.CompletionTask;
+                
+                rebuildDispatcher.Complete();
+                if (!rebuildDispatcher.CompletionTask.IsCompleted)
+                    await rebuildDispatcher.CompletionTask;
+                
+                _statusSubject.OnNext(Sleeping);
+            });
+
             _eventStore.ListStreams(_timeline.Id).Subscribe(rebuildDispatcher.InputBlock.AsObserver(), _cancellationSource.Token);
             _eventStore.Streams.Subscribe(liveDispatcher.InputBlock.AsObserver(), _cancellationSource.Token);
-
+            
             var task = rebuildDispatcher.CompletionTask;
             try
             {
@@ -157,19 +179,16 @@ namespace ZES.Infrastructure.Projections
             {
                 // ignored
             }
-
+            
             Interlocked.Decrement(ref _build);
-            if (task.IsFaulted)
+            if (_build == 0 && !task.IsFaulted && !_cancellationSource.Token.IsCancellationRequested)
             {
-                Log?.Trace("Rebuild faulted", this);
+                _statusSubject.OnNext(Listening);
             }
-            else if (task.IsCanceled)
+            else if (task.IsFaulted)
             {
-                Log?.Trace("Rebuild cancelled", this);
-            }
-            else
-            {
-                _statusSubject.OnNext(_build == 0 ? Listening : Building);
+                Log?.Trace("Rebuild faulted!");
+                _cancellationSource.Cancel();
             }
         }
 
@@ -177,7 +196,7 @@ namespace ZES.Infrastructure.Projections
         {
             Log.Trace($"Stream {e?.Stream}@{e?.Version}", this);
             if (_cancellationSource.IsCancellationRequested)
-                throw new InvalidOperationException();
+                throw new InvalidOperationException("Cancellation requested but projection is being updated");
 
             if (e == null)
                 return;

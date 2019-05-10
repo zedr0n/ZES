@@ -61,10 +61,11 @@ namespace ZES.Infrastructure.Projections
             /// <inheritdoc />
             public override void Complete()
             {
+                // _log?.Debug("Completing stream flow", this);
                 ProcessEvents(Task.CompletedTask).Wait();
                 _eventBlock.Complete();
                 _whenBlock.Complete();
-                
+               
                 base.Complete();
             }
 
@@ -85,11 +86,14 @@ namespace ZES.Infrastructure.Projections
                 _eventBlock = new BufferBlock<IEvent>();
                 _whenBlock = new ActionBlock<IEvent>(e =>
                 {
-                    _log?.Trace($"{e.Stream}:{e.Version}", this);
+                    _log?.Debug($"{e.Stream}:{e.Version}", this);
 
                     if ( e.Timestamp < _timestamp )
                        throw new InvalidOperationException();
 
+                    if (_cancellation.IsCancellationRequested) 
+                        return;
+                    
                     _when(e);
                     _timestamp = e.Timestamp;
                 });
@@ -106,7 +110,7 @@ namespace ZES.Infrastructure.Projections
                 if (_start == null)
                     return this;
                 
-                _eventBlock.LinkTo(_whenBlock, e => _start.Value.IsCompleted && !_start.Value.IsCanceled && !_start.Value.IsFaulted); 
+                _eventBlock.LinkTo(_whenBlock, e => !_cancellation.IsCancellationRequested && _start.Value.IsCompleted && !_start.Value.IsCanceled && !_start.Value.IsFaulted); 
                 _start.Value.ContinueWith(async t => await ProcessEvents(t));
                 
                 return this;
@@ -114,16 +118,15 @@ namespace ZES.Infrastructure.Projections
 
             private async Task ProcessEvents(Task t)
             {
-                if (t.IsFaulted || t.IsCanceled)
-                    return;
-                
-                if (_eventBlock.TryReceiveAll(out var events))
+                // _log?.Debug($"Processing {_eventBlock.Count} events", this);
+                if (_eventBlock.TryReceiveAll(out var events) && !t.IsFaulted && !_cancellation.IsCancellationRequested)
                 {
                     var count = events.Count;
-                    var processed = await _whenBlock.ToDataflow().ProcessAsync(events.OrderBy(e => e.Timestamp), false);
-                    if (processed != count)
-                        throw new InvalidOperationException();
-                    _log?.Trace($"Processed {count} events during rebuild", this);
+                    foreach (var e in events.OrderBy(x => x.Timestamp))
+                        await _whenBlock.SendAsync(e);
+                    
+                    // var processed = await _whenBlock.ToDataflow().ProcessAsync(events.OrderBy(e => e.Timestamp), false);
+                    _log?.Debug( $"Processed {count} events during rebuild", this);
                 }
             }
 
@@ -157,6 +160,7 @@ namespace ZES.Infrastructure.Projections
                     throw new InvalidOperationException($"Concurrent update of version for {s.Key} failed!");
 
                 await o.LastOrDefaultAsync();
+                _log?.Debug($"Completed reading from {s.Key}");
                 return _version[s.Key]; 
             }
 

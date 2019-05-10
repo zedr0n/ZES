@@ -21,6 +21,9 @@ namespace ZES.Logging
         public NLog(ILogger logger)
         {
             _logger = logger;
+            if (!Configuration.CommonLogEnabled())
+                return;
+            
             var props = new Common.Logging.Configuration.NameValueCollection
             {
                 { "ConfigType", "INLINE" }

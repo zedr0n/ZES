@@ -32,6 +32,17 @@ namespace ZES.Infrastructure
         /// Default number of threads per service 
         /// </value>
         public static int ThreadsPerInstance => 8;
+
+        /// <summary>
+        /// Check if Common.Logging logging is allowed
+        /// </summary>
+        /// <returns>True if enabled</returns>
+        public static bool CommonLogEnabled()
+        {
+            if (LogEnabled("Common") || LogEnabled("GridSum") || LogEnabled("InMemoryStreamStore"))
+                return true;
+            return false;
+        }
         
         /// <summary>
         /// Check if log is enabled for specified category

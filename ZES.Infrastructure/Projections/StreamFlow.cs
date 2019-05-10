@@ -154,7 +154,7 @@ namespace ZES.Infrastructure.Projections
                     .Publish().RefCount();
 
                 o.Finally(() => _cancels.TryRemove(s.GetHashCode(), out _))
-                    .Subscribe(async e => await _eventBlock.SendAsync(e, source.Token), source.Token);
+                    .Subscribe(async e => await _eventBlock.SendAsync(e), source.Token);
 
                 if (!_version.TryUpdate(s.Key, streamVersion, version))
                     throw new InvalidOperationException($"Concurrent update of version for {s.Key} failed!");

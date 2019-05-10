@@ -112,13 +112,18 @@ namespace ZES.Infrastructure.Projections
 
         private async Task Rebuild()
         {
-            if ( await _statusSubject.AsObservable().FirstAsync() == Cancelling)
+            var status = await _statusSubject.AsObservable().FirstAsync();
+
+            if (status == Cancelling)
                 return;
             
             Interlocked.Increment(ref _build);
 
-            _cancellationSource?.Cancel();
-            await _statusSubject.AsObservable().Where(s => s == Sleeping).FirstAsync();
+            if (status != Sleeping)
+            {
+                _cancellationSource?.Cancel();
+                await _statusSubject.AsObservable().Where(s => s == Sleeping).FirstAsync(); 
+            }
 
             _cancellationSource = new CancellationTokenSource();
 

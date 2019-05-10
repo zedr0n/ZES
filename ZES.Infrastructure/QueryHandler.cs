@@ -51,7 +51,7 @@ namespace ZES.Infrastructure
         /// <returns>Task from synchronous result</returns>
         protected virtual async Task<TResult> HandleAsync(TQuery query)
         {
-            await Projection.Complete;
+            await Projection.Ready;
             return Handle(Projection, query);
         }
     }

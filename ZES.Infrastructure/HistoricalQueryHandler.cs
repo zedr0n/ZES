@@ -38,7 +38,7 @@ namespace ZES.Infrastructure
         {
             var projection = (IHistoricalProjection)_projection;
             await projection.Init(query.Timestamp);
-            await projection.Complete;
+            await projection.Ready;
             
             return (_handler as QueryHandler<TQuery, TResult>)?.Handle(projection, query.Query);
         }

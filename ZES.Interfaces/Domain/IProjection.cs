@@ -40,7 +40,7 @@ namespace ZES.Interfaces.Domain
         /// <value>
         /// The task representing the projection rebuild
         /// </value>
-        Task Complete { get; }
+        Task Ready { get; }
 
         /// <summary>
         /// Map stream to read model key

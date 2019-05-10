@@ -23,7 +23,6 @@ namespace ZES.Infrastructure.Projections
     public abstract partial class Projection<TState> : IProjection<TState>
         where TState : new()
     {
-        private readonly IMessageQueue _messageQueue;
         private readonly IEventStore<IAggregate> _eventStore;
         private readonly ITimeline _timeline;
 
@@ -47,16 +46,23 @@ namespace ZES.Infrastructure.Projections
         {
             _eventStore = eventStore;
             Log = log;
-            _messageQueue = messageQueue;
             _streamDispatcher = streamDispatcher;
             _timeline = timeline;
 
             _statusSubject.Subscribe(s => Log?.Info($"{GetType().GetFriendlyName()} : {s.ToString()}" ));
-            OnInit();
+            messageQueue.Alerts.OfType<InvalidateProjections>().Subscribe(async s => await Rebuild());
         }
 
         /// <inheritdoc />
-        public Task Complete => _statusSubject.AsObservable().Timeout(Configuration.Timeout).FirstAsync(s => s == Listening).ToTask();
+        public Task Ready
+        {
+            get
+            {
+                Start();
+                return _statusSubject.AsObservable().Timeout(Configuration.Timeout).FirstAsync(s => s == Listening)
+                    .ToTask();
+            }
+        }
 
         /// <inheritdoc />
         public TState State { get; protected set; } = new TState();
@@ -76,13 +82,11 @@ namespace ZES.Infrastructure.Projections
 
         internal async Task Start()
         {
+            var status = await _statusSubject.FirstAsync();
+            if (status != Sleeping)
+                return;
+            
             await Rebuild();
-            _messageQueue.Alerts.OfType<InvalidateProjections>().Subscribe(async s => await Rebuild());
-        }
-
-        internal virtual void OnInit()
-        {
-            Start();
         }
 
         /// <summary>

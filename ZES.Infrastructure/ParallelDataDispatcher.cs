@@ -156,12 +156,12 @@ namespace ZES.Infrastructure
       await block.SendAsync(input);
       
       var timeout = DataflowOptions is DataflowOptionsEx optionEx ? optionEx.Timeout : TimeSpan.FromMilliseconds(-1);
-      //var timeout = TimeSpan.FromMilliseconds(100);
       try
       {
         var output = await block.OutputBlock.ReceiveAsync(timeout, _token);
         var outBlock = _outputs.GetOrAdd(key, _outIniter).Value;
         await outBlock.SendAsync(output);
+        
         // Log?.Debug($"{copy} -> {output}", (_declaringType ?? GetType().DeclaringType)?.GetFriendlyName());
       }
       catch (Exception e)

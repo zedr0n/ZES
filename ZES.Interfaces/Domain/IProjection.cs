@@ -1,4 +1,4 @@
-using System.Threading.Tasks;
+using System.Runtime.CompilerServices;
 using ZES.Interfaces.EventStore;
 
 namespace ZES.Interfaces.Domain
@@ -26,7 +26,12 @@ namespace ZES.Interfaces.Domain
         /// <summary>
         /// Valid state, listening to incoming events 
         /// </summary>
-        Listening
+        Listening,
+        
+        /// <summary>
+        /// Projection failed 
+        /// </summary>
+        Failed
     }
     
     /// <summary>
@@ -34,14 +39,6 @@ namespace ZES.Interfaces.Domain
     /// </summary>
     public interface IProjection 
     {
-        /// <summary>
-        /// Gets the task representing the projection rebuild
-        /// </summary>
-        /// <value>
-        /// The task representing the projection rebuild
-        /// </value>
-        Task Ready { get; }
-
         /// <summary>
         /// Map stream to read model key
         /// </summary>
@@ -51,6 +48,12 @@ namespace ZES.Interfaces.Domain
         /// <param name="stream">Originating stream</param>
         /// <returns>Read model key</returns>
         string Key(IStream stream);
+
+        /// <summary>
+        /// Returns when projection is rebuilt
+        /// </summary>
+        /// <returns>Listening</returns>
+        TaskAwaiter<ProjectionStatus> GetAwaiter();
     }
 
     /// <summary>

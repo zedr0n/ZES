@@ -61,12 +61,14 @@ namespace ZES.Infrastructure.Projections
             /// <inheritdoc />
             public override void Complete()
             {
-                // _log?.Debug("Completing stream flow", this);
                 ProcessEvents(Task.CompletedTask).Wait();
                 _eventBlock.Complete();
+                _readBlock.TryReceiveAll(out _);
                 _whenBlock.Complete();
                
                 base.Complete();
+                if ( _readBlock.InputCount > 0 )
+                    _log?.Errors.Add(new InvalidOperationException($"Read block still has {_readBlock.InputCount} streams to process"));
             }
 
             /// <inheritdoc />
@@ -119,13 +121,14 @@ namespace ZES.Infrastructure.Projections
             private async Task ProcessEvents(Task t)
             {
                 // _log?.Debug($"Processing {_eventBlock.Count} events", this);
-                if (_eventBlock.TryReceiveAll(out var events) && !t.IsFaulted && !_cancellation.IsCancellationRequested)
+                if ( _eventBlock.TryReceiveAll(out var events) && t.IsCompleted && !t.IsFaulted && !_cancellation.IsCancellationRequested ) 
                 {
                     var count = events.Count;
+                    
                     foreach (var e in events.OrderBy(x => x.Timestamp))
                         await _whenBlock.SendAsync(e);
                     
-                    // var processed = await _whenBlock.ToDataflow().ProcessAsync(events.OrderBy(e => e.Timestamp), false);
+                    // var keys = events.Select(e => e.Stream).Distinct().Aggregate((a, v) => a + $", {v}");
                     _log?.Debug( $"Processed {count} events during rebuild", this);
                 }
             }
@@ -160,7 +163,6 @@ namespace ZES.Infrastructure.Projections
                     throw new InvalidOperationException($"Concurrent update of version for {s.Key} failed!");
 
                 await o.LastOrDefaultAsync();
-                _log?.Debug($"Completed reading from {s.Key}");
                 return _version[s.Key]; 
             }
 

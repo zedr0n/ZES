@@ -45,5 +45,8 @@ namespace ZES.Infrastructure.Projections
             _timestamp = timestamp;
             await Start();
         }
+
+        /// <inheritdoc />
+        internal override void OnInit() { } 
     }
 }

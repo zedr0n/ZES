@@ -108,12 +108,6 @@ namespace ZES.Infrastructure
     /// <inheritdoc />
     public override void Complete()
     {
-      foreach (var block in _destinations.Values.Select(x => x.Value) )
-      { 
-        while ( block.OutputBlock.GetBufferCount().Item2 > 0 )
-          block.OutputBlock.Receive();
-      }
-      
       base.Complete();
     }
 

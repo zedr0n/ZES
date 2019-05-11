@@ -1,10 +1,10 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Reactive.Concurrency;
 using System.Reactive.Linq;
 using System.Reactive.Subjects;
 using System.Reactive.Threading.Tasks;
+using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Threading.Tasks.Dataflow;
@@ -24,6 +24,7 @@ namespace ZES.Infrastructure.Projections
         where TState : new()
     {
         private readonly IEventStore<IAggregate> _eventStore;
+        private readonly IMessageQueue _messageQueue;
         private readonly ITimeline _timeline;
 
         private readonly ProjectionDispatcher.Builder _streamDispatcher;
@@ -45,23 +46,13 @@ namespace ZES.Infrastructure.Projections
         protected Projection(IEventStore<IAggregate> eventStore, ILog log, IMessageQueue messageQueue, ITimeline timeline, ProjectionDispatcher.Builder streamDispatcher)
         {
             _eventStore = eventStore;
+            _messageQueue = messageQueue;
             Log = log;
             _streamDispatcher = streamDispatcher;
             _timeline = timeline;
 
             _statusSubject.Subscribe(s => Log?.Info($"{GetType().GetFriendlyName()} : {s.ToString()}" ));
-            messageQueue.Alerts.OfType<InvalidateProjections>().Subscribe(async s => await Rebuild());
-        }
-
-        /// <inheritdoc />
-        public Task Ready
-        {
-            get
-            {
-                Start();
-                return _statusSubject.AsObservable().Timeout(Configuration.Timeout).FirstAsync(s => s == Listening)
-                    .ToTask();
-            }
+            OnInit();
         }
 
         /// <inheritdoc />
@@ -76,13 +67,26 @@ namespace ZES.Infrastructure.Projections
         public Dictionary<Type, Func<IEvent, TState, TState>> Handlers { get; } = new Dictionary<Type, Func<IEvent, TState, TState>>();
 
         internal ILog Log { get; }
+        
+        /// <inheritdoc />
+        public TaskAwaiter<ProjectionStatus> GetAwaiter()
+        {
+            Start();
+            return _statusSubject.AsObservable().Timeout(Configuration.Timeout).FirstAsync(s => s == Listening)
+                .ToTask().GetAwaiter();
+        }
 
         /// <inheritdoc />
         public virtual string Key(IStream stream) => stream.Key;
 
+        internal virtual void OnInit()
+        {
+            _messageQueue.Alerts.OfType<InvalidateProjections>().Subscribe(async s => await Rebuild());
+        }
+        
         internal async Task Start()
         {
-            var status = await _statusSubject.FirstAsync();
+            var status = await _statusSubject.AsObservable().FirstAsync();
             if (status != Sleeping)
                 return;
             
@@ -112,6 +116,7 @@ namespace ZES.Infrastructure.Projections
 
         private async Task Rebuild()
         {
+            Log?.Trace($"Rebuild count : {_build}", this);
             var status = await _statusSubject.AsObservable().FirstAsync();
 
             if (status == Cancelling)
@@ -119,16 +124,18 @@ namespace ZES.Infrastructure.Projections
             
             Interlocked.Increment(ref _build);
 
-            if (status != Sleeping)
-            {
-                _cancellationSource?.Cancel();
-                await _statusSubject.AsObservable().Where(s => s == Sleeping).FirstAsync(); 
-            }
+            _cancellationSource?.Cancel();
+            status = await _statusSubject.Where(s => s == Sleeping || s == Failed).FirstAsync()
+                .Timeout(Configuration.Timeout)
+                .Catch<ProjectionStatus, TimeoutException>(e => Observable.Return(Failed));
 
+            if (status == Failed)
+                return;
+            
             _cancellationSource = new CancellationTokenSource();
 
             _statusSubject.OnNext(Building);
-            
+
             lock (State)
                 State = new TState();
 
@@ -165,15 +172,23 @@ namespace ZES.Infrastructure.Projections
             {
                 _statusSubject.OnNext(Cancelling);
                 
-                liveDispatcher.Complete();
-                if (!liveDispatcher.CompletionTask.IsCompleted)
-                    await liveDispatcher.CompletionTask;
-                
-                rebuildDispatcher.Complete();
-                if (!rebuildDispatcher.CompletionTask.IsCompleted)
-                    await rebuildDispatcher.CompletionTask;
-                
-                _statusSubject.OnNext(Sleeping);
+                try
+                {
+                    liveDispatcher.Complete();
+                    if (!liveDispatcher.CompletionTask.IsCompleted)
+                        await liveDispatcher.CompletionTask.Timeout();
+                    
+                    rebuildDispatcher.Complete();
+                    if (!rebuildDispatcher.CompletionTask.IsCompleted)
+                        await rebuildDispatcher.CompletionTask.Timeout();
+                    
+                    _statusSubject.OnNext(Sleeping);
+                }
+                catch (Exception e)
+                {
+                    _statusSubject.OnNext(Failed);
+                    Log.Errors.Add(e);
+                }
             });
 
             _eventStore.ListStreams(_timeline.Id).Subscribe(rebuildDispatcher.InputBlock.AsObserver(), _cancellationSource.Token);

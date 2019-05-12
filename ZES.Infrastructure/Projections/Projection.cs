@@ -87,7 +87,7 @@ namespace ZES.Infrastructure.Projections
         internal async Task Start()
         {
             var status = await _statusSubject.AsObservable().FirstAsync();
-            Log?.Info($"{status} : {_build}", this);
+            Log?.Debug($"{status} : {_build}", this);
             if (status != Sleeping || _build > 0)
                 return;
             

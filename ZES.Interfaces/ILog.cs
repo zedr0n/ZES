@@ -55,6 +55,13 @@ namespace ZES.Interfaces
         /// </summary>
         /// <param name="message">Log message</param>
         /// <param name="instance">Object originating the error</param>
-        void Fatal(object message, object instance = null);  
+        void Fatal(object message, object instance = null);
+
+        /// <summary>
+        /// Writes the diagnostic message at the <c>Warn</c> level.
+        /// </summary>
+        /// <param name="message">Log message</param>
+        /// <param name="instance">Object originating the error</param>
+        void Warn(object message, object instance);
     }
 }

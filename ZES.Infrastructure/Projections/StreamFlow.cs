@@ -70,11 +70,7 @@ namespace ZES.Infrastructure.Projections
             _log?.Debug($"{s.Key}@{s.Version} <- {version}", $"{Parents.Select(p => p.Name).Aggregate((a, n) => a + n)}->{Name}");
 
             if (version > s.Version)
-            {
-                _log?.Errors.Add(
-                    new InvalidOperationException(
-                        $"Stream update is version {s.Version}, behind projection version {version}"));
-            }
+                _log?.Warn($"Stream update is version {s.Version}, behind projection version {version}", GetDetailedName());
 
             if (version >= s.Version || _token.IsCancellationRequested) 
                 return version;

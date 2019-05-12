@@ -195,9 +195,10 @@ namespace ZES.Infrastructure.Projections
                 }
             });
 
-            _eventStore.ListStreams(_timeline.Id).Subscribe(rebuildDispatcher.InputBlock.AsObserver(), _cancellationSource.Token);
-            _eventStore.Streams.Subscribe(liveDispatcher.InputBlock.AsObserver(), _cancellationSource.Token);
-            
+            _eventStore.ListStreams(_timeline.Id)
+                .Finally(() => _eventStore.Streams.Subscribe(liveDispatcher.InputBlock.AsObserver(), _cancellationSource.Token))
+                .Subscribe(rebuildDispatcher.InputBlock.AsObserver(), _cancellationSource.Token);
+
             var task = rebuildDispatcher.CompletionTask;
             try
             {

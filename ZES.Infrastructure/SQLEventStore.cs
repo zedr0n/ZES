@@ -54,16 +54,13 @@ namespace ZES.Infrastructure
         {
             return Observable.Create(async (IObserver<IStream> observer) =>
             {
-                var newStreams = new List<IStream>();
-                _streams.Subscribe(s => newStreams.Add(s));
-                
                 var page = await _streamStore.ListStreams();
                 while (page.StreamIds.Length > 0)
                 {
                     foreach (var s in page.StreamIds.Where(x => !x.Contains("Command") && !x.StartsWith("$")))
                     {
                         var stream = await _streamStore.GetStream(s);
-                        if (newStreams.All(n => n.Key != stream.Key) && ( stream.Timeline == branch || branch == null))
+                        if (stream.Timeline == branch || branch == null)
                             observer.OnNext(stream);
                     }
 

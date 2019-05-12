@@ -63,7 +63,7 @@ namespace ZES.Infrastructure.Projections
         
         private async Task<int> Read(IStream s)
         {
-            _log?.Info($"{s.Key}@{s.Version} <- {_version}", this);
+            _log?.Info($"{s.Key}@{s.Version} <- {_version}", Name);
             if (_version > s.Version)
                 throw new InvalidOperationException($"Stream update is version {s.Version}, behind projection version {_version}");
 

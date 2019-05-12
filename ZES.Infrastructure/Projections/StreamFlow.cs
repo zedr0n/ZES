@@ -75,9 +75,9 @@ namespace ZES.Infrastructure.Projections
                 .Publish().RefCount();
 
             o.Subscribe(async e => await _eventBlock.SendAsync(e), _token);
+            _version = s.Version;
 
             await o.LastOrDefaultAsync().ToTask(_token);
-            _version = s.Version;
             return _version;
         }
 

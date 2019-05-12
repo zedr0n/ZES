@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Concurrent;
 using System.Linq;
 using System.Reactive.Linq;
 using System.Reactive.Threading.Tasks;
@@ -15,6 +16,7 @@ namespace ZES.Infrastructure.Projections
     /// <inheritdoc />
     public class StreamFlow : Dataflow<IStream, int>
     {
+        private readonly ConcurrentDictionary<string, int> _versions;
         private readonly CancellationToken _token;
         private readonly ITargetBlock<IEvent> _eventBlock;
         private readonly IEventStore<IAggregate> _eventStore;
@@ -22,9 +24,8 @@ namespace ZES.Infrastructure.Projections
 
         private readonly TransformBlock<IStream, int> _block;
 
-        private int _version = ExpectedVersion.EmptyStream;
-
         private StreamFlow(
+            ConcurrentDictionary<string, int> versions,
             DataflowOptions dataflowOptions,
             CancellationToken token,
             ITargetBlock<IEvent> eventBlock,
@@ -32,6 +33,7 @@ namespace ZES.Infrastructure.Projections
             ILog log)
             : base(dataflowOptions)
         {
+            _versions = versions;
             _token = token;
             _eventBlock = eventBlock;
             _eventStore = eventStore;
@@ -64,21 +66,24 @@ namespace ZES.Infrastructure.Projections
         
         private async Task<int> Read(IStream s)
         {
-            _log?.Info($"{s.Key}@{s.Version} <- {_version}", $"{Parents.Select(p => p.Name).Aggregate((a, n) => a + n)}->{Name}");
-            if (_version > s.Version)
-                throw new InvalidOperationException($"Stream update is version {s.Version}, behind projection version {_version}");
+            var version = _versions.GetOrAdd(s.Key, ExpectedVersion.EmptyStream);
+            _log?.Info($"{s.Key}@{s.Version} <- {version}", $"{Parents.Select(p => p.Name).Aggregate((a, n) => a + n)}->{Name}");
+            if (version > s.Version)
+                throw new InvalidOperationException($"Stream update is version {s.Version}, behind projection version {version}");
 
-            if (_version == s.Version || _token.IsCancellationRequested) 
-                return _version;
+            if (version == s.Version || _token.IsCancellationRequested) 
+                return version;
             
-            var o = _eventStore.ReadStream<IEvent>(s, _version + 1, s.Version - _version)
+            var o = _eventStore.ReadStream<IEvent>(s, version + 1, s.Version - version)
                 .Publish().RefCount();
 
             o.Subscribe(async e => await _eventBlock.SendAsync(e), _token);
-            _version = s.Version;
+
+            if (!_versions.TryUpdate(s.Key, s.Version, version))
+                throw new InvalidOperationException("Failed updating concurrent versions of projections");
 
             await o.LastOrDefaultAsync().ToTask(_token);
-            return _version;
+            return version;
         }
 
         /// <inheritdoc />
@@ -106,9 +111,9 @@ namespace ZES.Infrastructure.Projections
             internal Builder WithCancellation(CancellationToken token)
                 => Clone(this, b => b._token = token);
             
-            internal StreamFlow Bind(ITargetBlock<IEvent> eventBlock)
+            internal StreamFlow Bind(ITargetBlock<IEvent> eventBlock, ConcurrentDictionary<string, int> versions)
             {
-                return new StreamFlow(_options, _token, eventBlock, _store, _log);        
+                return new StreamFlow(versions, _options, _token, eventBlock, _store, _log);        
             }
         }
     }

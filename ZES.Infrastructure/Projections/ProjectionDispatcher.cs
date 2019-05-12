@@ -45,7 +45,7 @@ namespace ZES.Infrastructure.Projections
                     .WithOptions(DataflowOptions)
                     .WithCancellation(_cancellation.Token)
                     .DelayUntil(_start)
-                    .Bind(_projection.When);
+                    .Bind(_projection.When, _projection._versions);
             }
 
             /// <inheritdoc />

@@ -56,7 +56,7 @@ namespace ZES.Infrastructure.Projections
         /// <inheritdoc />
         public override void Complete()
         {
-            _block.TryReceiveAll(out _);
+            _block?.TryReceiveAll(out _);
             
             base.Complete();
         }

@@ -19,6 +19,8 @@ namespace ZES.Infrastructure.Projections
         {
             private readonly ILog _log;
 
+            private readonly BufferBlock<IEvent> _eventBlock;
+            
             private readonly Task _start;
             private readonly StreamFlow.Builder _builder;
             private readonly CancellationToken _cancellation;
@@ -27,7 +29,6 @@ namespace ZES.Infrastructure.Projections
 
             private Action<IEvent> _when = e => { };
 
-            private readonly BufferBlock<IEvent> _eventBlock;
             private ActionBlock<IEvent> _whenBlock;
 
             private ProjectionFlow(

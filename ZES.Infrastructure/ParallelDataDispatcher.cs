@@ -27,16 +27,19 @@ namespace ZES.Infrastructure
   public abstract class ParallelDataDispatcher<TKey, TIn, TOut> : Dataflow<TIn, TOut>
   {
     private readonly Func<TIn, TKey> _dispatchFunc;
+    
     private readonly ActionBlock<TIn> _dispatcherBlock;
+    private readonly BufferBlock<TOut> _outputBlock = new BufferBlock<TOut>(); 
+    
     private readonly ConcurrentDictionary<TKey, Lazy<Dataflow<TIn, TOut>>> _destinations;
     private readonly ConcurrentDictionary<TKey, Lazy<Dataflow<TOut, TOut>>> _outputs;
     private readonly Func<TKey, Lazy<Dataflow<TIn, TOut>>> _initer;
     private readonly Func<TKey, Lazy<Dataflow<TOut, TOut>>> _outIniter;
+    
     private readonly Type _declaringType;
     private readonly CancellationToken _token;
     
     private int _parallelCount;
-    private readonly BufferBlock<TOut> _outputBlock = new BufferBlock<TOut>();
 
     /// <summary>
     /// Initializes a new instance of the <see cref="ParallelDataDispatcher{TIn, TOut, TKey}"/> class.
@@ -147,12 +150,11 @@ namespace ZES.Infrastructure
       var key = _dispatchFunc(input);
       var block = _destinations.GetOrAdd(key, _initer).Value;
 
-      if (!block.CompletionTask.IsCompleted)
-        await block.SendAsync(input);
-      
       var timeout = DataflowOptions is DataflowOptionsEx optionEx ? optionEx.Timeout : TimeSpan.FromMilliseconds(-1);
       try
       {
+        await block.SendAsync(input);
+        
         var output = await block.OutputBlock.ReceiveAsync(timeout, _token);
         var outBlock = _outputs.GetOrAdd(key, _outIniter).Value;
         await outBlock.SendAsync(output);

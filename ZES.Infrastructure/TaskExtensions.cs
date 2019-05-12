@@ -5,8 +5,17 @@ using System.Threading.Tasks;
 
 namespace ZES.Infrastructure
 {
+    /// <summary>
+    /// Task extensions
+    /// </summary>
     public static class TaskExtensions
     {
+        /// <summary>
+        /// Timeout a task
+        /// </summary>
+        /// <param name="task">Task to execute</param>
+        /// <typeparam name="T">Task result</typeparam>
+        /// <returns>Completed task or timeout </returns>
         public static async Task<T> Timeout<T>(this Task<T> task)
         {
             var anyTask = await Task.WhenAny(task, Observable.Timer(Configuration.Timeout).Select(l => default(T)).ToTask());

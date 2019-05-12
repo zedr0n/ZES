@@ -71,7 +71,7 @@ namespace ZES.Infrastructure.Projections
         /// <inheritdoc />
         public TaskAwaiter<ProjectionStatus> GetAwaiter()
         {
-            Start();
+            var task = Start();
             return _statusSubject.AsObservable().Timeout(Configuration.Timeout).FirstAsync(s => s == Listening)
                 .ToTask().GetAwaiter();
         }
@@ -87,7 +87,8 @@ namespace ZES.Infrastructure.Projections
         internal async Task Start()
         {
             var status = await _statusSubject.AsObservable().FirstAsync();
-            if (status != Sleeping)
+            Log?.Trace($"{status} : {_build}", this);
+            if (status != Sleeping || _build > 0)
                 return;
             
             await Rebuild();

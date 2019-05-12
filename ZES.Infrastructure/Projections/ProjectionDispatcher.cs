@@ -37,7 +37,7 @@ namespace ZES.Infrastructure.Projections
                 _streamFlow = streamFlow;
                 Log = log;
 
-                _cancellation.Token.Register(base.Complete);
+                // _cancellation.Token.Register(base.Complete);
             }
 
             /// <inheritdoc />

@@ -157,8 +157,8 @@ namespace ZES.Infrastructure
         
         var output = await block.OutputBlock.ReceiveAsync(timeout, _token);
         var outBlock = _outputs.GetOrAdd(key, _outIniter).Value;
-        await outBlock.SendAsync(output);
-        await _outputBlock.SendAsync(output);
+        await outBlock.InputBlock.SendAsync(output, _token);
+        await _outputBlock.SendAsync(output, _token);
 
         // Log?.Debug($"{copy} -> {output}", (_declaringType ?? GetType().DeclaringType)?.GetFriendlyName());
       }

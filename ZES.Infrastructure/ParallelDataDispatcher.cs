@@ -127,6 +127,13 @@ namespace ZES.Infrastructure
       return this;
     }
 
+    /// <inheritdoc />
+    public override void Complete()
+    {
+      _outputBlock.TryReceiveAll(out _);
+      base.Complete();
+    }
+
     /// <summary>
     /// Every child flow will have an attached buffer block containing its outputs which can be accessed or awaited 
     /// </summary>

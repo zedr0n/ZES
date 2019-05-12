@@ -25,13 +25,14 @@ namespace ZES.Infrastructure.Projections
             private readonly Task _start;
             private readonly StreamFlow.Builder _builder;
             private readonly CancellationToken _cancellation;
+            
+            private readonly ConcurrentDictionary<string, int> _versions;
 
             private long _timestamp;
 
             private Action<IEvent> _when = e => { };
 
             private ActionBlock<IEvent> _whenBlock;
-            private readonly ConcurrentDictionary<string, int> _versions;
 
             private ProjectionFlow(
                 ConcurrentDictionary<string, int> versions,

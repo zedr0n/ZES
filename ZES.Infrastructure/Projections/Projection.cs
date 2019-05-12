@@ -31,9 +31,9 @@ namespace ZES.Infrastructure.Projections
         private readonly ProjectionDispatcher.Builder _streamDispatcher;
 
         private readonly BehaviorSubject<ProjectionStatus> _statusSubject = new BehaviorSubject<ProjectionStatus>(Sleeping);
+        private readonly ConcurrentDictionary<string, int> _versions = new ConcurrentDictionary<string, int>(); 
 
         private CancellationTokenSource _cancellationSource;
-        private readonly ConcurrentDictionary<string, int> _versions = new ConcurrentDictionary<string, int>(); 
 
         private int _build = 0;
 

@@ -31,7 +31,7 @@ namespace ZES.Infrastructure.Projections
             private Action<IEvent> _when = e => { };
 
             private ActionBlock<IEvent> _whenBlock;
-            private ConcurrentDictionary<string, int> _versions;
+            private readonly ConcurrentDictionary<string, int> _versions;
 
             private ProjectionFlow(
                 ConcurrentDictionary<string, int> versions,

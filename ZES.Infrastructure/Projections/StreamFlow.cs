@@ -68,10 +68,11 @@ namespace ZES.Infrastructure.Projections
         {
             var version = _versions.GetOrAdd(s.Key, ExpectedVersion.EmptyStream);
             _log?.Debug($"{s.Key}@{s.Version} <- {version}", $"{Parents.Select(p => p.Name).Aggregate((a, n) => a + n)}->{Name}");
-            if (version > s.Version)
-                throw new InvalidOperationException($"Stream update is version {s.Version}, behind projection version {version}");
+            
+            /* if (version > s.Version)
+            /    throw new InvalidOperationException($"Stream update is version {s.Version}, behind projection version {version}");*/
 
-            if (version == s.Version || _token.IsCancellationRequested) 
+            if (version <= s.Version || _token.IsCancellationRequested) 
                 return version;
             
             var o = _eventStore.ReadStream<IEvent>(s, version + 1, s.Version - version)

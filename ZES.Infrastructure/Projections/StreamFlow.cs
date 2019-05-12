@@ -72,7 +72,7 @@ namespace ZES.Infrastructure.Projections
             /* if (version > s.Version)
             /    throw new InvalidOperationException($"Stream update is version {s.Version}, behind projection version {version}");*/
 
-            if (version <= s.Version || _token.IsCancellationRequested) 
+            if (version >= s.Version || _token.IsCancellationRequested) 
                 return version;
             
             var o = _eventStore.ReadStream<IEvent>(s, version + 1, s.Version - version)

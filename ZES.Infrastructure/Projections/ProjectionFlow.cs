@@ -52,8 +52,6 @@ namespace ZES.Infrastructure.Projections
                 
                 _eventBlock = new BufferBlock<IEvent>();
                 RegisterChild(_eventBlock);
-
-                token.Register(Complete);
             }
 
             /// <inheritdoc />

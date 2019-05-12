@@ -38,23 +38,19 @@ namespace ZES.Infrastructure.Projections
             _eventBlock = eventBlock;
             _eventStore = eventStore;
             _log = log;
-            token.Register(Complete);
 
             _block = new TransformBlock<IStream, int>(
                 async s => await Read(s),
                 dataflowOptions.ToExecutionBlockOption());
-
-            RegisterChild(_block);
             
-            InputBlock = _block;
-            OutputBlock = _block;
+            RegisterChild(_block);
         }
 
         /// <inheritdoc />
-        public override ITargetBlock<IStream> InputBlock { get; }
+        public override ITargetBlock<IStream> InputBlock => _block;
 
         /// <inheritdoc />
-        public override ISourceBlock<int> OutputBlock { get; }
+        public override ISourceBlock<int> OutputBlock => _block;
 
         /// <inheritdoc />
         public override void Complete()

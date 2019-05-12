@@ -54,6 +54,12 @@ namespace ZES.Interfaces.EventStore
         /// Stream timeline id
         /// </value>
         string Timeline { get; set; }
+
+        /// <summary>
+        /// Copies the stream
+        /// </summary>
+        /// <returns>Stream copy</returns>
+        IStream Copy();
         
         /// <summary>
         /// Gets the local position in the stream

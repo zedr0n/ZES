@@ -27,10 +27,29 @@ namespace ZES.Infrastructure
         /// <inheritdoc />
         public void Add(Exception error)
         {
-            if (error == null)
-                return;
-            _log.Error(error.Message, error.StackTrace?.Split(new[] { "in", "at", "(", ")", "[", "]" }, StringSplitOptions.RemoveEmptyEntries)[1] + ' ');
+            switch (error)
+            {
+                case null:
+                    return;
+                case AggregateException aggregate:
+                {
+                    foreach (var exception in aggregate.InnerExceptions)
+                        Log(exception);
+                    break;
+                }
+                
+                default:
+                    Log(error);
+                    break;
+            }
+
+            // _log.Error(error.Message, error.StackTrace?.Split(new[] { "in", "at", "(", ")", "[", "]" }, StringSplitOptions.RemoveEmptyEntries)[1] + ' ');
             _errors.OnNext(new Error(error));
+        }
+
+        private void Log(Exception error)
+        {
+            _log.Error(error.Message, error.StackTrace); 
         }
 
         /// <inheritdoc />

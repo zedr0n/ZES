@@ -111,7 +111,7 @@ namespace ZES
                 _handler = handler;
             }
             
-            public async Task ReceiveAsync(ICommand command) => await OutputBlock(command.Target).ReceiveAsync();
+            public async Task ReceiveAsync(ICommand command) => await Output(command.Target).ReceiveAsync();
 
             protected override Dataflow<ICommand, Task> CreateChildFlow(string target)
             {

@@ -130,8 +130,11 @@ namespace ZES.Infrastructure.Projections
                 .Catch<ProjectionStatus, TimeoutException>(e => Observable.Return(Failed));
 
             if (status == Failed)
+            {
+                Interlocked.Decrement(ref _build);
                 return;
-            
+            }
+
             _cancellationSource = new CancellationTokenSource();
 
             _statusSubject.OnNext(Building);
@@ -153,7 +156,7 @@ namespace ZES.Infrastructure.Projections
                     PerformanceMonitorMode = DataflowOptions.PerformanceLogMode.Verbose*/
                 }) // Timeout = TimeSpan.FromMilliseconds(1000) } )
                 .Bind(this)
-                .OnError(async t => await Rebuild());
+                .OnError(async () => await Rebuild());
 
             var liveDispatcher = _streamDispatcher
                 .WithCancellation(_cancellationSource)
@@ -164,9 +167,9 @@ namespace ZES.Infrastructure.Projections
                         : 1,
                     FlowMonitorEnabled = false
                 })
-                .DelayUntil(new Lazy<Task>(() => rebuildDispatcher.CompletionTask))
+                .DelayUntil(rebuildDispatcher.CompletionTask)
                 .Bind(this)
-                .OnError(async t => await Rebuild());
+                .OnError(async () => await Rebuild());
 
             _cancellationSource.Token.Register(async () =>
             {
@@ -199,9 +202,9 @@ namespace ZES.Infrastructure.Projections
             {
                 await task;
             }
-            catch (Exception)
+            catch (Exception e)
             {
-                // ignored
+                Log.Errors.Add(e);    
             }
             
             Interlocked.Decrement(ref _build);
@@ -218,12 +221,13 @@ namespace ZES.Infrastructure.Projections
 
         private void When(IEvent e)
         {
-            Log.Trace($"Stream {e?.Stream}@{e?.Version}", this);
             if (_cancellationSource.IsCancellationRequested)
-                throw new InvalidOperationException("Cancellation requested but projection is being updated");
-
+                return;    
+            
             if (e == null)
                 return;
+            
+            Log.Trace($"Stream {e.Stream}@{e.Version}", this);
             
             if (!Handlers.TryGetValue(e.GetType(), out var handler))
                 return;

@@ -103,7 +103,7 @@ namespace ZES
                 c.RegisterConditional(projectionInterface, p, Lifestyle.Singleton, x => !x.Handled);
 
                 var builderType = typeof(Projection<>.ProjectionDispatcher.Builder).MakeGenericType(tState);
-                var streamType = typeof(Projection<>.StreamFlow.Builder).MakeGenericType(tState);
+                var streamType = typeof(Projection<>.ProjectionFlow.Builder).MakeGenericType(tState);
                 c.Register(builderType, builderType, Lifestyle.Singleton);
                 c.Register(streamType, streamType, Lifestyle.Singleton);
             }

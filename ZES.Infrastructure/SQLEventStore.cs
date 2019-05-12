@@ -47,7 +47,7 @@ namespace ZES.Infrastructure
         }
 
         /// <inheritdoc />
-        public IObservable<IStream> Streams => _streams.AsObservable();
+        public IObservable<IStream> Streams => _streams.AsObservable().Select(s => s.Copy());
 
         /// <inheritdoc />
         public IObservable<IStream> ListStreams(string branch = null)

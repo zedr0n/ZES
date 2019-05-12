@@ -84,6 +84,9 @@ namespace ZES.Infrastructure.Streams
         public string Timeline { get; set; }
 
         /// <inheritdoc />
+        public IStream Copy() => new Stream(Key, Version, Parent);
+        
+        /// <inheritdoc />
         public int Position(int? expectedVersion = null)
         {
             if (expectedVersion == null)

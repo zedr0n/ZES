@@ -15,18 +15,18 @@ namespace ZES.Infrastructure.Projections
         /// <inheritdoc />
         public class ProjectionDispatcher : ParallelDataDispatcher<string, IStream, int>
         {
-            private readonly StreamFlow.Builder _streamFlow;
+            private readonly ProjectionFlow.Builder _streamFlow;
 
             private readonly Projection<TState> _projection;
             private readonly CancellationTokenSource _cancellation;
-            private readonly Lazy<Task> _start;
+            private readonly Task _start;
 
             private ProjectionDispatcher(
                 DataflowOptions options,
                 Projection<TState> projection, 
                 CancellationTokenSource cancel,
-                Lazy<Task> delay,
-                StreamFlow.Builder streamFlow,
+                Task delay,
+                ProjectionFlow.Builder streamFlow,
                 ILog log)
                 : base(projection.Key, options, cancel.Token, projection.GetType())
             {
@@ -43,7 +43,7 @@ namespace ZES.Infrastructure.Projections
             {
                 return _streamFlow
                     .WithOptions(DataflowOptions)
-                    .WithCancellation(_cancellation)
+                    .WithCancellation(_cancellation.Token)
                     .DelayUntil(_start)
                     .Bind(_projection.When);
             }
@@ -57,19 +57,19 @@ namespace ZES.Infrastructure.Projections
             /// <inheritdoc />
             public class Builder : FluentBuilder
             {
-                private readonly StreamFlow.Builder _streamFlow;
+                private readonly ProjectionFlow.Builder _streamFlow;
                 private readonly ILog _log;
 
                 private DataflowOptions _options = DataflowOptions.Default;
                 private CancellationTokenSource _cancellation = new CancellationTokenSource();
-                private Lazy<Task> _delayUntil;
+                private Task _delayUntil;
 
                 /// <summary>
                 /// Initializes a new instance of the <see cref="Builder"/> class.
                 /// </summary>
                 /// <param name="streamFlow">Stream flow</param>
                 /// <param name="log">Log helper</param>
-                public Builder(StreamFlow.Builder streamFlow, ILog log)
+                public Builder(ProjectionFlow.Builder streamFlow, ILog log)
                 {
                     _streamFlow = streamFlow;
                     _log = log;
@@ -81,7 +81,7 @@ namespace ZES.Infrastructure.Projections
                 internal Builder WithCancellation(CancellationTokenSource source) =>
                     Clone(this, b => b._cancellation = source);
 
-                internal Builder DelayUntil(Lazy<Task> delay) =>
+                internal Builder DelayUntil(Task delay) =>
                     Clone(this, b => b._delayUntil = delay);
 
                 internal ParallelDataDispatcher<string, IStream, int> Bind(Projection<TState> projection)

@@ -81,6 +81,8 @@ namespace ZES
                     !c.Consumer.ImplementationType.IsClosedTypeOf(typeof(DecoratorQueryHandler<,>))));
             
             container.Register<IBranchManager, BranchManager>(Lifestyle.Singleton);
+            
+            container.Register<StreamFlow.Builder>(Lifestyle.Singleton);
         }
         
         private Registration GetStore(Container container)

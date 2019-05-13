@@ -20,33 +20,56 @@ namespace ZES.Infrastructure.Projections
             private readonly ILog _log;
 
             private readonly BufferBlock<IEvent> _eventBlock;
-            
-            private readonly Task _start;
+            private readonly ActionBlock<IEvent> _whenBlock;
+
             private readonly StreamFlow.Builder _builder;
             private readonly CancellationToken _cancellation;
 
-            private Projection<TState> _projection;
+            private readonly Projection<TState> _projection;
 
             private long _timestamp;
 
-            private ActionBlock<IEvent> _whenBlock;
-
             private ProjectionFlow(
+                Projection<TState> projection,
                 DataflowOptions options,
                 CancellationToken token,
                 Task delay,
                 StreamFlow.Builder builder,
                 ILog log)
-                : base(s => s.Key, options, token, typeof(ProjectionFlow))
+                : base(s => s.Key, options, token, projection.GetType())
             {
                 _log = log;
 
-                _start = delay;
                 _builder = builder;
                 _cancellation = token;
+                _projection = projection; 
                 
                 _eventBlock = new BufferBlock<IEvent>();
+
+                _whenBlock = new ActionBlock<IEvent>(e =>
+                {
+                    // _log?.Debug($"{e.Stream}:{e.Version}", this);
+                    if ( e.Timestamp < _timestamp )
+                        throw new InvalidOperationException();
+
+                    if (_cancellation.IsCancellationRequested) 
+                        return;
+                    
+                    projection.When(e);
+                    _timestamp = e.Timestamp;
+                });
+
+                RegisterChild(_whenBlock);
                 RegisterChild(_eventBlock);
+
+                // Start updating the projection only after precedence task ( e.g. rebuild ) was completed
+                // guarantees that new events don't get processed before it was at least rebuilt
+                delay?.ContinueWith(
+                    t =>
+                    {
+                        if (t.IsSuccessful()) 
+                            _eventBlock.LinkTo(_whenBlock, new DataflowLinkOptions { PropagateCompletion = true }); 
+                    }, _cancellation);
             }
 
             /// <inheritdoc />
@@ -65,39 +88,6 @@ namespace ZES.Infrastructure.Projections
                 return _builder.WithOptions(DataflowOptions)
                     .WithCancellation(_cancellation)
                     .Bind(_eventBlock, _projection._versions);
-            }
-
-            private ProjectionFlow Bind(Projection<TState> projection)
-            {
-                _projection = projection; 
-                _whenBlock = new ActionBlock<IEvent>(e =>
-                {
-                    // _log?.Debug($"{e.Stream}:{e.Version}", this);
-                    if ( e.Timestamp < _timestamp )
-                       throw new InvalidOperationException();
-
-                    if (_cancellation.IsCancellationRequested) 
-                        return;
-                    
-                    projection.When(e);
-                    _timestamp = e.Timestamp;
-                });
-
-                RegisterChild(_whenBlock);
-
-                // Start updating the projection only after precedence task ( e.g. rebuild ) was completed
-                // guarantees that new events don't get processed before it was at least rebuilt
-                if (_start == null)
-                    return this;
-
-                _start.ContinueWith(
-                    t =>
-                    {
-                        if (t.IsSuccessful()) 
-                            _eventBlock.LinkTo(_whenBlock, new DataflowLinkOptions { PropagateCompletion = true }); 
-                    }, _cancellation);
-                
-                return this;
             }
 
             private async Task ProcessEvents()
@@ -147,8 +137,7 @@ namespace ZES.Infrastructure.Projections
 
                 internal Dataflow<IStream, int> Bind(Projection<TState> projection)
                 {
-                    var flow = new ProjectionFlow(_options, _cancellation, _delay, _builder, _log);
-                    return flow.Bind(projection);
+                    return new ProjectionFlow(projection, _options, _cancellation, _delay, _builder, _log);
                 }
             }
         }

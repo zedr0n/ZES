@@ -2,7 +2,7 @@ using System;
 using System.Linq.Expressions;
 using SimpleInjector;
 
-namespace ZES
+namespace ZES.Conventions
 {
     /// <inheritdoc />
     public abstract class BaseParameterConvention : IParameterConvention

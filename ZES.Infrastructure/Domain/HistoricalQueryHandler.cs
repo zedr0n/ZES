@@ -3,7 +3,7 @@ using System.Threading.Tasks;
 using ZES.Infrastructure.Projections;
 using ZES.Interfaces.Domain;
 
-namespace ZES.Infrastructure
+namespace ZES.Infrastructure.Domain
 {
     /// <summary>
     /// Generic historic query handler 

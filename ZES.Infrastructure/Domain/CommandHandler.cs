@@ -1,10 +1,9 @@
 using System;
 using System.Threading.Tasks;
-using ZES.Infrastructure.Domain;
 using ZES.Interfaces;
 using ZES.Interfaces.Domain;
 
-namespace ZES.Infrastructure
+namespace ZES.Infrastructure.Domain
 {
     /// <summary>
     /// Command decorator 

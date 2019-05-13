@@ -19,4 +19,8 @@
       <ProjectReference Include="..\ZES.Interfaces\ZES.Interfaces.csproj" />
     </ItemGroup>
 
+    <ItemGroup>
+      <Folder Include="Conventions" />
+    </ItemGroup>
+
 </Project>

@@ -3,13 +3,13 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using SimpleInjector;
-using ZES.Infrastructure;
+using ZES.Infrastructure.Domain;
 using ZES.Infrastructure.Projections;
 using ZES.Infrastructure.Sagas;
 using ZES.Interfaces.Domain;
 using ZES.Interfaces.Sagas;
 
-namespace ZES
+namespace ZES.Utils
 {
     /// <summary>
     /// Domain registration methods for <see cref="SimpleInjector"/> DI

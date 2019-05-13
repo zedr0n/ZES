@@ -6,7 +6,7 @@ using ZES.Infrastructure.Serialization;
 using ZES.Infrastructure.Streams;
 using ZES.Interfaces.EventStore;
 
-namespace ZES.Infrastructure
+namespace ZES.Infrastructure.Utils
 {
     internal static class SqlStreamStoreExtensions
     {

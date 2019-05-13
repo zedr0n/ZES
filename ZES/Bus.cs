@@ -6,6 +6,7 @@ using System.Threading.Tasks.Dataflow;
 using Gridsum.DataflowEx;
 using SimpleInjector;
 using ZES.Infrastructure;
+using ZES.Infrastructure.Dataflow;
 using ZES.Interfaces;
 using ZES.Interfaces.Domain;
 using ZES.Interfaces.Pipes;

@@ -1,21 +1,16 @@
 using System;
 using System.Collections.Concurrent;
-using System.Collections.Generic;
 using System.Linq;
 using System.Reactive.Linq;
 using System.Threading.Tasks;
 using System.Threading.Tasks.Dataflow;
 using Gridsum.DataflowEx;
-using Newtonsoft.Json.Linq;
-using SqlStreamStore.Streams;
 using ZES.Infrastructure.Domain;
-using ZES.Infrastructure.Serialization;
-using ZES.Infrastructure.Streams;
 using ZES.Interfaces;
 using ZES.Interfaces.EventStore;
 using ZES.Interfaces.Pipes;
 
-namespace ZES.Infrastructure
+namespace ZES.Infrastructure.Branching
 {
     /// <inheritdoc />
     public class BranchManager : IBranchManager

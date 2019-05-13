@@ -2,7 +2,7 @@ using SqlStreamStore.Streams;
 using ZES.Interfaces;
 using ZES.Interfaces.Serialization;
 
-namespace ZES.Infrastructure
+namespace ZES.Infrastructure.Utils
 {
     /// <summary>
     /// Encoding extensions for <see cref="SqlStreamStore"/> serialization

@@ -1,6 +1,6 @@
 using ZES.Interfaces.Domain;
 
-namespace ZES.Infrastructure
+namespace ZES.Infrastructure.Domain
 {
     /// <inheritdoc />
     public class HistoricalQuery<TQuery, TResult> : IHistoricalQuery<TQuery, TResult>

@@ -1,6 +1,7 @@
 using System;
 using System.Threading.Tasks;
 using ZES.Infrastructure;
+using ZES.Infrastructure.Domain;
 using ZES.Interfaces.Domain;
 using ZES.Interfaces.EventStore;
 

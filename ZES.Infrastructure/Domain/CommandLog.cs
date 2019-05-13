@@ -6,7 +6,7 @@ using ZES.Interfaces;
 using ZES.Interfaces.Domain;
 using ZES.Interfaces.Serialization;
 
-namespace ZES.Infrastructure
+namespace ZES.Infrastructure.Domain
 {
     /// <inheritdoc />
     public class CommandLog : ICommandLog

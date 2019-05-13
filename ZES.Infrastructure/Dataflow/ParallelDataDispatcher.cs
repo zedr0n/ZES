@@ -9,7 +9,7 @@ using System.Threading.Tasks.Dataflow;
 using Gridsum.DataflowEx;
 using ZES.Interfaces;
 
-namespace ZES.Infrastructure
+namespace ZES.Infrastructure.Dataflow
 {
   /// <summary>
   /// Provides an abstract flow that dispatch inputs to multiple child flows by a special dispatch function, which is

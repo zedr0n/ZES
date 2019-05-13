@@ -1,7 +1,7 @@
 using System.Linq.Expressions;
 using SimpleInjector;
 
-namespace ZES
+namespace ZES.Conventions
 {
     /// <summary>
     /// Responsible for injecting <c>null</c> for <c>logName</c> argument for NLogger

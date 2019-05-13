@@ -1,9 +1,7 @@
 using System;
-using System.Collections.Generic;
 using System.Linq;
-using Gridsum.DataflowEx;
 
-namespace ZES.Logging
+namespace ZES.Utils
 {
     internal static class TypeExtensions
     {
@@ -12,7 +10,7 @@ namespace ZES.Logging
             if (!type.IsGenericType)
                 return type.Name;
             return
-                $"{type.Name.Split('`')[0]}<{string.Join(", ", type.GetGenericArguments().Select(Utils.GetFriendlyName))}>";
+                $"{type.Name.Split('`')[0]}<{string.Join(", ", type.GetGenericArguments().Select(Gridsum.DataflowEx.Utils.GetFriendlyName))}>";
         }
     }
 }

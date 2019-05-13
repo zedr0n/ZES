@@ -1,5 +1,4 @@
 using System;
-using System.Diagnostics;
 using System.Reactive.Linq;
 using System.Threading.Tasks;
 using ZES.Infrastructure;
@@ -7,7 +6,7 @@ using ZES.Interfaces;
 using ZES.Interfaces.Domain;
 using ZES.Interfaces.Pipes;
 
-namespace ZES
+namespace ZES.Utils
 {
     /// <summary>
     /// Multi-threaded awaiter for unit testing

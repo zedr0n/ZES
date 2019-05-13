@@ -8,6 +8,7 @@ using SqlStreamStore;
 using SqlStreamStore.Streams;
 using ZES.Infrastructure.Serialization;
 using ZES.Infrastructure.Streams;
+using ZES.Infrastructure.Utils;
 using ZES.Interfaces;
 using ZES.Interfaces.EventStore;
 using ZES.Interfaces.Pipes;

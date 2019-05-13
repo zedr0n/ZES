@@ -1,8 +1,7 @@
-using System;
 using System.Linq.Expressions;
 using SimpleInjector;
 
-namespace ZES
+namespace ZES.Conventions
 {
     /// <summary>
     /// Parameter convention to inject arguments not represented by services

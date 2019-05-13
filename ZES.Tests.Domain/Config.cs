@@ -3,6 +3,7 @@ using SimpleInjector;
 using ZES.Infrastructure.Attributes;
 using ZES.Tests.Domain.Commands;
 using ZES.Tests.Domain.Queries;
+using ZES.Utils;
 
 namespace ZES.Tests.Domain
 {

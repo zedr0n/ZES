@@ -3,7 +3,7 @@ using System.Reactive.Linq;
 using System.Threading.Tasks;
 using ZES.Interfaces.Domain;
 
-namespace ZES.Infrastructure
+namespace ZES.Infrastructure.Domain
 {
     /// <summary>
     /// Base query handler

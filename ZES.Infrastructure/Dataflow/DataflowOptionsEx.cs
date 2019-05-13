@@ -1,7 +1,7 @@
 using System;
 using Gridsum.DataflowEx;
 
-namespace ZES.Infrastructure
+namespace ZES.Infrastructure.Dataflow
 {
     /// <inheritdoc />
     public class DataflowOptionsEx : DataflowOptions

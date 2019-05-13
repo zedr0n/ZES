@@ -2,8 +2,9 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using SimpleInjector;
 using SimpleInjector.Advanced;
+using ZES.Conventions;
 
-namespace ZES
+namespace ZES.Utils
 {
     internal static class SimpleInjectorExtensions
     {

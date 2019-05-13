@@ -3,7 +3,7 @@ using System.Reactive.Linq;
 using System.Reactive.Threading.Tasks;
 using System.Threading.Tasks;
 
-namespace ZES.Infrastructure
+namespace ZES.Infrastructure.Utils
 {
     /// <summary>
     /// Task extensions

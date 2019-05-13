@@ -1,6 +1,6 @@
 using System;
 
-namespace ZES.Infrastructure
+namespace ZES.Infrastructure.Utils
 {
     /// <summary>
     /// Fluent builder

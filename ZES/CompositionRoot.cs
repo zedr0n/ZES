@@ -4,7 +4,9 @@ using System.Linq;
 using NLog;
 using SimpleInjector;
 using SqlStreamStore;
+using ZES.Conventions;
 using ZES.Infrastructure;
+using ZES.Infrastructure.Branching;
 using ZES.Infrastructure.Domain;
 using ZES.Infrastructure.Projections;
 using ZES.Infrastructure.Sagas;
@@ -17,6 +19,8 @@ using ZES.Interfaces.Pipes;
 using ZES.Interfaces.Sagas;
 using ZES.Interfaces.Serialization;
 using ZES.Logging;
+using ZES.Utils;
+using BranchManager = ZES.Infrastructure.Branching.BranchManager;
 using ILog = ZES.Interfaces.ILog;
 
 namespace ZES

@@ -1,7 +1,7 @@
 using System;
 using ZES.Interfaces;
 
-namespace ZES.Infrastructure
+namespace ZES.Infrastructure.Branching
 {
     /// <inheritdoc />
     public class Timeline : ITimeline

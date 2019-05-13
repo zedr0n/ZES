@@ -6,7 +6,7 @@ using ZES.Interfaces.Pipes;
 using ZES.Tests.Domain;
 using ZES.Tests.Domain.Commands;
 using ZES.Tests.Domain.Queries;
-using static ZES.ObservableExtensions;
+using static ZES.Utils.ObservableExtensions;
 
 namespace ZES.Tests
 {

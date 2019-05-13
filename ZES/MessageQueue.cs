@@ -31,7 +31,7 @@ namespace ZES
         /// <inheritdoc />
         public void Alert(IAlert alert)
         {
-            _log.Info(alert.GetType().Name, this);
+            _log.Trace(alert.GetType().Name, this);
             _alerts.OnNext(alert);
         }
 

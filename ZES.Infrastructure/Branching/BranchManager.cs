@@ -2,6 +2,7 @@ using System;
 using System.Collections.Concurrent;
 using System.Linq;
 using System.Reactive.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Threading.Tasks.Dataflow;
 using Gridsum.DataflowEx;
@@ -74,7 +75,7 @@ namespace ZES.Infrastructure.Branching
             // update current timeline
             _activeTimeline.Set(timeline);
             
-            _log.Info($"Switched to {branchId}", this);
+            _log.Info($"Switched to {branchId} branch");
             
             // refresh the stream locator
             _messageQueue.Alert(new Alerts.OnTimelineChange());
@@ -102,7 +103,7 @@ namespace ZES.Infrastructure.Branching
                 _log.Warn($"Trying to merge non-live branch {branchId}", this);
                 return;
             }
-
+            
             var mergeFlow = new MergeFlow(_eventStore, _streamLocator);
 
             _eventStore.ListStreams(branchId).Subscribe(mergeFlow.InputBlock.AsObserver());
@@ -110,6 +111,9 @@ namespace ZES.Infrastructure.Branching
             try
             {
                 await mergeFlow.CompletionTask;
+
+                var mergeResult = mergeFlow.Result;
+                _log.Info($"Merged {mergeResult.NumberOfStreams} streams, {mergeResult.NumberOfEvents} events from {branchId} into {Master}");
             }
             catch (Exception e)
             {
@@ -153,7 +157,6 @@ namespace ZES.Infrastructure.Branching
         private class MergeFlow : Dataflow<IStream>
         {
             private readonly ActionBlock<IStream> _inputBlock;
-
             public MergeFlow(IEventStore<IAggregate> eventStore, IStreamLocator<IAggregate> streamLocator) 
                 : base(DataflowOptions.Default)
             {
@@ -172,17 +175,29 @@ namespace ZES.Infrastructure.Branching
                     if (s.Version == version)
                         return;
 
+                    Result.NumberOfStreams++;
+
                     var events = await eventStore.ReadStream<IEvent>(s, version + 1, s.Version - version).ToList();
                     foreach (var e in events.OfType<Event>())
                         e.Stream = masterStream.Key;
+
+                    Result.NumberOfEvents += events.Count;
                     
                     await eventStore.AppendToStream(masterStream, events);
                 }, new ExecutionDataflowBlockOptions { MaxDegreeOfParallelism = Configuration.ThreadsPerInstance });
 
                 RegisterChild(_inputBlock);
             }
+            
+            public MergeResult Result { get; } = new MergeResult(); 
 
             public override ITargetBlock<IStream> InputBlock => _inputBlock;
+                
+            public class MergeResult
+            {
+                public long NumberOfEvents { get; set; }
+                public long NumberOfStreams { get; set; }
+            }
         }
 
         private class CloneFlow : Dataflow<IStream>

@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks.Dataflow;
 using SqlStreamStore.Streams;
 using ZES.Interfaces.EventStore;
 
@@ -87,17 +88,40 @@ namespace ZES.Infrastructure.Streams
         public IStream Copy() => new Stream(Key, Version, Parent);
         
         /// <inheritdoc />
-        public int Position(int? expectedVersion = null)
+        public int ReadPosition(int version)
         {
-            if (expectedVersion == null)
-                expectedVersion = Version;
-
-            var version = expectedVersion.Value;
+            if (Parent != null) 
+                version -= Parent.Version + 1;
+            
+            return version;
+        }
+        
+        /// <inheritdoc />
+        public int AppendPosition()
+        {
+            var version = Version;
             if (Parent == null) 
                 return version;
             
             version -= Parent.Version;
-            return version == 0 ? ExpectedVersion.Any : version + ExpectedVersion.EmptyStream;
+            return version == 0 ? ExpectedVersion.Any : version;
+        }
+
+        /// <inheritdoc />
+        public int Count(int count)
+        {
+            var parentVersion = Parent?.Version ?? ExpectedVersion.EmptyStream;
+            
+            // if (Parent == null)
+            //    return count;
+
+            count -= parentVersion;
+            
+            // do not read events ahead of the branch point
+            if (count > Version - parentVersion)
+                count = Version - parentVersion;
+            
+            return count;
         }
 
         /// <inheritdoc />

@@ -28,12 +28,13 @@ namespace ZES.Infrastructure
         /// </value>
         public const string Master = "master";
         
-        private readonly IErrorLog _log;
+        private readonly ILog _log;
         private readonly ConcurrentDictionary<string, Timeline> _branches = new ConcurrentDictionary<string, Timeline>();
         private readonly Timeline _activeTimeline;
         private readonly IMessageQueue _messageQueue;
         private readonly IEventStore<IAggregate> _eventStore;
-        
+        private readonly IStreamLocator<IAggregate> _streamLocator;
+
         /// <summary>
         /// Initializes a new instance of the <see cref="BranchManager"/> class.
         /// </summary>
@@ -41,34 +42,44 @@ namespace ZES.Infrastructure
         /// <param name="activeTimeline">Root timeline</param>
         /// <param name="messageQueue">Message queue</param>
         /// <param name="eventStore">Event store</param>
-        public BranchManager(IErrorLog log, ITimeline activeTimeline, IMessageQueue messageQueue, IEventStore<IAggregate> eventStore)
+        /// <param name="streamLocator">Stream locator</param>
+        public BranchManager(
+            ILog log, 
+            ITimeline activeTimeline,
+            IMessageQueue messageQueue, 
+            IEventStore<IAggregate> eventStore,
+            IStreamLocator<IAggregate> streamLocator)
         {
             _log = log;
             _activeTimeline = activeTimeline as Timeline;
             _messageQueue = messageQueue;
             _eventStore = eventStore;
+            _streamLocator = streamLocator;
         }
 
         /// <inheritdoc />
-        public async Task<ITimeline> Branch(string branchId, long time = default(long))
+        public async Task<ITimeline> Branch(string branchId, long? time = null)
         {
+            if (_activeTimeline.Id == branchId)
+                return _activeTimeline;
+            
             var newBranch = !_branches.ContainsKey(branchId);
             
-            var timeline = _branches.GetOrAdd(branchId, b => new Timeline { Id = branchId, Now = time });
-            if (timeline.Now != time && time != default(long))
+            var timeline = _branches.GetOrAdd(branchId, b => Timeline.New(branchId, time));
+            if (time != null && timeline.Now != time.Value)
             {
-                _log.Add(new InvalidOperationException($"Branch ${branchId} already exists!"));
+                _log.Errors.Add(new InvalidOperationException($"Branch ${branchId} already exists!"));
                 return null;
             }
             
             // copy the events
             if (newBranch)
-                await Clone(branchId, time);
-            
+                await Clone(branchId, time ?? DateTime.UtcNow.Ticks);
+
             // update current timeline
-            _activeTimeline.Id = timeline.Id;
-            if (time != default(long))
-                _activeTimeline.Now = time;
+            _activeTimeline.Set(timeline);
+            
+            _log.Info($"Switched to {branchId}", this);
             
             // refresh the stream locator
             _messageQueue.Alert(new Alerts.OnTimelineChange());
@@ -77,6 +88,41 @@ namespace ZES.Infrastructure
             _messageQueue.Alert(new Alerts.InvalidateProjections());
                 
             return _activeTimeline;
+        }
+
+        /// <inheritdoc />
+        public async Task Merge(string branchId)
+        {
+            if (_activeTimeline.Id != Master)
+                return;
+
+            if (!_branches.TryGetValue(branchId, out var branch))
+            {
+                _log.Warn($"Branch {branchId} does not exist", this);
+                return;
+            }
+
+            if (!branch.Live)
+            {
+                _log.Warn($"Trying to merge non-live branch {branchId}", this);
+                return;
+            }
+
+            var mergeFlow = new MergeFlow(_eventStore, _streamLocator);
+
+            _eventStore.ListStreams(branchId).Subscribe(mergeFlow.InputBlock.AsObserver());
+            
+            try
+            {
+                await mergeFlow.CompletionTask;
+            }
+            catch (Exception e)
+            {
+                _log.Errors.Add(e);
+            }
+            
+            // rebuild all projections
+            _messageQueue.Alert(new Alerts.InvalidateProjections());
         }
 
         /// <inheritdoc />
@@ -89,29 +135,59 @@ namespace ZES.Infrastructure
 
             return _activeTimeline;
         }
-        
-        private ITimeline Reset(string timeline = Master)
-        {
-            _activeTimeline.Id = Master;
 
-            _messageQueue.Alert(new Alerts.OnTimelineChange());
-            _messageQueue.Alert(new Alerts.InvalidateProjections());
-
-            return _activeTimeline;
-        }
-        
         // full clone of event store
         // can become really expensive
         // TODO: use links to event ids?
         private async Task Clone(string timeline, long time)
         {
             var cloneFlow = new CloneFlow(timeline, time, _eventStore);
-            var streams = _eventStore.ListStreams()
-                .Where(s => s.Timeline == _activeTimeline.Id)
-                .Select(async s => { await cloneFlow.SendAsync(s); });
+            _eventStore.ListStreams(_activeTimeline.Id)
+                .Subscribe(cloneFlow.InputBlock.AsObserver());
 
-            streams.Finally(() => cloneFlow.Complete()).Subscribe(async t => await t);
-            await cloneFlow.CompletionTask;
+            try
+            {
+                await cloneFlow.CompletionTask;
+            }
+            catch (Exception e)
+            {
+                _log.Errors.Add(e);
+            }
+        }
+
+        private class MergeFlow : Dataflow<IStream>
+        {
+            private readonly ActionBlock<IStream> _inputBlock;
+
+            public MergeFlow(IEventStore<IAggregate> eventStore, IStreamLocator<IAggregate> streamLocator) 
+                : base(DataflowOptions.Default)
+            {
+                _inputBlock = new ActionBlock<IStream>(
+                    async s =>
+                {
+                    if (s.Parent?.Timeline != Master)
+                        throw new NotImplementedException("Can only merge direct children for now");
+
+                    var masterStream = streamLocator.Find(s.Parent);
+                    var version = masterStream.Version;
+                    
+                    if ( version > s.Parent.Version )
+                        throw new InvalidOperationException($"Master timeline has moved on in the meantime, aborting...( {version} > {s.Parent.Version} )");
+
+                    if (s.Version == version)
+                        return;
+
+                    var events = await eventStore.ReadStream<IEvent>(s, version + 1, s.Version - version).ToList();
+                    foreach (var e in events.OfType<Event>())
+                        e.Stream = masterStream.Key;
+                    
+                    await eventStore.AppendToStream(masterStream, events);
+                }, new ExecutionDataflowBlockOptions { MaxDegreeOfParallelism = Configuration.ThreadsPerInstance });
+
+                RegisterChild(_inputBlock);
+            }
+
+            public override ITargetBlock<IStream> InputBlock => _inputBlock;
         }
 
         private class CloneFlow : Dataflow<IStream>

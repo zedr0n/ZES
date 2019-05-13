@@ -17,10 +17,11 @@ namespace ZES.Infrastructure
         {
             var metadata = await streamStore.GetStreamMetadata(key);
             var parent = metadata.MetadataJson.ParseParent();
-            var version = parent?.Version ?? 0;  
+            var version = parent?.Version ?? -1;  
             
             var page = await streamStore.ReadStreamBackwards(key, StreamVersion.End, 1);
-            version += page.Messages.SingleOrDefault().StreamVersion;
+            if (page.Messages.Any())
+                version += page.Messages.Single().StreamVersion + 1; 
             
             var theStream = new Stream(key, version) { Parent = parent };
             while (parent != null)

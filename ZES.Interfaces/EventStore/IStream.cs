@@ -66,7 +66,7 @@ namespace ZES.Interfaces.EventStore
         /// </summary>
         /// <param name="expectedVersion">Real event sourced version</param>
         /// <returns>Local position in stream</returns>
-        int Position(int? expectedVersion = null); 
+        int ReadPosition(int expectedVersion); 
 
         /// <summary>
         /// Create a branch in new timeline
@@ -75,6 +75,19 @@ namespace ZES.Interfaces.EventStore
         /// <param name="version">Version to branch from</param>
         /// <returns>Stream descriptor</returns>
         IStream Branch(string timeline, int version);
+
+        /// <summary>
+        /// Number of events to read from this particular stream out of total count
+        /// </summary>
+        /// <param name="count">Total count(from all related streams)</param>
+        /// <returns>Number of events to read</returns>
+        int Count(int count);
+
+        /// <summary>
+        /// Append position for the split stream
+        /// </summary>
+        /// <returns>Append position</returns>
+        int AppendPosition();
     }
     
     /// <summary>
@@ -93,7 +106,7 @@ namespace ZES.Interfaces.EventStore
         /// <returns>Stream with given id</returns>
         IStream Find<T>(string id, string timeline = "master")
             where T : I;
-        
+
         /// <summary>
         /// Extract and cache the stream details for event sourced instance
         /// </summary>
@@ -108,5 +121,15 @@ namespace ZES.Interfaces.EventStore
         /// <param name="stream">Target stream</param>
         /// <returns>Cached instance of stream</returns>
         IStream GetOrAdd(IStream stream);
+
+        /// <summary>
+        /// Gets the current version of the stream
+        /// </summary>
+        /// <remarks>
+        /// This can happen if loading from parent stream
+        /// </remarks>
+        /// <param name="stream">Steam</param>
+        /// <returns>Current version of the stream</returns>
+        IStream Find(IStream stream);
     }
 }

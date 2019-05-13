@@ -20,5 +20,19 @@ namespace ZES.Interfaces
         /// Current time in the timeline
         /// </value>
         long Now { get; }
+
+        /// <summary>
+        /// Gets a value indicating whether whether it's a fixed timeline
+        /// </summary>
+        /// <value>
+        /// A value indicating whether whether it's a fixed timeline
+        /// </value>
+        bool Live { get; }
+
+        /// <summary>
+        /// Sets the timeline to be a copy of target timeline
+        /// </summary>
+        /// <param name="rhs">target timeline</param>
+        void Set(ITimeline rhs);
     }
 }

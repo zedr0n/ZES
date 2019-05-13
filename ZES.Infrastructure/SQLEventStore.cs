@@ -76,18 +76,21 @@ namespace ZES.Infrastructure
             where T : IEventMetadata
         {
             if (count == -1)
-                count = int.MaxValue;
+                count = stream.Version + 1;
 
             var allObservables = new List<IObservable<T>>(); 
 
             while (stream != null)
             {
                 var cStream = stream;
-                var cCount = count;
+                var cCount = cStream.Count(count);
                 var observable = Observable.Create(async (IObserver<T> observer) =>
                 {
-                    var position = cStream.Position(start);
+                    var position = cStream.ReadPosition(start);
                     if (position <= ExpectedVersion.EmptyStream)
+                        position = 0;
+                    
+                    if (cCount <= 0)
                     {
                         observer.OnCompleted();
                         return;
@@ -124,10 +127,12 @@ namespace ZES.Infrastructure
 
                 stream = stream.Parent;
 
-                if (stream?.Parent != null)
-                    count = stream.Version - stream.Parent.Version + 1;
-                else
-                    count = stream?.Version + 1 ?? 0;
+                count -= cCount;
+
+                // if (stream?.Parent != null)
+                //    count = stream.Version - stream.Parent.Version + 1;
+                // else
+                //    count = stream?.Version + 1 ?? 0;
             }
 
             return allObservables.Aggregate((r, c) => r.Concat(c));
@@ -139,7 +144,7 @@ namespace ZES.Infrastructure
             var events = enumerable as IList<IEvent> ?? enumerable?.ToList();
 
             var streamMessages = events?.Select(_serializer.Encode).ToArray() ?? new NewStreamMessage[] { };
-            var result = await _streamStore.AppendToStream(stream.Key, stream.Position(), streamMessages);
+            var result = await _streamStore.AppendToStream(stream.Key, stream.AppendPosition(), streamMessages);
             LogEvents(streamMessages);
 
             var version = result.CurrentVersion;
@@ -150,11 +155,10 @@ namespace ZES.Infrastructure
                     stream.Key,
                     metadataJson: JExtensions.JParent(stream.Parent.Key, stream.Parent.Version));
                 
-                // cloned stream starts with version + 1
-                version += stream.Parent.Version + 1;
+                version += stream.Parent.Version;
             }
 
-            if (version > stream.Version || result.CurrentVersion == -1)
+            if (version >= stream.Version || result.CurrentVersion == -1)
             {
                 stream.Version = version;
                 _streams.OnNext(stream); 

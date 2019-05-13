@@ -14,7 +14,14 @@ namespace ZES.Interfaces
         /// <param name="branchId">Branch unique identifier</param>
         /// <param name="time">Timestamp to branch at</param>
         /// <returns>Task representing the newly branched timeline</returns>
-        Task<ITimeline> Branch(string branchId, long time = default(long));
+        Task<ITimeline> Branch(string branchId, long? time = null);
+
+        /// <summary>
+        /// Merges the timeline into master
+        /// </summary>
+        /// <param name="branchId">Branch to merge</param>
+        /// <returns>Master timeline</returns>
+        Task Merge(string branchId);
 
         /// <summary>
         /// Reset the timeline

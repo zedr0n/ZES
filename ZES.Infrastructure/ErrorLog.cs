@@ -36,7 +36,7 @@ namespace ZES.Infrastructure
                     return;
                 case AggregateException aggregate:
                 {
-                    foreach (var exception in aggregate.InnerExceptions)
+                    foreach (var exception in aggregate.Flatten().InnerExceptions)
                         Log(exception);
                     break;
                 }

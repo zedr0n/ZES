@@ -37,7 +37,13 @@ namespace ZES.Infrastructure.Streams
             where T : I
         {
             var aStream = new Stream(id, typeof(T).Name, ExpectedVersion.NoStream, timeline);
-            return _streams.TryGetValue(aStream.Key, out var stream) ? stream : default(IStream);
+            return _streams.TryGetValue(aStream.Key, out var stream) ? stream : default(IStream); 
+        }
+
+        /// <inheritdoc />
+        public IStream Find(IStream stream)
+        {
+            return _streams.TryGetValue(stream.Key, out var outStream) ? outStream : stream;  
         }
 
         /// <inheritdoc />

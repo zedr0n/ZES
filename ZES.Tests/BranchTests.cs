@@ -18,11 +18,40 @@ namespace ZES.Tests
         }
 
         [Fact]
+        public async void CanMergeTimeline()
+        {
+            var container = CreateContainer();
+            var bus = container.GetInstance<IBus>();
+            var time = container.GetInstance<IBranchManager>();
+            
+            var command = new CreateRoot("Root");
+            await await bus.CommandAsync(command);
+
+            await time.Branch("test");
+            
+            await await bus.CommandAsync(new UpdateRoot("Root")); 
+            
+            var rootInfo = await bus.QueryUntil(new RootInfoQuery("Root"));
+            Assert.True(rootInfo.CreatedAt < rootInfo.UpdatedAt);
+
+            time.Reset();
+            
+            rootInfo = await bus.QueryAsync(new RootInfoQuery("Root"));
+            Assert.True(rootInfo.CreatedAt == rootInfo.UpdatedAt); 
+            
+            await time.Merge("test");
+
+            rootInfo = await bus.QueryAsync(new RootInfoQuery("Root"));
+            Assert.True(rootInfo.CreatedAt < rootInfo.UpdatedAt);  
+        }
+        
+        [Fact]
         public async void CanCreateClone()
         {
             var container = CreateContainer();
             var bus = container.GetInstance<IBus>();
             var repository = container.GetInstance<IEsRepository<IAggregate>>();
+            var timeTraveller = container.GetInstance<IBranchManager>();
             
             var command = new CreateRoot("Root");
             await await bus.CommandAsync(command);
@@ -30,13 +59,13 @@ namespace ZES.Tests
             var timeline = container.GetInstance<ITimeline>();
             Assert.Equal("master", timeline.Id);
 
-            var now = timeline.Now;
-
+            await timeTraveller.Branch("test");
+            timeTraveller.Reset();
+            
             await await bus.CommandAsync(new UpdateRoot("Root"));
-           
-            var timeTraveller = container.GetInstance<IBranchManager>();
-            await timeTraveller.Branch("test", now);
-                     
+
+            await timeTraveller.Branch("test");
+
             Assert.Equal("test", timeline.Id);
             var root = await repository.Find<Root>("Root");
            

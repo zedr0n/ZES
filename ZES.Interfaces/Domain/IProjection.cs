@@ -1,3 +1,4 @@
+using System;
 using System.Runtime.CompilerServices;
 using ZES.Interfaces.EventStore;
 
@@ -40,6 +41,14 @@ namespace ZES.Interfaces.Domain
     public interface IProjection 
     {
         /// <summary>
+        /// Gets completion of this observable means the projection's rebuild has been completed successfully
+        /// </summary>
+        /// <value>
+        /// Completion of this observable means the projection's rebuild has been completed successfully
+        /// </value>
+        IObservable<ProjectionStatus> Ready { get; }
+        
+        /// <summary>
         /// Map stream to read model key
         /// </summary>
         /// <remarks>
@@ -49,11 +58,12 @@ namespace ZES.Interfaces.Domain
         /// <returns>Read model key</returns>
         string Key(IStream stream);
 
+        /*
         /// <summary>
         /// Returns when projection is rebuilt
         /// </summary>
         /// <returns>Listening</returns>
-        TaskAwaiter<ProjectionStatus> GetAwaiter();
+        dynamic GetAwaiter();*/
     }
 
     /// <summary>

@@ -1,4 +1,5 @@
 using System;
+using System.Reactive.Linq;
 using System.Threading.Tasks;
 using ZES.Interfaces.Domain;
 
@@ -51,7 +52,7 @@ namespace ZES.Infrastructure
         /// <returns>Task from synchronous result</returns>
         protected virtual async Task<TResult> HandleAsync(TQuery query)
         {
-            await Projection;
+            await Projection.Ready;
             return Handle(Projection, query);
         }
     }

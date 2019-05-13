@@ -1,3 +1,4 @@
+using System.Reactive.Linq;
 using System.Threading.Tasks;
 using ZES.Infrastructure.Projections;
 using ZES.Interfaces.Domain;
@@ -38,7 +39,7 @@ namespace ZES.Infrastructure
         {
             var projection = (IHistoricalProjection)_projection;
             await projection.Init(query.Timestamp);
-            await projection;
+            await projection.Ready;
             
             return (_handler as QueryHandler<TQuery, TResult>)?.Handle(projection, query.Query);
         }

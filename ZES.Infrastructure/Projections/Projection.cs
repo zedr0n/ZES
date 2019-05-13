@@ -35,6 +35,7 @@ namespace ZES.Infrastructure.Projections
 
         private CancellationTokenSource _cancellationSource;
 
+        private Lazy<IDisposable> _invalidateSubscription;
         private int _build = 0;
 
         /// <summary>
@@ -54,6 +55,7 @@ namespace ZES.Infrastructure.Projections
             _timeline = timeline;
 
             _statusSubject.Subscribe(s => Log?.Info($"{GetType().GetFriendlyName()} : {s.ToString()}" ));
+
             OnInit();
         }
 
@@ -68,26 +70,32 @@ namespace ZES.Infrastructure.Projections
         /// </value>
         public Dictionary<Type, Func<IEvent, TState, TState>> Handlers { get; } = new Dictionary<Type, Func<IEvent, TState, TState>>();
 
+        /// <inheritdoc />
+        public IObservable<ProjectionStatus> Ready
+        {
+            get
+            {
+                var task = Start();
+                return _statusSubject.AsObservable()
+                    .Timeout(Configuration.Timeout).FirstAsync(s => s == Listening);
+            }
+        }
+        
         internal ILog Log { get; }
         
-        /// <inheritdoc />
-        public TaskAwaiter<ProjectionStatus> GetAwaiter()
-        {
-            var task = Start();
-            return _statusSubject.AsObservable().Timeout(Configuration.Timeout).FirstAsync(s => s == Listening)
-                .ToTask().GetAwaiter();
-        }
-
         /// <inheritdoc />
         public virtual string Key(IStream stream) => stream.Key;
 
         internal virtual void OnInit()
         {
-            _messageQueue.Alerts.OfType<InvalidateProjections>().Subscribe(async s => await Rebuild());
+            _invalidateSubscription = new Lazy<IDisposable>(
+                () => _messageQueue.Alerts.OfType<InvalidateProjections>().Subscribe(async s => await Rebuild()));
         }
         
         internal async Task Start()
         {
+            var sub = _invalidateSubscription?.Value;
+            
             var status = await _statusSubject.AsObservable().FirstAsync();
             Log?.Debug($"{status} : {_build}", this);
             if (status != Sleeping || _build > 0)
@@ -119,7 +127,7 @@ namespace ZES.Infrastructure.Projections
 
         private async Task Rebuild()
         {
-            Log?.Trace($"Rebuild count : {_build}", this);
+            Log?.Trace($"Rebuild : {_build}", this);
             var status = await _statusSubject.AsObservable().FirstAsync();
 
             if (status == Cancelling)
@@ -128,8 +136,8 @@ namespace ZES.Infrastructure.Projections
             Interlocked.Increment(ref _build);
 
             _cancellationSource?.Cancel();
-            status = await _statusSubject.Where(s => s == Sleeping || s == Failed).FirstAsync()
-                .Timeout(Configuration.Timeout)
+            status = await _statusSubject.AsObservable().Timeout(Configuration.Timeout)
+                .Where(s => s == Sleeping || s == Failed).FirstAsync()
                 .Catch<ProjectionStatus, TimeoutException>(e => Observable.Return(Failed));
 
             if (status == Failed)
@@ -159,8 +167,7 @@ namespace ZES.Infrastructure.Projections
                     BlockMonitorEnabled = true,
                     PerformanceMonitorMode = DataflowOptions.PerformanceLogMode.Verbose*/
                 }) // Timeout = TimeSpan.FromMilliseconds(1000) } )
-                .Bind(this)
-                .OnError(async () => await Rebuild());
+                .Bind(this);
 
             var liveDispatcher = _streamDispatcher
                 .WithCancellation(_cancellationSource)
@@ -195,6 +202,8 @@ namespace ZES.Infrastructure.Projections
                 {
                     _statusSubject.OnNext(Failed);
                     Log.Errors.Add(e);
+                    _statusSubject.OnNext(Sleeping);
+                    await Rebuild();
                 }
             });
 
@@ -202,25 +211,23 @@ namespace ZES.Infrastructure.Projections
                 .Finally(() => _eventStore.Streams.Subscribe(liveDispatcher.InputBlock.AsObserver(), _cancellationSource.Token))
                 .Subscribe(rebuildDispatcher.InputBlock.AsObserver(), _cancellationSource.Token);
 
-            var task = rebuildDispatcher.CompletionTask;
             try
             {
-                await task;
+                await rebuildDispatcher.CompletionTask.Timeout();
+
+                if (_build == 1 && !_cancellationSource.IsCancellationRequested)
+                    _statusSubject.OnNext(Listening);
             }
             catch (Exception e)
             {
-                Log.Errors.Add(e);    
-            }
-            
-            Interlocked.Decrement(ref _build);
-            if (_build == 0 && !task.IsFaulted && !_cancellationSource.Token.IsCancellationRequested)
-            {
-                _statusSubject.OnNext(Listening);
-            }
-            else if (task.IsFaulted)
-            {
-                Log?.Trace("Rebuild faulted!");
+                _statusSubject.OnNext(Failed);
+                Log.Errors.Add(e);
                 _cancellationSource.Cancel();
+            }
+            finally
+            {
+                Interlocked.Decrement(ref _build); 
+                Log?.Trace($"Rebuild finished : {_build}", this); 
             }
         }
 

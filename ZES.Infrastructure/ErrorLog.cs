@@ -1,6 +1,7 @@
 using System;
 using System.Reactive.Linq;
 using System.Reactive.Subjects;
+using System.Threading.Tasks;
 using ZES.Interfaces;
 
 namespace ZES.Infrastructure
@@ -30,6 +31,8 @@ namespace ZES.Infrastructure
             switch (error)
             {
                 case null:
+                    return;
+                case TaskCanceledException e:
                     return;
                 case AggregateException aggregate:
                 {

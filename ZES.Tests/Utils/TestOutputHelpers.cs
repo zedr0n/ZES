@@ -1,10 +1,9 @@
-using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using NLog;
 using Xunit.Abstractions;
 
-namespace ZES.Tests 
+namespace ZES.Tests.Utils 
 {
     public static class TestOutputHelpers
     {

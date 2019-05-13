@@ -1,7 +1,7 @@
 using NLog;
 using Xunit.Abstractions;
 
-namespace ZES.Tests
+namespace ZES.Tests.Utils
 {
     public static class NLogTestOutputExtensions
     {

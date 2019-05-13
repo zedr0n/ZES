@@ -7,7 +7,7 @@ using SimpleInjector;
 using Xunit.Abstractions;
 using ZES.GraphQL;
 using ZES.Infrastructure;
-using ZES.Logging;
+using ZES.Tests.Utils;
 
 namespace ZES.Tests
 {

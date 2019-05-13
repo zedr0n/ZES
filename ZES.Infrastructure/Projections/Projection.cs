@@ -233,11 +233,8 @@ namespace ZES.Infrastructure.Projections
 
         private void When(IEvent e)
         {
-            if (_cancellationSource.IsCancellationRequested)
+            if (_cancellationSource.IsCancellationRequested || e == null)
                 return;    
-            
-            if (e == null)
-                return;
             
             Log.Trace($"Stream {e.Stream}@{e.Version}", this);
             

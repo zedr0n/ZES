@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Concurrent;
 using System.ComponentModel;
 using System.Linq;
 using System.Threading;
@@ -25,17 +24,14 @@ namespace ZES.Infrastructure.Projections
             private readonly Task _start;
             private readonly StreamFlow.Builder _builder;
             private readonly CancellationToken _cancellation;
-            
-            private readonly ConcurrentDictionary<string, int> _versions;
+
+            private Projection<TState> _projection;
 
             private long _timestamp;
-
-            private Action<IEvent> _when = e => { };
 
             private ActionBlock<IEvent> _whenBlock;
 
             private ProjectionFlow(
-                ConcurrentDictionary<string, int> versions,
                 DataflowOptions options,
                 CancellationToken token,
                 Task delay,
@@ -44,7 +40,6 @@ namespace ZES.Infrastructure.Projections
                 : base(s => s.Key, options, token, typeof(ProjectionFlow))
             {
                 _log = log;
-                _versions = versions;
 
                 _start = delay;
                 _builder = builder;
@@ -69,12 +64,12 @@ namespace ZES.Infrastructure.Projections
             {
                 return _builder.WithOptions(DataflowOptions)
                     .WithCancellation(_cancellation)
-                    .Bind(_eventBlock, _versions);
+                    .Bind(_eventBlock, _projection._versions);
             }
 
-            private ProjectionFlow Bind(Action<IEvent> when)
+            private ProjectionFlow Bind(Projection<TState> projection)
             {
-                _when = when;
+                _projection = projection; 
                 _whenBlock = new ActionBlock<IEvent>(e =>
                 {
                     // _log?.Debug($"{e.Stream}:{e.Version}", this);
@@ -84,7 +79,7 @@ namespace ZES.Infrastructure.Projections
                     if (_cancellation.IsCancellationRequested) 
                         return;
                     
-                    _when(e);
+                    projection.When(e);
                     _timestamp = e.Timestamp;
                 });
 
@@ -150,10 +145,10 @@ namespace ZES.Infrastructure.Projections
                 internal Builder DelayUntil(Task delay)
                     => Clone(this, b => b._delay = delay);
 
-                internal Dataflow<IStream, int> Bind(Action<IEvent> when, ConcurrentDictionary<string, int> versions)
+                internal Dataflow<IStream, int> Bind(Projection<TState> projection)
                 {
-                    var flow = new ProjectionFlow(versions, _options, _cancellation, _delay, _builder, _log);
-                    return flow.Bind(when);
+                    var flow = new ProjectionFlow(_options, _cancellation, _delay, _builder, _log);
+                    return flow.Bind(projection);
                 }
             }
         }

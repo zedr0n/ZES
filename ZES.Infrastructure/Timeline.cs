@@ -28,6 +28,12 @@ namespace ZES.Infrastructure
 
         /// <inheritdoc />
         public bool Live => _now == null;
+        
+        /// <inheritdoc />
+        public string Id { get; set; } = BranchManager.Master;
+
+        /// <inheritdoc />
+        public long Now => _now ?? DateTime.UtcNow.Ticks;
 
         /// <summary>
         /// Create new timeline 
@@ -47,11 +53,5 @@ namespace ZES.Infrastructure
             Id = t.Id;
             _now = t._now;
         }
-
-        /// <inheritdoc />
-        public string Id { get; set; } = BranchManager.Master;
-
-        /// <inheritdoc />
-        public long Now => _now ?? DateTime.UtcNow.Ticks;
     }
 }

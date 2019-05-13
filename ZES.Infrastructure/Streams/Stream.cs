@@ -112,9 +112,6 @@ namespace ZES.Infrastructure.Streams
         {
             var parentVersion = Parent?.Version ?? ExpectedVersion.EmptyStream;
             
-            // if (Parent == null)
-            //    return count;
-
             count -= parentVersion;
             
             // do not read events ahead of the branch point

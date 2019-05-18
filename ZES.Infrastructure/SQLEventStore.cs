@@ -75,65 +75,25 @@ namespace ZES.Infrastructure
         /// <inheritdoc />
         public IObservable<T> ReadStream<T>(IStream stream, int start, int count = -1) 
             where T : IEventMetadata
-        {
-            if (count == -1)
-                count = stream.Version + 1;
+        { 
+            var allStreams = stream.Ancestors.ToList();
+            allStreams.Add(stream);
 
-            var allObservables = new List<IObservable<T>>(); 
+            var allObservables = new List<IObservable<T>>();
 
-            while (stream != null)
+            foreach (var s in allStreams)
             {
-                var cStream = stream;
-                var cCount = cStream.Count(count);
-                var observable = Observable.Create(async (IObserver<T> observer) =>
-                {
-                    var position = cStream.ReadPosition(start);
-                    if (position <= ExpectedVersion.EmptyStream)
-                        position = 0;
-                    
-                    if (cCount <= 0)
-                    {
-                        observer.OnCompleted();
-                        return;
-                    }
-
-                    var page = await _streamStore.ReadStreamForwards(cStream.Key, position, ReadSize);
-                    while (page.Messages.Length > 0 && cCount > 0)
-                    {
-                        foreach (var m in page.Messages)
-                        {
-                            if (typeof(T) == typeof(IEvent))
-                            {
-                                var payload = await m.GetJsonData();
-                                var @event = _serializer.Deserialize(payload);
-                                observer.OnNext((T)@event);
-                            }
-                            else
-                            {
-                                var payload = m.JsonMetadata;
-                                var metadata = _serializer.DecodeMetadata(payload);
-                                observer.OnNext((T)metadata);
-                            }
-
-                            cCount--;
-                            if (cCount == 0)
-                                break;
-                        }
-                        page = await page.ReadNext();
-                    } 
-                    observer.OnCompleted();
-                });
+                var readCount = s.Count(start, count);
+                if (readCount <= 0) 
+                    continue;
                 
+                var cStart = start;
+                count -= readCount;
+                start += readCount;
+                
+                var observable = Observable.Create(async (IObserver<T> observer) =>
+                    await ReadSingleStream(observer, s, cStart, readCount)); 
                 allObservables.Add(observable);
-
-                stream = stream.Parent;
-
-                count -= cCount;
-
-                // if (stream?.Parent != null)
-                //    count = stream.Version - stream.Parent.Version + 1;
-                // else
-                //    count = stream?.Version + 1 ?? 0;
             }
 
             return allObservables.Aggregate((r, c) => r.Concat(c));
@@ -166,6 +126,47 @@ namespace ZES.Infrastructure
             }
 
             PublishEvents(events);    
+        }
+        
+        private async Task ReadSingleStream<T>(IObserver<T> observer, IStream stream, int start, int count)
+        {
+            var position = stream.ReadPosition(start);
+            if (position <= ExpectedVersion.EmptyStream)
+                position = 0;
+                    
+            if (count <= 0)
+            {
+                observer.OnCompleted();
+                return;
+            }
+
+            var page = await _streamStore.ReadStreamForwards(stream.Key, position, ReadSize);
+            while (page.Messages.Length > 0 && count > 0)
+            {
+                foreach (var m in page.Messages)
+                {
+                    if (typeof(T) == typeof(IEvent))
+                    {
+                        var payload = await m.GetJsonData();
+                        var @event = _serializer.Deserialize(payload);
+                        observer.OnNext((T)@event);
+                    }
+                    else
+                    {
+                        var payload = m.JsonMetadata;
+                        var metadata = _serializer.DecodeMetadata(payload);
+                        observer.OnNext((T)metadata);
+                    }
+
+                    count--;
+                    if (count == 0)
+                        break;
+                }
+                
+                page = await page.ReadNext();
+            } 
+            
+            observer.OnCompleted(); 
         }
         
         private void LogEvents(IEnumerable<NewStreamMessage> messages)

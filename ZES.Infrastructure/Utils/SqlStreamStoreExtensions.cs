@@ -1,3 +1,4 @@
+using System;
 using System.Linq;
 using System.Threading.Tasks;
 using SqlStreamStore;
@@ -29,6 +30,8 @@ namespace ZES.Infrastructure.Utils
                 var parentMetadata = await streamStore.GetStreamMetadata(parent.Key);
                 var grandParent = parentMetadata.MetadataJson.ParseParent();
                 parent.Parent = grandParent;
+                if (parent.Key == grandParent?.Key)
+                    throw new InvalidOperationException();
                 parent = grandParent;
             }
 

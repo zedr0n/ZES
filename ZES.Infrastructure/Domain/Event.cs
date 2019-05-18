@@ -16,10 +16,10 @@ namespace ZES.Infrastructure.Domain
         }
 
         /// <inheritdoc />
-        public Guid EventId { get; }
+        public Guid EventId { get; set; }
 
         /// <inheritdoc />
-        public string EventType { get; }
+        public string EventType { get; set; }
 
         /// <inheritdoc />
         public string Stream { get; set; }

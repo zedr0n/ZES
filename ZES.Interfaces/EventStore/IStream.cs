@@ -77,17 +77,12 @@ namespace ZES.Interfaces.EventStore
         IStream Branch(string timeline, int version);
 
         /// <summary>
-        /// Number of events to read from this particular stream out of total count
-        /// </summary>
-        /// <param name="count">Total count(from all related streams)</param>
-        /// <returns>Number of events to read</returns>
-        int Count(int count);
-
-        /// <summary>
         /// Append position for the split stream
         /// </summary>
         /// <returns>Append position</returns>
         int AppendPosition();
+
+        int Count(int start, int count = -1);
     }
     
     /// <summary>

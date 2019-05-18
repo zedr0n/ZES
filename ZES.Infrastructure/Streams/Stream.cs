@@ -20,7 +20,7 @@ namespace ZES.Infrastructure.Streams
         /// <param name="type">Event sourced type</param>
         /// <param name="version">Event sourced version</param>
         /// <param name="timeline">Stream timeline</param>
-        public Stream(string id, string type, int version, string timeline = "")
+        public Stream(string id, string type, int version, string timeline)
         {
             Id = id;
             _type = type;
@@ -59,7 +59,7 @@ namespace ZES.Infrastructure.Streams
 
         /// <inheritdoc />
         public IStream Parent { get; set; }
-
+        
         /// <inheritdoc />
         public IEnumerable<IStream> Ancestors
         {
@@ -72,7 +72,7 @@ namespace ZES.Infrastructure.Streams
                 while (parent != null && parent.Version > ExpectedVersion.NoStream)
                 {
                     _ancestors.Add(parent);
-                    parent = Parent?.Parent;
+                    parent = parent.Parent;
                 }
 
                 return _ancestors.ToList();
@@ -93,32 +93,50 @@ namespace ZES.Infrastructure.Streams
             if (Parent != null) 
                 version -= Parent.Version + 1;
             
+            if (version < 0)
+                throw new InvalidOperationException("Version is not present in the stream");
+            
             return version;
+        }
+
+        /// <inheritdoc />
+        public int Count(int start, int count = -1)
+        {
+            var end = int.MaxValue;
+            if (count > 0 && count < int.MaxValue)
+                end = start + count - 1;
+
+            var lastVersion = Version;
+            var firstVersion = Parent?.Version + 1 ?? 0;  
+            
+            // cloned streams have Version = Parent.Version but no actual events
+            if (Parent?.Version == Version)
+                return 0; 
+
+            if (start > lastVersion || end < firstVersion)
+                return 0;
+
+            if (end > lastVersion)
+                end = lastVersion;
+
+            if (start < firstVersion)
+                start = firstVersion;
+
+            if (end < start)
+                return 0;
+            
+            return end - start + 1;
         }
         
         /// <inheritdoc />
         public int AppendPosition()
         {
             var version = Version;
-            if (Parent == null) 
+            if (Parent == null || Parent?.Version <= ExpectedVersion.NoStream) 
                 return version;
             
             version -= Parent.Version;
             return version == 0 ? ExpectedVersion.Any : version;
-        }
-
-        /// <inheritdoc />
-        public int Count(int count)
-        {
-            var parentVersion = Parent?.Version ?? ExpectedVersion.EmptyStream;
-            
-            count -= parentVersion;
-            
-            // do not read events ahead of the branch point
-            if (count > Version - parentVersion)
-                count = Version - parentVersion;
-            
-            return count;
         }
 
         /// <inheritdoc />

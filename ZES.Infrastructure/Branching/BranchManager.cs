@@ -6,7 +6,9 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Threading.Tasks.Dataflow;
 using Gridsum.DataflowEx;
+using SqlStreamStore.Streams;
 using ZES.Infrastructure.Domain;
+using ZES.Infrastructure.Streams;
 using ZES.Interfaces;
 using ZES.Interfaces.EventStore;
 using ZES.Interfaces.Pipes;
@@ -89,8 +91,8 @@ namespace ZES.Infrastructure.Branching
         /// <inheritdoc />
         public async Task Merge(string branchId)
         {
-            if (_activeTimeline.Id != Master)
-                return;
+            // if (_activeTimeline.Id != Master)
+            //    return;
 
             if (!_branches.TryGetValue(branchId, out var branch))
             {
@@ -104,16 +106,17 @@ namespace ZES.Infrastructure.Branching
                 return;
             }
             
-            var mergeFlow = new MergeFlow(_eventStore, _streamLocator);
+            var mergeFlow = new MergeFlow(_activeTimeline, _eventStore, _streamLocator);
 
             _eventStore.ListStreams(branchId).Subscribe(mergeFlow.InputBlock.AsObserver());
             
             try
             {
                 await mergeFlow.CompletionTask;
+                mergeFlow.Complete();
 
                 var mergeResult = mergeFlow.Result;
-                _log.Info($"Merged {mergeResult.NumberOfStreams} streams, {mergeResult.NumberOfEvents} events from {branchId} into {Master}");
+                _log.Info($"Merged {mergeResult.NumberOfStreams} streams, {mergeResult.NumberOfEvents} events from {branchId} into {_activeTimeline.Id}");
             }
             catch (Exception e)
             {
@@ -157,41 +160,57 @@ namespace ZES.Infrastructure.Branching
         private class MergeFlow : Dataflow<IStream>
         {
             private readonly ActionBlock<IStream> _inputBlock;
-            public MergeFlow(IEventStore<IAggregate> eventStore, IStreamLocator<IAggregate> streamLocator) 
+            private int _numberOfEvents;
+            private int _numberOfStreams;
+            
+            public MergeFlow(ITimeline currentBranch, IEventStore<IAggregate> eventStore, IStreamLocator<IAggregate> streamLocator) 
                 : base(DataflowOptions.Default)
             {
                 _inputBlock = new ActionBlock<IStream>(
                     async s =>
-                {
-                    if (s.Parent?.Timeline != Master)
-                        throw new NotImplementedException("Can only merge direct children for now");
+                    {
+                        if (currentBranch != null && s.Parent != null && s.Parent.Timeline != currentBranch.Id && s.Parent.Version > ExpectedVersion.EmptyStream)
+                            return;
+                        // throw new NotImplementedException("Can only merge direct children for now");
 
-                    var masterStream = streamLocator.Find(s.Parent);
-                    var version = masterStream.Version;
-                    
-                    if ( version > s.Parent.Version )
-                        throw new InvalidOperationException($"Master timeline has moved on in the meantime, aborting...( {version} > {s.Parent.Version} )");
+                        var version = ExpectedVersion.EmptyStream;
+                        var parentStream = s.Branch(currentBranch?.Id, ExpectedVersion.EmptyStream);
+                        if (s.Parent != null && s.Parent.Version > ExpectedVersion.EmptyStream)
+                        {
+                            parentStream = streamLocator.Find(s.Parent);
+                            version = parentStream.Version;
+                        
+                            if ( version > s.Parent?.Version )
+                                throw new InvalidOperationException($"{currentBranch?.Id} timeline has moved on in the meantime, aborting...( {version} > {s.Parent.Version} )");
 
-                    if (s.Version == version)
-                        return;
+                            if (s.Version == version)
+                                return; 
+                        }
 
-                    Result.NumberOfStreams++;
+                        Interlocked.Increment(ref _numberOfStreams);
 
-                    var events = await eventStore.ReadStream<IEvent>(s, version + 1, s.Version - version).ToList();
-                    foreach (var e in events.OfType<Event>())
-                        e.Stream = masterStream.Key;
+                        var events = await eventStore.ReadStream<IEvent>(s, version + 1, s.Version - version).ToList();
+                        foreach (var e in events.OfType<Event>())
+                            e.Stream = parentStream.Key;
 
-                    Result.NumberOfEvents += events.Count;
-                    
-                    await eventStore.AppendToStream(masterStream, events);
+                        Interlocked.Add(ref _numberOfEvents, events.Count);
+                        
+                        await eventStore.AppendToStream(parentStream, events);
                 }, new ExecutionDataflowBlockOptions { MaxDegreeOfParallelism = Configuration.ThreadsPerInstance });
 
                 RegisterChild(_inputBlock);
             }
-            
+
             public MergeResult Result { get; } = new MergeResult(); 
 
             public override ITargetBlock<IStream> InputBlock => _inputBlock;
+            
+            public override void Complete()
+            {
+                Result.NumberOfEvents = _numberOfEvents;
+                Result.NumberOfStreams = _numberOfStreams;
+                base.Complete();
+            }
                 
             public class MergeResult
             {

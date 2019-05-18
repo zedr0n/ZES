@@ -29,7 +29,8 @@ namespace ZES.Tests
 
             await time.Branch("test");
             
-            await await bus.CommandAsync(new UpdateRoot("Root")); 
+            await await bus.CommandAsync(new UpdateRoot("Root"));
+            await await bus.CommandAsync(new CreateRoot("TestRoot"));
             
             var rootInfo = await bus.QueryUntil(new RootInfoQuery("Root"));
             Assert.True(rootInfo.CreatedAt < rootInfo.UpdatedAt);
@@ -43,6 +44,8 @@ namespace ZES.Tests
 
             rootInfo = await bus.QueryAsync(new RootInfoQuery("Root"));
             Assert.True(rootInfo.CreatedAt < rootInfo.UpdatedAt);  
+            rootInfo = await bus.QueryAsync(new RootInfoQuery("TestRoot"));
+            Assert.NotNull(rootInfo);
         }
         
         [Fact]
@@ -93,6 +96,47 @@ namespace ZES.Tests
             rootInfo = await bus.QueryAsync(new RootInfoQuery("Root"));
             Assert.True(rootInfo.UpdatedAt == rootInfo.CreatedAt);
             Assert.NotEqual(0, rootInfo.CreatedAt);
+        }
+
+        [Fact]
+        public async void CanMergeGrandTimeline()
+        {
+            var container = CreateContainer();
+            var bus = container.GetInstance<IBus>();
+            var timeTraveller = container.GetInstance<IBranchManager>(); 
+            
+            var command = new CreateRoot("Root");
+            await await bus.CommandAsync(command);
+
+            var timeline = container.GetInstance<ITimeline>();
+            Assert.Equal("master", timeline.Id);
+
+            await timeTraveller.Branch("test");
+
+            await await bus.CommandAsync(new CreateRoot("testRoot"));
+
+            await timeTraveller.Branch("grandTest");
+
+            await await bus.CommandAsync(new CreateRoot("testRoot2"));
+
+            var stats = await bus.QueryUntil(new StatsQuery(), s => s?.NumberOfRoots == 3);
+            Assert.Equal(3, stats.NumberOfRoots);
+
+            await timeTraveller.Branch("test");
+            stats = await bus.QueryUntil(new StatsQuery(), s => s?.NumberOfRoots == 2);
+            Assert.Equal(2, stats.NumberOfRoots);
+
+            await timeTraveller.Merge("grandTest");
+            stats = await bus.QueryUntil(new StatsQuery(), s => s?.NumberOfRoots == 3); 
+            Assert.Equal(3, stats.NumberOfRoots);
+
+            timeTraveller.Reset();
+            stats = await bus.QueryUntil(new StatsQuery(), s => s?.NumberOfRoots == 1); 
+            Assert.Equal(1, stats.NumberOfRoots);
+
+            await timeTraveller.Merge("test");
+            stats = await bus.QueryUntil(new StatsQuery(), s => s?.NumberOfRoots == 3); 
+            Assert.Equal(3, stats.NumberOfRoots); 
         }
 
         [Fact]

@@ -24,7 +24,7 @@ namespace ZES.Infrastructure.Utils
                 version += page.Messages.Single().StreamVersion + 1; 
             
             var theStream = new Stream(key, version) { Parent = parent };
-            while (parent != null)
+            while (parent != null && parent.Version > ExpectedVersion.EmptyStream)
             {
                 var parentMetadata = await streamStore.GetStreamMetadata(parent.Key);
                 var grandParent = parentMetadata.MetadataJson.ParseParent();

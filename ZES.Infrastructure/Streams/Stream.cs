@@ -69,7 +69,7 @@ namespace ZES.Infrastructure.Streams
                     return _ancestors.ToList();
                 
                 var parent = Parent;
-                while (parent != null)
+                while (parent != null && parent.Version > ExpectedVersion.NoStream)
                 {
                     _ancestors.Add(parent);
                     parent = Parent?.Parent;
@@ -124,13 +124,14 @@ namespace ZES.Infrastructure.Streams
         /// <inheritdoc />
         public IStream Branch(string timeline, int version)
         {
-            if (version <= ExpectedVersion.EmptyStream)
-                return null;
-            
-            return new Stream(Key, version, new Stream(Key, version))
+            var stream = new Stream(Key, version, new Stream(Key, version))
             {
                 Timeline = timeline
             };
+            if (version == ExpectedVersion.EmptyStream)
+                stream.Parent = new Stream(stream.Key, version);
+
+            return stream;
         }
 
         /// <inheritdoc />

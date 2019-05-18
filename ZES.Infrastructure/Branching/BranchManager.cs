@@ -91,9 +91,6 @@ namespace ZES.Infrastructure.Branching
         /// <inheritdoc />
         public async Task Merge(string branchId)
         {
-            // if (_activeTimeline.Id != Master)
-            //    return;
-
             if (!_branches.TryGetValue(branchId, out var branch))
             {
                 _log.Warn($"Branch {branchId} does not exist", this);
@@ -171,7 +168,6 @@ namespace ZES.Infrastructure.Branching
                     {
                         if (currentBranch != null && s.Parent != null && s.Parent.Timeline != currentBranch.Id && s.Parent.Version > ExpectedVersion.EmptyStream)
                             return;
-                        // throw new NotImplementedException("Can only merge direct children for now");
 
                         var version = ExpectedVersion.EmptyStream;
                         var parentStream = s.Branch(currentBranch?.Id, ExpectedVersion.EmptyStream);

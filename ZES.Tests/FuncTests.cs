@@ -8,7 +8,6 @@ namespace ZES.Tests
 {
     public class FuncTests : Test
     {
-        private readonly string _name = "Root";
         private readonly string _timeline = "master";
         private readonly string _branchTimeline = "branch";
         private readonly string _type = nameof(Root);

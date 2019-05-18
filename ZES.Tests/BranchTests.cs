@@ -53,7 +53,6 @@ namespace ZES.Tests
             await time.Merge("test");
             stats = await bus.QueryUntil(new StatsQuery(), s => s?.NumberOfRoots == 2);
             Assert.Equal(2, stats.NumberOfRoots);
-            
         }
         
         [Fact]

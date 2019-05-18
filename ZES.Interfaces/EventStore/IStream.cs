@@ -82,6 +82,12 @@ namespace ZES.Interfaces.EventStore
         /// <returns>Append position</returns>
         int AppendPosition();
 
+        /// <summary>
+        /// Number of events actually present in the stream from [start, start+count)
+        /// </summary>
+        /// <param name="start">First version</param>
+        /// <param name="count">Event count</param>
+        /// <returns>Number of events</returns>
         int Count(int start, int count = -1);
     }
     

@@ -249,7 +249,6 @@ namespace ZES.Tests
             {
                 c =>
                 {
-                    Config.RegisterSagas(c);
                     c.Options.AllowOverridingRegistrations = true;
                     c.Register(typeof(IRemote<>), typeof(Remote<>), Lifestyle.Singleton);
                     c.Options.AllowOverridingRegistrations = false; 
@@ -265,8 +264,8 @@ namespace ZES.Tests
             Assert.Equal(Status.Success, pushResult.ResultStatus);
             
             // +1 because of command log
-            Assert.Equal(9, pushResult.NumberOfStreams);
-            Assert.Equal(12, pushResult.NumberOfMessages);
+            Assert.Equal(3, pushResult.NumberOfStreams);
+            Assert.Equal(4, pushResult.NumberOfMessages);
 
             // remote is synced so nothing to pull
             var pullResult = await remote.Pull(BranchManager.Master);

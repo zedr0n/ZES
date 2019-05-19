@@ -54,6 +54,8 @@ namespace ZES.Infrastructure.Utils
         public static async Task<int> LastPosition(this IStreamStore streamStore, string key)
         {
             var page = await streamStore.ReadStreamBackwards(key, StreamVersion.End, 1);
+            if (page.Status == PageReadStatus.StreamNotFound)
+                return ExpectedVersion.NoStream;
             
             if (page.Messages.Any())
                 return page.Messages.Single().StreamVersion;

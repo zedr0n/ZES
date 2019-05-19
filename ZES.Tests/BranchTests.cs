@@ -10,6 +10,7 @@ using ZES.Interfaces.Pipes;
 using ZES.Tests.Domain;
 using ZES.Tests.Domain.Commands;
 using ZES.Tests.Domain.Queries;
+using static ZES.Interfaces.FastForwardResult;
 using static ZES.Utils.ObservableExtensions;
 
 namespace ZES.Tests
@@ -234,8 +235,11 @@ namespace ZES.Tests
 
             await await bus.CommandAsync(new CreateRoot("Root"));
 
-            await remote.Push(BranchManager.Master);
-            await remote.Pull(BranchManager.Master);
+            var pushResult = await remote.Push(BranchManager.Master);
+            Assert.Equal(Status.Success, pushResult.ResultStatus);
+            
+            var pullResult = await remote.Pull(BranchManager.Master);
+            Assert.Equal(Status.Success, pullResult.ResultStatus);
         }
 
         [Fact]
@@ -256,11 +260,50 @@ namespace ZES.Tests
             await await bus.CommandAsync(new CreateRoot("Root"));
             await await bus.CommandAsync(new CreateRoot("Root2"));
 
-            var result = await remote.Push(BranchManager.Master);
+            var pushResult = await remote.Push(BranchManager.Master);
+            Assert.Equal(Status.Success, pushResult.ResultStatus);
             
             // +1 because of command log
-            Assert.Equal(2 + 1, result.NumberOfStreams);
-            Assert.Equal(2 * (1 + 1), result.NumberOfMessages);
+            Assert.Equal(2 + 1, pushResult.NumberOfStreams);
+            Assert.Equal(2 * (1 + 1), pushResult.NumberOfMessages);
+
+            // remote is synced so nothing to pull
+            var pullResult = await remote.Pull(BranchManager.Master);
+            Assert.Equal(Status.Success, pullResult.ResultStatus); 
+            Assert.Equal(0, pullResult.NumberOfStreams );
+            Assert.Equal(0, pullResult.NumberOfMessages);
+        }
+
+        [Fact]
+        public async void CanCancelPull()
+        {
+            var container = CreateContainer(new List<Action<Container>>
+            {
+                c =>
+                {
+                    c.Options.AllowOverridingRegistrations = true;
+                    c.Register(typeof(IRemote<>), typeof(Remote<>), Lifestyle.Singleton);
+                    c.Options.AllowOverridingRegistrations = false; 
+                }
+            });
+            var bus = container.GetInstance<IBus>();
+            var remote = container.GetInstance<IRemote<IAggregate>>();
+
+            await await bus.CommandAsync(new CreateRoot("Root")); 
+            var pushResult = await remote.Push(BranchManager.Master);
+            Assert.Equal(Status.Success, pushResult.ResultStatus);
+
+            await await bus.CommandAsync(new CreateRoot("Root2"));
+            var pullResult = await remote.Pull(BranchManager.Master);
+            Assert.Equal(Status.Failed, pullResult.ResultStatus);
+
+            pushResult = await remote.Push(BranchManager.Master);
+            Assert.Equal(Status.Success, pushResult.ResultStatus);
+            Assert.Equal(2, pushResult.NumberOfStreams);
+            Assert.Equal(2, pushResult.NumberOfMessages);
+            
+            pullResult = await remote.Pull(BranchManager.Master);
+            Assert.Equal(Status.Success, pullResult.ResultStatus); 
         }
     }
 }

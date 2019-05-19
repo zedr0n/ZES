@@ -3,6 +3,7 @@ using SqlStreamStore;
 using ZES.Infrastructure.Attributes;
 using ZES.Interfaces;
 using ZES.Interfaces.EventStore;
+using static ZES.Interfaces.FastForwardResult;
 
 namespace ZES.Infrastructure.Branching
 {
@@ -20,9 +21,9 @@ namespace ZES.Infrastructure.Branching
         }
 
         /// <inheritdoc />
-        public Task<PushResult> Push(string branchId) => Task.FromResult(new PushResult()); 
+        public Task<FastForwardResult> Push(string branchId) => Task.FromResult(new FastForwardResult { ResultStatus = Status.Success }); 
 
         /// <inheritdoc />
-        public Task Pull(string branchId) => Task.CompletedTask;
+        public Task<FastForwardResult> Pull(string branchId) => Task.FromResult(new FastForwardResult { ResultStatus = Status.Success });
     }
 }

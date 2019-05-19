@@ -7,6 +7,7 @@ using SqlStreamStore.Streams;
 using ZES.Infrastructure.Attributes;
 using ZES.Infrastructure.Utils;
 using ZES.Interfaces;
+using static ZES.Interfaces.FastForwardResult;
 
 namespace ZES.Infrastructure.Branching
 {
@@ -31,9 +32,9 @@ namespace ZES.Infrastructure.Branching
         }
 
         /// <inheritdoc />
-        public async Task<PushResult> Push(string branchId)
+        public async Task<FastForwardResult> Push(string branchId)
         {
-            var pushResult = new PushResult();
+            var pushResult = new FastForwardResult();
             
             var valid = await ValidatePush(branchId);
             if (!valid)
@@ -42,52 +43,28 @@ namespace ZES.Infrastructure.Branching
                 return pushResult;
             }
 
-            var page = await _localStore.ListStreams();
-            while (page.StreamIds.Length > 0)
-            {
-                foreach (var s in page.StreamIds.Where(x => !x.StartsWith("$")))
-                {
-                    var localPosition = await _localStore.LastPosition(s);
-                    var remotePosition = await _remoteStore.LastPosition(s);
-
-                    if (localPosition < remotePosition)
-                        throw new InvalidOperationException( $"Remote({remotePosition}) is ahead of local({localPosition}) for stream {s}");
-
-                    if (localPosition == remotePosition)
-                        continue;
-
-                    var eventPage = await _localStore.ReadStreamForwards(s, remotePosition + 1, Configuration.BatchSize);
-                    while (eventPage.Messages.Length > 0)
-                    {
-                        var appendMessages = new List<NewStreamMessage>();
-                        foreach (var m in eventPage.Messages)
-                        {
-                            var payload = await m.GetJsonData(); 
-                            var message = new NewStreamMessage(m.MessageId, m.Type, payload, m.JsonMetadata);
-                            appendMessages.Append(message);
-                        }
-
-                        var result = await _localStore.AppendToStream(s, remotePosition, appendMessages.ToArray());
-                        pushResult.NumberOfMessages += result.CurrentVersion - remotePosition; 
-                        eventPage = await eventPage.ReadNext();
-                    }
-
-                    pushResult.NumberOfStreams++;
-                }
-
-                page = await page.Next();
-            }
-
-            pushResult.Status = PushResult.PushResultStatus.Success;
+            pushResult = await FastForward(_localStore, _remoteStore, branchId);
             
             _log.Info($"Pushed {pushResult.NumberOfMessages} objects to {pushResult.NumberOfStreams} streams");
             return pushResult;
         }
 
         /// <inheritdoc />
-        public Task Pull(string branchId)
+        public async Task<FastForwardResult> Pull(string branchId)
         {
-            throw new System.NotImplementedException();
+            var pullResult = new FastForwardResult();
+            
+            var valid = await ValidatePull(branchId);
+            if (!valid)
+            {
+                _log.Warn($"Pull of {branchId} from remote aborted, can't fast-forward", this);
+                return pullResult;
+            }
+
+            pullResult = await FastForward(_remoteStore, _localStore, branchId);
+            
+            _log.Info($"Pulled {pullResult.NumberOfMessages} objects from {pullResult.NumberOfStreams} streams");
+            return pullResult; 
         }
 
         private async Task<bool> ValidatePush(string branchId)
@@ -98,7 +75,51 @@ namespace ZES.Infrastructure.Branching
         private async Task<bool> ValidatePull(string branchId)
         {
             return await Validate(_remoteStore, _localStore, branchId);
-        } 
+        }
+
+        private async Task<FastForwardResult> FastForward(IStreamStore from, IStreamStore to, string branchId)
+        {
+            var fastForwardResult = new FastForwardResult();
+            var page = await from.ListStreams();
+            while (page.StreamIds.Length > 0)
+            {
+                foreach (var s in page.StreamIds.Where(x => x.StartsWith(branchId)))
+                {
+                    var localPosition = await from.LastPosition(s);
+                    var remotePosition = await _remoteStore.LastPosition(s);
+
+                    if (localPosition < remotePosition)
+                        throw new InvalidOperationException( $"Target({remotePosition}) is ahead of source({localPosition}) for stream {s}");
+
+                    if (localPosition == remotePosition)
+                        continue;
+
+                    var eventPage = await from.ReadStreamForwards(s, Math.Max(remotePosition + 1, 0), Configuration.BatchSize);
+                    while (eventPage.Messages.Length > 0)
+                    {
+                        var appendMessages = new List<NewStreamMessage>();
+                        foreach (var m in eventPage.Messages)
+                        {
+                            var payload = await m.GetJsonData(); 
+                            var message = new NewStreamMessage(m.MessageId, m.Type, payload, m.JsonMetadata);
+                            appendMessages.Add(message);
+                        }
+
+                        var result = await to.AppendToStream(s, remotePosition, appendMessages.ToArray());
+                        fastForwardResult.NumberOfMessages += result.CurrentVersion - Math.Max(remotePosition, ExpectedVersion.EmptyStream); 
+                        eventPage = await eventPage.ReadNext();
+                    }
+
+                    fastForwardResult.NumberOfStreams++;
+                }
+
+                page = await page.Next();
+            }
+
+            fastForwardResult.ResultStatus = Status.Success;
+
+            return fastForwardResult;
+        }
         
         // TODO: check if parent branches exist
         private async Task<bool> Validate(

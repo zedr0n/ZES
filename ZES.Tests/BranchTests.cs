@@ -382,7 +382,10 @@ namespace ZES.Tests
             Assert.Equal(Status.Success, result.ResultStatus);
             
             result = await remote.Push("grandTest");
-            Assert.Equal(Status.Success, result.ResultStatus); 
+            Assert.Equal(Status.Success, result.ResultStatus);
+
+            result = await remote.Pull("grandTest");
+            Assert.Equal(Status.Success, result.ResultStatus);
         }
     }
 }

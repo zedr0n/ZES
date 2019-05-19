@@ -17,6 +17,14 @@ namespace ZES.Infrastructure
             "InMemoryStreamStore",
             "Common"
         };
+
+        /// <summary>
+        /// Gets azure SQL database connection string
+        /// </summary>
+        /// <value>
+        /// Azure SQL database connection string
+        /// </value>
+        public static string MsSqlConnectionString => Environment.GetEnvironmentVariable("ConnectionString".ToUpper());
         
         /// <summary>
         /// Gets default timeout

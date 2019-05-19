@@ -103,5 +103,19 @@ namespace ZES
         {
             return Lifestyle.Singleton.CreateRegistration(() => new InMemoryStreamStore(), container);
         }
+
+        private Registration GetRemoteStore(Container container)
+        {
+            return Lifestyle.Singleton.CreateRegistration(
+                () =>
+                {
+                    var store = new MsSqlStreamStoreV3(new MsSqlStreamStoreV3Settings(Configuration.MsSqlConnectionString));
+                    
+                    store.DropAll().Wait();
+                    store.CreateSchema().Wait();
+                    return store;
+                },
+                container);
+        }
     }
 }

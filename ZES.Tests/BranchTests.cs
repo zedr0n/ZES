@@ -1,3 +1,6 @@
+using System;
+using System.Collections.Generic;
+using SimpleInjector;
 using Xunit;
 using Xunit.Abstractions;
 using ZES.Infrastructure.Branching;
@@ -233,6 +236,31 @@ namespace ZES.Tests
 
             await remote.Push(BranchManager.Master);
             await remote.Pull(BranchManager.Master);
+        }
+
+        [Fact]
+        public async void CanPushToRemote()
+        {
+            var container = CreateContainer(new List<Action<Container>>
+            {
+                c =>
+                {
+                    c.Options.AllowOverridingRegistrations = true;
+                    c.Register(typeof(IRemote<>), typeof(Remote<>), Lifestyle.Singleton);
+                    c.Options.AllowOverridingRegistrations = false; 
+                }
+            });
+            var bus = container.GetInstance<IBus>();
+            var remote = container.GetInstance<IRemote<IAggregate>>();
+
+            await await bus.CommandAsync(new CreateRoot("Root"));
+            await await bus.CommandAsync(new CreateRoot("Root2"));
+
+            var result = await remote.Push(BranchManager.Master);
+            
+            // +1 because of command log
+            Assert.Equal(2 + 1, result.NumberOfStreams);
+            Assert.Equal(2 * (1 + 1), result.NumberOfMessages);
         }
     }
 }

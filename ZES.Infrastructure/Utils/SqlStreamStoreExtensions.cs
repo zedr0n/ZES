@@ -25,13 +25,14 @@ namespace ZES.Infrastructure.Utils
             this IStreamStore streamStore, string key)
         {
             var metadata = await streamStore.GetStreamMetadata(key);
-            if (metadata == null)
-                return new Stream(key);
             
             var parent = metadata.MetadataJson.ParseParent();
             var version = parent?.Version ?? -1;  
             
             var page = await streamStore.ReadStreamBackwards(key, StreamVersion.End, 1);
+            if (page.Status == PageReadStatus.StreamNotFound)
+                return new Stream(key);
+            
             if (page.Messages.Any())
                 version += page.Messages.Single().StreamVersion + 1; 
             
@@ -53,8 +54,10 @@ namespace ZES.Infrastructure.Utils
         public static async Task<int> LastPosition(this IStreamStore streamStore, string key)
         {
             var page = await streamStore.ReadStreamBackwards(key, StreamVersion.End, 1);
+            
             if (page.Messages.Any())
-                return page.Messages.Single().StreamVersion + 1;
+                return page.Messages.Single().StreamVersion;
+            
             return ExpectedVersion.EmptyStream;
         }
     }

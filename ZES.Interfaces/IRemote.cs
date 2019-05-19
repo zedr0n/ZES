@@ -14,7 +14,7 @@ namespace ZES.Interfaces
         /// </summary>
         /// <param name="branchId">Timeline id</param>
         /// <returns>Task representing asynchronous push</returns>
-        Task Push(string branchId);
+        Task<PushResult> Push(string branchId);
         
         /// <summary>
         /// Pulls a branch from remote

@@ -17,10 +17,10 @@ namespace ZES.Infrastructure.Branching
         /// <param name="remoteStore">Target remote</param>
         public NullRemote(IStreamStore localStore, [Remote] IStreamStore remoteStore)
         {
-        } 
-        
+        }
+
         /// <inheritdoc />
-        public Task Push(string branchId) => Task.CompletedTask;
+        public Task<PushResult> Push(string branchId) => Task.FromResult(new PushResult()); 
 
         /// <inheritdoc />
         public Task Pull(string branchId) => Task.CompletedTask;

@@ -31,13 +31,15 @@ namespace ZES.Infrastructure.Branching
         }
 
         /// <inheritdoc />
-        public async Task Push(string branchId)
+        public async Task<PushResult> Push(string branchId)
         {
+            var pushResult = new PushResult();
+            
             var valid = await ValidatePush(branchId);
             if (!valid)
             {
                 _log.Warn($"Push of {branchId} to remote aborted, can't fast-forward", this);
-                return;
+                return pushResult;
             }
 
             var page = await _localStore.ListStreams();
@@ -52,7 +54,7 @@ namespace ZES.Infrastructure.Branching
                         throw new InvalidOperationException( $"Remote({remotePosition}) is ahead of local({localPosition}) for stream {s}");
 
                     if (localPosition == remotePosition)
-                        return;
+                        continue;
 
                     var eventPage = await _localStore.ReadStreamForwards(s, remotePosition + 1, Configuration.BatchSize);
                     while (eventPage.Messages.Length > 0)
@@ -65,12 +67,21 @@ namespace ZES.Infrastructure.Branching
                             appendMessages.Append(message);
                         }
 
-                        await _localStore.AppendToStream(s, remotePosition, appendMessages.ToArray());
+                        var result = await _localStore.AppendToStream(s, remotePosition, appendMessages.ToArray());
+                        pushResult.NumberOfMessages += result.CurrentVersion - remotePosition; 
+                        eventPage = await eventPage.ReadNext();
                     }
+
+                    pushResult.NumberOfStreams++;
                 }
 
                 page = await page.Next();
             }
+
+            pushResult.Status = PushResult.PushResultStatus.Success;
+            
+            _log.Info($"Pushed {pushResult.NumberOfMessages} objects to {pushResult.NumberOfStreams} streams");
+            return pushResult;
         }
 
         /// <inheritdoc />
@@ -121,14 +132,17 @@ namespace ZES.Infrastructure.Branching
                         return false;
                     }
 
-                    while (source != null)
+                    var parent = source.Parent;
+                    while (parent != null && parent.Version > ExpectedVersion.EmptyStream)
                     {
-                        if (!await Validate(from, to, source.Parent.Timeline, true))
+                        if (!await Validate(from, to, parent.Timeline, true))
                             return false;
                         
-                        source = source.Parent;
+                        parent = parent.Parent;
                     }
                 }
+
+                page = await page.Next();
             }
 
             return true;

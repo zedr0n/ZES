@@ -99,9 +99,17 @@ namespace ZES.Infrastructure.Branching
                         continue;
 
                     var eventPage = await from.ReadStreamForwards(s, Math.Max(remotePosition + 1, 0), Configuration.BatchSize);
+                    var appendMessages = new List<NewStreamMessage>();
+                    
+                    if (eventPage.Messages.Length == 0 && localPosition >= ExpectedVersion.EmptyStream)
+                        await to.AppendToStream(s, remotePosition, appendMessages.ToArray());
+
+                    var metadata = await from.GetStreamMetadata(s);
+                    await to.SetStreamMetadata(s, ExpectedVersion.Any, metadata.MaxAge, metadata.MaxCount, metadata.MetadataJson);
+                    
                     while (eventPage.Messages.Length > 0)
                     {
-                        var appendMessages = new List<NewStreamMessage>();
+                        appendMessages.Clear();
                         foreach (var m in eventPage.Messages)
                         {
                             var payload = await m.GetJsonData(); 
@@ -125,7 +133,6 @@ namespace ZES.Infrastructure.Branching
             return fastForwardResult;
         }
         
-        // TODO: check if parent branches exist
         private async Task<bool> Validate(
             IStreamStore from,
             IStreamStore to,

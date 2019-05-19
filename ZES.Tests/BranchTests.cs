@@ -338,5 +338,51 @@ namespace ZES.Tests
             var pullResult = await remote.Pull("test");
             Assert.Equal(Status.Success, pullResult.ResultStatus); 
         }
+
+        [Fact]
+        public async void CanPushGrandBranch()
+        {
+            var container = CreateContainer(new List<Action<Container>>
+            {
+                c =>
+                {
+                    c.Options.AllowOverridingRegistrations = true;
+                    c.Register(typeof(IRemote<>), typeof(Remote<>), Lifestyle.Singleton);
+                    c.Options.AllowOverridingRegistrations = false; 
+                }
+            });
+            var bus = container.GetInstance<IBus>();
+            var timeTraveller = container.GetInstance<IBranchManager>(); 
+            var remote = container.GetInstance<IRemote<IAggregate>>(); 
+            
+            var command = new CreateRoot("Root");
+            await await bus.CommandAsync(command);
+
+            var result = await remote.Push(BranchManager.Master);
+            Assert.Equal(Status.Success, result.ResultStatus); 
+            
+            var timeline = container.GetInstance<ITimeline>();
+            Assert.Equal("master", timeline.Id);
+
+            await timeTraveller.Branch("test");
+
+            await await bus.CommandAsync(new CreateRoot("testRoot"));
+
+            await timeTraveller.Branch("grandTest");
+
+            await await bus.CommandAsync(new CreateRoot("testRoot2"));
+
+            var stats = await bus.QueryUntil(new StatsQuery(), s => s?.NumberOfRoots == 3);
+            Assert.Equal(3, stats.NumberOfRoots);
+
+            result = await remote.Push("grandTest");
+            Assert.Equal(Status.Failed, result.ResultStatus);
+
+            result = await remote.Push("test");
+            Assert.Equal(Status.Success, result.ResultStatus);
+            
+            result = await remote.Push("grandTest");
+            Assert.Equal(Status.Success, result.ResultStatus); 
+        }
     }
 }

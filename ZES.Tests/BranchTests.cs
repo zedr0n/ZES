@@ -305,5 +305,38 @@ namespace ZES.Tests
             pullResult = await remote.Pull(BranchManager.Master);
             Assert.Equal(Status.Success, pullResult.ResultStatus); 
         }
+
+        [Fact]
+        public async void CanPushBranch()
+        {
+            var container = CreateContainer(new List<Action<Container>>
+            {
+                c =>
+                {
+                    c.Options.AllowOverridingRegistrations = true;
+                    c.Register(typeof(IRemote<>), typeof(Remote<>), Lifestyle.Singleton);
+                    c.Options.AllowOverridingRegistrations = false; 
+                }
+            });
+            var bus = container.GetInstance<IBus>();
+            var remote = container.GetInstance<IRemote<IAggregate>>(); 
+            
+            await await bus.CommandAsync(new CreateRoot("Root")); 
+            
+            var timeTraveller = container.GetInstance<IBranchManager>();
+            await timeTraveller.Branch("test");
+
+            await await bus.CommandAsync(new CreateRoot("Root2"));
+
+            var pushResult = await remote.Push("test");
+            Assert.Equal(Status.Failed, pushResult.ResultStatus);
+
+            await remote.Push(BranchManager.Master);
+            pushResult = await remote.Push("test");
+            Assert.Equal(Status.Success, pushResult.ResultStatus);
+
+            var pullResult = await remote.Pull("test");
+            Assert.Equal(Status.Success, pullResult.ResultStatus); 
+        }
     }
 }

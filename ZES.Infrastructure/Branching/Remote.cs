@@ -11,6 +11,10 @@ using static ZES.Interfaces.FastForwardResult;
 
 namespace ZES.Infrastructure.Branching
 {
+    /// <summary>
+    /// SQLStreamStore-based remote 
+    /// </summary>
+    /// <typeparam name="T">Event sourced type</typeparam>
     public class Remote<T> : IRemote<T> 
         where T : IEventSourced
     {
@@ -45,7 +49,7 @@ namespace ZES.Infrastructure.Branching
 
             pushResult = await FastForward(_localStore, _remoteStore, branchId);
             
-            _log.Info($"Pushed {pushResult.NumberOfMessages} objects to {pushResult.NumberOfStreams} streams");
+            _log.Info($"Pushed {pushResult.NumberOfMessages} objects to {pushResult.NumberOfStreams} streams on branch {branchId}");
             return pushResult;
         }
 
@@ -63,7 +67,7 @@ namespace ZES.Infrastructure.Branching
 
             pullResult = await FastForward(_remoteStore, _localStore, branchId);
             
-            _log.Info($"Pulled {pullResult.NumberOfMessages} objects from {pullResult.NumberOfStreams} streams");
+            _log.Info($"Pulled {pullResult.NumberOfMessages} objects from {pullResult.NumberOfStreams} streams on branch {branchId}");
             return pullResult; 
         }
 

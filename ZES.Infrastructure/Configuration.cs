@@ -25,6 +25,14 @@ namespace ZES.Infrastructure
         /// Default timeout
         /// </value>
         public static TimeSpan Timeout => TimeSpan.FromSeconds(Debugger.IsAttached ? 600 : 1);
+
+        /// <summary>
+        /// Gets the batch size for stream store
+        /// </summary>
+        /// <value>
+        /// The batch size for stream store
+        /// </value>
+        public static int BatchSize => 100;
         
         /// <summary>
         /// Gets default number of threads per service 

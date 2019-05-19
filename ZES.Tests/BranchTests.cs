@@ -1,5 +1,6 @@
 using Xunit;
 using Xunit.Abstractions;
+using ZES.Infrastructure.Branching;
 using ZES.Interfaces;
 using ZES.Interfaces.Domain;
 using ZES.Interfaces.Pipes;
@@ -219,6 +220,19 @@ namespace ZES.Tests
             await repository.FindUntil<Root>("Root");
             stats = await bus.QueryUntil(query, s => s?.NumberOfRoots == 1);
             Assert.Equal(1, stats?.NumberOfRoots); 
+        }
+        
+        [Fact]
+        public async void CanUseNullRemote()
+        {
+            var container = CreateContainer();
+            var bus = container.GetInstance<IBus>();
+            var remote = container.GetInstance<IRemote<IAggregate>>();
+
+            await await bus.CommandAsync(new CreateRoot("Root"));
+
+            await remote.Push(BranchManager.Master);
+            await remote.Pull(BranchManager.Master);
         }
     }
 }

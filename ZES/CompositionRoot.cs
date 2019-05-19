@@ -1,11 +1,13 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using NLog;
 using SimpleInjector;
 using SqlStreamStore;
 using ZES.Conventions;
 using ZES.Infrastructure;
+using ZES.Infrastructure.Attributes;
 using ZES.Infrastructure.Branching;
 using ZES.Infrastructure.Domain;
 using ZES.Infrastructure.Projections;
@@ -47,9 +49,17 @@ namespace ZES
                 typeof(IStreamStore),
                 GetStore(container),
                 c => 
-                     c.Consumer.ImplementationType.GetGenericArguments().Contains(typeof(IAggregate)) ||
+                     (c.Consumer.ImplementationType.GetGenericArguments().Contains(typeof(IAggregate)) ||
                      c.Consumer.ImplementationType.GetInterfaces().Contains(typeof(IBranchManager)) || 
-                     c.Consumer.ImplementationType == typeof(CommandLog));
+                     c.Consumer.ImplementationType == typeof(CommandLog)) &&
+                     c.Consumer.Target.Parameter?.GetCustomAttribute(typeof(RemoteAttribute)) == null);
+
+            container.RegisterConditional(
+                typeof(IStreamStore),
+                GetStore(container),
+                c => c.Consumer.Target.Parameter?.GetCustomAttribute(typeof(RemoteAttribute)) != null);
+            
+            container.Register(typeof(IRemote<>), typeof(NullRemote<>), Lifestyle.Singleton);
             
             container.RegisterConditional(
                 typeof(IStreamStore),

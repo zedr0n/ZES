@@ -11,12 +11,23 @@ namespace ZES.Infrastructure.Utils
 {
     internal static class SqlStreamStoreExtensions
     {
-        private const int ReadSize = 100;
-
+        /// <summary>
+        /// Enrich the stream from store
+        /// </summary>
+        /// <remarks>
+        /// <para/>
+        /// Null if stream exists but some of the ancestors do not
+        /// </remarks>
+        /// <param name="streamStore">Stream store</param>
+        /// <param name="key">Stream key</param>
+        /// <returns>Stream info</returns>
         public static async Task<IStream> GetStream(
             this IStreamStore streamStore, string key)
         {
             var metadata = await streamStore.GetStreamMetadata(key);
+            if (metadata == null)
+                return new Stream(key);
+            
             var parent = metadata.MetadataJson.ParseParent();
             var version = parent?.Version ?? -1;  
             
@@ -28,14 +39,23 @@ namespace ZES.Infrastructure.Utils
             while (parent != null && parent.Version > ExpectedVersion.EmptyStream)
             {
                 var parentMetadata = await streamStore.GetStreamMetadata(parent.Key);
-                var grandParent = parentMetadata.MetadataJson.ParseParent();
+                if (parentMetadata == null)
+                    return null;
+                
+                var grandParent = parentMetadata?.MetadataJson.ParseParent();
                 parent.Parent = grandParent;
-                if (parent.Key == grandParent?.Key)
-                    throw new InvalidOperationException();
                 parent = grandParent;
             }
 
             return theStream;
+        }
+
+        public static async Task<int> LastPosition(this IStreamStore streamStore, string key)
+        {
+            var page = await streamStore.ReadStreamBackwards(key, StreamVersion.End, 1);
+            if (page.Messages.Any())
+                return page.Messages.Single().StreamVersion + 1;
+            return ExpectedVersion.EmptyStream;
         }
     }
 }

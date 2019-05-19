@@ -29,7 +29,7 @@ namespace ZES.Infrastructure
         private readonly ILog _log;
 
         private readonly bool _isDomainStore;
-        
+
         /// <summary>
         /// Initializes a new instance of the <see cref="SqlEventStore{I}"/> class
         /// </summary>
@@ -37,8 +37,7 @@ namespace ZES.Infrastructure
         /// <param name="serializer">Event serializer</param>
         /// <param name="messageQueue">Message queue</param>
         /// <param name="log">Application log</param>
-        /// <param name="timeline">Active timeline tracker</param>
-        public SqlEventStore(IStreamStore streamStore, ISerializer<IEvent> serializer, IMessageQueue messageQueue, ILog log, ITimeline timeline)
+        public SqlEventStore(IStreamStore streamStore, ISerializer<IEvent> serializer, IMessageQueue messageQueue, ILog log)
         {
             _streamStore = streamStore;
             _serializer = serializer;

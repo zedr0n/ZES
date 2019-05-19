@@ -6,4 +6,7 @@ namespace ZES.Infrastructure.Attributes
     /// Methods marked with this attribute are used to register new domains
     /// </summary>
     public class RegistrationAttribute : Attribute { }
+    
+    [AttributeUsage(AttributeTargets.Parameter)]
+    public class RemoteAttribute : Attribute { }
 }

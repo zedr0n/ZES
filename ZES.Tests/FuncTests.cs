@@ -64,8 +64,8 @@ namespace ZES.Tests
             Assert.Equal(count, otherStream.Count(version + 1)); 
             Assert.Equal(count - 1, otherStream.Count(version + 2)); 
             Assert.Equal(0, otherStream.Count(version, 1)); 
-            Assert.Equal(count - 1, otherStream.Count(version + 1, 1)); 
-            Assert.Equal(count - 1, otherStream.Count(version + 2, 1)); 
+            Assert.Equal(1, otherStream.Count(version + 1, 1)); 
+            Assert.Equal(1, otherStream.Count(version + 2, 1)); 
         }
     }
 }

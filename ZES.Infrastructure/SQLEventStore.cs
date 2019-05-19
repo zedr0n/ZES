@@ -102,7 +102,9 @@ namespace ZES.Infrastructure
                 allObservables.Add(observable);
             }
 
-            return allObservables.Aggregate((r, c) => r.Concat(c));
+            if (allObservables.Any())
+                return allObservables.Aggregate((r, c) => r.Concat(c));
+            return Observable.Empty<T>();
         }
 
         /// <inheritdoc />

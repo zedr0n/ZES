@@ -5,5 +5,5 @@ namespace ZES.Infrastructure.Alerts
     /// <summary>
     /// Alert triggered on timeline change 
     /// </summary>
-    public class OnTimelineChange : IAlert { }
+    public class OnTimelineChange : Alert { }
 }

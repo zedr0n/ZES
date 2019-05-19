@@ -70,7 +70,7 @@ namespace ZES.Infrastructure.Projections
         /// <value>
         /// Registered handlers ( State, Event ) -> State
         /// </value>
-        public Dictionary<Type, Func<IEvent, TState, TState>> Handlers { get; } = new Dictionary<Type, Func<IEvent, TState, TState>>();
+        public Dictionary<Type, Func<IMessage, TState, TState>> Handlers { get; } = new Dictionary<Type, Func<IMessage, TState, TState>>();
 
         /// <inheritdoc />
         public IObservable<ProjectionStatus> Ready
@@ -124,7 +124,7 @@ namespace ZES.Infrastructure.Projections
         /// <param name="when">(State, Event) -> State handler</param>
         protected void Register(Type tEvent, Func<IEvent, TState, TState> when)
         {
-            Handlers.Add(tEvent, when);
+            Handlers.Add(tEvent, (m, s) => when(m as IEvent, s));
         }
 
         private async Task Rebuild()
@@ -233,13 +233,12 @@ namespace ZES.Infrastructure.Projections
             }
         }
 
-        private void When(IEvent e)
+        private void When(IMessage e)
         {
             if (_cancellationSource.IsCancellationRequested || e == null)
                 return;    
             
-            Log.Trace($"Stream {e.Stream}@{e.Version}", this);
-            
+            // Log.Trace($"Stream {e.Stream}@{e.Version}", this);
             if (!Handlers.TryGetValue(e.GetType(), out var handler))
                 return;
             

@@ -4,5 +4,5 @@ namespace ZES.Interfaces
     /// Alerts are transient events which are not persisted to aggregate streams
     /// ( but can be persisted to e.g. sagas )
     /// </summary>
-    public interface IAlert { }
+    public interface IAlert : IMessage {}
 }

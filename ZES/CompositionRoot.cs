@@ -44,10 +44,11 @@ namespace ZES
                 new UtcNowConvention()
             });
             container.Register<IBus, Bus>(Lifestyle.Singleton);
+            var store = GetStore(container);
             
             container.RegisterConditional(
                 typeof(IStreamStore),
-                GetStore(container),
+                store,
                 c => 
                      (c.Consumer.ImplementationType.GetGenericArguments().Contains(typeof(IAggregate)) ||
                      c.Consumer.ImplementationType.GetInterfaces().Contains(typeof(IBranchManager)) || 
@@ -63,7 +64,7 @@ namespace ZES
             
             container.RegisterConditional(
                 typeof(IStreamStore),
-                GetStore(container),
+                store, 
                 c => c.Consumer.ImplementationType.GetGenericArguments().Contains(typeof(ISaga))); 
             
             container.Register(typeof(ISerializer<>), typeof(Serializer<>), Lifestyle.Singleton);

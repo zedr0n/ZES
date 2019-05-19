@@ -6,12 +6,14 @@ using System.Reactive.Subjects;
 using System.Threading.Tasks;
 using SqlStreamStore;
 using SqlStreamStore.Streams;
+using ZES.Infrastructure.Sagas;
 using ZES.Infrastructure.Serialization;
 using ZES.Infrastructure.Streams;
 using ZES.Infrastructure.Utils;
 using ZES.Interfaces;
 using ZES.Interfaces.EventStore;
 using ZES.Interfaces.Pipes;
+using ZES.Interfaces.Sagas;
 using ZES.Interfaces.Serialization;
 
 namespace ZES.Infrastructure
@@ -59,6 +61,11 @@ namespace ZES.Infrastructure
                 {
                     foreach (var s in page.StreamIds.Where(x => !x.Contains("Command") && !x.StartsWith("$")))
                     {
+                        if (typeof(I) == typeof(ISaga) && !s.Contains(nameof(Saga)))
+                            continue;
+                        if (typeof(I) == typeof(IAggregate) && s.Contains(nameof(Saga)))
+                            continue;
+                        
                         var stream = await _streamStore.GetStream(s);
                         if (stream.Timeline == branch || branch == null)
                             observer.OnNext(stream);

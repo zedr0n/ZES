@@ -34,7 +34,7 @@ namespace ZES.Tests.Domain
         {
             c.RegisterQueries(Assembly.GetExecutingAssembly());
         }
-        
+
         [RootQuery]
         public abstract class Queries
         {

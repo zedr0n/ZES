@@ -14,16 +14,14 @@ namespace ZES.Infrastructure.Branching
     /// <summary>
     /// SQLStreamStore-based remote 
     /// </summary>
-    /// <typeparam name="T">Event sourced type</typeparam>
-    public class Remote<T> : IRemote<T> 
-        where T : IEventSourced
+    public class Remote : IRemote
     {
         private readonly IStreamStore _localStore;
         private readonly IStreamStore _remoteStore;
         private readonly ILog _log;
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="Remote{T}"/> class.
+        /// Initializes a new instance of the <see cref="Remote"/> class.
         /// </summary>
         /// <param name="localStore">Local stream store</param>
         /// <param name="remoteStore">Target remote</param>

@@ -60,7 +60,7 @@ namespace ZES
                 GetStore(container),
                 c => c.Consumer.Target.Parameter?.GetCustomAttribute(typeof(RemoteAttribute)) != null);
             
-            container.Register(typeof(IRemote<>), typeof(NullRemote<>), Lifestyle.Singleton);
+            container.Register(typeof(IRemote), typeof(NullRemote), Lifestyle.Singleton);
             
             container.RegisterConditional(
                 typeof(IStreamStore),

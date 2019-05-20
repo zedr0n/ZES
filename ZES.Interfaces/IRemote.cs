@@ -5,9 +5,7 @@ namespace ZES.Interfaces
     /// <summary>
     /// Remote interface 
     /// </summary>
-    /// <typeparam name="T">Event sourced type</typeparam>
-    public interface IRemote<T>
-        where T : IEventSourced
+    public interface IRemote
     {
         /// <summary>
         /// Push a branch to remote

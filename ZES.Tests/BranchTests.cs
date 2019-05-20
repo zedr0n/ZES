@@ -231,7 +231,7 @@ namespace ZES.Tests
         {
             var container = CreateContainer();
             var bus = container.GetInstance<IBus>();
-            var remote = container.GetInstance<IRemote<IAggregate>>();
+            var remote = container.GetInstance<IRemote>();
 
             await await bus.CommandAsync(new CreateRoot("Root"));
 
@@ -250,12 +250,12 @@ namespace ZES.Tests
                 c =>
                 {
                     c.Options.AllowOverridingRegistrations = true;
-                    c.Register(typeof(IRemote<>), typeof(Remote<>), Lifestyle.Singleton);
+                    c.Register(typeof(IRemote), typeof(Remote), Lifestyle.Singleton);
                     c.Options.AllowOverridingRegistrations = false; 
                 }
             });
             var bus = container.GetInstance<IBus>();
-            var remote = container.GetInstance<IRemote<IAggregate>>();
+            var remote = container.GetInstance<IRemote>();
 
             await await bus.CommandAsync(new CreateRoot("Root"));
             await await bus.CommandAsync(new CreateRoot("Root2"));
@@ -282,12 +282,12 @@ namespace ZES.Tests
                 c =>
                 {
                     c.Options.AllowOverridingRegistrations = true;
-                    c.Register(typeof(IRemote<>), typeof(Remote<>), Lifestyle.Singleton);
+                    c.Register(typeof(IRemote), typeof(Remote), Lifestyle.Singleton);
                     c.Options.AllowOverridingRegistrations = false; 
                 }
             });
             var bus = container.GetInstance<IBus>();
-            var remote = container.GetInstance<IRemote<IAggregate>>();
+            var remote = container.GetInstance<IRemote>();
 
             await await bus.CommandAsync(new CreateRoot("Root")); 
             var pushResult = await remote.Push(BranchManager.Master);
@@ -314,12 +314,12 @@ namespace ZES.Tests
                 c =>
                 {
                     c.Options.AllowOverridingRegistrations = true;
-                    c.Register(typeof(IRemote<>), typeof(Remote<>), Lifestyle.Singleton);
+                    c.Register(typeof(IRemote), typeof(Remote), Lifestyle.Singleton);
                     c.Options.AllowOverridingRegistrations = false; 
                 }
             });
             var bus = container.GetInstance<IBus>();
-            var remote = container.GetInstance<IRemote<IAggregate>>(); 
+            var remote = container.GetInstance<IRemote>(); 
             
             await await bus.CommandAsync(new CreateRoot("Root")); 
             
@@ -347,13 +347,13 @@ namespace ZES.Tests
                 c =>
                 {
                     c.Options.AllowOverridingRegistrations = true;
-                    c.Register(typeof(IRemote<>), typeof(Remote<>), Lifestyle.Singleton);
+                    c.Register(typeof(IRemote), typeof(Remote), Lifestyle.Singleton);
                     c.Options.AllowOverridingRegistrations = false; 
                 }
             });
             var bus = container.GetInstance<IBus>();
             var timeTraveller = container.GetInstance<IBranchManager>(); 
-            var remote = container.GetInstance<IRemote<IAggregate>>(); 
+            var remote = container.GetInstance<IRemote>(); 
             
             var command = new CreateRoot("Root");
             await await bus.CommandAsync(command);

@@ -50,15 +50,21 @@ namespace ZES
                 typeof(IStreamStore),
                 store,
                 c => 
-                     (c.Consumer.ImplementationType.GetGenericArguments().Contains(typeof(IAggregate)) ||
+                     c.Consumer.ImplementationType.GetGenericArguments().Contains(typeof(IAggregate)) ||
                      c.Consumer.ImplementationType.GetInterfaces().Contains(typeof(IBranchManager)) || 
-                     c.Consumer.ImplementationType == typeof(CommandLog)) &&
-                     c.Consumer.Target.Parameter?.GetCustomAttribute(typeof(RemoteAttribute)) == null);
+                     c.Consumer.ImplementationType == typeof(CommandLog));
 
             container.RegisterConditional(
                 typeof(IStreamStore),
                 GetStore(container),
                 c => c.Consumer.Target.Parameter?.GetCustomAttribute(typeof(RemoteAttribute)) != null);
+            
+            container.RegisterConditional(
+                typeof(IStreamStore),
+                store, 
+                c => 
+                    c.Consumer.ImplementationType.GetInterfaces().Contains(typeof(IRemote)) &&
+                    c.Consumer.Target.Parameter?.GetCustomAttribute(typeof(RemoteAttribute)) == null); 
             
             container.Register(typeof(IRemote), typeof(NullRemote), Lifestyle.Singleton);
             

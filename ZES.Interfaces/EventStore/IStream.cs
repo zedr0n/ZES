@@ -7,6 +7,15 @@ namespace ZES.Interfaces.EventStore
     /// </summary>
     public interface IStream
     {
+
+        /// <summary>
+        /// Gets a value indicating whether whether stream is a saga stream
+        /// </summary>
+        /// <value>
+        /// True if stream is a saga ( type contains "Saga" ) 
+        /// </value>
+        bool IsSaga { get; }
+        
         /// <summary>
         /// Gets the underlying stream id
         /// </summary>

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks.Dataflow;
 using SqlStreamStore.Streams;
+using ZES.Infrastructure.Sagas;
 using ZES.Interfaces.EventStore;
 
 namespace ZES.Infrastructure.Streams
@@ -47,6 +48,9 @@ namespace ZES.Infrastructure.Streams
             Version = version;
             Parent = parent;
         }
+
+        /// <inheritdoc />
+        public bool IsSaga => _type.ToUpper().Contains(nameof(Saga).ToUpper());
 
         /// <inheritdoc />
         public string Id { get; }

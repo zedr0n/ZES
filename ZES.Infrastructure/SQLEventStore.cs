@@ -61,12 +61,13 @@ namespace ZES.Infrastructure
                 {
                     foreach (var s in page.StreamIds.Where(x => !x.Contains("Command") && !x.StartsWith("$")))
                     {
-                        if (typeof(I) == typeof(ISaga) && !s.Contains(nameof(Saga)))
+                        var stream = await _streamStore.GetStream(s);
+                        
+                        if (typeof(I) == typeof(ISaga) && !stream.IsSaga) 
                             continue;
-                        if (typeof(I) == typeof(IAggregate) && s.Contains(nameof(Saga)))
+                        if (typeof(I) == typeof(IAggregate) && stream.IsSaga)
                             continue;
                         
-                        var stream = await _streamStore.GetStream(s);
                         if (stream.Timeline == branch || branch == null)
                             observer.OnNext(stream);
                     }

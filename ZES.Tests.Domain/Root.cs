@@ -6,6 +6,8 @@ namespace ZES.Tests.Domain
 {
     public sealed class Root : EventSourced, IAggregate
     {
+        private Type _type; 
+        
         public Root()
         {
             Register<RootCreated>(ApplyEvent);
@@ -15,7 +17,13 @@ namespace ZES.Tests.Domain
         public Root(string id)
             : this()
         {
-            When(new RootCreated(id));    
+            When(new RootCreated(id, Type.Ordinary));    
+        }
+        
+        public enum Type
+        {
+            Ordinary,
+            Special
         }
         
         public long UpdatedAt { get; private set; }
@@ -33,6 +41,7 @@ namespace ZES.Tests.Domain
         private void ApplyEvent(RootCreated e)
         {
             Id = e.RootId;
+            _type = e.Type;
         }
     }
 }

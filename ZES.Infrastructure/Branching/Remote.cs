@@ -162,7 +162,7 @@ namespace ZES.Infrastructure.Branching
                     if (source.Version <= target.Version && source.Version > ExpectedVersion.EmptyStream)
                     {
                         var fromMessage = (await from.ReadStreamBackwards(s, StreamVersion.End, 1)).Messages.SingleOrDefault();
-                        var toMessage = (await to.ReadStreamForwards(s, source.Version, 1)).Messages.SingleOrDefault();
+                        var toMessage = (await to.ReadStreamForwards(s, source.ReadPosition(source.Version), 1)).Messages.SingleOrDefault();
 
                         if (fromMessage.MessageId == toMessage.MessageId) 
                             return true;

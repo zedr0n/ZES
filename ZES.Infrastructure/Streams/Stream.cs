@@ -96,11 +96,8 @@ namespace ZES.Infrastructure.Streams
         {
             if (Parent != null) 
                 version -= Parent.Version + 1;
-            
-            if (version < 0)
-                throw new InvalidOperationException("Version is not present in the stream");
-            
-            return version;
+
+            return version < 0 ? 0 : version;
         }
 
         /// <inheritdoc />

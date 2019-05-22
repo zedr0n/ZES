@@ -1,6 +1,4 @@
 using System.Threading.Tasks;
-using SqlStreamStore;
-using ZES.Infrastructure.Attributes;
 using ZES.Interfaces;
 using static ZES.Interfaces.FastForwardResult;
 
@@ -12,9 +10,7 @@ namespace ZES.Infrastructure.Branching
         /// <summary>
         /// Initializes a new instance of the <see cref="NullRemote"/> class.
         /// </summary>
-        /// <param name="localStore">Local stream store</param>
-        /// <param name="remoteStore">Target remote</param>
-        public NullRemote(IStreamStore localStore, [Remote] IStreamStore remoteStore)
+        public NullRemote()
         {
         }
 

@@ -87,7 +87,7 @@ namespace ZES.Tests
                 return container;
             }
         }
-        
+
         private static CompositionRoot CreateRoot() => new CompositionRoot();
     }
 }

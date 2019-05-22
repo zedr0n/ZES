@@ -17,7 +17,7 @@ namespace ZES.Infrastructure.Projections
     public abstract partial class Projection<TState> : IProjection<TState>
     {
         /// <inheritdoc />
-        public class ProjectionFlow : ParallelDataDispatcher<string, IStream, int>
+        public class Slice : ParallelDataDispatcher<string, IStream, int>
         {
             private readonly ILog _log;
 
@@ -31,7 +31,7 @@ namespace ZES.Infrastructure.Projections
 
             private long _timestamp;
 
-            private ProjectionFlow(
+            private Slice(
                 Projection<TState> projection,
                 DataflowOptions options,
                 CancellationToken token,
@@ -139,7 +139,7 @@ namespace ZES.Infrastructure.Projections
 
                 internal Dataflow<IStream, int> Bind(Projection<TState> projection)
                 {
-                    return new ProjectionFlow(projection, _options, _cancellation, _delay, _builder, _log);
+                    return new Slice(projection, _options, _cancellation, _delay, _builder, _log);
                 }
             }
         }

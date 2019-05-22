@@ -30,7 +30,7 @@ namespace ZES.Infrastructure.Projections
             IMessageQueue messageQueue,
             IProjection<TState> iProjection,
             ITimeline timeline,
-            ProjectionDispatcher.Builder builder)
+            Dispatcher.Builder builder)
             : base(eventStore, log, messageQueue, timeline, builder)
         {
             var projection = (Projection<TState>)iProjection;

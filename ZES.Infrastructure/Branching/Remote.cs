@@ -4,9 +4,11 @@ using System.Linq;
 using System.Threading.Tasks;
 using SqlStreamStore;
 using SqlStreamStore.Streams;
+using ZES.Infrastructure.Alerts;
 using ZES.Infrastructure.Attributes;
 using ZES.Infrastructure.Utils;
 using ZES.Interfaces;
+using ZES.Interfaces.Pipes;
 using static ZES.Interfaces.FastForwardResult;
 
 namespace ZES.Infrastructure.Branching
@@ -19,6 +21,7 @@ namespace ZES.Infrastructure.Branching
         private readonly IStreamStore _localStore;
         private readonly IStreamStore _remoteStore;
         private readonly ILog _log;
+        private readonly IMessageQueue _messageQueue;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="Remote"/> class.
@@ -26,11 +29,13 @@ namespace ZES.Infrastructure.Branching
         /// <param name="localStore">Local stream store</param>
         /// <param name="remoteStore">Target remote</param>
         /// <param name="log">Log helper</param>
-        public Remote(IStreamStore localStore, [Remote] IStreamStore remoteStore, ILog log)
+        /// <param name="messageQueue">Message queue</param>
+        public Remote(IStreamStore localStore, [Remote] IStreamStore remoteStore, ILog log, IMessageQueue messageQueue)
         {
             _localStore = localStore;
             _remoteStore = remoteStore;
             _log = log;
+            _messageQueue = messageQueue;
         }
 
         /// <inheritdoc />
@@ -66,6 +71,7 @@ namespace ZES.Infrastructure.Branching
             pullResult = await FastForward(_remoteStore, _localStore, branchId);
             
             _log.Info($"Pulled {pullResult.NumberOfMessages} objects from {pullResult.NumberOfStreams} streams on branch {branchId}");
+            _messageQueue.Alert(new PullCompleted());
             return pullResult; 
         }
 
@@ -88,10 +94,7 @@ namespace ZES.Infrastructure.Branching
                 foreach (var s in page.StreamIds.Where(x => x.StartsWith(branchId)))
                 {
                     var localPosition = await from.LastPosition(s);
-                    var remotePosition = await _remoteStore.LastPosition(s);
-
-                    if (localPosition < remotePosition)
-                        throw new InvalidOperationException( $"Target({remotePosition}) is ahead of source({localPosition}) for stream {s}");
+                    var remotePosition = await to.LastPosition(s);
 
                     if (localPosition == remotePosition)
                         continue;
@@ -156,9 +159,16 @@ namespace ZES.Infrastructure.Branching
                         return false;
                     }
 
-                    if (source.Version < target.Version)
+                    if (source.Version <= target.Version && source.Version > ExpectedVersion.EmptyStream)
                     {
-                        _log.Warn($"Target({target.Version}) is ahead of source({source.Version}) for stream {s}", this);
+                        var fromMessage = (await from.ReadStreamBackwards(s, StreamVersion.End, 1)).Messages.SingleOrDefault();
+                        var toMessage = (await to.ReadStreamForwards(s, source.Version, 1)).Messages.SingleOrDefault();
+
+                        if (fromMessage.MessageId == toMessage.MessageId) 
+                            return true;
+                        _log.Warn(
+                            $"Message doesn't match with remote for stream {s}@{source.Version} : " +
+                                  $"{fromMessage.MessageId} != {toMessage.MessageId}", this);
                         return false;
                     }
 

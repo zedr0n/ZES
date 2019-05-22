@@ -54,10 +54,10 @@ namespace ZES
                      c.Consumer.ImplementationType.GetInterfaces().Contains(typeof(IBranchManager)) || 
                      c.Consumer.ImplementationType == typeof(CommandLog));
 
-            container.RegisterConditional(
+            /* container.RegisterConditional(
                 typeof(IStreamStore),
                 GetStore(container),
-                c => c.Consumer.Target.Parameter?.GetCustomAttribute(typeof(RemoteAttribute)) != null);
+                c => c.Consumer.Target.Parameter?.GetCustomAttribute(typeof(RemoteAttribute)) != null); */
             
             container.RegisterConditional(
                 typeof(IStreamStore),
@@ -105,24 +105,78 @@ namespace ZES
             
             container.Register<StreamFlow.Builder>(Lifestyle.Singleton);
         }
+
+        /// <summary>
+        /// Uses SQL remote store destroying the contents by default
+        /// </summary>
+        /// <param name="container">SimpleInjector container</param>
+        /// <param name="dropAll">Clear the remote store</param>
+        public void RegisterRemoteStore(Container container, bool dropAll = true)
+        {
+            container.Options.AllowOverridingRegistrations = true;
+            container.Register(typeof(IRemote), typeof(Remote), Lifestyle.Singleton); 
+            container.Options.AllowOverridingRegistrations = false;
+            
+            container.RegisterConditional(
+                typeof(IStreamStore),
+                GetRemoteStore(container, dropAll),
+                c => c.Consumer.Target.Parameter?.GetCustomAttribute(typeof(RemoteAttribute)) != null);
+        }
+        
+        /// <summary>
+        /// Uses in memory remote store optionally sharing the instance with base container 
+        /// </summary>
+        /// <param name="container">SimpleInjector container</param>
+        /// <param name="baseContainer">Base container to share the remote store from</param>
+        public void RegisterLocalStore(Container container, Container baseContainer = null )
+        {
+            container.Options.AllowOverridingRegistrations = true;
+            container.Register(typeof(IRemote), typeof(Remote), Lifestyle.Singleton); 
+            container.Options.AllowOverridingRegistrations = false;
+
+            var store = GetStore(container);
+            if (baseContainer != null)
+            {
+                store = Lifestyle.Singleton.CreateRegistration(
+                    () => baseContainer.GetInstance<RemoteStreamStore>().Store, container);
+            }
+
+            container.RegisterConditional(
+                typeof(IStreamStore),
+                store, 
+                c => c.Consumer.Target.Parameter?.GetCustomAttribute(typeof(RemoteAttribute)) != null);
+        } 
         
         private Registration GetStore(Container container)
         {
             return Lifestyle.Singleton.CreateRegistration(() => new InMemoryStreamStore(), container);
         }
 
-        private Registration GetRemoteStore(Container container)
+        private Registration GetRemoteStore(Container container, bool dropAll = true)
         {
             return Lifestyle.Singleton.CreateRegistration(
                 () =>
                 {
                     var store = new MsSqlStreamStoreV3(new MsSqlStreamStoreV3Settings(Configuration.MsSqlConnectionString));
-                    
-                    store.DropAll().Wait();
-                    store.CreateSchema().Wait();
+
+                    if (dropAll)
+                        store.DropAll().Wait();
+                    if (dropAll || !store.CheckSchema().Result.IsMatch())
+                        store.CreateSchema().Wait();
+
                     return store;
                 },
                 container);
+        }
+
+        private class RemoteStreamStore
+        {
+            public RemoteStreamStore([Remote] IStreamStore store)
+            {
+                Store = store;
+            }
+            
+            public IStreamStore Store { get; }
         }
     }
 }

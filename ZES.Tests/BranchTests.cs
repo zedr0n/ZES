@@ -245,15 +245,7 @@ namespace ZES.Tests
         [Fact]
         public async void CanPushToRemote()
         {
-            var container = CreateContainer(new List<Action<Container>>
-            {
-                c =>
-                {
-                    c.Options.AllowOverridingRegistrations = true;
-                    c.Register(typeof(IRemote), typeof(Remote), Lifestyle.Singleton);
-                    c.Options.AllowOverridingRegistrations = false; 
-                }
-            });
+            var container = CreateContainer(new List<Action<Container>> { c => c.UseLocalStore() });
             var bus = container.GetInstance<IBus>();
             var remote = container.GetInstance<IRemote>();
 
@@ -275,17 +267,9 @@ namespace ZES.Tests
         }
 
         [Fact]
-        public async void CanCancelPull()
+        public async void CanPullFromRemote()
         {
-            var container = CreateContainer(new List<Action<Container>>
-            {
-                c =>
-                {
-                    c.Options.AllowOverridingRegistrations = true;
-                    c.Register(typeof(IRemote), typeof(Remote), Lifestyle.Singleton);
-                    c.Options.AllowOverridingRegistrations = false; 
-                }
-            });
+            var container = CreateContainer(new List<Action<Container>> { c => c.UseLocalStore() });
             var bus = container.GetInstance<IBus>();
             var remote = container.GetInstance<IRemote>();
 
@@ -293,31 +277,41 @@ namespace ZES.Tests
             var pushResult = await remote.Push(BranchManager.Master);
             Assert.Equal(Status.Success, pushResult.ResultStatus);
 
-            await await bus.CommandAsync(new CreateRoot("Root2"));
+            await await bus.CommandAsync(new UpdateRoot("Root"));
+            var pullResult = await remote.Pull(BranchManager.Master);
+            Assert.Equal(Status.Success, pullResult.ResultStatus); 
+        }
+
+        [Fact]
+        public async void CanCancelPull()
+        {
+            var container = CreateContainer(new List<Action<Container>> { c => c.UseLocalStore() });
+            var otherContainer = CreateContainer(new List<Action<Container>> { c => c.UseLocalStore(container) });
+            
+            var bus = container.GetInstance<IBus>();
+            var remote = container.GetInstance<IRemote>();
+
+            await await bus.CommandAsync(new CreateRoot("Root")); 
+            var pushResult = await remote.Push(BranchManager.Master);
+            Assert.Equal(Status.Success, pushResult.ResultStatus);
+
+            await await bus.CommandAsync(new UpdateRoot("Root"));
+
+            var otherBus = otherContainer.GetInstance<IBus>();
+            var otherRemote = otherContainer.GetInstance<IRemote>();
+            await otherRemote.Pull(BranchManager.Master);
+
+            await await otherBus.CommandAsync(new UpdateRoot("Root"));
+            await otherRemote.Push(BranchManager.Master);
+            
             var pullResult = await remote.Pull(BranchManager.Master);
             Assert.Equal(Status.Failed, pullResult.ResultStatus);
-
-            pushResult = await remote.Push(BranchManager.Master);
-            Assert.Equal(Status.Success, pushResult.ResultStatus);
-            Assert.Equal(2, pushResult.NumberOfStreams);
-            Assert.Equal(2, pushResult.NumberOfMessages);
-            
-            pullResult = await remote.Pull(BranchManager.Master);
-            Assert.Equal(Status.Success, pullResult.ResultStatus); 
         }
 
         [Fact]
         public async void CanPushBranch()
         {
-            var container = CreateContainer(new List<Action<Container>>
-            {
-                c =>
-                {
-                    c.Options.AllowOverridingRegistrations = true;
-                    c.Register(typeof(IRemote), typeof(Remote), Lifestyle.Singleton);
-                    c.Options.AllowOverridingRegistrations = false; 
-                }
-            });
+            var container = CreateContainer(new List<Action<Container>> { c => c.UseLocalStore() });
             var bus = container.GetInstance<IBus>();
             var remote = container.GetInstance<IRemote>(); 
             
@@ -342,15 +336,7 @@ namespace ZES.Tests
         [Fact]
         public async void CanPushGrandBranch()
         {
-            var container = CreateContainer(new List<Action<Container>>
-            {
-                c =>
-                {
-                    c.Options.AllowOverridingRegistrations = true;
-                    c.Register(typeof(IRemote), typeof(Remote), Lifestyle.Singleton);
-                    c.Options.AllowOverridingRegistrations = false; 
-                }
-            });
+            var container = CreateContainer(new List<Action<Container>> { c => c.UseLocalStore() });
             var bus = container.GetInstance<IBus>();
             var timeTraveller = container.GetInstance<IBranchManager>(); 
             var remote = container.GetInstance<IRemote>(); 

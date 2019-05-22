@@ -21,4 +21,19 @@
       <ProjectReference Include="..\ZES.Interfaces\ZES.Interfaces.csproj" />
     </ItemGroup>
 
+    <ItemGroup>
+      <Compile Update="Projections\Projection.Dispatcher.cs">
+        <DependentUpon>Projection.cs</DependentUpon>
+      </Compile>
+      <Compile Update="Projections\Dispatcher.Flow.cs">
+        <DependentUpon>Projection.cs</DependentUpon>
+      </Compile>
+      <Compile Update="Projections\StreamFlow.cs">
+        <DependentUpon>Projection.Dispatcher.Slice.cs</DependentUpon>
+      </Compile>
+      <Compile Update="Projections\Projection.Dispatcher.Slice.cs">
+        <DependentUpon>Projection.Dispatcher.cs</DependentUpon>
+      </Compile>
+    </ItemGroup>
+
 </Project>

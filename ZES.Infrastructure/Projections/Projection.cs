@@ -30,7 +30,7 @@ namespace ZES.Infrastructure.Projections
         private readonly IMessageQueue _messageQueue;
         private readonly ITimeline _timeline;
 
-        private readonly ProjectionDispatcher.Builder _streamDispatcher;
+        private readonly Dispatcher.Builder _streamDispatcher;
 
         private readonly BehaviorSubject<ProjectionStatus> _statusSubject = new BehaviorSubject<ProjectionStatus>(Sleeping);
         private readonly ConcurrentDictionary<string, int> _versions = new ConcurrentDictionary<string, int>(); 
@@ -38,7 +38,7 @@ namespace ZES.Infrastructure.Projections
         private CancellationTokenSource _cancellationSource;
 
         private Lazy<IDisposable> _invalidateSubscription;
-        private int _build = 0;
+        private int _build;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="Projection{TState}"/> class.
@@ -48,7 +48,7 @@ namespace ZES.Infrastructure.Projections
         /// <param name="messageQueue">Application message queue</param>
         /// <param name="timeline">Active branch tracker</param>
         /// <param name="streamDispatcher">Dispatcher fluent builder</param>
-        protected Projection(IEventStore<IAggregate> eventStore, ILog log, IMessageQueue messageQueue, ITimeline timeline, ProjectionDispatcher.Builder streamDispatcher)
+        protected Projection(IEventStore<IAggregate> eventStore, ILog log, IMessageQueue messageQueue, ITimeline timeline, Dispatcher.Builder streamDispatcher)
         {
             _eventStore = eventStore;
             _messageQueue = messageQueue;

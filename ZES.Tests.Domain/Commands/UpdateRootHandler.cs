@@ -1,3 +1,4 @@
+using System;
 using System.Threading.Tasks;
 using ZES.Interfaces;
 using ZES.Interfaces.Domain;
@@ -16,6 +17,9 @@ namespace ZES.Tests.Domain.Commands
         public async Task Handle(UpdateRoot command)
         {
             var root = await _repository.Find<Root>(command.Target);
+            if (root == null)
+                throw new ArgumentNullException();
+            
             root.Update();
             await _repository.Save(root);
         }

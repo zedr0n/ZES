@@ -102,8 +102,8 @@ namespace ZES.Utils
                     x => x.Consumer.ImplementationType.IsClosedTypeOf(typeof(HistoricalQueryHandler<,,>)));
                 c.RegisterConditional(projectionInterface, p, Lifestyle.Singleton, x => !x.Handled);
 
-                var builderType = typeof(Projection<>.ProjectionDispatcher.Builder).MakeGenericType(tState);
-                var streamType = typeof(Projection<>.ProjectionFlow.Builder).MakeGenericType(tState);
+                var builderType = typeof(Projection<>.Dispatcher.Builder).MakeGenericType(tState);
+                var streamType = typeof(Projection<>.Slice.Builder).MakeGenericType(tState);
                 c.Register(builderType, builderType, Lifestyle.Singleton);
                 c.Register(streamType, streamType, Lifestyle.Singleton);
             }

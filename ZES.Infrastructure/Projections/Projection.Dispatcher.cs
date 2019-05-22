@@ -15,20 +15,20 @@ namespace ZES.Infrastructure.Projections
     public abstract partial class Projection<TState> : IProjection<TState>
     {
         /// <inheritdoc />
-        public class ProjectionDispatcher : ParallelDataDispatcher<string, IStream, int>
+        public class Dispatcher : ParallelDataDispatcher<string, IStream, int>
         {
-            private readonly ProjectionFlow.Builder _streamFlow;
+            private readonly Slice.Builder _streamFlow;
 
             private readonly Projection<TState> _projection;
             private readonly CancellationTokenSource _cancellation;
             private readonly Task _start;
 
-            private ProjectionDispatcher(
+            private Dispatcher(
                 DataflowOptions options,
                 Projection<TState> projection, 
                 CancellationTokenSource cancel,
                 Task delay,
-                ProjectionFlow.Builder streamFlow,
+                Slice.Builder streamFlow,
                 ILog log)
                 : base(projection.Key, options, cancel.Token, projection.GetType())
             {
@@ -61,7 +61,7 @@ namespace ZES.Infrastructure.Projections
             /// <inheritdoc />
             public class Builder : FluentBuilder
             {
-                private readonly ProjectionFlow.Builder _streamFlow;
+                private readonly Slice.Builder _streamFlow;
                 private readonly ILog _log;
 
                 private DataflowOptions _options = DataflowOptions.Default;
@@ -73,7 +73,7 @@ namespace ZES.Infrastructure.Projections
                 /// </summary>
                 /// <param name="streamFlow">Stream flow</param>
                 /// <param name="log">Log helper</param>
-                public Builder(ProjectionFlow.Builder streamFlow, ILog log)
+                public Builder(Slice.Builder streamFlow, ILog log)
                 {
                     _streamFlow = streamFlow;
                     _log = log;
@@ -93,7 +93,7 @@ namespace ZES.Infrastructure.Projections
                     if (projection == null)
                         throw new ArgumentNullException();
                     
-                    return new ProjectionDispatcher(_options, projection, _cancellation, _delayUntil, _streamFlow, _log);
+                    return new Dispatcher(_options, projection, _cancellation, _delayUntil, _streamFlow, _log);
                 }
             }
         }

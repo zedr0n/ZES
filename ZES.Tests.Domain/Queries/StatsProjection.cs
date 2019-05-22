@@ -13,7 +13,7 @@ namespace ZES.Tests.Domain.Queries
             ILog log,
             IMessageQueue messageQueue,
             ITimeline timeline,
-            ProjectionDispatcher.Builder builder)
+            Dispatcher.Builder builder)
             : base(eventStore, log, messageQueue, timeline, builder)
         {
             Register<RootCreated>(When);

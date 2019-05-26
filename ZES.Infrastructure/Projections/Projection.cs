@@ -56,7 +56,7 @@ namespace ZES.Infrastructure.Projections
             _streamDispatcher = streamDispatcher;
             _timeline = timeline;
 
-            _statusSubject.Subscribe(s => Log?.Info($"{GetType().GetFriendlyName()} : {s.ToString()}" ));
+            _statusSubject.Where(s => s != Sleeping).Subscribe(s => Log?.Info($"{GetType().GetFriendlyName()} : {s.ToString()}" ));
 
             OnInit();
         }

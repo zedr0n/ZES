@@ -8,14 +8,6 @@ namespace ZES.Interfaces
     public interface IEvent : IEventMetadata
     {
         /// <summary>
-        /// Gets unique event id
-        /// </summary>
-        /// <value>
-        /// Unique event id
-        /// </value>
-        Guid EventId { get; }
-
-        /// <summary>
         /// Gets event type
         /// </summary>
         /// <value>

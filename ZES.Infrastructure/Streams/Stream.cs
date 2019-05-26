@@ -13,6 +13,7 @@ namespace ZES.Infrastructure.Streams
     {
         private readonly string _type;
         private readonly List<IStream> _ancestors = new List<IStream>();
+        private int _version;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="Stream"/> class.
@@ -59,7 +60,11 @@ namespace ZES.Infrastructure.Streams
         public string Key => $"{Timeline}:{_type}:{Id}";
 
         /// <inheritdoc />
-        public int Version { get; set; }
+        public int Version
+        {
+            get => _version;
+            set => _version = value;
+        }
 
         /// <inheritdoc />
         public IStream Parent { get; set; }

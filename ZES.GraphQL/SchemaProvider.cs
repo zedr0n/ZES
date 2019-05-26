@@ -11,10 +11,44 @@ using HotChocolate.Types;
 using Microsoft.Extensions.DependencyInjection;
 using ZES.Infrastructure;
 using ZES.Interfaces;
+using ZES.Interfaces.Domain;
 using ZES.Interfaces.Pipes;
 
 namespace ZES.GraphQL
 {
+    /* public static class SchemaExtensions
+    {
+        public static string ToLowerFirst(this string s)
+        {
+            if (s.Length < 1)
+                return s;
+            var lower = s[0].ToString().ToLower();
+            s = s.Remove(0, 1);
+            return new string(s.Prepend(lower[0]).ToArray());
+        }
+        
+        public static IEnumerable<(string type, string field)> IgnoredFields(this Schema s)
+        {
+            var result = new List<(string type, string field)>();
+            foreach (var type in s.Types)
+            {
+                var clrType = type.ToClrType();
+                if (!clrType.GetInterfaces().Contains(typeof(IMessage)))
+                    continue;
+                if ( clrType.GetProperty(nameof(IMessage.AncestorId)) != null )
+                   result.Add((type.Name.Value, nameof(IMessage.AncestorId).ToLowerFirst())); 
+                if ( clrType.GetProperty(nameof(IMessage.MessageId)) != null )
+                    result.Add((type.Name.Value, nameof(IMessage.MessageId).ToLowerFirst())); 
+                if ( clrType.GetProperty(nameof(IMessage.Position)) != null )
+                    result.Add((type.Name.Value, nameof(IMessage.Position).ToLowerFirst())); 
+                if ( clrType.GetProperty(nameof(IMessage.Timestamp)) != null )
+                    result.Add((type.Name.Value, nameof(IMessage.Timestamp).ToLowerFirst())); 
+            }
+
+            return result;
+        }
+    }*/
+
     /// <inheritdoc />
     public class SchemaProvider : ISchemaProvider
     {
@@ -48,17 +82,28 @@ namespace ZES.GraphQL
             {
                 c.RegisterExtendedScalarTypes();
                 c.Use(Middleware(t.Item1, t.Item2));
+                
                 if (t.Item1 != null)
                     c.RegisterQueryType(typeof(ObjectType<>).MakeGenericType(t.Item1));
 
-                if (t.Item2 != null)
-                    c.RegisterMutationType(typeof(ObjectType<>).MakeGenericType(t.Item2));
+                if (t.Item2 == null) 
+                    return;
+                
+                foreach (var p in t.Item2.GetMethods(BindingFlags.Public | BindingFlags.Instance |
+                                                     BindingFlags.DeclaredOnly))
+                {
+                    var arg = p.GetParameters().FirstOrDefault()?.ParameterType;
+                    if (arg != null && arg.GetInterfaces().Contains(typeof(ICommand)))
+                        c.RegisterType(typeof(CommandType<>).MakeGenericType(arg));
+                }
+                c.RegisterMutationType(typeof(ObjectType<>).MakeGenericType(t.Item2));
             })).ToList();
 
             void AggregateSchemas(IStitchingBuilder b)
             {
                 b.AddSchema("Base", baseSchema);
                 var i = 0;
+                
                 foreach (var s in domainSchemas)
                 {
                     b = b.AddSchema($"Domain{i}", s);
@@ -123,7 +168,7 @@ namespace ZES.GraphQL
                     var isError = false;
                     _errorLog.Errors.Subscribe(e =>
                     {
-                        if (e.ErrorType == typeof(InvalidOperationException).Name)
+                        if (e != null && e.ErrorType == typeof(InvalidOperationException).Name)
                             isError = true;
                     });
                     await await _bus.CommandAsync(command);

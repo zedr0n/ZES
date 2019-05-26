@@ -1,11 +1,10 @@
+using ZES.Infrastructure.Domain;
 using ZES.Interfaces;
 
 namespace ZES.Infrastructure.Alerts
 {
-    /// <inheritdoc />
-    public class Alert : IAlert
+    /// <inheritdoc cref="IAlert" />
+    public class Alert : Message, IAlert
     {
-        /// <inheritdoc />
-        public long? Timestamp { get; }
     }
 }

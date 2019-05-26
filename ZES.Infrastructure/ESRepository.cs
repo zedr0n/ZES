@@ -36,7 +36,7 @@ namespace ZES.Infrastructure
         }
 
         /// <inheritdoc />
-        public async Task Save<T>(T es)
+        public async Task Save<T>(T es, Guid? ancestorId = null)
             where T : class, I
         {
             if (es == null)
@@ -54,6 +54,8 @@ namespace ZES.Infrastructure
             {
                 e.Timestamp = _timeline.Now;
                 e.Stream = stream.Key;
+                if (ancestorId != null)
+                    e.AncestorId = ancestorId.Value;
             }
 
             await _eventStore.AppendToStream(stream, events);

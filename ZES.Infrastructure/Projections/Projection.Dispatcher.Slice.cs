@@ -29,7 +29,7 @@ namespace ZES.Infrastructure.Projections
 
             private readonly Projection<TState> _projection;
 
-            private long _timestamp;
+            private long _position;
 
             private Slice(
                 Projection<TState> projection,
@@ -50,15 +50,14 @@ namespace ZES.Infrastructure.Projections
 
                 _whenBlock = new ActionBlock<IEvent>(e =>
                 {
-                    // _log?.Debug($"{e.Stream}:{e.Version}", this);
-                    if ( e.Timestamp < _timestamp )
+                    if ( e.Position < _position )
                         throw new InvalidOperationException();
 
                     if (_cancellation.IsCancellationRequested) 
                         return;
                     
                     projection.When(e);
-                    _timestamp = e.Timestamp;
+                    _position = e.Position;
                 });
 
                 RegisterChild(_whenBlock);
@@ -103,7 +102,7 @@ namespace ZES.Infrastructure.Projections
                         await _whenBlock.SendAsync(e, _cancellation);
                     
                     // var keys = events.Select(e => e.Stream).Distinct().Aggregate((a, v) => a + $", {v}");
-                    _log?.Debug( $"Processed {count} events during rebuild", this);
+                    _log?.Debug( $"Processed {count} events during rebuild from slice", this);
                 }
             }
 

@@ -12,11 +12,8 @@ namespace ZES.Infrastructure.Domain
         protected Event()
         {
             EventType = GetType().Name;
-            EventId = Guid.NewGuid();
+            MessageId = Guid.NewGuid();
         }
-
-        /// <inheritdoc />
-        public Guid EventId { get; set; }
 
         /// <inheritdoc />
         public string EventType { get; set; }

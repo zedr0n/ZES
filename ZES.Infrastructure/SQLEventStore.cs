@@ -6,6 +6,7 @@ using System.Reactive.Subjects;
 using System.Threading.Tasks;
 using SqlStreamStore;
 using SqlStreamStore.Streams;
+using ZES.Infrastructure.Domain;
 using ZES.Infrastructure.Sagas;
 using ZES.Infrastructure.Serialization;
 using ZES.Infrastructure.Streams;
@@ -158,6 +159,7 @@ namespace ZES.Infrastructure
                     {
                         var payload = await m.GetJsonData();
                         var @event = _serializer.Deserialize(payload);
+                        ((Event)@event).Position = m.Position;
                         observer.OnNext((T)@event);
                     }
                     else

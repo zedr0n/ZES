@@ -179,9 +179,9 @@ namespace ZES.Infrastructure.Branching
                             if (version > s.Parent.Version)
                             {
                                 var theseEvents = await eventStore
-                                    .ReadStream<IEvent>(parentStream, s.Parent.Version + 1, version - s.Parent.Version).Select(e => e.EventId).ToList();
+                                    .ReadStream<IEvent>(parentStream, s.Parent.Version + 1, version - s.Parent.Version).Select(e => e.MessageId).ToList();
                                 var thoseEvents = await eventStore
-                                    .ReadStream<IEvent>(s, s.Parent.Version + 1, version - s.Parent.Version).Select(e => e.EventId).ToList();
+                                    .ReadStream<IEvent>(s, s.Parent.Version + 1, version - s.Parent.Version).Select(e => e.MessageId).ToList();
                                 if (theseEvents.Zip(thoseEvents, (e1, e2) => (e1, e2)).Any(x => x.Item1 != x.Item2)) 
                                         throw new InvalidOperationException($"{currentBranch?.Id} timeline has moved on in the meantime, aborting...( {version} > {s.Parent.Version} )");
                                 return;

@@ -58,7 +58,7 @@ namespace ZES.Tests
         }
 
         [Fact]
-        public async void CanExecuteMutation()
+        public void CanExecuteMutation()
         {
             var container = CreateContainer();
             var log = container.GetInstance<ILog>(); 
@@ -67,7 +67,10 @@ namespace ZES.Tests
             
             var executor = schemaProvider.Generate(typeof(Queries), typeof(Mutations));
 
-            await executor.ExecuteAsync(@"mutation { createRoot( command : { target : ""Root"" } ) }");
+            var commandResult = executor.Execute(@"mutation { createRoot( command : { target : ""Root"" } ) }");
+            
+            foreach (var e in commandResult.Errors)
+                log.Error(e.Message, this);
             
             var statsResult = executor.Execute(@"{ stats( query : {  } ) { numberOfRoots } }") as IReadOnlyQueryResult;
             dynamic statsDict = statsResult?.Data["stats"];
@@ -80,16 +83,19 @@ namespace ZES.Tests
         public async void CanQueryError()
         {
             var container = CreateContainer();
-            var errorLog = container.GetInstance<IErrorLog>();
             
-            IError error = null;
-            errorLog.Errors.Subscribe(e => error = e);
+            var log = container.GetInstance<ILog>();
             
             var schemaProvider = container.GetInstance<ISchemaProvider>();
             var executor = schemaProvider.Generate(typeof(Queries), typeof(Mutations));
 
-            await executor.ExecuteAsync(@"mutation { createRoot( command : { target : ""Root"" } ) }"); 
-            await executor.ExecuteAsync(@"mutation { createRoot( command : { target : ""Root"" } ) }");
+            var commandResult = await executor.ExecuteAsync(@"mutation { createRoot( command : { target : ""Root"" } ) }");
+            foreach (var e in commandResult.Errors)
+                log.Error(e.Message, this);
+            
+            commandResult = await executor.ExecuteAsync(@"mutation { createRoot( command : { target : ""Root"" } ) }");
+            foreach (var e in commandResult.Errors)
+                log.Error(e.Message, this);
 
             var errorResult = await executor.ExecuteAsync(@"query{ error { message } }") as IReadOnlyQueryResult;
             dynamic messageDict = errorResult?.Data["error"];

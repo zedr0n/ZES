@@ -19,7 +19,7 @@ namespace ZES.Tests
         {
             var container = CreateContainer();
             var bus = container.GetInstance<IBus>();
-            var graph = container.GetInstance<ICausationGraph>();
+            var graph = container.GetInstance<ICausalityGraph>();
 
             var command = new CreateRoot("Root");
             await await bus.CommandAsync(command);

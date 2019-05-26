@@ -11,7 +11,8 @@ using ZES.Interfaces.Serialization;
 
 namespace ZES.Infrastructure.Causality
 {
-    public class CausationGraph : ICausationGraph
+    /// <inheritdoc />
+    public class CausalityGraph : ICausalityGraph
     {
         private readonly IStreamStore _streamStore;
         private readonly ISerializer<IEvent> _serializer;
@@ -20,9 +21,9 @@ namespace ZES.Infrastructure.Causality
             = new BidirectionalGraph<CausalityVertex, SEdge<CausalityVertex>>();
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="CausationGraph"/> class.
+        /// Initializes a new instance of the <see cref="CausalityGraph"/> class.
         /// </summary>
-        public CausationGraph(IStreamStore streamStore, ISerializer<IEvent> serializer)
+        public CausalityGraph(IStreamStore streamStore, ISerializer<IEvent> serializer)
         {
             _streamStore = streamStore;
             _serializer = serializer;

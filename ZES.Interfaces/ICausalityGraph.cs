@@ -3,7 +3,10 @@ using System.Collections.Generic;
 
 namespace ZES.Interfaces
 {
-    public interface ICausationGraph
+    /// <summary>
+    /// Causality graph
+    /// </summary>
+    public interface ICausalityGraph
     {
         IEnumerable<Guid> GetCauses(Guid messageId);
         IEnumerable<Guid> GetDependents(Guid messageId);

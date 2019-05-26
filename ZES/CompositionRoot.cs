@@ -9,6 +9,7 @@ using ZES.Conventions;
 using ZES.Infrastructure;
 using ZES.Infrastructure.Attributes;
 using ZES.Infrastructure.Branching;
+using ZES.Infrastructure.Causality;
 using ZES.Infrastructure.Domain;
 using ZES.Infrastructure.Projections;
 using ZES.Infrastructure.Sagas;
@@ -52,7 +53,9 @@ namespace ZES
                 c => 
                      c.Consumer.ImplementationType.GetGenericArguments().Contains(typeof(IAggregate)) ||
                      c.Consumer.ImplementationType.GetInterfaces().Contains(typeof(IBranchManager)) || 
-                     c.Consumer.ImplementationType == typeof(CommandLog));
+                     c.Consumer.ImplementationType == typeof(CommandLog) ||
+                     c.Consumer.ImplementationType == typeof(CausationGraph))
+                ;
 
             /* container.RegisterConditional(
                 typeof(IStreamStore),
@@ -86,6 +89,8 @@ namespace ZES
 
             container.Register(typeof(IStreamLocator<>), typeof(StreamLocator<>), Lifestyle.Singleton);    
             container.Register(typeof(IEsRepository<>), typeof(EsRepository<>), Lifestyle.Singleton);
+            
+            container.Register<ICausationGraph, CausationGraph>(Lifestyle.Singleton);
             
             container.RegisterDecorator(
                 typeof(ICommandHandler<>),

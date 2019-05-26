@@ -15,6 +15,7 @@ namespace ZES.Interfaces
         /// </summary>
         /// <typeparam name="T">Event sourced type</typeparam>
         /// <param name="es">The event sourced instance</param>
+        /// <param name="ancestorId">Ancestor unique identifier</param>
         /// <returns>Task representing the save operation</returns>
         Task Save<T>(T es, Guid? ancestorId = null)
             where T : class, I;

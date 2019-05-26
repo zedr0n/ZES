@@ -147,7 +147,7 @@ namespace ZES.Infrastructure.Sagas
                     {
                         var saga = await _repository.GetOrAdd<TSaga>(_id);  
                         saga?.When(e);
-                        await _repository.Save(saga);
+                        await _repository.Save(saga, e.MessageId);
                     }
                     catch (Exception exception)
                     {

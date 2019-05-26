@@ -21,7 +21,7 @@ namespace ZES.Tests.Domain.Commands
                 throw new ArgumentNullException();
             
             root.Update();
-            await _repository.Save(root);
+            await _repository.Save(root, command.MessageId);
         }
     }
 }

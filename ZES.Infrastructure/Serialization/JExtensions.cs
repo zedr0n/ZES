@@ -20,6 +20,11 @@ namespace ZES.Infrastructure.Serialization
             return new JProperty(nameof(IEvent.Version), version);
         }
 
+        public static JProperty JAncestorId(this IMessage m)
+        {
+            return new JProperty(nameof(IMessage.AncestorId), m.AncestorId);
+        }
+
         public static string JParent(string key, int version )
         {
             return new JObject(new JProperty(nameof(IStream.Key), key), new JProperty(nameof(IStream.Version), version))

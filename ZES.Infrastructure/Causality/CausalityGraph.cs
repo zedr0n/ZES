@@ -36,14 +36,33 @@ namespace ZES.Infrastructure.Causality
             CancellationToken cancellationToken)
         {
             var metadata = _serializer.DecodeMetadata(streamMessage.JsonMetadata);
-            var vertex = new CausalityVertex(streamMessage.MessageId, streamMessage.StreamId);
+            var vertex = new CausalityVertex(streamMessage.StreamId, metadata.Version, streamMessage.MessageId, metadata.AncestorId);
             _graph.AddVertex(vertex);
 
             if (metadata.AncestorId != Guid.Empty)
             {
                 var ancestor = _graph.Vertices.SingleOrDefault(s => s.MessageId == metadata.AncestorId);
-                var edge = new SEdge<CausalityVertex>(ancestor, vertex);
-                _graph.AddEdge(edge);
+                if (ancestor != null &&
+                    !_graph.Edges.Any(e => e.Source.MessageId == metadata.AncestorId && e.Target.MessageId == streamMessage.MessageId))
+                {
+                    var edge = new SEdge<CausalityVertex>(ancestor, vertex);
+                    _graph.AddEdge(edge); 
+                }
+
+                var previousInStream = _graph.Vertices.SingleOrDefault(s =>
+                    s.Stream == streamMessage.StreamId && s.Version == metadata.Version - 1);
+                if (previousInStream != null)
+                {
+                    var edge = new SEdge<CausalityVertex>(previousInStream, vertex);
+                    _graph.AddEdge(edge);
+                }
+            }
+
+            var dependents = _graph.Vertices.Where(s => s.AncestorId == streamMessage.MessageId);
+            foreach (var d in dependents)
+            {
+                if (!_graph.Edges.Any(e => e.Source.MessageId == streamMessage.MessageId && e.Target.MessageId == d.MessageId))
+                    _graph.AddEdge(new SEdge<CausalityVertex>(vertex, d));
             }
         }
 
@@ -95,14 +114,18 @@ namespace ZES.Infrastructure.Causality
 
         private class CausalityVertex
         {
-            public CausalityVertex(Guid messageId, string stream)
+            public CausalityVertex(string stream, int version, Guid messageId, Guid ancestorId)
             {
                 MessageId = messageId;
                 Stream = stream;
+                AncestorId = ancestorId;
+                Version = version;
             }
             
             public Guid MessageId { get; }
+            public Guid AncestorId { get; }
             public string Stream { get; }
+            public int Version { get; }
         }
     }
 }

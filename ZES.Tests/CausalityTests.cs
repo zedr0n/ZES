@@ -23,8 +23,11 @@ namespace ZES.Tests
 
             var command = new CreateRoot("Root");
             await await bus.CommandAsync(command);
+
+            await await bus.CommandAsync(new UpdateRoot("Root"));
+            
             var dependents = graph.GetDependents(command.MessageId);
-            Assert.Single(dependents);
+            Assert.Equal(2, dependents.Count());
         }
     }
 }

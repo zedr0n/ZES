@@ -333,6 +333,21 @@ namespace ZES.Tests
         }
 
         [Fact]
+        public async void CanPushSaga()
+        {
+            var container = CreateContainer(new List<Action<Container>> { Config.RegisterSagas, c => c.UseLocalStore() });
+            var bus = container.GetInstance<IBus>();
+            var remote = container.GetInstance<IRemote>(); 
+            
+            await await bus.CommandAsync(new CreateRoot("Root"));
+            var result = await remote.Push(BranchManager.Master);
+            Assert.Equal(Status.Success, result.ResultStatus);
+
+            var pullResult = await remote.Pull(BranchManager.Master);
+            Assert.Equal(Status.Success, pullResult.ResultStatus);
+        }
+
+        [Fact]
         public async void CanPushGrandBranch()
         {
             var container = CreateContainer(new List<Action<Container>> { c => c.UseLocalStore() });

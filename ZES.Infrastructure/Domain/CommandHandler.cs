@@ -45,8 +45,6 @@ namespace ZES.Infrastructure.Domain
             if (command is Command)
                 (command as Command).Timestamp = _timeline.Now;
             
-            await _commandLog.AppendCommand(command);
-            
             try
             {
                 await _handler.Handle(command);
@@ -55,6 +53,8 @@ namespace ZES.Infrastructure.Domain
             {
                 _errorLog.Add(e);
             }
+            
+            await _commandLog.AppendCommand(command);
         }
     }
 }

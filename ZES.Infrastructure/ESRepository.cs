@@ -50,7 +50,7 @@ namespace ZES.Infrastructure
             if (stream.Version >= 0 && es.Version - events.Count < stream.Version)
                 throw new InvalidOperationException($"Stream ( {stream.Key}@{stream.Version} ) is ahead of aggregate root ( {es.Version - events.Count} )");
 
-            foreach (var e in events.OfType<Event>())
+            foreach (var e in events.Cast<Event>())
             {
                 e.Timestamp = _timeline.Now;
                 e.Stream = stream.Key;
@@ -62,8 +62,12 @@ namespace ZES.Infrastructure
             if (es is ISaga saga)
             {
                 var commands = saga.GetUncommittedCommands();
-                foreach (var command in commands)
+                foreach (var command in commands.Cast<Command>())
+                {
+                    if (ancestorId != null)
+                        command.AncestorId = ancestorId.Value;
                     await _bus.CommandAsync(command);
+                }
             }
         }
 

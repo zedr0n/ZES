@@ -52,6 +52,7 @@ namespace ZES.Infrastructure.Domain
             lock (_changes)
             {
                 ApplyEvent(e);
+                
                 Version++;
                 ((Event)e).Version = Version;
                 _changes.Add(e);

@@ -121,17 +121,16 @@ namespace ZES.Infrastructure
             var version = result.CurrentVersion;
             
             if (stream.Parent != null)
-            {
-                await _streamStore.SetStreamMetadata(
-                    stream.Key,
-                    metadataJson: JExtensions.JParent(stream.Parent.Key, stream.Parent.Version));
-                
-                version += stream.Parent.Version;
-            }
-
+                version += stream.Parent.Version + 1;
+            
             if (version >= stream.Version || result.CurrentVersion == -1)
             {
                 stream.Version = version;
+                
+                await _streamStore.SetStreamMetadata(
+                    stream.Key,
+                    metadataJson: JExtensions.JStreamMetadata(stream));
+                
                 _streams.OnNext(stream); 
             }
 

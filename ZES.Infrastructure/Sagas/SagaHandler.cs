@@ -8,6 +8,7 @@ using System.Threading.Tasks;
 using System.Threading.Tasks.Dataflow;
 using Gridsum.DataflowEx;
 using ZES.Infrastructure.Dataflow;
+using ZES.Infrastructure.Domain;
 using ZES.Infrastructure.Utils;
 using ZES.Interfaces;
 using ZES.Interfaces.Pipes;
@@ -145,8 +146,12 @@ namespace ZES.Infrastructure.Sagas
                 
                     try
                     {
-                        var saga = await _repository.GetOrAdd<TSaga>(_id);  
-                        saga?.When(e);
+                        var saga = await _repository.GetOrAdd<TSaga>(_id);
+                        if (saga == null)
+                            return;
+                        var saveEvent = ((Event)e).Copy(); 
+                        
+                        saga.When(saveEvent);
                         await _repository.Save(saga, e.MessageId);
                     }
                     catch (Exception exception)

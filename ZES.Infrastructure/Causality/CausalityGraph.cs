@@ -27,7 +27,7 @@ namespace ZES.Infrastructure.Causality
         {
             _streamStore = streamStore;
             _serializer = serializer;
-            _streamStore.SubscribeToAll(Position.Start - 1, MessageReceived);
+            var sub = _streamStore.SubscribeToAll(Position.Start - 1, MessageReceived);
         }
 
         private async Task MessageReceived(
@@ -35,6 +35,9 @@ namespace ZES.Infrastructure.Causality
             StreamMessage streamMessage,
             CancellationToken cancellationToken)
         {
+            if (streamMessage.StreamId.Contains("metadata") || streamMessage.StreamId.Contains("$"))
+                return;
+            
             var metadata = _serializer.DecodeMetadata(streamMessage.JsonMetadata);
             var vertex = new CausalityVertex(streamMessage.StreamId, metadata.Version, streamMessage.MessageId, metadata.AncestorId);
             _graph.AddVertex(vertex);
@@ -48,7 +51,7 @@ namespace ZES.Infrastructure.Causality
                     var edge = new SEdge<CausalityVertex>(ancestor, vertex);
                     _graph.AddEdge(edge); 
                 }
-
+                
                 var previousInStream = _graph.Vertices.SingleOrDefault(s =>
                     s.Stream == streamMessage.StreamId && s.Version == metadata.Version - 1);
                 if (previousInStream != null)

@@ -15,6 +15,13 @@ namespace ZES.Infrastructure.Domain
             MessageId = Guid.NewGuid();
         }
 
+        public Event Copy()
+        {
+            var copy = MemberwiseClone() as Event;
+            copy.MessageId = Guid.NewGuid();
+            return copy;
+        }
+
         /// <inheritdoc />
         public string EventType { get; set; }
 

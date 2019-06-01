@@ -54,8 +54,9 @@ namespace ZES.Infrastructure
             {
                 e.Timestamp = _timeline.Now;
                 e.Stream = stream.Key;
-                if (ancestorId != null)
-                    e.AncestorId = ancestorId.Value;
+                if (ancestorId == null) 
+                    continue;
+                e.AncestorId = ancestorId.Value;
             }
 
             await _eventStore.AppendToStream(stream, events);

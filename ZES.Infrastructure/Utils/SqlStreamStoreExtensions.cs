@@ -25,7 +25,7 @@ namespace ZES.Infrastructure.Utils
             this IStreamStore streamStore, string key)
         {
             var metadata = await streamStore.GetStreamMetadata(key);
-            var stream = metadata.MetadataJson.ParseMetadata();
+            var stream = metadata.MetadataJson.ParseMetadata(key);
             if (stream == null)
                 return new Stream(key);
 
@@ -36,7 +36,7 @@ namespace ZES.Infrastructure.Utils
                 if (parentMetadata == null)
                     return null;
 
-                var grandParent = parentMetadata.MetadataJson.ParseMetadata()?.Parent;
+                var grandParent = parentMetadata.MetadataJson.ParseMetadata(parent.Key)?.Parent;
                 
                 parent.Parent = grandParent;
                 parent = grandParent;

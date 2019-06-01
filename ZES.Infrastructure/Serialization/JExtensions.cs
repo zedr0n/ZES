@@ -34,7 +34,6 @@ namespace ZES.Infrastructure.Serialization
         public static string JStreamMetadata(IStream stream)
         {
             var meta = new JObject(
-                new JProperty(nameof(IStream.Key), stream.Key),
                 new JProperty(nameof(IStream.Version), stream.Version));
 
             if (stream.Parent != null)
@@ -48,16 +47,13 @@ namespace ZES.Infrastructure.Serialization
             return meta.ToString();
         }
 
-        public static IStream ParseMetadata(this string json)
+        public static IStream ParseMetadata(this string json, string key)
         {
             if (json == null)
                 return null;
 
             var jarray = JObject.Parse(json);
             
-            if (!jarray.TryGetValue(nameof(IStream.Key), out var key))
-                return null;
-
             if (!jarray.TryGetValue(nameof(IStream.Version), out var version))
                 return null;
 

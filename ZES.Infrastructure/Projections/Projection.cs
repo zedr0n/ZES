@@ -129,7 +129,7 @@ namespace ZES.Infrastructure.Projections
 
         private async Task Rebuild()
         {
-            Log?.Trace($"Rebuild : {_build}", this);
+            Log?.Debug($"Rebuild : {_build}", this);
             var status = await _statusSubject.AsObservable().FirstAsync();
 
             if (status == Cancelling)
@@ -229,7 +229,7 @@ namespace ZES.Infrastructure.Projections
             finally
             {
                 Interlocked.Decrement(ref _build); 
-                Log?.Trace($"Rebuild finished : {_build}", this); 
+                Log?.Debug($"Rebuild finished : {_build}", this); 
             }
         }
 

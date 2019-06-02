@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Threading;
 using SimpleInjector;
@@ -7,6 +8,7 @@ using Xunit;
 using Xunit.Abstractions;
 using ZES.Infrastructure;
 using ZES.Infrastructure.Alerts;
+using ZES.Infrastructure.Branching;
 using ZES.Infrastructure.Domain;
 using ZES.Interfaces;
 using ZES.Interfaces.Domain;
@@ -199,6 +201,9 @@ namespace ZES.Tests
             await repository.FindUntil<Root>("Root1Copy");
             var stats = await bus.QueryUntil(new StatsQuery(), s => s != null && s.NumberOfRoots == 2 * numRoots);
             Assert.Equal(2 * numRoots, stats?.NumberOfRoots);
+
+            /*var remote = container.GetInstance<IRemote>();
+            await remote.Push(BranchManager.Master);*/
         }
         
         [Theory]

@@ -31,14 +31,14 @@ namespace ZES
         /// <inheritdoc />
         public void Alert(IAlert alert)
         {
-            _log.Trace(alert.GetType().Name, this);
+            _log.Debug(alert.GetType().Name, this);
             _alerts.OnNext(alert);
         }
 
         /// <inheritdoc />
         public void Event(IEvent e)
         {
-            _log.Trace(e.EventType, this);
+            _log.Debug(e.EventType, this);
             _messages.OnNext(e);
         }
     }

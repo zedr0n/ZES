@@ -23,20 +23,40 @@ namespace ZES.Infrastructure.Causality
         /// <summary>
         /// Initializes a new instance of the <see cref="CausalityGraph"/> class.
         /// </summary>
+        /// <param name="streamStore">Stream store</param>
+        /// <param name="serializer">Metadata serializer</param>
         public CausalityGraph(IStreamStore streamStore, ISerializer<IEvent> serializer)
         {
             _streamStore = streamStore;
             _serializer = serializer;
             var sub = _streamStore.SubscribeToAll(Position.Start - 1, MessageReceived);
         }
+        
+        /// <inheritdoc />
+        public IEnumerable<Guid> GetCauses(Guid messageId)
+        { 
+            var causes = new List<Guid>();
+            
+            ProcessCauses(messageId, causes);
+            return causes;
+        }
 
-        private async Task MessageReceived(
+        /// <inheritdoc />
+        public IEnumerable<Guid> GetDependents(Guid messageId)
+        {
+            var dependents = new List<Guid>();
+            
+            ProcessDependents(messageId, dependents);
+            return dependents;
+        }
+
+        private Task MessageReceived(
             IAllStreamSubscription subscription,
             StreamMessage streamMessage,
             CancellationToken cancellationToken)
         {
             if (streamMessage.StreamId.Contains("metadata") || streamMessage.StreamId.Contains("$"))
-                return;
+                return Task.CompletedTask;
             
             var metadata = _serializer.DecodeMetadata(streamMessage.JsonMetadata);
             var vertex = new CausalityVertex(streamMessage.StreamId, metadata.Version, streamMessage.MessageId, metadata.AncestorId);
@@ -67,22 +87,8 @@ namespace ZES.Infrastructure.Causality
                 if (!_graph.Edges.Any(e => e.Source.MessageId == streamMessage.MessageId && e.Target.MessageId == d.MessageId))
                     _graph.AddEdge(new SEdge<CausalityVertex>(vertex, d));
             }
-        }
 
-        public IEnumerable<Guid> GetCauses(Guid messageId)
-        { 
-            var causes = new List<Guid>();
-            
-            ProcessCauses(messageId, causes);
-            return causes;
-        }
-
-        public IEnumerable<Guid> GetDependents(Guid messageId)
-        {
-            var dependents = new List<Guid>();
-            
-            ProcessDependents(messageId, dependents);
-            return dependents;
+            return Task.CompletedTask;
         }
 
         private void ProcessDependents(Guid messageId, ICollection<Guid> dependents)

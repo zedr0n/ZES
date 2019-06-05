@@ -7,8 +7,6 @@ namespace ZES.Tests.Domain
 {
     public sealed class Record : EventSourced, IAggregate
     {
-        public Dictionary<long, double> Values { get; } = new Dictionary<long, double>();
-        
         public Record()
         {
             Register<RecordCreated>(ApplyEvent);
@@ -20,6 +18,8 @@ namespace ZES.Tests.Domain
         {
             When(new RecordCreated(rootId));
         }
+        
+        public Dictionary<long, double> Values { get; } = new Dictionary<long, double>();
 
         public void Root(double recordValue)
         {

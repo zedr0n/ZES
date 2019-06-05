@@ -6,6 +6,8 @@ using System.Threading.Tasks;
 using QuickGraph;
 using SqlStreamStore;
 using SqlStreamStore.Streams;
+using ZES.Infrastructure.Branching;
+using ZES.Infrastructure.Streams;
 using ZES.Interfaces;
 using ZES.Interfaces.Serialization;
 
@@ -14,9 +16,8 @@ namespace ZES.Infrastructure.Causality
     /// <inheritdoc />
     public class CausalityGraph : ICausalityGraph
     {
-        private readonly IStreamStore _streamStore;
         private readonly ISerializer<IEvent> _serializer;
-        
+
         private readonly BidirectionalGraph<CausalityVertex, SEdge<CausalityVertex>> _graph 
             = new BidirectionalGraph<CausalityVertex, SEdge<CausalityVertex>>();
 
@@ -27,9 +28,17 @@ namespace ZES.Infrastructure.Causality
         /// <param name="serializer">Metadata serializer</param>
         public CausalityGraph(IStreamStore streamStore, ISerializer<IEvent> serializer)
         {
-            _streamStore = streamStore;
             _serializer = serializer;
-            var sub = _streamStore.SubscribeToAll(Position.Start - 1, MessageReceived);
+            streamStore.SubscribeToAll(Position.Start - 1, MessageReceived);
+        }
+
+        /// <inheritdoc />
+        public IEnumerable<Guid> GetCauses(IAggregate aggregate, int version, string timeline)
+        {
+            var stream = new Stream(aggregate.Id, aggregate.GetType().Name, version, timeline);
+            var e = _graph.Vertices.SingleOrDefault(v => v.Stream == stream.Key && v.Version == version);
+
+            return e == null ? null : GetCauses(e.MessageId);
         }
         
         /// <inheritdoc />

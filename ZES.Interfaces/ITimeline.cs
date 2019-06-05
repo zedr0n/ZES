@@ -1,3 +1,5 @@
+using System;
+
 namespace ZES.Interfaces
 {
     /// <summary>
@@ -34,5 +36,11 @@ namespace ZES.Interfaces
         /// </summary>
         /// <param name="rhs">target timeline</param>
         void Set(ITimeline rhs);
+
+        /// <summary>
+        /// Warp to time
+        /// </summary>
+        /// <param name="time">Time to warp to</param>
+        void Warp(DateTime time);
     }
 }

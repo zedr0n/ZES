@@ -98,7 +98,7 @@ namespace ZES.Infrastructure.Projections
                 {
                     var count = events.Count;
                     
-                    foreach (var e in events.OrderBy(x => x.Timestamp))
+                    foreach (var e in events.OrderBy(x => x.Position))
                         await _whenBlock.SendAsync(e, _cancellation);
                     
                     // var keys = events.Select(e => e.Stream).Distinct().Aggregate((a, v) => a + $", {v}");

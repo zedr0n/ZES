@@ -1,18 +1,13 @@
 using System;
 using System.Collections.Generic;
-using System.Runtime.InteropServices;
-using System.Security.Cryptography;
+using System.Linq;
 using System.Threading;
 using SimpleInjector;
 using Xunit;
 using Xunit.Abstractions;
-using ZES.Infrastructure;
 using ZES.Infrastructure.Alerts;
-using ZES.Infrastructure.Branching;
 using ZES.Infrastructure.Domain;
 using ZES.Interfaces;
-using ZES.Interfaces.Domain;
-using ZES.Interfaces.EventStore;
 using ZES.Interfaces.Pipes;
 using ZES.Tests.Domain;
 using ZES.Tests.Domain.Commands;
@@ -40,6 +35,23 @@ namespace ZES.Tests
 
             var root = await repository.Find<Root>("Root");
             Assert.Equal("Root", root.Id);
+        }
+
+        [Fact]
+        public async void CanCreateRecord()
+        {
+            var container = CreateContainer();
+            var bus = container.GetInstance<IBus>();
+            var repository = container.GetInstance<IEsRepository<IAggregate>>();
+
+            await await bus.CommandAsync(new CreateRecord("Root"));
+
+            var record = await repository.Find<Domain.Record>("Root");
+            Assert.Equal("Root", record.Id);
+
+            await await bus.CommandAsync(new RecordRoot("Root", 1));
+            record = await repository.Find<Domain.Record>("Root");
+            Assert.Equal(1, record.Values.FirstOrDefault().Value);
         }
 
         [Fact]

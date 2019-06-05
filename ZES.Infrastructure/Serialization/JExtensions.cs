@@ -25,12 +25,6 @@ namespace ZES.Infrastructure.Serialization
             return new JProperty(nameof(IMessage.AncestorId), m.AncestorId);
         }
 
-        public static string JParent(string key, int version )
-        {
-            return new JObject(new JProperty(nameof(IStream.Key), key), new JProperty(nameof(IStream.Version), version))
-                .ToString();
-        }
-
         public static string JStreamMetadata(IStream stream)
         {
             var meta = new JObject(
@@ -57,7 +51,7 @@ namespace ZES.Infrastructure.Serialization
             if (!jarray.TryGetValue(nameof(IStream.Version), out var version))
                 return null;
 
-            var stream = new Stream((string)key, (int)version);
+            var stream = new Stream(key, (int)version);
 
             if (!jarray.TryGetValue(nameof(IStream.Parent), out var jParent))
                 return stream;
@@ -67,22 +61,6 @@ namespace ZES.Infrastructure.Serialization
                 
             stream.Parent = new Stream((string)parentKey, (int)parentVersion);
 
-            return stream;
-        }
-
-        public static IStream ParseParent(this string json)
-        {
-            if (json == null)
-                return null;
-            var jarray = JObject.Parse(json);
-
-            if (!jarray.TryGetValue(nameof(IStream.Key), out var key))
-                return null;
-
-            if (!jarray.TryGetValue(nameof(IStream.Version), out var version))
-                return null;
-
-            var stream = new Stream((string)key, (int)version);
             return stream;
         }
     }

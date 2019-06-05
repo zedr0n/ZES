@@ -1,9 +1,11 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using SimpleInjector;
 using Xunit;
 using Xunit.Abstractions;
 using ZES.Infrastructure.Branching;
+using ZES.Infrastructure.Domain;
 using ZES.Interfaces;
 using ZES.Interfaces.Pipes;
 using ZES.Tests.Domain;
@@ -57,6 +59,36 @@ namespace ZES.Tests
             await time.Merge("test");
             stats = await bus.QueryUntil(new StatsQuery(), s => s?.NumberOfRoots == 2);
             Assert.Equal(2, stats.NumberOfRoots);
+        }
+
+        [Fact]
+        public async void CanMergeHistory()
+        {
+            var container = CreateContainer();
+            var bus = container.GetInstance<IBus>();
+            var manager = container.GetInstance<IBranchManager>();
+
+            await await bus.CommandAsync(new CreateRecord("Root"));
+
+            await await bus.CommandAsync(new RecordRoot("Root", 1));
+
+            var lastRecord = await bus.QueryUntil(new LastRecordQuery("Root"));
+            Assert.Equal(1, lastRecord.Value);
+
+            var now = DateTime.UtcNow.Ticks;
+            var timeline = await manager.Branch("Branch", now);
+
+            var then = new DateTime(1970, 1, 1); 
+            timeline.Warp(then);
+            
+            await await bus.CommandAsync(new RecordRoot("Root", -1));
+
+            lastRecord = await bus.QueryUntil(new LastRecordQuery("Root"));
+            Assert.Equal(1, lastRecord.Value); 
+            
+            lastRecord = await bus.QueryUntil(new HistoricalQuery<LastRecordQuery, LastRecord>( new LastRecordQuery("Root"), then.Ticks));
+            
+            Assert.Equal(-1, lastRecord.Value);
         }
         
         [Fact]

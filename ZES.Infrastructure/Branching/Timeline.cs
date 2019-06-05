@@ -53,5 +53,11 @@ namespace ZES.Infrastructure.Branching
             Id = t.Id;
             _now = t._now;
         }
+
+        /// <inheritdoc />
+        public void Warp(DateTime time)
+        {
+            _now = time.Ticks;
+        }
     }
 }

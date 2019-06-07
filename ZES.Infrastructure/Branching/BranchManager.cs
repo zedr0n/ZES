@@ -53,6 +53,8 @@ namespace ZES.Infrastructure.Branching
             _messageQueue = messageQueue;
             _eventStore = eventStore;
             _streamLocator = streamLocator;
+
+            _branches.TryAdd(Master, Timeline.New(Master));
         }
 
         /// <inheritdoc />
@@ -61,7 +63,7 @@ namespace ZES.Infrastructure.Branching
             if (_activeTimeline.Id == branchId)
                 return _activeTimeline;
 
-            var newBranch = !_branches.ContainsKey(branchId) && branchId != Master;
+            var newBranch = !_branches.ContainsKey(branchId); // && branchId != Master;
             
             var timeline = _branches.GetOrAdd(branchId, b => Timeline.New(branchId, time));
             if (time != null && timeline.Now != time.Value)
@@ -127,11 +129,7 @@ namespace ZES.Infrastructure.Branching
         /// <inheritdoc />
         public ITimeline Reset()
         {
-            _activeTimeline.Id = Master;
-
-            _messageQueue.Alert(new Alerts.OnTimelineChange());
-            _messageQueue.Alert(new Alerts.InvalidateProjections());
-
+            Branch(Master).Wait();
             return _activeTimeline;
         }
 

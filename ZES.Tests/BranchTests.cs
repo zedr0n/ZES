@@ -83,11 +83,18 @@ namespace ZES.Tests
             
             await await bus.CommandAsync(new RecordRoot("Root", -1));
 
+            lastRecord = await bus.QueryUntil(new LastRecordQuery("Root"), r => r.TimeStamp > 0);
+            Assert.Equal(-1, lastRecord.Value);
+
+            await manager.Branch(BranchManager.Master);
+
             lastRecord = await bus.QueryUntil(new LastRecordQuery("Root"));
-            Assert.Equal(1, lastRecord.Value); 
-            
+            Assert.Equal(1, lastRecord.Value);
+
+            await manager.Merge("Branch");
+
             lastRecord = await bus.QueryUntil(new HistoricalQuery<LastRecordQuery, LastRecord>( new LastRecordQuery("Root"), then.Ticks));
-            
+
             Assert.Equal(-1, lastRecord.Value);
         }
         

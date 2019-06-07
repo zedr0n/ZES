@@ -60,8 +60,8 @@ namespace ZES.Infrastructure.Branching
         {
             if (_activeTimeline.Id == branchId)
                 return _activeTimeline;
-            
-            var newBranch = !_branches.ContainsKey(branchId);
+
+            var newBranch = !_branches.ContainsKey(branchId) && branchId != Master;
             
             var timeline = _branches.GetOrAdd(branchId, b => Timeline.New(branchId, time));
             if (time != null && timeline.Now != time.Value)
@@ -97,11 +97,11 @@ namespace ZES.Infrastructure.Branching
                 return;
             }
 
-            if (!branch.Live)
+            /*if (!branch.Live)
             {
                 _log.Warn($"Trying to merge non-live branch {branchId}", this);
                 return;
-            }
+            }*/
             
             var mergeFlow = new MergeFlow(_activeTimeline, _eventStore, _streamLocator);
 

@@ -62,7 +62,7 @@ namespace ZES.Infrastructure
                 {
                     foreach (var s in page.StreamIds.Where(x => !x.Contains("Command") && !x.StartsWith("$")))
                     {
-                        var stream = await _streamStore.GetStream(s);
+                        var stream = await _streamStore.GetStream(s).Timeout();
                         
                         if (typeof(I) == typeof(ISaga) && !stream.IsSaga) 
                             continue;

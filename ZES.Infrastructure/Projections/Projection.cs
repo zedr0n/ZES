@@ -241,6 +241,10 @@ namespace ZES.Infrastructure.Projections
             // Log.Trace($"Stream {e.Stream}@{e.Version}", this);
             if (!Handlers.TryGetValue(e.GetType(), out var handler))
                 return;
+
+            // do not project the future events
+            if (e.Timestamp > _timeline.Now)
+                return;
             
             State = handler(e, State);
         }

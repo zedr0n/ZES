@@ -18,8 +18,14 @@ namespace ZES.Infrastructure.Utils
         /// <returns>Completed task or timeout </returns>
         public static async Task<T> Timeout<T>(this Task<T> task)
         {
-            var anyTask = await Task.WhenAny(task, Observable.Timer(Configuration.Timeout).Select(l => default(T)).ToTask());
-            return await anyTask;
+            var obs = Observable.Timer(Configuration.Timeout).Select(l => default(T)).Publish().RefCount();
+            var timeoutTask = obs.ToTask();
+            var result = await await Task.WhenAny(task, timeoutTask); 
+            
+            if (timeoutTask.IsCompleted)
+                throw new TimeoutException();
+
+            return result;
         }
         
         /// <summary>

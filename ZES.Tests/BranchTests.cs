@@ -87,11 +87,10 @@ namespace ZES.Tests
             Assert.Equal(-1, lastRecord.Value);
 
             await manager.Branch(BranchManager.Master);
-
+            await manager.Merge("Branch");
+            
             lastRecord = await bus.QueryUntil(new LastRecordQuery("Root"));
             Assert.Equal(1, lastRecord.Value);
-
-            await manager.Merge("Branch");
 
             lastRecord = await bus.QueryUntil(new HistoricalQuery<LastRecordQuery, LastRecord>( new LastRecordQuery("Root"), then.Ticks));
 

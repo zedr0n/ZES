@@ -94,11 +94,11 @@ namespace ZES.Tests
             var schemaProvider = container.GetInstance<ISchemaProvider>();
             var executor = schemaProvider.Generate(typeof(Queries), typeof(Mutations));
 
-            var commandResult = await executor.ExecuteAsync(@"mutation { createRoot( command : { target : ""Root"" } ) }");
+            var commandResult = await executor.ExecuteAsync(@"mutation { createRootEx( command : { target : ""Root"" } ) }");
             foreach (var e in commandResult.Errors)
                 log.Error(e.Message, this);
             
-            commandResult = await executor.ExecuteAsync(@"mutation { createRoot( command : { target : ""Root"" } ) }");
+            commandResult = await executor.ExecuteAsync(@"mutation { createRootEx( command : { target : ""Root"" } ) }");
             foreach (var e in commandResult.Errors)
                 log.Error(e.Message, this);
 

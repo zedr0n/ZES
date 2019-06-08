@@ -45,7 +45,8 @@ namespace ZES.Tests.Domain
         [RootMutation]
         public abstract class Mutations
         {
-             public abstract bool CreateRoot(CreateRoot command);
+             public abstract bool CreateRoot(string name);
+             public abstract bool CreateRootEx(CreateRoot command);
         }
     }
 }

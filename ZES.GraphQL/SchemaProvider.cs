@@ -9,6 +9,7 @@ using HotChocolate.Resolvers;
 using HotChocolate.Stitching;
 using HotChocolate.Types;
 using Microsoft.Extensions.DependencyInjection;
+using SimpleInjector;
 using ZES.Infrastructure;
 using ZES.Interfaces;
 using ZES.Interfaces.Domain;
@@ -55,15 +56,25 @@ namespace ZES.GraphQL
         private readonly IBus _bus;
         private readonly IErrorLog _errorLog;
 
+        private readonly List<Type> _commands = new List<Type>();
+
         /// <summary>
         /// Initializes a new instance of the <see cref="SchemaProvider"/> class.
         /// </summary>
         /// <param name="bus">Message bus</param>
         /// <param name="errorLog">Application error log</param>
-        public SchemaProvider(IBus bus, IErrorLog errorLog)
+        /// <param name="container">SimpleInjector container</param>
+        public SchemaProvider(IBus bus, IErrorLog errorLog, Container container)
         {
             _bus = bus;
             _errorLog = errorLog;
+
+            var handlers = container.GetCurrentRegistrations()
+                .Select(p => p.Registration.ImplementationType)
+                .Where(t => t.IsClosedTypeOf(typeof(ICommandHandler<>)));
+            var commands =
+                handlers.Select(t => t.GetInterfaces().Select(i => i.GetGenericArguments().FirstOrDefault()).FirstOrDefault());
+            _commands.AddRange(commands);
         }
 
         /// <inheritdoc />
@@ -163,15 +174,32 @@ namespace ZES.GraphQL
 
                 if (field != null)
                 {
-                    var commandType = field.GetParameters().FirstOrDefault();
-                    dynamic command = context.Argument<object>(commandType.Name);
                     var isError = false;
                     _errorLog.Errors.Subscribe(e =>
                     {
                         if (e != null && e.ErrorType == typeof(InvalidOperationException).Name)
                             isError = true;
                     });
-                    await await _bus.CommandAsync(command);
+
+                    var input = field.GetParameters().FirstOrDefault();
+                    dynamic command = null;
+                    if (_commands.Any(c => c.Name == input?.ParameterType.Name))
+                    {
+                        command = context.Argument<object>(input.Name);
+                    }
+                    else
+                    {
+                        var parameters = field.GetParameters().Select(p => context.Argument<object>(p.Name)).ToArray();
+                        var commandType = _commands.SingleOrDefault(c => c.Name == field.Name);
+                        if (commandType != null)
+                            command = Activator.CreateInstance(commandType, parameters);
+                    }
+
+                    if (command != null)
+                        await await _bus.CommandAsync(command);
+                    else
+                        isError = true;
+
                     context.Result = !isError;
                     return;
                 }

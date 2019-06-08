@@ -67,7 +67,12 @@ namespace ZES.Tests
             
             var executor = schemaProvider.Generate(typeof(Queries), typeof(Mutations));
 
-            var commandResult = executor.Execute(@"mutation { createRoot( command : { target : ""Root"" } ) }");
+            var commandResult = executor.Execute(@"mutation { createRootEx( command : { target : ""Root"" } ) }");
+            
+            foreach (var e in commandResult.Errors)
+                log.Error(e.Message, this);
+            
+            commandResult = executor.Execute(@"mutation { createRoot( name : ""Root2"" ) }");
             
             foreach (var e in commandResult.Errors)
                 log.Error(e.Message, this);
@@ -76,7 +81,7 @@ namespace ZES.Tests
             dynamic statsDict = statsResult?.Data["stats"];
             log.Info(statsDict);
             Assert.NotNull(statsDict);
-            Assert.Equal(1, statsDict["numberOfRoots"]); 
+            Assert.Equal(2, statsDict["numberOfRoots"]); 
         }
 
         [Fact]

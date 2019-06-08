@@ -57,6 +57,9 @@ namespace ZES.Infrastructure.Branching
         /// <inheritdoc />
         public void Warp(DateTime time)
         {
+            if (Id == BranchManager.Master)
+                return;
+            
             _now = time.Ticks;
         }
     }

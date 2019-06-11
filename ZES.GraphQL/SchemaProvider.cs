@@ -100,7 +100,13 @@ namespace ZES.GraphQL
         /// <inheritdoc />
         public string GetMutation(ICommand command)
         {
-            return TemplateGenerator.GenerateSingleCommand(command);
+            return TemplateGenerator.GenerateMutation(command);
+        }
+
+        /// <inheritdoc />
+        public string GetQuery<TResult>(IQuery<TResult> query)
+        {
+            return TemplateGenerator.GenerateQuery(query);
         }
 
         /// <inheritdoc />

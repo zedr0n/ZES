@@ -3,8 +3,13 @@ namespace ZES.Interfaces.Domain
     /// <summary>
     /// CQRS Query
     /// </summary>
+    public interface IQuery { }
+    
+    /// <summary>
+    /// CQRS Query
+    /// </summary>
     /// <typeparam name="TResult">Query result type</typeparam>
-    public interface IQuery<TResult> { }
+    public interface IQuery<TResult> : IQuery { }
     
     /// <summary>
     /// Historical derivative of underlying query

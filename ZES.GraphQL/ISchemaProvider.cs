@@ -34,5 +34,13 @@ namespace ZES.GraphQL
         /// <param name="command">Command to convert to mutation</param>
         /// <returns>Mutation query</returns>
         string GetMutation(ICommand command);
+
+        /// <summary>
+        /// Generate query from the internal query
+        /// </summary>
+        /// <param name="query">Query to convert</param>
+        /// <typeparam name="TResult">Query result</typeparam>
+        /// <returns>Graphql query</returns>
+        string GetQuery<TResult>(IQuery<TResult> query);
     }
 }

@@ -1,4 +1,3 @@
-using System;
 using HotChocolate.Execution;
 using Xunit;
 using Xunit.Abstractions;
@@ -6,8 +5,8 @@ using ZES.GraphQL;
 using ZES.Interfaces;
 using ZES.Interfaces.Pipes;
 using ZES.Tests.Domain.Commands;
+using ZES.Tests.Domain.Queries;
 using static ZES.Tests.Domain.Config;
-using IError = ZES.Interfaces.IError;
 
 namespace ZES.Tests
 {
@@ -68,26 +67,30 @@ namespace ZES.Tests
             var executor = schemaProvider.Generate(typeof(Queries), typeof(Mutations));
 
             var command = schemaProvider.GetMutation(new CreateRoot("Root"));
-            
             var commandResult = executor.Execute(command);
+            foreach (var e in commandResult.Errors)
+                log.Error(e.Message, this);
             
+            command = schemaProvider.GetMutation(new CreateRecord("Root"));
+            commandResult = executor.Execute(command);
+            foreach (var e in commandResult.Errors)
+                log.Error(e.Message, this); 
+
+            command = schemaProvider.GetMutation(new RecordRoot("Root", 1));
+            commandResult = executor.Execute(command);
             foreach (var e in commandResult.Errors)
                 log.Error(e.Message, this);
 
-            command = schemaProvider.GetMutation(new CreateRoot("Root2"));
+            var query = schemaProvider.GetQuery(new StatsQuery());
             
-            commandResult = executor.Execute(command);
+            var statsResult = executor.Execute(query) as IReadOnlyQueryResult;
             
-            foreach (var e in commandResult.Errors)
-                log.Error(e.Message, this);
-            
-            var statsResult = executor.Execute(@"{ stats( query : {  } ) { numberOfRoots } }") as IReadOnlyQueryResult;
-            dynamic statsDict = statsResult?.Data["stats"];
+            dynamic statsDict = statsResult?.Data["statsQueryEx"];
             log.Info(statsDict);
             Assert.NotNull(statsDict);
-            Assert.Equal(2, statsDict["numberOfRoots"]); 
+            Assert.Equal(1, statsDict["numberOfRoots"]); 
         }
-
+        
         [Fact]
         public async void CanQueryError()
         {

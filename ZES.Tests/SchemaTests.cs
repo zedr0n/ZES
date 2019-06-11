@@ -67,12 +67,16 @@ namespace ZES.Tests
             
             var executor = schemaProvider.Generate(typeof(Queries), typeof(Mutations));
 
-            var commandResult = executor.Execute(@"mutation { createRootEx( command : { target : ""Root"" } ) }");
+            var command = schemaProvider.GetMutation(new CreateRoot("Root"));
+            
+            var commandResult = executor.Execute(command);
             
             foreach (var e in commandResult.Errors)
                 log.Error(e.Message, this);
+
+            command = schemaProvider.GetMutation(new CreateRoot("Root2"));
             
-            commandResult = executor.Execute(@"mutation { createRoot( name : ""Root2"" ) }");
+            commandResult = executor.Execute(command);
             
             foreach (var e in commandResult.Errors)
                 log.Error(e.Message, this);

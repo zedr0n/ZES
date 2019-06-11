@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using HotChocolate.Execution;
 using Microsoft.Extensions.DependencyInjection;
+using ZES.Interfaces.Domain;
 
 namespace ZES.GraphQL
 {
@@ -26,5 +27,12 @@ namespace ZES.GraphQL
         /// <param name="rootMutation">Set of root mutations</param>
         /// <returns><see cref="IServiceCollection"/></returns>
         IServiceCollection Register(IServiceCollection services, IEnumerable<Type> rootQuery, IEnumerable<Type> rootMutation);
+
+        /// <summary>
+        /// Generate mutation from the internal command
+        /// </summary>
+        /// <param name="command">Command to convert to mutation</param>
+        /// <returns>Mutation query</returns>
+        string GetMutation(ICommand command);
     }
 }

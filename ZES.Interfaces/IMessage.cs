@@ -24,6 +24,14 @@ namespace ZES.Interfaces
         Guid AncestorId { get; }
 
         /// <summary>
+        /// Gets a value indicating whether the message is idempotent
+        /// </summary>
+        /// <value>
+        /// A value indicating whether the message is idempotent
+        /// </value>
+        bool Idempotent { get; }
+
+        /// <summary>
         /// Gets .Global position in event store
         /// </summary>
         /// <value>

@@ -24,6 +24,11 @@ namespace ZES.Infrastructure.Serialization
         {
             return new JProperty(nameof(IMessage.AncestorId), m.AncestorId);
         }
+        
+        public static JProperty JIdempotent(this IMessage m)
+        {
+            return new JProperty(nameof(IMessage.Idempotent), m.Idempotent);
+        }
 
         public static string JStreamMetadata(IStream stream)
         {

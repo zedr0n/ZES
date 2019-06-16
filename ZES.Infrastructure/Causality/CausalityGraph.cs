@@ -80,14 +80,17 @@ namespace ZES.Infrastructure.Causality
                     var edge = new SEdge<CausalityVertex>(ancestor, vertex);
                     _graph.AddEdge(edge); 
                 }
-                
+            }
+
+            if (!metadata.Idempotent)
+            {
                 var previousInStream = _graph.Vertices.SingleOrDefault(s =>
                     s.Stream == streamMessage.StreamId && s.Version == metadata.Version - 1);
                 if (previousInStream != null)
                 {
                     var edge = new SEdge<CausalityVertex>(previousInStream, vertex);
                     _graph.AddEdge(edge);
-                }
+                } 
             }
 
             var dependents = _graph.Vertices.Where(s => s.AncestorId == streamMessage.MessageId);

@@ -16,6 +16,9 @@ namespace ZES.Infrastructure.Domain
         public Guid AncestorId { get; set; }
 
         /// <inheritdoc />
+        public virtual bool Idempotent { get; set; }
+
+        /// <inheritdoc />
         [JsonIgnore]
         public long Position { get; set; }
 

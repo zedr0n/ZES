@@ -52,7 +52,7 @@ namespace ZES.Infrastructure.Serialization
         /// <inheritdoc />
         public string EncodeMetadata(T message)
         {
-            var array = new JObject(message.JTimestamp(), message.JVersion(), message.JAncestorId());
+            var array = new JObject(message.JTimestamp(), message.JVersion(), message.JAncestorId(), message.JIdempotent());
             
             var s = array.ToString();
             return s;
@@ -68,8 +68,16 @@ namespace ZES.Infrastructure.Serialization
                 version = -1;
             if (!jarray.TryGetValue(nameof(IMessage.AncestorId), out var ancestorId))
                 return null;
+            if (!jarray.TryGetValue(nameof(IMessage.Idempotent), out var idempotent))
+                return null;
             
-            return new EventMetadata { Timestamp = (long)timestamp, Version = (int)version, AncestorId = (Guid)ancestorId };
+            return new EventMetadata
+            {
+                Timestamp = (long)timestamp, 
+                Version = (int)version,
+                AncestorId = (Guid)ancestorId,
+                Idempotent = (bool)idempotent
+            };
         }
 
         /// <inheritdoc />

@@ -1,11 +1,11 @@
 using System.Linq;
 
-namespace ZES.GraphQL
+namespace ZES
 {
     /// <summary>
     /// String extensions for schemas
     /// </summary>
-    public static class SchemaExtensions
+    public static class StringExtensions
     {
         /// <summary>
         /// Mutations should start with lowercase for GraphQL

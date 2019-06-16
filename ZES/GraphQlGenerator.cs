@@ -1,21 +1,22 @@
 using System.Linq;
 using System.Reflection;
 using Antlr4.StringTemplate;
+using ZES.Interfaces;
 using ZES.Interfaces.Domain;
 
-namespace ZES.GraphQL
+namespace ZES
 {
     /// <summary>
     /// ST template generator
     /// </summary>
-    public static class TemplateGenerator
+    public class GraphQlGenerator : IGraphQlGenerator
     {
         /// <summary>
         /// Generate the graphql mutation string template
         /// </summary>
         /// <param name="command">Originating command</param>
         /// <returns>Complete mutation</returns>
-        public static string GenerateMutation(ICommand command)
+        public string Mutation(ICommand command)
         {
             var st = new Template(MultiCommand.Template);
             st.Add(MultiCommand.NameField, command.GetType().Name.ToLowerFirst());
@@ -26,13 +27,6 @@ namespace ZES.GraphQL
 
             var props = command.GetType().GetProperties(BindingFlags.DeclaredOnly | BindingFlags.Public | BindingFlags.Instance);
 
-            string BackQuote(PropertyInfo pi)
-            {
-                if (pi.PropertyType == typeof(string))
-                    return '"'.ToString();
-                return string.Empty;
-            }
-            
             var allParams = props
                 .Select(p => $"{p.Name.ToLowerFirst()} : {BackQuote(p)}{p.GetValue(command)}{BackQuote(p)}")
                 .Aggregate(string.Empty, (current, param) => current + $", {param}");
@@ -48,7 +42,7 @@ namespace ZES.GraphQL
         /// <param name="query">Originating query</param>
         /// <typeparam name="TResult">Query output type</typeparam>
         /// <returns>Complete mutation</returns>
-        public static string GenerateQuery<TResult>(IQuery<TResult> query)
+        public string Query<TResult>(IQuery<TResult> query)
         {
             var st = new Template(MultiQuery.Template);
             st.Add(MultiQuery.NameField, query.GetType().Name.ToLowerFirst());
@@ -58,17 +52,8 @@ namespace ZES.GraphQL
             if (constructor != null)
             {
                 var paramsProps = query.GetType().GetProperties(BindingFlags.DeclaredOnly | BindingFlags.Public | BindingFlags.Instance);
-
-                string BackQuote(PropertyInfo pi)
-                {
-                    if (pi.PropertyType == typeof(string))
-                        return '"'.ToString();
-                    return string.Empty;
-                }
             
-                allParams = paramsProps
-                    .Select(p => $"{p.Name.ToLowerFirst()} : {BackQuote(p)}{p.GetValue(query)}{BackQuote(p)}")
-                    .Aggregate(string.Empty, (current, param) => current + $", {param}");
+                allParams = string.Join(",", paramsProps.Select(p => $"{p.Name.ToLowerFirst()} : {BackQuote(p)}{p.GetValue(query)}{BackQuote(p)}"));
             }
 
             var resultProps = typeof(TResult).GetProperties(BindingFlags.DeclaredOnly | BindingFlags.Public |
@@ -79,6 +64,13 @@ namespace ZES.GraphQL
             st.Add(MultiQuery.ResultsField, allResults);
             
             return st.Render();
+        }
+        
+        private static string BackQuote(PropertyInfo pi)
+        {
+            if (pi.PropertyType == typeof(string))
+                return '"'.ToString();
+            return string.Empty;
         }
 
         private static class MultiCommand

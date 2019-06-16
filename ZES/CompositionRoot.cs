@@ -84,6 +84,8 @@ namespace ZES
             container.Register<ICommandLog, CommandLog>(Lifestyle.Singleton);
             container.Register(typeof(ILogger), () => LogManager.GetLogger(typeof(Logging.NLog).Name), Lifestyle.Singleton); 
 
+            container.Register<IGraphQlGenerator, GraphQlGenerator>(Lifestyle.Singleton);
+            
             container.Register<ILog, Logging.NLog>(Lifestyle.Singleton);
             container.Register<IErrorLog, ErrorLog>(Lifestyle.Singleton);
 

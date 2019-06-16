@@ -22,6 +22,7 @@ namespace ZES.GraphQL
     {
         private readonly IBus _bus;
         private readonly IErrorLog _errorLog;
+        private readonly IGraphQlGenerator _generator;
 
         private readonly List<Type> _commands = new List<Type>();
 
@@ -31,10 +32,12 @@ namespace ZES.GraphQL
         /// <param name="bus">Message bus</param>
         /// <param name="errorLog">Application error log</param>
         /// <param name="container">SimpleInjector container</param>
-        public SchemaProvider(IBus bus, IErrorLog errorLog, Container container)
+        /// <param name="generator">GraphQL generator</param>
+        public SchemaProvider(IBus bus, IErrorLog errorLog, Container container, IGraphQlGenerator generator)
         {
             _bus = bus;
             _errorLog = errorLog;
+            _generator = generator;
 
             var handlers = container.GetCurrentRegistrations()
                 .Select(p => p.Registration.ImplementationType)
@@ -95,18 +98,6 @@ namespace ZES.GraphQL
             services.AddStitchedSchema(AggregateSchemas);
 
             return services;
-        }
-
-        /// <inheritdoc />
-        public string GetMutation(ICommand command)
-        {
-            return TemplateGenerator.GenerateMutation(command);
-        }
-
-        /// <inheritdoc />
-        public string GetQuery<TResult>(IQuery<TResult> query)
-        {
-            return TemplateGenerator.GenerateQuery(query);
         }
 
         /// <inheritdoc />

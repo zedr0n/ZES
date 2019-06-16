@@ -1,3 +1,4 @@
+using System.Linq;
 using HotChocolate.Execution;
 using Xunit;
 using Xunit.Abstractions;
@@ -36,6 +37,7 @@ namespace ZES.Tests
             var container = CreateContainer();
             var bus = container.GetInstance<IBus>();
             var log = container.GetInstance<ILog>();
+            var generator = container.GetInstance<IGraphQlGenerator>();
             
             var command = new CreateRoot("Root");
             await await bus.CommandAsync(command);
@@ -43,14 +45,16 @@ namespace ZES.Tests
             var schemaProvider = container.GetInstance<ISchemaProvider>();
             
             var executor = schemaProvider.Generate(typeof(Queries));
-            var rootInfoResult = await executor.ExecuteAsync(@"{ rootInfo( query: { id : ""Root"" } ) { rootId, createdAt, updatedAt }  }") as IReadOnlyQueryResult;
-            dynamic rootInfoDict = rootInfoResult?.Data["rootInfo"];
+            var query = generator.Query(new RootInfoQuery("Root"));
+            var rootInfoResult = await executor.ExecuteAsync(query) as IReadOnlyQueryResult;
+            dynamic rootInfoDict = rootInfoResult?.Data.SingleOrDefault().Value;
             log.Info(rootInfoDict);
             Assert.NotNull(rootInfoDict);
             Assert.NotEqual(0, rootInfoDict["createdAt"]);
 
-            var statsResult = await executor.ExecuteAsync(@"{ stats( query : {  } ) { numberOfRoots } }") as IReadOnlyQueryResult;
-            dynamic statsDict = statsResult?.Data["stats"];
+            query = generator.Query(new StatsQuery());  
+            var statsResult = await executor.ExecuteAsync(query) as IReadOnlyQueryResult;
+            dynamic statsDict = statsResult?.Data.SingleOrDefault().Value;
             log.Info(statsDict);
             Assert.NotNull(statsDict);
             Assert.Equal(1, statsDict["numberOfRoots"]);
@@ -63,25 +67,26 @@ namespace ZES.Tests
             var log = container.GetInstance<ILog>(); 
             
             var schemaProvider = container.GetInstance<ISchemaProvider>();
+            var generator = container.GetInstance<IGraphQlGenerator>();
             
             var executor = schemaProvider.Generate(typeof(Queries), typeof(Mutations));
 
-            var command = schemaProvider.GetMutation(new CreateRoot("Root"));
+            var command = generator.Mutation(new CreateRoot("Root"));
             var commandResult = executor.Execute(command);
             foreach (var e in commandResult.Errors)
                 log.Error(e.Message, this);
             
-            command = schemaProvider.GetMutation(new CreateRecord("Root"));
+            command = generator.Mutation(new CreateRecord("Root"));
             commandResult = executor.Execute(command);
             foreach (var e in commandResult.Errors)
                 log.Error(e.Message, this); 
 
-            command = schemaProvider.GetMutation(new RecordRoot("Root", 1));
+            command = generator.Mutation(new RecordRoot("Root", 1));
             commandResult = executor.Execute(command);
             foreach (var e in commandResult.Errors)
                 log.Error(e.Message, this);
 
-            var query = schemaProvider.GetQuery(new StatsQuery());
+            var query = generator.Query(new StatsQuery());
             
             var statsResult = executor.Execute(query) as IReadOnlyQueryResult;
             

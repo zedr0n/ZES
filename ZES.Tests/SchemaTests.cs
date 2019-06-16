@@ -104,13 +104,16 @@ namespace ZES.Tests
             var log = container.GetInstance<ILog>();
             
             var schemaProvider = container.GetInstance<ISchemaProvider>();
+            var generator = container.GetInstance<IGraphQlGenerator>();
+            var command = generator.Mutation(new CreateRoot("Root"));
+            
             var executor = schemaProvider.Generate(typeof(Queries), typeof(Mutations));
 
-            var commandResult = await executor.ExecuteAsync(@"mutation { createRootEx( command : { target : ""Root"" } ) }");
+            var commandResult = await executor.ExecuteAsync(command);
             foreach (var e in commandResult.Errors)
                 log.Error(e.Message, this);
             
-            commandResult = await executor.ExecuteAsync(@"mutation { createRootEx( command : { target : ""Root"" } ) }");
+            commandResult = await executor.ExecuteAsync(command);
             foreach (var e in commandResult.Errors)
                 log.Error(e.Message, this);
 

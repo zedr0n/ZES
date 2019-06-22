@@ -1,5 +1,4 @@
 using System.Linq;
-using ZES.Interfaces;
 using ZES.Interfaces.Domain;
 
 namespace ZES.Infrastructure.Domain

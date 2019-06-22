@@ -2,7 +2,6 @@ using System;
 using System.Reactive.Linq;
 using System.Threading.Tasks;
 using ZES.Infrastructure;
-using ZES.Interfaces;
 using ZES.Interfaces.Domain;
 using ZES.Interfaces.Pipes;
 

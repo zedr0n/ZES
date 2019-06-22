@@ -35,6 +35,24 @@
       <Compile Update="Projections\Projection.Dispatcher.Slice.cs">
         <DependentUpon>Projection.Dispatcher.cs</DependentUpon>
       </Compile>
+      <Compile Update="Domain\CommandHandlerBase.cs">
+        <DependentUpon>CommandHandler.cs</DependentUpon>
+      </Compile>
+      <Compile Update="Domain\CreateCommandHandlerBase.cs">
+        <DependentUpon>CommandHandler.cs</DependentUpon>
+      </Compile>
+      <Compile Update="Domain\EventMetadata.cs">
+        <DependentUpon>Event.cs</DependentUpon>
+      </Compile>
+      <Compile Update="Domain\DecoratorQueryHandler.cs">
+        <DependentUpon>Query.cs</DependentUpon>
+      </Compile>
+      <Compile Update="Domain\CommandLog.cs">
+        <DependentUpon>Command.cs</DependentUpon>
+      </Compile>
+      <Compile Update="Domain\HandlerExtensions.cs">
+        <DependentUpon>CommandHandler.cs</DependentUpon>
+      </Compile>
     </ItemGroup>
 
 </Project>

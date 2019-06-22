@@ -1,21 +1,17 @@
-using ZES.Infrastructure;
 using ZES.Infrastructure.Domain;
 using ZES.Interfaces;
 using ZES.Interfaces.Domain;
 
 namespace ZES.Tests.Domain.Queries
 {
-    public class StatsQueryHandler : QueryHandler<StatsQuery, Stats>
+    public class StatsQueryHandler : QueryHandlerBase<StatsQuery, Stats, ValueState<Stats>>
     {
-        private readonly IProjection<ValueState<Stats>> _projection;
         public StatsQueryHandler(IProjection<ValueState<Stats>> projection)
+            : base(projection)
         {
-            _projection = projection;
         }
 
-        protected override IProjection Projection => _projection;
-
-        public override Stats Handle(IProjection projection, StatsQuery query) => 
-            (projection as IProjection<ValueState<Stats>>)?.State.Value;
+        protected override Stats Handle(IProjection<ValueState<Stats>> projection, StatsQuery query) => 
+            projection?.State.Value;
     }
 }

@@ -6,7 +6,6 @@ using System.Threading.Tasks;
 using QuickGraph;
 using SqlStreamStore;
 using SqlStreamStore.Streams;
-using ZES.Infrastructure.Branching;
 using ZES.Infrastructure.Streams;
 using ZES.Interfaces;
 using ZES.Interfaces.Domain;

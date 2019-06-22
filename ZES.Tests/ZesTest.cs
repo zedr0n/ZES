@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using SimpleInjector;
 using Xunit.Abstractions;
 using ZES.Tests.Domain;
-using ZES.Tests.Utils;
 
 namespace ZES.Tests
 {

@@ -1,5 +1,3 @@
-using ZES.Interfaces;
-
 namespace ZES.Infrastructure.Alerts
 {
     /// <summary>

@@ -44,7 +44,7 @@ namespace ZES.Infrastructure.Domain
         {
             return await HandleAsync(query as TQuery);
         }
-        
+
         /// <summary>
         /// Convert synchronous handler to async method
         /// </summary>

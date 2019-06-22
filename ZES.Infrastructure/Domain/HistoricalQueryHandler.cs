@@ -11,13 +11,12 @@ namespace ZES.Infrastructure.Domain
     /// <typeparam name="TQuery">Original query type</typeparam>
     /// <typeparam name="TResult">Query result</typeparam>
     /// <typeparam name="TState">Associated projection state type</typeparam>
-    public class HistoricalQueryHandler<TQuery, TResult, TState> : QueryHandler<HistoricalQuery<TQuery, TResult>, TResult>,
+    public class HistoricalQueryHandler<TQuery, TResult, TState> : QueryHandlerBase<HistoricalQuery<TQuery, TResult>, TResult, TState>,
                                                                   IQueryHandler<TQuery, TResult>
         where TQuery : class, IQuery<TResult>
         where TResult : class
     {
         private readonly IQueryHandler<TQuery, TResult> _handler;
-        private readonly IProjection<TState> _projection;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="HistoricalQueryHandler{TQuery, TResult, TState}"/> class.
@@ -25,9 +24,9 @@ namespace ZES.Infrastructure.Domain
         /// <param name="handler">Original query handler</param>
         /// <param name="projection">Historical projection injected by DI</param>
         public HistoricalQueryHandler(IQueryHandler<TQuery, TResult> handler, IProjection<TState> projection)
+            : base(projection)
         {
             _handler = handler;
-            _projection = projection;
         }
 
         /// <summary>
@@ -37,11 +36,17 @@ namespace ZES.Infrastructure.Domain
         /// <returns>Task representing the asynchronous execution of historical query</returns>
         protected override async Task<TResult> HandleAsync(HistoricalQuery<TQuery, TResult> query)
         {
-            var projection = (IHistoricalProjection)_projection;
+            var projection = (IHistoricalProjection)Projection;
             await projection.Init(query.Timestamp);
             await projection.Ready;
             
             return (_handler as QueryHandler<TQuery, TResult>)?.Handle(projection, query.Query);
+        }
+
+        /// <inheritdoc />
+        protected override TResult Handle(IProjection<TState> projection, HistoricalQuery<TQuery, TResult> query)
+        {
+            throw new System.NotImplementedException();
         }
     }
 }

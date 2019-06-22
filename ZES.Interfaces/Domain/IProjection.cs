@@ -1,5 +1,4 @@
 using System;
-using System.Runtime.CompilerServices;
 using ZES.Interfaces.EventStore;
 
 namespace ZES.Interfaces.Domain

@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Threading.Tasks.Dataflow;
 using SqlStreamStore.Streams;
 using ZES.Infrastructure.Sagas;
 using ZES.Interfaces.EventStore;

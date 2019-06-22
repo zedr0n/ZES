@@ -72,6 +72,7 @@ namespace ZES.Tests
             {
                 var container = new Container();
                 CreateRoot().ComposeApplication(container);
+                container.Register<IGraphQlGenerator, GraphQlGenerator>(Lifestyle.Singleton);
                 container.Register<ISchemaProvider, SchemaProvider>(Lifestyle.Singleton);
 
                 container.Options.AllowOverridingRegistrations = true;

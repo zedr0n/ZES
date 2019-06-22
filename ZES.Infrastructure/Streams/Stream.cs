@@ -67,6 +67,9 @@ namespace ZES.Infrastructure.Streams
         }
 
         /// <inheritdoc />
+        public string Type => _type;
+
+        /// <inheritdoc />
         public IStream Parent { get; set; }
         
         /// <inheritdoc />
@@ -87,8 +90,6 @@ namespace ZES.Infrastructure.Streams
                 return _ancestors.ToList();
             }
         }
-
-        // public int UpdatedOn { get; set; }
 
         /// <inheritdoc />
         public string Timeline { get; set; }

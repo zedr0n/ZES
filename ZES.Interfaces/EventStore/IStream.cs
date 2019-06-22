@@ -64,6 +64,14 @@ namespace ZES.Interfaces.EventStore
         string Timeline { get; set; }
 
         /// <summary>
+        /// Gets aggregate target type
+        /// </summary>
+        /// <value>
+        /// Aggregate target type
+        /// </value>
+        string Type { get; }
+
+        /// <summary>
         /// Copies the stream
         /// </summary>
         /// <returns>Stream copy</returns>

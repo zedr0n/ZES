@@ -1,6 +1,7 @@
 using System.Collections.Concurrent;
 using ZES.Infrastructure.Projections;
 using ZES.Interfaces;
+using ZES.Interfaces.Domain;
 using ZES.Interfaces.EventStore;
 using ZES.Interfaces.Pipes;
 using ZES.Tests.Domain.Events;

@@ -1,27 +1,15 @@
-using System;
-using System.Threading.Tasks;
-using ZES.Interfaces;
+using ZES.Infrastructure.Domain;
 using ZES.Interfaces.Domain;
 
 namespace ZES.Tests.Domain.Commands
 {
-    public class UpdateRootHandler : ICommandHandler<UpdateRoot>
+    public class UpdateRootHandler : CommandHandlerBase<UpdateRoot, Root>
     {
-        private readonly IEsRepository<IAggregate> _repository;
-
-        public UpdateRootHandler(IEsRepository<IAggregate> repository)
+        public UpdateRootHandler(IEsRepository<IAggregate> repository) 
+            : base(repository)
         {
-            _repository = repository;
         }
 
-        public async Task Handle(UpdateRoot command)
-        {
-            var root = await _repository.Find<Root>(command.Target);
-            if (root == null)
-                throw new ArgumentNullException();
-            
-            root.Update();
-            await _repository.Save(root, command.MessageId);
-        }
+        protected override void Act(Root root, UpdateRoot command) => root.Update();
     }
 }

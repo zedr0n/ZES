@@ -43,8 +43,11 @@ namespace ZES.Infrastructure.Domain
         {
             _log.Trace($"{_handler.GetType().Name}.Handle({command.GetType().Name})");
             if (command is Command)
+            {
                 (command as Command).Timestamp = _timeline.Now;
-            
+                (command as Command).RootType = _handler.RootType();
+            }
+
             try
             {
                 await _handler.Handle(command);

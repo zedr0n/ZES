@@ -9,6 +9,7 @@ using SqlStreamStore.Streams;
 using ZES.Infrastructure.Branching;
 using ZES.Infrastructure.Streams;
 using ZES.Interfaces;
+using ZES.Interfaces.Domain;
 using ZES.Interfaces.Serialization;
 
 namespace ZES.Infrastructure.Causality

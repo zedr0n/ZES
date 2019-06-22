@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using ZES.Infrastructure.Domain;
 using ZES.Interfaces;
+using ZES.Interfaces.Domain;
 using ZES.Tests.Domain.Events;
 
 namespace ZES.Tests.Domain

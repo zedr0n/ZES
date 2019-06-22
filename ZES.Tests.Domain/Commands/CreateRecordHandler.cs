@@ -1,22 +1,13 @@
-using System.Threading.Tasks;
-using ZES.Interfaces;
+using ZES.Infrastructure.Domain;
 using ZES.Interfaces.Domain;
 
 namespace ZES.Tests.Domain.Commands
 {
-    public class CreateRecordHandler : ICommandHandler<CreateRecord>
+    public class CreateRecordHandler : CreateCommandHandlerBase<CreateRecord, Record>
     {
-        private readonly IEsRepository<IAggregate> _repository;
-
         public CreateRecordHandler(IEsRepository<IAggregate> repository)
-        {
-            _repository = repository;
-        }
+            : base(repository) { }
 
-        public async Task Handle(CreateRecord command)
-        {
-            var record = new Record(command.Target);
-            await _repository.Save(record, command.MessageId);
-        }
+        protected override Record Create(CreateRecord command) => new Record(command.Target);
     }
 }

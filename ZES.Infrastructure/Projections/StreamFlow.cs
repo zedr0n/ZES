@@ -10,6 +10,7 @@ using Gridsum.DataflowEx;
 using SqlStreamStore.Streams;
 using ZES.Infrastructure.Utils;
 using ZES.Interfaces;
+using ZES.Interfaces.Domain;
 using ZES.Interfaces.EventStore;
 
 namespace ZES.Infrastructure.Projections

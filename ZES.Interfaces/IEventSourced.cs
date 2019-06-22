@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Windows.Input;
 
 namespace ZES.Interfaces
 {
@@ -22,7 +23,7 @@ namespace ZES.Interfaces
         /// Event sourced version 
         /// </value>
         int Version { get; }
-
+        
         /// <summary>
         /// Gets events not yet committed 
         /// </summary>
@@ -37,9 +38,4 @@ namespace ZES.Interfaces
         void LoadFrom<T>(IEnumerable<IEvent> pastEvents)
             where T : class, IEventSourced;
     }
-    
-    /// <summary>
-    /// Aggregate root
-    /// </summary>
-    public interface IAggregate : IEventSourced { }
 }

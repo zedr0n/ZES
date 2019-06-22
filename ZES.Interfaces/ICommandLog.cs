@@ -1,5 +1,7 @@
+using System;
 using System.Threading.Tasks;
 using ZES.Interfaces.Domain;
+using ZES.Interfaces.EventStore;
 
 namespace ZES.Interfaces
 {
@@ -14,5 +16,12 @@ namespace ZES.Interfaces
         /// <param name="command">Command to persist</param>
         /// <returns>Task representing the record operation</returns>
         Task AppendCommand(ICommand command);
+
+        /// <summary>
+        /// Get the commands corresponding to the stream
+        /// </summary>
+        /// <param name="stream">Stream info</param>
+        /// <returns>Command observable</returns>
+        IObservable<ICommand> GetCommands(IStream stream);
     }
 }

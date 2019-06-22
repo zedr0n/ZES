@@ -1,10 +1,9 @@
 using System.Linq;
 using System.Reflection;
 using Antlr4.StringTemplate;
-using ZES.Interfaces;
 using ZES.Interfaces.Domain;
 
-namespace ZES
+namespace ZES.GraphQL
 {
     /// <summary>
     /// ST template generator

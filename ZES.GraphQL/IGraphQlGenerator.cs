@@ -1,6 +1,6 @@
 using ZES.Interfaces.Domain;
 
-namespace ZES.Interfaces
+namespace ZES.GraphQL
 {
     /// <summary>
     /// Generate graphql syntax from internal CQRS objects

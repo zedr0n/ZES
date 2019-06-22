@@ -12,6 +12,7 @@ using ZES.Infrastructure.Serialization;
 using ZES.Infrastructure.Streams;
 using ZES.Infrastructure.Utils;
 using ZES.Interfaces;
+using ZES.Interfaces.Domain;
 using ZES.Interfaces.EventStore;
 using ZES.Interfaces.Pipes;
 using ZES.Interfaces.Sagas;
@@ -23,8 +24,6 @@ namespace ZES.Infrastructure
     public class SqlEventStore<I> : IEventStore<I> 
         where I : IEventSourced
     {
-        private const int ReadSize = 100;
-        
         private readonly IStreamStore _streamStore;
         private readonly ISerializer<IEvent> _serializer;
         private readonly Subject<IStream> _streams = new Subject<IStream>();
@@ -149,7 +148,7 @@ namespace ZES.Infrastructure
                 return;
             }
 
-            var page = await _streamStore.ReadStreamForwards(stream.Key, position, ReadSize);
+            var page = await _streamStore.ReadStreamForwards(stream.Key, position, Configuration.BatchSize);
             while (page.Messages.Length > 0 && count > 0)
             {
                 foreach (var m in page.Messages)

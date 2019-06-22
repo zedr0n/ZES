@@ -26,5 +26,8 @@ namespace ZES.Infrastructure.Domain
 
         /// <inheritdoc />
         public string Target { get; set; }
+
+        /// <inheritdoc />
+        public string RootType { get; set; } = "commands";
     }
 }

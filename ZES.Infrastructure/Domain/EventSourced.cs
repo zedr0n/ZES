@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using ZES.Interfaces;
+using ZES.Interfaces.Domain;
 
 namespace ZES.Infrastructure.Domain
 {

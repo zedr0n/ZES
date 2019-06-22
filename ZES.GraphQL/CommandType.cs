@@ -15,6 +15,7 @@ namespace ZES.GraphQL
             descriptor.Field(t => t.Position).Ignore();
             descriptor.Field(t => t.AncestorId).Ignore();
             descriptor.Field(t => t.Idempotent).Ignore();
+            descriptor.Field(t => t.RootType).Ignore();
             base.Configure(descriptor);
         }
     }

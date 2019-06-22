@@ -1,23 +1,13 @@
-using System.Threading.Tasks;
-using ZES.Interfaces;
+using ZES.Infrastructure.Domain;
 using ZES.Interfaces.Domain;
 
 namespace ZES.Tests.Domain.Commands
 {
-    public class RecordRootHandler : ICommandHandler<RecordRoot>
+    public class RecordRootHandler : CommandHandlerBase<RecordRoot, Record>
     {
-        private readonly IEsRepository<IAggregate> _repository;
-
         public RecordRootHandler(IEsRepository<IAggregate> repository)
-        {
-            _repository = repository;
-        }
+            : base(repository) { }
 
-        public async Task Handle(RecordRoot command)
-        {
-            var record = await _repository.Find<Record>(command.Target);
-            record.Root(command.RecordValue);
-            await _repository.Save(record, command.MessageId);
-        }
+        protected override void Act(Record record, RecordRoot command) => record.Root(command.RecordValue);
     }
 }

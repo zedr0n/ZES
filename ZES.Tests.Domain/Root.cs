@@ -1,5 +1,6 @@
 using ZES.Infrastructure.Domain;
 using ZES.Interfaces;
+using ZES.Interfaces.Domain;
 using ZES.Tests.Domain.Events;
 
 namespace ZES.Tests.Domain
@@ -17,9 +18,10 @@ namespace ZES.Tests.Domain
         public Root(string id)
             : this()
         {
+            Id = id;
             When(new RootCreated(id, Type.Ordinary));    
         }
-        
+
         public enum Type
         {
             Ordinary,

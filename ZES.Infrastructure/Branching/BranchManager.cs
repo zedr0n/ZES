@@ -10,6 +10,7 @@ using SqlStreamStore.Streams;
 using ZES.Infrastructure.Domain;
 using ZES.Infrastructure.Streams;
 using ZES.Interfaces;
+using ZES.Interfaces.Domain;
 using ZES.Interfaces.EventStore;
 using ZES.Interfaces.Pipes;
 

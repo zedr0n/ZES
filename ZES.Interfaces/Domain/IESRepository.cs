@@ -1,7 +1,7 @@
 using System;
 using System.Threading.Tasks;
 
-namespace ZES.Interfaces
+namespace ZES.Interfaces.Domain
 {
     /// <summary>
     /// Event-sourced repository

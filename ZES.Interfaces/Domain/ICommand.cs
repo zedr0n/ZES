@@ -12,5 +12,16 @@ namespace ZES.Interfaces.Domain
         /// Aggregate target id
         /// </value>
         string Target { get;  }
+
+        /// <summary>
+        /// Gets aggregate root type
+        /// </summary>
+        /// <value>
+        /// Aggregate root type
+        /// </value>
+        string RootType { get; }
     }
+
+    /// <inheritdoc />
+    public interface ICreateCommand : ICommand { }
 }

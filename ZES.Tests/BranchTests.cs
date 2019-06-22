@@ -7,6 +7,7 @@ using Xunit.Abstractions;
 using ZES.Infrastructure.Branching;
 using ZES.Infrastructure.Domain;
 using ZES.Interfaces;
+using ZES.Interfaces.Domain;
 using ZES.Interfaces.Pipes;
 using ZES.Tests.Domain;
 using ZES.Tests.Domain.Commands;
@@ -282,7 +283,7 @@ namespace ZES.Tests
         [Fact]
         public async void CanPushToRemote()
         {
-            var container = CreateContainer(new List<Action<Container>> { c => c.UseLocalStore() });
+            var container = CreateContainer(new List<Action<Container>> { c => c.UseRemoteStore() });
             var bus = container.GetInstance<IBus>();
             var remote = container.GetInstance<IRemote>();
 

@@ -16,7 +16,11 @@ namespace ZES.Infrastructure.Domain
         public Guid AncestorId { get; set; }
 
         /// <inheritdoc />
-        public virtual bool Idempotent { get; set; }
+        public bool Idempotent
+        {
+            get => IdempotentImpl;
+            set => IdempotentImpl = value;
+        }
 
         /// <inheritdoc />
         [JsonIgnore]
@@ -24,5 +28,13 @@ namespace ZES.Infrastructure.Domain
 
         /// <inheritdoc />
         public long Timestamp { get; set; }
+
+        /// <summary>
+        /// Gets or sets a value indicating whether protected member defaulting idempotency
+        /// </summary>
+        /// <value>
+        /// A value indicating whether protected member defaulting idempotency
+        /// </value>
+        protected virtual bool IdempotentImpl { get; set; } = false;
     }
 }

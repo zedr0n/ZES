@@ -10,8 +10,9 @@ namespace ZES.Tests.Domain.Commands
         {
             RecordValue = recordValue;
         }
-
-        public override bool Idempotent { get; set; } = true;
+        
         public double RecordValue { get; private set; } 
+        
+        protected override bool IdempotentImpl { get; set; } = true;
     }
 }

@@ -1,7 +1,9 @@
+using ZES.Infrastructure.Attributes;
 using ZES.Infrastructure.Domain;
 
 namespace ZES.Tests.Domain.Commands
 {
+    [Idempotent]
     public class RecordRoot : Command
     {
         public RecordRoot() { }
@@ -12,7 +14,5 @@ namespace ZES.Tests.Domain.Commands
         }
         
         public double RecordValue { get; private set; } 
-        
-        protected override bool IdempotentImpl { get; set; } = true;
     }
 }

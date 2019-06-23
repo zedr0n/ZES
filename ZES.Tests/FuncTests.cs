@@ -3,6 +3,7 @@ using Xunit;
 using Xunit.Abstractions;
 using ZES.Infrastructure.Streams;
 using ZES.Tests.Domain;
+using ZES.Tests.Domain.Commands;
 
 namespace ZES.Tests
 {
@@ -16,6 +17,16 @@ namespace ZES.Tests
         public FuncTests(ITestOutputHelper outputHelper) 
             : base(outputHelper)
         {
+        }
+
+        [Fact]
+        public void CanImplyIdempotency()
+        {
+            var createRoot = new CreateRoot("Root");
+            Assert.False(createRoot.Idempotent);
+            
+            var recordRoot = new RecordRoot("Root", 0);
+            Assert.True(recordRoot.Idempotent);
         }
 
         [Fact]

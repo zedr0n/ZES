@@ -66,6 +66,9 @@ namespace ZES.Utils
                 
                 var iQueryHandler = typeof(IQueryHandler<,>).MakeGenericType(q, result);
                 var handler = assembly.GetTypesFromInterface(iQueryHandler).SingleOrDefault();
+
+                if (handler == null)
+                    handler = typeof(QueryHandlerBase<,>).MakeGenericType(q, result);
                 
                 var parameters = handler?.GetConstructors()[0].GetParameters();
                 var tState = parameters?.First(p => p.ParameterType.GetInterfaces().Contains(typeof(IProjection)))

@@ -12,9 +12,9 @@ namespace ZES.Interfaces.Domain
         /// <summary>
         /// Command handler aggregate logic
         /// </summary>
-        /// <param name="command">Command to handle</param>
+        /// <param name="iCommand">Command to handle</param>
         /// <returns>Task representing the asynchronous processing of the command</returns>
-        Task Handle(TCommand command);
+        Task Handle(TCommand iCommand);
     }
 
     /// <inheritdoc />

@@ -52,7 +52,7 @@ namespace ZES.Infrastructure
 
             foreach (var e in events.Cast<Event>())
             {
-                if (e.Timestamp != default(long))
+                if (e.Timestamp == default(long))
                     e.Timestamp = _timeline.Now;
                 e.Stream = stream.Key;
                 if (ancestorId == null) 

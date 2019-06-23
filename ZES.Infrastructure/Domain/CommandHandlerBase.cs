@@ -21,15 +21,15 @@ namespace ZES.Infrastructure.Domain
         }
         
         /// <inheritdoc />
-        public async Task Handle(TCommand command)
+        public async Task Handle(TCommand iCommand)
         {
-            var root = await _repository.Find<TRoot>(command.Target);
+            var root = await _repository.Find<TRoot>(iCommand.Target);
             if ( root == null )
                 throw new ArgumentNullException(); 
             
-            Act(root, command);
+            Act(root, iCommand);
             
-            await _repository.Save(root, command.MessageId);
+            await _repository.Save(root, iCommand.MessageId);
         }
 
         /// <summary>

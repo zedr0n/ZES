@@ -125,6 +125,25 @@ namespace ZES.Tests
             Assert.True(rootInfo.UpdatedAt == root.UpdatedAt);
             Assert.True(rootInfo.UpdatedAt > rootInfo.CreatedAt);
         }
+
+        [Fact]
+        public async void CanRecordRoot()
+        {
+            var container = CreateContainer();
+            var bus = container.GetInstance<IBus>();
+
+            var record = new CreateRecord("Root");
+            await await bus.CommandAsync(record);
+            
+            var time = new DateTime(1970, 1, 1); 
+            
+            var command = new RecordRoot("Root", 1) { Timestamp = time.Ticks };
+            await await bus.CommandAsync(command);
+            
+            var query = new LastRecordQuery("Root");
+            var lastRecord = await bus.QueryAsync(query);
+            Assert.True(lastRecord.TimeStamp == time.Ticks);
+        }
         
         [Fact]
         public async void CanHistoricalProjectRoot()

@@ -39,25 +39,28 @@ namespace ZES.Infrastructure.Domain
         /// <summary>
         /// Wrap the handler and redirect all exception to <see cref="IErrorLog"/>
         /// </summary>
-        public async Task Handle(T command)
+        public async Task Handle(T iCommand)
         {
-            _log.Trace($"{_handler.GetType().Name}.Handle({command.GetType().Name})");
-            if (command is Command)
+            _log.Trace($"{_handler.GetType().Name}.Handle({iCommand.GetType().Name})");
+            var command = iCommand as Command;
+            if (command != null)
             {
-                (command as Command).Timestamp = _timeline.Now;
-                (command as Command).RootType = _handler.RootType();
+                if (command.Timestamp == default(long))
+                    command.Timestamp = _timeline.Now;
+
+                command.RootType = _handler.RootType();
             }
 
             try
             {
-                await _handler.Handle(command);
+                await _handler.Handle(iCommand);
             }
             catch (Exception e)
             {
                 _errorLog.Add(e);
             }
             
-            await _commandLog.AppendCommand(command);
+            await _commandLog.AppendCommand(iCommand);
         }
     }
 }

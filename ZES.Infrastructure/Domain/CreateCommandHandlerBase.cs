@@ -20,10 +20,10 @@ namespace ZES.Infrastructure.Domain
         }
         
         /// <inheritdoc />
-        public async Task Handle(TCommand command)
+        public async Task Handle(TCommand iCommand)
         {
-            var root = Create(command);
-            await _repository.Save(root, command.MessageId);
+            var root = Create(iCommand);
+            await _repository.Save(root, iCommand.MessageId);
         }
 
         /// <summary>

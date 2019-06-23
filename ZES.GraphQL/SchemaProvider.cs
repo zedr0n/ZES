@@ -22,7 +22,6 @@ namespace ZES.GraphQL
     {
         private readonly IBus _bus;
         private readonly IErrorLog _errorLog;
-        private readonly IGraphQlGenerator _generator;
 
         private readonly List<Type> _commands = new List<Type>();
 
@@ -32,12 +31,10 @@ namespace ZES.GraphQL
         /// <param name="bus">Message bus</param>
         /// <param name="errorLog">Application error log</param>
         /// <param name="container">SimpleInjector container</param>
-        /// <param name="generator">GraphQL generator</param>
-        public SchemaProvider(IBus bus, IErrorLog errorLog, Container container, IGraphQlGenerator generator)
+        public SchemaProvider(IBus bus, IErrorLog errorLog, Container container)
         {
             _bus = bus;
             _errorLog = errorLog;
-            _generator = generator;
 
             var handlers = container.GetCurrentRegistrations()
                 .Select(p => p.Registration.ImplementationType)

@@ -8,7 +8,7 @@ using ZES.Tests.Domain.Events;
 
 namespace ZES.Tests.Domain.Queries
 {
-    public class RootInfoProjection : Projection<RootInfoProjection.StateType>
+    public class RootInfoProjection : Projection<RootInfoProjection.Results>
     {
         public RootInfoProjection(
             IEventStore<IAggregate> eventStore,
@@ -18,24 +18,24 @@ namespace ZES.Tests.Domain.Queries
             Dispatcher.Builder builder)
             : base(eventStore, log, messageQueue, timeline, builder)
         {
-            State = new StateType();
+            State = new Results();
             Register<RootCreated>(When);
             Register<RootUpdated>(When);
         }
 
-        private static StateType When(RootCreated e, StateType state)
+        private static Results When(RootCreated e, Results state)
         {
             state.SetCreatedAt(e.RootId, e.Timestamp);
             return state;
         }
         
-        private static StateType When(RootUpdated e, StateType state)
+        private static Results When(RootUpdated e, Results state)
         {
             state.SetUpdatedAt(e.RootId, e.Timestamp);
             return state;
         }
         
-        public class StateType
+        public class Results
         {
             private readonly ConcurrentDictionary<string, long> _createdAt = new ConcurrentDictionary<string, long>();
             private readonly ConcurrentDictionary<string, long> _updatedAt = new ConcurrentDictionary<string, long>();

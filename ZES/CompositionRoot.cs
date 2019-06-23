@@ -96,12 +96,12 @@ namespace ZES
 
             container.RegisterConditional(
                 typeof(IQueryHandler<,>),
-                typeof(DecoratorQueryHandler<,>),
+                typeof(QueryHandlerDecorator<,>),
                 Lifestyle.Transient,
                 c =>
                     c.Consumer == null ||
                     (!c.Consumer.ImplementationType.IsClosedTypeOf(typeof(HistoricalQueryHandler<,,>)) && 
-                    !c.Consumer.ImplementationType.IsClosedTypeOf(typeof(DecoratorQueryHandler<,>))));
+                    !c.Consumer.ImplementationType.IsClosedTypeOf(typeof(QueryHandlerDecorator<,>))));
             
             container.Register<IBranchManager, BranchManager>(Lifestyle.Singleton);
             

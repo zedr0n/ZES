@@ -13,5 +13,12 @@ namespace ZES.GraphQL
         /// </summary>
         /// <returns><see cref="IError"/></returns>
         public abstract Error Error();
+
+        /// <summary>
+        /// Get commands pertaining to the stream
+        /// </summary>
+        /// <param name="key">Full stream key</param>
+        /// <returns>Set of mutations</returns>
+        public abstract string GetCommands(string key);
     }
 }

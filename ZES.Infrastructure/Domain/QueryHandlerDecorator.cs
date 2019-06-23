@@ -11,7 +11,7 @@ namespace ZES.Infrastructure.Domain
     /// </summary>
     /// <typeparam name="TQuery">Query type to be decorated</typeparam>
     /// <typeparam name="TResult">Query result</typeparam>
-    public class DecoratorQueryHandler<TQuery, TResult> : QueryHandler<TQuery, TResult>
+    public class QueryHandlerDecorator<TQuery, TResult> : QueryHandler<TQuery, TResult>
         where TQuery : class, IQuery<TResult>
         where TResult : class
     {
@@ -19,11 +19,11 @@ namespace ZES.Infrastructure.Domain
         private readonly IErrorLog _errorLog;
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="DecoratorQueryHandler{TQuery, TResult}"/> class.
+        /// Initializes a new instance of the <see cref="QueryHandlerDecorator{TQuery,TResult}"/> class.
         /// </summary>
         /// <param name="handler">Query handler to be decorated</param>
         /// <param name="errorLog">Error log</param>
-        public DecoratorQueryHandler(IQueryHandler<TQuery, TResult> handler, IErrorLog errorLog)
+        public QueryHandlerDecorator(IQueryHandler<TQuery, TResult> handler, IErrorLog errorLog)
         {
             _handler = handler;
             _errorLog = errorLog;

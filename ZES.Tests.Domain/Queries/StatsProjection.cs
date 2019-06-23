@@ -7,7 +7,7 @@ using ZES.Tests.Domain.Events;
 
 namespace ZES.Tests.Domain.Queries
 {
-    public class StatsProjection : Projection<ValueState<Stats>>
+    public class StatsProjection : Projection<Stats>
     {
         public StatsProjection(
             IEventStore<IAggregate> eventStore,
@@ -20,12 +20,10 @@ namespace ZES.Tests.Domain.Queries
             Register<RootCreated>(When);
         }
 
-        private static ValueState<Stats> When(RootCreated e, ValueState<Stats> state)
+        private static Stats When(RootCreated e, Stats state)
         {
             lock (state)
-            {
-                state.Value.NumberOfRoots++; 
-            }
+                state.NumberOfRoots++; 
             
             return state;
         }

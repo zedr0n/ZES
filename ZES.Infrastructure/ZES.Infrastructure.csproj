@@ -44,7 +44,7 @@
       <Compile Update="Domain\EventMetadata.cs">
         <DependentUpon>Event.cs</DependentUpon>
       </Compile>
-      <Compile Update="Domain\DecoratorQueryHandler.cs">
+      <Compile Update="Domain\QueryHandlerDecorator.cs">
         <DependentUpon>Query.cs</DependentUpon>
       </Compile>
       <Compile Update="Domain\CommandLog.cs">
@@ -52,6 +52,15 @@
       </Compile>
       <Compile Update="Domain\HandlerExtensions.cs">
         <DependentUpon>CommandHandler.cs</DependentUpon>
+      </Compile>
+      <Compile Update="Domain\QueryHandlerBaseEx.cs">
+        <DependentUpon>QueryHandlerBase.cs</DependentUpon>
+      </Compile>
+      <Compile Update="Domain\QueryHandlerBase.cs">
+        <DependentUpon>Query.cs</DependentUpon>
+      </Compile>
+      <Compile Update="Domain\QueryHandler.cs">
+        <DependentUpon>QueryHandlerBaseEx.cs</DependentUpon>
       </Compile>
     </ItemGroup>
 

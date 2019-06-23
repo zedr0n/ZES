@@ -12,4 +12,13 @@
       <PackageReference Include="StyleCop.Analyzers" Version="1.0.2" />
     </ItemGroup>
 
+    <ItemGroup>
+      <Compile Update="IEventMetadata.cs">
+        <DependentUpon>IEvent.cs</DependentUpon>
+      </Compile>
+      <Compile Update="IErrorLog.cs">
+        <DependentUpon>ILog.cs</DependentUpon>
+      </Compile>
+    </ItemGroup>
+
 </Project>

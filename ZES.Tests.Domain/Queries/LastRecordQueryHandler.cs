@@ -4,14 +4,14 @@ using ZES.Interfaces.Domain;
 
 namespace ZES.Tests.Domain.Queries
 {
-    public class LastRecordQueryHandler : QueryHandlerBase<LastRecordQuery, LastRecord, ValueState<LastRecord>>
+    public class LastRecordQueryHandler : QueryHandlerBase<LastRecordQuery, LastRecord>
     {
-        public LastRecordQueryHandler(IProjection<ValueState<LastRecord>> projection)
+        public LastRecordQueryHandler(IProjection<LastRecord> projection)
             : base(projection)
         {
         }
 
-        protected override LastRecord Handle(IProjection<ValueState<LastRecord>> projection, LastRecordQuery query) => 
-            projection?.State.Value;
+        protected override LastRecord Handle(IProjection<LastRecord> projection, LastRecordQuery query) => 
+            projection?.State;
     }
 }

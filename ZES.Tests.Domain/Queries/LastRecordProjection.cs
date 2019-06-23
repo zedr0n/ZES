@@ -7,7 +7,7 @@ using ZES.Tests.Domain.Events;
 
 namespace ZES.Tests.Domain.Queries
 {
-    public class LastRecordProjection : Projection<ValueState<LastRecord>>
+    public class LastRecordProjection : Projection<LastRecord>
     {
         public LastRecordProjection(IEventStore<IAggregate> eventStore, ILog log, IMessageQueue messageQueue, ITimeline timeline, Dispatcher.Builder streamDispatcher) 
             : base(eventStore, log, messageQueue, timeline, streamDispatcher)
@@ -15,14 +15,14 @@ namespace ZES.Tests.Domain.Queries
             Register<RootRecorded>(When);
         }
         
-        private static ValueState<LastRecord> When(RootRecorded e, ValueState<LastRecord> state)
+        private static LastRecord When(RootRecorded e, LastRecord state)
         {
             lock (state)
             {
-                if (state.Value.TimeStamp < e.Timestamp)
+                if (state.TimeStamp < e.Timestamp)
                 {
-                    state.Value.TimeStamp = e.Timestamp;
-                    state.Value.Value = e.RecordValue;
+                    state.TimeStamp = e.Timestamp;
+                    state.Value = e.RecordValue;
                 }
             }
             

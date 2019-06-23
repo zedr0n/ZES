@@ -21,9 +21,9 @@ namespace ZES.Tests.Domain
         
         public Dictionary<long, double> Values { get; } = new Dictionary<long, double>();
 
-        public void Root(double recordValue)
+        public void Root(double recordValue, long timestamp)
         {
-            When(new RootRecorded(Id, recordValue));
+            When(new RootRecorded(Id, recordValue) { Timestamp = timestamp });
         }
 
         private void ApplyEvent(RecordCreated e)

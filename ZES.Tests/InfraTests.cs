@@ -135,7 +135,7 @@ namespace ZES.Tests
             var record = new CreateRecord("Root");
             await await bus.CommandAsync(record);
             
-            var time = (DateTimeOffset)new DateTime(1970, 1, 1); 
+            var time = (DateTimeOffset)new DateTime(2019, 1, 1, 0, 0, 0, DateTimeKind.Utc); 
             
             var command = new RecordRoot("Root", 1) { Timestamp = time.ToUnixTimeMilliseconds() };
             await await bus.CommandAsync(command);

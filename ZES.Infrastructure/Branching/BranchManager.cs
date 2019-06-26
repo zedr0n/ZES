@@ -74,7 +74,7 @@ namespace ZES.Infrastructure.Branching
             
             // copy the events
             if (newBranch)
-                await Clone(branchId, time ?? DateTime.UtcNow.Ticks);
+                await Clone(branchId, time ?? DateTimeOffset.UtcNow.ToUnixTimeMilliseconds());
 
             // update current timeline
             _activeTimeline.Set(timeline);

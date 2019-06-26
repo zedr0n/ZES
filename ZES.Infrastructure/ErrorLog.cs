@@ -66,7 +66,7 @@ namespace ZES.Infrastructure
             {
                 Message = error.Message;
                 ErrorType = error.GetType().Name;
-                Timestamp = DateTime.UtcNow.Ticks;
+                Timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
             }
 
             /// <inheritdoc />

@@ -4,8 +4,8 @@ namespace ZES.Tests.Domain.Queries
     {
         public LastRecord() { }
         
-        public string Id { get; } 
-        public long TimeStamp { get; set; }
+        public string Id { get; }
+        public long TimeStamp { get; set; } = long.MinValue;
         public double Value { get; set; }
     }
 }

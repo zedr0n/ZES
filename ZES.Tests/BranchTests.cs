@@ -75,7 +75,7 @@ namespace ZES.Tests
             var lastRecord = await bus.QueryUntil(new LastRecordQuery("Root"));
             Assert.Equal(1, lastRecord.Value);
 
-            var now = DateTime.UtcNow.Ticks;
+            var now = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
             var timeline = await manager.Branch("Branch", now);
 
             var then = new DateTime(1970, 1, 1); 
@@ -92,7 +92,9 @@ namespace ZES.Tests
             lastRecord = await bus.QueryUntil(new LastRecordQuery("Root"));
             Assert.Equal(1, lastRecord.Value);
 
-            lastRecord = await bus.QueryUntil(new HistoricalQuery<LastRecordQuery, LastRecord>( new LastRecordQuery("Root"), then.Ticks));
+            lastRecord = await bus.QueryUntil(new HistoricalQuery<LastRecordQuery, LastRecord>(
+                new LastRecordQuery("Root"),
+                ((DateTimeOffset)then).ToUnixTimeMilliseconds()));
 
             Assert.Equal(-1, lastRecord.Value);
         }

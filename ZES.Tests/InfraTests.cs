@@ -135,14 +135,14 @@ namespace ZES.Tests
             var record = new CreateRecord("Root");
             await await bus.CommandAsync(record);
             
-            var time = new DateTime(1970, 1, 1); 
+            var time = (DateTimeOffset)new DateTime(1970, 1, 1); 
             
-            var command = new RecordRoot("Root", 1) { Timestamp = time.Ticks };
+            var command = new RecordRoot("Root", 1) { Timestamp = time.ToUnixTimeMilliseconds() };
             await await bus.CommandAsync(command);
             
             var query = new LastRecordQuery("Root");
             var lastRecord = await bus.QueryAsync(query);
-            Assert.True(lastRecord.TimeStamp == time.Ticks);
+            Assert.True(lastRecord.TimeStamp == time.ToUnixTimeMilliseconds());
         }
         
         [Fact]
@@ -160,7 +160,7 @@ namespace ZES.Tests
             var historicalStats = await bus.QueryAsync(historicalQuery);
             Assert.Equal(0, historicalStats.NumberOfRoots);
             
-            var liveQuery = new HistoricalQuery<StatsQuery, Stats>(statsQuery, DateTime.UtcNow.Ticks);
+            var liveQuery = new HistoricalQuery<StatsQuery, Stats>(statsQuery, DateTimeOffset.UtcNow.ToUnixTimeMilliseconds());
             var liveStats = await bus.QueryAsync(liveQuery);
             Assert.Equal(1, liveStats.NumberOfRoots);
         }

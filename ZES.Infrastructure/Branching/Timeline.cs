@@ -33,7 +33,7 @@ namespace ZES.Infrastructure.Branching
         public string Id { get; set; } = BranchManager.Master;
 
         /// <inheritdoc />
-        public long Now => _now ?? DateTime.UtcNow.Ticks;
+        public long Now => _now ?? DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
 
         /// <summary>
         /// Create new timeline 
@@ -60,7 +60,7 @@ namespace ZES.Infrastructure.Branching
             if (Id == BranchManager.Master)
                 return;
             
-            _now = time.Ticks;
+            _now = ((DateTimeOffset)time).ToUnixTimeMilliseconds();
         }
     }
 }

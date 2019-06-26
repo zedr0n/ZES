@@ -38,10 +38,11 @@ namespace ZES.Tests.Domain
         [RootQuery]
         public abstract class Queries
         {
-            public abstract RootInfo RootInfo(RootInfoQuery query);
+            public abstract RootInfo RootInfoQuery(string id);
             public abstract RootInfo RootInfoQueryEx(RootInfoQuery query);
-            public abstract Stats Stats(StatsQuery query);
+            public abstract Stats StatsQuery();
             public abstract Stats StatsQueryEx(StatsQuery query);
+            public abstract LastRecord LastRecordQuery(string id);
         }
         
         [RootMutation]
@@ -49,7 +50,9 @@ namespace ZES.Tests.Domain
         {
              public abstract bool CreateRoot(string name);
              public abstract bool CreateRootEx(CreateRoot command);
+             public abstract bool CreateRecord(string target);
              public abstract bool CreateRecordEx(CreateRecord command);
+             public abstract bool RecordRoot(string target, double recordValue);
              public abstract bool RecordRootEx(RecordRoot command);
         }
     }

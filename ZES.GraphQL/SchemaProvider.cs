@@ -24,6 +24,7 @@ namespace ZES.GraphQL
         private readonly IErrorLog _errorLog;
 
         private readonly List<Type> _commands = new List<Type>();
+        private readonly List<Type> _queries = new List<Type>();
 
         /// <summary>
         /// Initializes a new instance of the <see cref="SchemaProvider"/> class.
@@ -41,7 +42,15 @@ namespace ZES.GraphQL
                 .Where(t => t.IsClosedTypeOf(typeof(ICommandHandler<>)));
             var commands =
                 handlers.Select(t => t.GetInterfaces().Select(i => i.GetGenericArguments().FirstOrDefault()).FirstOrDefault());
+
+            var queryHandlers = container.GetCurrentRegistrations()
+                .Select(p => p.Registration.ImplementationType)
+                .Where(t => t.IsClosedTypeOf(typeof(IQueryHandler<,>)));
+            var queries = queryHandlers
+                .Select(t => t.GetInterfaces().Select(i => i.GetGenericArguments().FirstOrDefault()).FirstOrDefault());
+            
             _commands.AddRange(commands);
+            _queries.AddRange(queries);
         }
 
         /// <inheritdoc />
@@ -129,8 +138,20 @@ namespace ZES.GraphQL
                     string.Compare(x.Name, context.Field.Name, StringComparison.OrdinalIgnoreCase) == 0);
                 if (field != null)
                 {
-                    var queryType = field.GetParameters().FirstOrDefault();
-                    dynamic query = context.Argument<object>(queryType.Name);
+                    var input = field.GetParameters().FirstOrDefault();
+                    dynamic query = null;
+                    if (_queries.Any(c => c.Name == input?.ParameterType.Name))
+                    {
+                        query = context.Argument<object>(input.Name);
+                    }
+                    else
+                    {
+                        var parameters = field.GetParameters().Select(p => context.Argument<object>(p.Name)).ToArray();
+                        var queryType = _queries.SingleOrDefault(c => c.Name == field.Name);
+                        if (queryType != null)
+                            query = Activator.CreateInstance(queryType, parameters);
+                    }
+                   
                     context.Result = await _bus.QueryAsync(query);
                     return;
                 }

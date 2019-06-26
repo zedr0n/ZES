@@ -78,7 +78,7 @@ namespace ZES.Tests
             var now = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
             var timeline = await manager.Branch("Branch", now);
 
-            var then = new DateTime(1970, 1, 1); 
+            var then = new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc); 
             timeline.Warp(then);
             
             await await bus.CommandAsync(new RecordRoot("Root", -1));

@@ -38,21 +38,7 @@ namespace ZES.Tests
             if (Configuration.LogEnabled("InMemoryStreamStore"))
                 TestOutputHelpers.AddTestOutputHelper(outputHelper, "InMemoryStreamStore", false);   
             
-            foreach (var target in config.AllTargets)
-            {
-                if (Environment.GetEnvironmentVariable("TRACE") == "1")
-                    config.AddRuleForOneLevel(LogLevel.Trace, target);
-                if (Environment.GetEnvironmentVariable("DEBUG") == "1")
-                    config.AddRuleForOneLevel(LogLevel.Debug, target);
-                if (Environment.GetEnvironmentVariable("ERROR") == "1")
-                    config.AddRuleForOneLevel(LogLevel.Error, target);
-                if (Environment.GetEnvironmentVariable("INFO") == "1")
-                    config.AddRuleForOneLevel(LogLevel.Info, target);
-                if (Environment.GetEnvironmentVariable("WARN") == "1")
-                    config.AddRuleForOneLevel(LogLevel.Warn, target);
-                if (Environment.GetEnvironmentVariable("FATAL") == "1")
-                    config.AddRuleForOneLevel(LogLevel.Fatal, target);
-            }
+            Logging.NLog.Enable(config);
             
             LogManager.Configuration = config;
             _logger = outputHelper.GetNLogLogger();

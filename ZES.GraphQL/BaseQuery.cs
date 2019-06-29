@@ -9,10 +9,16 @@ namespace ZES.GraphQL
     public abstract class BaseQuery
     {
         /// <summary>
-        ///  GraphQL error query type
+        /// GraphQL error query type
         /// </summary>
         /// <returns><see cref="IError"/></returns>
         public abstract Error Error();
+
+        /// <summary>
+        /// GraphQL log query
+        /// </summary>
+        /// <returns>Log contents</returns>
+        public abstract string Log();
 
         /// <summary>
         /// Get commands pertaining to the stream

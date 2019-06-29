@@ -1,3 +1,6 @@
+using System;
+using System.Collections;
+using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using NLog;
 using NLog.Config;
@@ -11,6 +14,8 @@ namespace ZES.Logging
     /// <inheritdoc />
     public class NLog : ILog
     {
+        private static MemoryTarget _memory;
+
         private readonly ILogger _logger;
 
         /// <summary>
@@ -32,7 +37,33 @@ namespace ZES.Logging
         
         /// <inheritdoc />
         public IErrorLog Errors { get; set; }
+        
+        /// <inheritdoc />
+        public IList<string> MemoryLogs => _memory.Logs;
 
+        /// <summary>
+        /// Enable log levels according to environment variables
+        /// </summary>
+        /// <param name="config">logging configuration</param>
+        public static void Enable(LoggingConfiguration config)
+        {
+            foreach (var target in config.AllTargets)
+            {
+                if (Environment.GetEnvironmentVariable("TRACE") == "1")
+                    config.AddRuleForOneLevel(LogLevel.Trace, target);
+                if (Environment.GetEnvironmentVariable("DEBUG") == "1")
+                    config.AddRuleForOneLevel(LogLevel.Debug, target);
+                if (Environment.GetEnvironmentVariable("ERROR") == "1")
+                    config.AddRuleForOneLevel(LogLevel.Error, target);
+                if (Environment.GetEnvironmentVariable("INFO") == "1")
+                    config.AddRuleForOneLevel(LogLevel.Info, target);
+                if (Environment.GetEnvironmentVariable("WARN") == "1")
+                    config.AddRuleForOneLevel(LogLevel.Warn, target);
+                if (Environment.GetEnvironmentVariable("FATAL") == "1")
+                    config.AddRuleForOneLevel(LogLevel.Fatal, target);
+            }
+        }
+        
         /// <summary>
         /// Layout configuration for <see cref="NLog"/> 
         /// </summary>
@@ -55,7 +86,14 @@ namespace ZES.Logging
                 Layout = trace  
             };
             
+            _memory = new MemoryTarget
+            {
+                Name = "Memory",
+                Layout = trace
+            };
+            
             config.AddTarget(consoleTarget);
+            config.AddTarget(_memory);
             LogManager.Configuration = config;
             
             return config;

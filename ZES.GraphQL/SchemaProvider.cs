@@ -21,7 +21,7 @@ namespace ZES.GraphQL
     public class SchemaProvider : ISchemaProvider
     {
         private readonly IBus _bus;
-        private readonly IErrorLog _errorLog;
+        private readonly ILog _log;
 
         private readonly List<Type> _commands = new List<Type>();
         private readonly List<Type> _queries = new List<Type>();
@@ -30,12 +30,12 @@ namespace ZES.GraphQL
         /// Initializes a new instance of the <see cref="SchemaProvider"/> class.
         /// </summary>
         /// <param name="bus">Message bus</param>
-        /// <param name="errorLog">Application error log</param>
+        /// <param name="log">Application error log</param>
         /// <param name="container">SimpleInjector container</param>
-        public SchemaProvider(IBus bus, IErrorLog errorLog, Container container)
+        public SchemaProvider(IBus bus, ILog log, Container container)
         {
             _bus = bus;
-            _errorLog = errorLog;
+            _log = log;
 
             var handlers = container.GetCurrentRegistrations()
                 .Select(p => p.Registration.ImplementationType)
@@ -127,8 +127,14 @@ namespace ZES.GraphQL
             {
                 if (string.Compare(context.Field.Name, nameof(ErrorLog.Error), StringComparison.OrdinalIgnoreCase) == 0)
                 {
-                    var error = await _errorLog.Errors.FirstAsync();
+                    var error = await _log.Errors.Observable.FirstAsync();
                     context.Result = error;
+                    return;
+                }
+
+                if (string.Compare(context.Field.Name, "Log", StringComparison.OrdinalIgnoreCase) == 0)
+                {
+                    context.Result = _log.MemoryLogs.LastOrDefault();
                     return;
                 }
 
@@ -164,7 +170,7 @@ namespace ZES.GraphQL
                 if (field != null)
                 {
                     var isError = false;
-                    _errorLog.Errors.Subscribe(e =>
+                    _log.Errors.Observable.Subscribe(e =>
                     {
                         if (e != null && e.ErrorType == typeof(InvalidOperationException).Name)
                             isError = true;

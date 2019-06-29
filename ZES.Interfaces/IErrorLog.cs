@@ -14,7 +14,7 @@ namespace ZES.Interfaces
         /// <value>
         /// Hot observable representing the errors in the application
         /// </value>
-        IObservable<IError> Errors { get; }
+        IObservable<IError> Observable { get; }
         
         /// <summary>
         /// Process the exception into the error log

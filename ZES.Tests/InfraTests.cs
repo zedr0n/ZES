@@ -63,7 +63,7 @@ namespace ZES.Tests
             var errorLog = container.GetInstance<IErrorLog>();
 
             IError error = null;
-            errorLog.Errors.Subscribe(e => error = e);
+            errorLog.Observable.Subscribe(e => error = e);
             
             var command = new CreateRoot("Root");
             await await bus.CommandAsync(command);

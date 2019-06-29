@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using Microsoft.Extensions.DependencyInjection;
+using NLog;
 using SimpleInjector;
 using SimpleInjector.Lifestyles;
 using ZES.Infrastructure.Attributes;
@@ -36,6 +37,9 @@ namespace ZES.GraphQL
             container.Options.DefaultScopedLifestyle = new AsyncScopedLifestyle();
             new CompositionRoot().ComposeApplication(container);
             container.Register<ISchemaProvider, SchemaProvider>(Lifestyle.Singleton);
+
+            var config = Logging.NLog.Configure();
+            Logging.NLog.Enable(config);
             
             // load root queries and mutations
             var rootQueries = new List<Type>();

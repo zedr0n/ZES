@@ -23,7 +23,7 @@ namespace ZES.Infrastructure
         }
 
         /// <inheritdoc />
-        public IObservable<IError> Errors => _errors.AsObservable();
+        public IObservable<IError> Observable => _errors.AsObservable();
 
         /// <inheritdoc />
         public void Add(Exception error)

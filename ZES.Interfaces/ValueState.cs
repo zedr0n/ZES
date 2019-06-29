@@ -1,5 +1,6 @@
 namespace ZES.Interfaces
 {
+    /*
     /// <summary>
     /// Single value wrapper
     /// </summary>
@@ -23,4 +24,5 @@ namespace ZES.Interfaces
         /// </value>
         public T Value { get; set; }
     }
+    */
 }

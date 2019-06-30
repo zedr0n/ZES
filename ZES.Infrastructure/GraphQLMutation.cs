@@ -1,3 +1,6 @@
+using System;
+using System.Reactive.Linq;
+using ZES.Interfaces;
 using ZES.Interfaces.Domain;
 using ZES.Interfaces.Pipes;
 
@@ -9,14 +12,17 @@ namespace ZES.Infrastructure
     public class GraphQlMutation
     {
         private readonly IBus _bus;
+        private readonly ILog _log;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="GraphQlMutation"/> class.
         /// </summary>
         /// <param name="bus">Bus service</param>
-        protected GraphQlMutation(IBus bus)
+        /// <param name="log">Log service</param>
+        protected GraphQlMutation(IBus bus, ILog log)
         {
             _bus = bus;
+            _log = log;
         }
 
         /// <summary>
@@ -25,13 +31,20 @@ namespace ZES.Infrastructure
         /// <param name="command">CQRS command</param>
         /// <typeparam name="TCommand">Command type</typeparam>
         /// <returns>True if command succeded</returns>
-        protected bool CommandAsync<TCommand>(TCommand command)
+        protected bool Resolve<TCommand>(TCommand command)
             where TCommand : ICommand
         {
+            var isError = false;
+            _log.Errors.Observable.Subscribe(e =>
+            {
+                if (e != null && e.ErrorType == typeof(InvalidOperationException).Name)
+                    isError = true;
+            });
+            
             var task = _bus.CommandAsync(command).Result;
             task.Wait();
             
-            return true;
+            return !isError;
         }
     }
 }

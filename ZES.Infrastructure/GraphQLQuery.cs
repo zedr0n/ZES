@@ -25,7 +25,7 @@ namespace ZES.Infrastructure
         /// <param name="query">Query instance</param>
         /// <typeparam name="TResult">Query result type</typeparam>
         /// <returns>Query result</returns>
-        protected TResult QueryAsync<TResult>(IQuery<TResult> query)
+        protected TResult Resolve<TResult>(IQuery<TResult> query)
         {
             return _bus.QueryAsync(query).Result;
         }

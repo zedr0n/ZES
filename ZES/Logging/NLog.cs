@@ -1,6 +1,9 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
+using System.Reactive.Linq;
+using System.Reactive.Subjects;
 using System.Runtime.CompilerServices;
 using NLog;
 using NLog.Config;
@@ -17,6 +20,7 @@ namespace ZES.Logging
         private static MemoryTarget _memory;
 
         private readonly ILogger _logger;
+        private readonly Subject<string> _logs = new Subject<string>();
 
         /// <summary>
         /// Initializes a new instance of the <see cref="NLog"/> class.
@@ -37,6 +41,9 @@ namespace ZES.Logging
         
         /// <inheritdoc />
         public IErrorLog Errors { get; set; }
+
+        /// <inheritdoc />
+        public IObservable<string> Logs => _logs.AsObservable(); 
         
         /// <inheritdoc />
         public IList<string> MemoryLogs => _memory.Logs;
@@ -103,6 +110,8 @@ namespace ZES.Logging
         public void Trace(object message)
         {
             _logger.Trace(" {msg}", message);
+            
+            _logs.OnNext(_memory.Logs.LastOrDefault());
         }
 
         /// <inheritdoc />
@@ -110,14 +119,18 @@ namespace ZES.Logging
         {
             var type = instance is string ? instance : instance?.GetType().GetFriendlyName();
             _logger.Trace("{dtype} {msg}", type, message);
+            
+            _logs.OnNext(_memory.Logs.LastOrDefault());
         }
 
         /// <inheritdoc />
         public void Debug(object message, object instance = null, [CallerMemberName] string caller = "")
         {
             var type = instance is string ? instance : instance?.GetType().GetFriendlyName();
-            if (Configuration.LogEnabled(caller))
-                _logger.Debug("{dtype} {msg}", type ?? string.Empty, message);
+            if (!Configuration.LogEnabled(caller)) 
+                return;
+            _logger.Debug("{dtype} {msg}", type ?? string.Empty, message);
+            _logs.OnNext(_memory.Logs.LastOrDefault());
         }
 
         /// <inheritdoc />
@@ -125,6 +138,7 @@ namespace ZES.Logging
         {
             var type = instance is string ? instance : instance?.GetType().GetFriendlyName();
             _logger.Info("{dtype} {msg}", type ?? string.Empty, message);
+            _logs.OnNext(_memory.Logs.LastOrDefault());
         }
         
         /// <inheritdoc />
@@ -132,6 +146,7 @@ namespace ZES.Logging
         {
             var type = instance is string ? instance : instance?.GetType().GetFriendlyName();
             _logger.Warn("{dtype} {msg}", type ?? string.Empty, message);
+            _logs.OnNext(_memory.Logs.LastOrDefault());
         } 
 
         /// <inheritdoc />
@@ -139,6 +154,7 @@ namespace ZES.Logging
         {
             var type = instance is string ? instance : instance?.GetType().GetFriendlyName();
             _logger.Error("{dtype} {msg}", type ?? string.Empty, message);
+            _logs.OnNext(_memory.Logs.LastOrDefault());
         }
 
         /// <inheritdoc />
@@ -146,6 +162,7 @@ namespace ZES.Logging
         {
             var type = instance is string ? instance : instance?.GetType().GetFriendlyName();
             _logger.Fatal("{dtype} {msg}", type ?? string.Empty, message);
+            _logs.OnNext(_memory.Logs.LastOrDefault());
         }
     }
 }

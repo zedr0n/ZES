@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 
@@ -23,7 +24,15 @@ namespace ZES.Interfaces
         /// All accumulated logs in memory
         /// </value>
         IList<string> MemoryLogs { get; }
-        
+
+        /// <summary>
+        /// Gets logs as observable
+        /// </summary>
+        /// <value>
+        /// Logs as observable
+        /// </value>
+        IObservable<string> Logs { get; }
+
         /// <summary>
         /// Writes the diagnostic message at the <c>Trace</c> level.
         /// </summary>

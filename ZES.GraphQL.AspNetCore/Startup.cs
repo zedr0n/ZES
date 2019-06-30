@@ -1,4 +1,5 @@
-﻿using HotChocolate.AspNetCore;
+﻿using HotChocolate;
+using HotChocolate.AspNetCore;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.DependencyInjection;

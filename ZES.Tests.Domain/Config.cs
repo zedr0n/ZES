@@ -1,6 +1,9 @@
 using System.Reflection;
 using SimpleInjector;
+using ZES.Infrastructure;
 using ZES.Infrastructure.Attributes;
+using ZES.Interfaces.Domain;
+using ZES.Interfaces.Pipes;
 using ZES.Tests.Domain.Commands;
 using ZES.Tests.Domain.Queries;
 using ZES.Utils;
@@ -34,26 +37,36 @@ namespace ZES.Tests.Domain
         {
             c.RegisterQueries(Assembly.GetExecutingAssembly());
         }
-
+        
         [RootQuery]
-        public abstract class Queries
+        public class Queries : GraphQlQuery 
         {
-            public abstract RootInfo RootInfoQuery(string id);
-            public abstract RootInfo RootInfoQueryEx(RootInfoQuery query);
-            public abstract Stats StatsQuery();
-            public abstract Stats StatsQueryEx(StatsQuery query);
-            public abstract LastRecord LastRecordQuery(string id);
+            public Queries(IBus bus)
+                : base(bus)
+            {
+            }
+            
+            public RootInfo RootInfoQuery(string id) => QueryAsync(new RootInfoQuery(id));
+            public RootInfo RootInfoQueryEx(RootInfoQuery query) => QueryAsync(query);
+            public Stats StatsQuery() => QueryAsync(new StatsQuery());
+            public Stats StatsQueryEx(StatsQuery query) => QueryAsync(query);
+            public LastRecord LastRecordQuery(string id) => QueryAsync(new LastRecordQuery(id));
         }
         
         [RootMutation]
-        public abstract class Mutations
+        public class Mutations : GraphQlMutation
         {
-             public abstract bool CreateRoot(string name);
-             public abstract bool CreateRootEx(CreateRoot command);
-             public abstract bool CreateRecord(string target);
-             public abstract bool CreateRecordEx(CreateRecord command);
-             public abstract bool RecordRoot(string target, double recordValue);
-             public abstract bool RecordRootEx(RecordRoot command);
+            public Mutations(IBus bus)
+                : base(bus)
+            {
+            }
+
+            public bool CreateRoot(string name) => CommandAsync(new CreateRoot(name));
+            public bool CreateRootEx(CreateRoot command) => CommandAsync(command);
+            public bool CreateRecord(string target) => CommandAsync(new CreateRecord(target));
+            public bool CreateRecordEx(CreateRecord command) => CommandAsync(command);
+            public bool RecordRoot(string target, double recordValue) => CommandAsync(new RecordRoot(target, recordValue));
+            public bool RecordRootEx(RecordRoot command) => CommandAsync(command);
         }
     }
 }

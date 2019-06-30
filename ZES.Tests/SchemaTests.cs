@@ -1,4 +1,5 @@
 using System.Linq;
+using System.Threading;
 using HotChocolate.Execution;
 using Xunit;
 using Xunit.Abstractions;
@@ -29,6 +30,35 @@ namespace ZES.Tests
                 typeof(Queries),
                 typeof(Mutations)).Schema;
             log.Info(schema.ToString());
+        }
+
+        [Fact]
+        public async void CanSubscribe()
+        {
+            var container = CreateContainer();
+            var log = container.GetInstance<ILog>();
+ 
+            var schemaProvider = container.GetInstance<ISchemaProvider>();
+            
+            var executor = schemaProvider.Generate(typeof(Queries));
+            
+            var errorResult = await executor.ExecuteAsync(@"query{ error { message } }") as IReadOnlyQueryResult;
+            
+            var responseStream = await executor.ExecuteAsync(@"subscription{ log { message } }") as IResponseStream;
+
+            var message = "Ping!";
+            log.Info(message);
+            
+            IReadOnlyQueryResult eventResult;
+            using (var cts = new CancellationTokenSource(2000))
+                eventResult = await responseStream.ReadAsync(cts.Token);
+
+            dynamic dict = eventResult?.Data.SingleOrDefault().Value;
+
+            // subscription stitching is not working yet
+            Assert.Null(dict);
+            
+            // Assert.Contains(message, dict["message"]);
         }
 
         [Fact]

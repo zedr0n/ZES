@@ -2,6 +2,9 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using HotChocolate;
+using HotChocolate.Execution;
+using HotChocolate.Subscriptions;
 using Microsoft.Extensions.DependencyInjection;
 using NLog;
 using SimpleInjector;
@@ -60,7 +63,7 @@ namespace ZES.GraphQL
             container.Verify();
             
             var schemaProvider = container.GetInstance<ISchemaProvider>();
-            schemaProvider.Register(services, rootQueries.ToArray(), rootMutations.ToArray()); 
+            schemaProvider.Register(services, rootQueries.ToArray(), rootMutations.ToArray());
         }
     }
 }

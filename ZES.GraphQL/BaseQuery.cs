@@ -39,10 +39,6 @@ namespace ZES.GraphQL
         /// GraphQL log query
         /// </summary>
         /// <returns>Log contents</returns>
-        public string Log()
-        {
-            _log.Info("Ping!");
-            return _log.MemoryLogs.LastOrDefault();
-        }
+        public string Log() => _log.MemoryLogs.LastOrDefault();
     }
 }

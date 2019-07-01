@@ -13,16 +13,19 @@ namespace ZES.GraphQL
     public class BaseQueries : GraphQlQuery
     {
         private readonly ILog _log;
+        private readonly IBranchManager _manager;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="BaseQueries"/> class.
         /// </summary>
         /// <param name="log">Log service</param>
         /// <param name="bus">Bus service</param>
-        public BaseQueries(ILog log, IBus bus) 
+        /// <param name="manager">Branch manager service</param>
+        public BaseQueries(ILog log, IBus bus, IBranchManager manager) 
             : base(bus)
         {
             _log = log;
+            _manager = manager;
         }
 
         /// <summary>
@@ -34,6 +37,8 @@ namespace ZES.GraphQL
             var error = _log.Errors.Observable.FirstAsync().Wait();
             return (Error)error;
         }
+
+        public string ActiveBranch() => _manager.ActiveBranch;
 
         /// <summary>
         /// GraphQL log query

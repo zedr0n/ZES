@@ -143,6 +143,10 @@ namespace ZES.Tests
                 log.Error(e.Message, this);
  
             await executor.ExecuteAsync(@"mutation { branch( branch : ""test"") } ");
+
+            var result = await executor.ExecuteAsync(@"query { activeBranch }") as IReadOnlyQueryResult;
+            var branchId = result?.Data["activeBranch"];
+            Assert.Equal("test", branchId);
         }
         
         [Fact]

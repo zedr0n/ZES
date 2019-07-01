@@ -58,6 +58,9 @@ namespace ZES.Infrastructure.Branching
         }
 
         /// <inheritdoc />
+        public string ActiveBranch => _activeTimeline.Id;
+
+        /// <inheritdoc />
         public async Task<ITimeline> Branch(string branchId, long? time = null)
         {
             if (_activeTimeline.Id == branchId)

@@ -105,7 +105,7 @@ namespace ZES.Tests
             var container = CreateContainer();
             var bus = container.GetInstance<IBus>();
             var repository = container.GetInstance<IEsRepository<IAggregate>>();
-            var timeTraveller = container.GetInstance<IBranchManager>();
+            var manager = container.GetInstance<IBranchManager>();
             
             var command = new CreateRoot("Root");
             await await bus.CommandAsync(command);
@@ -113,12 +113,14 @@ namespace ZES.Tests
             var timeline = container.GetInstance<ITimeline>();
             Assert.Equal("master", timeline.Id);
 
-            await timeTraveller.Branch("test");
-            timeTraveller.Reset();
+            await manager.Branch("test");
+            Assert.Equal("test", manager.ActiveBranch);
+            manager.Reset();
+            Assert.Equal(BranchManager.Master, manager.ActiveBranch);
             
             await await bus.CommandAsync(new UpdateRoot("Root"));
 
-            await timeTraveller.Branch("test");
+            await manager.Branch("test");
 
             Assert.Equal("test", timeline.Id);
             var root = await repository.Find<Root>("Root");
@@ -133,14 +135,14 @@ namespace ZES.Tests
             var testRootInfo = await bus.QueryUntil(new RootInfoQuery("TestRoot"), r => r?.CreatedAt > 0);
             Assert.True(testRootInfo?.CreatedAt > 0);
 
-            timeTraveller.Reset();
+            manager.Reset();
             rootInfo = await bus.QueryAsync(new RootInfoQuery("Root"));
             Assert.True(rootInfo.CreatedAt != rootInfo.UpdatedAt);
 
             testRootInfo = await bus.QueryAsync(new RootInfoQuery("TestRoot"));
             Assert.True(testRootInfo.CreatedAt == testRootInfo.UpdatedAt);
 
-            await timeTraveller.Branch("test");
+            await manager.Branch("test");
             testRootInfo = await bus.QueryUntil(new RootInfoQuery("TestRoot"), r => r?.CreatedAt > 0);
             Assert.True(testRootInfo?.CreatedAt > 0); 
             

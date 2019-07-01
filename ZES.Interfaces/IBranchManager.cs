@@ -9,6 +9,14 @@ namespace ZES.Interfaces
     public interface IBranchManager
     {
         /// <summary>
+        /// Gets active branch id
+        /// </summary>
+        /// <value>
+        /// Active branch id
+        /// </value>
+        string ActiveBranch { get; }
+        
+        /// <summary>
         /// Branch the current timeline at a certain point in the past
         /// </summary>
         /// <param name="branchId">Branch unique identifier</param>

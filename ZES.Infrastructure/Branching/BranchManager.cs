@@ -61,7 +61,10 @@ namespace ZES.Infrastructure.Branching
         public async Task<ITimeline> Branch(string branchId, long? time = null)
         {
             if (_activeTimeline.Id == branchId)
+            {
+                _log.Info($"Already on branch {branchId}");
                 return _activeTimeline;
+            }
 
             var newBranch = !_branches.ContainsKey(branchId); // && branchId != Master;
             
@@ -80,7 +83,7 @@ namespace ZES.Infrastructure.Branching
             _activeTimeline.Set(timeline);
             
             _log.Info($"Switched to {branchId} branch");
-            
+
             // refresh the stream locator
             _messageQueue.Alert(new Alerts.OnTimelineChange());
             

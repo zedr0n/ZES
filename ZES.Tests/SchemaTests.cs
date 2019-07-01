@@ -125,6 +125,25 @@ namespace ZES.Tests
             Assert.NotNull(statsDict);
             Assert.Equal(1, statsDict["numberOfRoots"]); 
         }
+
+        [Fact]
+        public async void CanBranch()
+        {
+            var container = CreateContainer();
+            var log = container.GetInstance<ILog>(); 
+            
+            var schemaProvider = container.GetInstance<ISchemaProvider>();
+            var generator = container.GetInstance<IGraphQlGenerator>();
+            
+            var executor = schemaProvider.Generate(typeof(Queries), typeof(Mutations));
+
+            var command = generator.Mutation(new CreateRoot("Root"));
+            var commandResult = executor.Execute(command);
+            foreach (var e in commandResult.Errors)
+                log.Error(e.Message, this);
+ 
+            await executor.ExecuteAsync(@"mutation { branch( branch : ""test"") } ");
+        }
         
         [Fact]
         public async void CanQueryError()

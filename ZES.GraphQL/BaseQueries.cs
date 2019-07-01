@@ -10,16 +10,16 @@ namespace ZES.GraphQL
     /// <summary>
     /// Non-domain specific GraphQL root query
     /// </summary>
-    public class BaseQuery : GraphQlQuery
+    public class BaseQueries : GraphQlQuery
     {
         private readonly ILog _log;
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="BaseQuery"/> class.
+        /// Initializes a new instance of the <see cref="BaseQueries"/> class.
         /// </summary>
         /// <param name="log">Log service</param>
         /// <param name="bus">Bus service</param>
-        public BaseQuery(ILog log, IBus bus) 
+        public BaseQueries(ILog log, IBus bus) 
             : base(bus)
         {
             _log = log;

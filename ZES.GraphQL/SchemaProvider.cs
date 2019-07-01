@@ -21,16 +21,19 @@ namespace ZES.GraphQL
     {
         private readonly IBus _bus;
         private readonly ILog _log;
+        private readonly IBranchManager _manager;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="SchemaProvider"/> class.
         /// </summary>
         /// <param name="bus">Message bus</param>
         /// <param name="log">Application error log</param>
-        public SchemaProvider(IBus bus, ILog log)
+        /// <param name="manager">Branch manager service</param>
+        public SchemaProvider(IBus bus, ILog log, IBranchManager manager)
         {
             _bus = bus;
             _log = log;
+            _manager = manager;
         }
 
         /// <inheritdoc />
@@ -41,6 +44,7 @@ namespace ZES.GraphQL
             
             services.AddSingleton(typeof(ILog), _log);
             services.AddSingleton(typeof(IBus), _bus);
+            services.AddSingleton(typeof(IBranchManager), _manager);
 
             services.AddInMemorySubscriptionProvider();
             
@@ -49,7 +53,8 @@ namespace ZES.GraphQL
                 c.RegisterExtendedScalarTypes();
                 
                 // c.Use(Middleware());
-                c.RegisterQueryType(typeof(BaseQuery));
+                c.RegisterQueryType(typeof(BaseQueries));
+                c.RegisterMutationType(typeof(BaseMutations));
                 c.RegisterSubscriptionType<SubscriptionType>();
             });
             

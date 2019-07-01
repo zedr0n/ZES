@@ -30,7 +30,7 @@ namespace ZES
             _errorLog = errorLog;
             _commandDispatcher = new CommandDispatcher(
                 HandleCommand, 
-                new DataflowOptions { RecommendedParallelismIfMultiThreaded = Configuration.ThreadsPerInstance });
+                new DataflowOptions { RecommendedParallelismIfMultiThreaded = 1 });
         }
 
         /// <inheritdoc />

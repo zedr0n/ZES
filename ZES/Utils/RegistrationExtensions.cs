@@ -7,6 +7,7 @@ using ZES.Infrastructure.Domain;
 using ZES.Infrastructure.Projections;
 using ZES.Infrastructure.Sagas;
 using ZES.Interfaces.Domain;
+using ZES.Interfaces.GraphQL;
 using ZES.Interfaces.Sagas;
 
 namespace ZES.Utils
@@ -82,6 +83,8 @@ namespace ZES.Utils
                 c.RegisterConditional(iQueryHandler, handler, Lifestyle.Singleton, x => !x.Handled);
                 c.RegisterConditional(iHistoricalQueryHandler, historicalHandler, Lifestyle.Transient, x => !x.Handled);
             }
+            
+            c.Collection.Register<IGraphQlQuery>(assembly);
         }
         
         /// <summary>
@@ -126,8 +129,10 @@ namespace ZES.Utils
                 var handler = assembly.GetTypesFromInterface(iHandler).SingleOrDefault();
                 c.Register(iHandler, handler, Lifestyle.Singleton);
             }
+            
+            c.Collection.Register<IGraphQlMutation>(assembly);
         }
-        
+
         private static IEnumerable<Type> GetTypesFromInterface(this Assembly assembly, Type t)
         {
             var types = assembly.GetTypes()

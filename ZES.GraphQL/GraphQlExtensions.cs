@@ -39,21 +39,14 @@ namespace ZES.GraphQL
         {
             container.Options.DefaultScopedLifestyle = new AsyncScopedLifestyle();
             new CompositionRoot().ComposeApplication(container);
+            container.Register<IServiceCollection>(() => services, Lifestyle.Singleton);
             container.Register<ISchemaProvider, SchemaProvider>(Lifestyle.Singleton);
 
             var config = Logging.NLog.Configure();
             Logging.NLog.Enable(config);
             
-            // load root queries and mutations
-            var rootQueries = new List<Type>();
-            var rootMutations = new List<Type>();
             foreach (var t in configs)
             {
-                rootQueries.Add(t.GetNestedTypes()
-                    .SingleOrDefault(x => x.GetCustomAttribute<RootQueryAttribute>() != null));
-                rootMutations.Add(t.GetNestedTypes()
-                    .SingleOrDefault(x => x.GetCustomAttribute<RootMutationAttribute>() != null));
-
                 var regMethod = t.GetMethods(BindingFlags.Static | BindingFlags.Public)
                     .SingleOrDefault(x => x.GetCustomAttribute<RegistrationAttribute>() != null);
 
@@ -63,7 +56,7 @@ namespace ZES.GraphQL
             container.Verify();
             
             var schemaProvider = container.GetInstance<ISchemaProvider>();
-            schemaProvider.Register(services, rootQueries.ToArray(), rootMutations.ToArray());
+            schemaProvider.Services();
         }
     }
 }

@@ -26,9 +26,7 @@ namespace ZES.Tests
             var schemaProvider = container.GetInstance<ISchemaProvider>();
             var log = container.GetInstance<ILog>();
             
-            var schema = schemaProvider.Generate(
-                typeof(Queries),
-                typeof(Mutations)).Schema;
+            var schema = schemaProvider.Build().Schema;
             log.Info(schema.ToString());
         }
 
@@ -40,7 +38,7 @@ namespace ZES.Tests
  
             var schemaProvider = container.GetInstance<ISchemaProvider>();
             
-            var executor = schemaProvider.Generate(typeof(Queries));
+            var executor = schemaProvider.Build();
             
             var errorResult = await executor.ExecuteAsync(@"query{ error { message } }") as IReadOnlyQueryResult;
             
@@ -74,7 +72,7 @@ namespace ZES.Tests
             
             var schemaProvider = container.GetInstance<ISchemaProvider>();
             
-            var executor = schemaProvider.Generate(typeof(Queries));
+            var executor = schemaProvider.Build();
             var query = generator.Query(new RootInfoQuery("Root"));
             var rootInfoResult = await executor.ExecuteAsync(query) as IReadOnlyQueryResult;
             dynamic rootInfoDict = rootInfoResult?.Data.SingleOrDefault().Value;
@@ -99,7 +97,7 @@ namespace ZES.Tests
             var schemaProvider = container.GetInstance<ISchemaProvider>();
             var generator = container.GetInstance<IGraphQlGenerator>();
             
-            var executor = schemaProvider.Generate(typeof(Queries), typeof(Mutations));
+            var executor = schemaProvider.Build();
 
             var command = generator.Mutation(new CreateRoot("Root"));
             var commandResult = executor.Execute(command);
@@ -135,7 +133,7 @@ namespace ZES.Tests
             var schemaProvider = container.GetInstance<ISchemaProvider>();
             var generator = container.GetInstance<IGraphQlGenerator>();
             
-            var executor = schemaProvider.Generate(typeof(Queries), typeof(Mutations));
+            var executor = schemaProvider.Build();
 
             var command = generator.Mutation(new CreateRoot("Root"));
             var commandResult = executor.Execute(command);
@@ -160,7 +158,7 @@ namespace ZES.Tests
             var generator = container.GetInstance<IGraphQlGenerator>();
             var command = generator.Mutation(new CreateRoot("Root"));
             
-            var executor = schemaProvider.Generate(typeof(Queries), typeof(Mutations));
+            var executor = schemaProvider.Build();
 
             var commandResult = await executor.ExecuteAsync(command);
             foreach (var e in commandResult.Errors)

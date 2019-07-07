@@ -12,6 +12,7 @@ using Microsoft.Extensions.DependencyInjection;
 using ZES.Infrastructure;
 using ZES.Interfaces;
 using ZES.Interfaces.Domain;
+using ZES.Interfaces.GraphQL;
 using ZES.Interfaces.Pipes;
 
 namespace ZES.GraphQL
@@ -22,6 +23,9 @@ namespace ZES.GraphQL
         private readonly IBus _bus;
         private readonly ILog _log;
         private readonly IBranchManager _manager;
+        private readonly IEnumerable<IGraphQlMutation> _mutations;
+        private readonly IEnumerable<IGraphQlQuery> _queries;
+        private readonly IServiceCollection _services;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="SchemaProvider"/> class.
@@ -29,24 +33,29 @@ namespace ZES.GraphQL
         /// <param name="bus">Message bus</param>
         /// <param name="log">Application error log</param>
         /// <param name="manager">Branch manager service</param>
-        public SchemaProvider(IBus bus, ILog log, IBranchManager manager)
+        /// <param name="mutations">GraphQL mutations</param>
+        /// <param name="queries">GraphQL queries</param>
+        public SchemaProvider(IBus bus, ILog log, IBranchManager manager, IEnumerable<IGraphQlMutation> mutations, IEnumerable<IGraphQlQuery> queries, IServiceCollection services)
         {
             _bus = bus;
             _log = log;
             _manager = manager;
+            _mutations = mutations;
+            _queries = queries;
+            _services = services;
         }
 
         /// <inheritdoc />
-        public IServiceCollection Register(IServiceCollection services, IEnumerable<Type> rootQuery, IEnumerable<Type> rootMutation)
+        public IServiceCollection Services()
         {
-            if (services == null)
-                services = new ServiceCollection();
+            var rootQuery = _queries.Select(t => t.GetType());
+            var rootMutation = _mutations.Select(t => t.GetType());
             
-            services.AddSingleton(typeof(ILog), _log);
-            services.AddSingleton(typeof(IBus), _bus);
-            services.AddSingleton(typeof(IBranchManager), _manager);
+            _services.AddSingleton(typeof(ILog), _log);
+            _services.AddSingleton(typeof(IBus), _bus);
+            _services.AddSingleton(typeof(IBranchManager), _manager);
 
-            services.AddInMemorySubscriptionProvider();
+            _services.AddInMemorySubscriptionProvider();
             
             var baseSchema = Schema.Create(c =>
             {
@@ -93,15 +102,15 @@ namespace ZES.GraphQL
                 }
             }
            
-            services.AddStitchedSchema(AggregateSchemas);
+            _services.AddStitchedSchema(AggregateSchemas);
             
-            return services;
+            return _services;
         }
 
         /// <inheritdoc />
-        public IQueryExecutor Generate(Type rootQuery = null, Type rootMutation = null)
+        public IQueryExecutor Build()
         {
-            var services = Register(null, rootQuery, rootMutation);
+            var services = Services();
 
             var provider = services.BuildServiceProvider();
             
@@ -127,11 +136,6 @@ namespace ZES.GraphQL
                 new OnLogMessage(new LogMessage(m))));
 
             return executor;
-        }
-        
-        private IServiceCollection Register(IServiceCollection services, Type rootQuery, Type rootMutation)
-        {
-            return Register(services, new[] { rootQuery }, new[] { rootMutation });
         }
     }
 }

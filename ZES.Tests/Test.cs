@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Microsoft.Extensions.DependencyInjection;
 using NLog;
 using NLog.Targets;
 using SimpleInjector;
@@ -59,6 +60,7 @@ namespace ZES.Tests
                 var container = new Container();
                 CreateRoot().ComposeApplication(container);
                 container.Register<IGraphQlGenerator, GraphQlGenerator>(Lifestyle.Singleton);
+                container.Register<IServiceCollection>(() => new ServiceCollection(), Lifestyle.Singleton);
                 container.Register<ISchemaProvider, SchemaProvider>(Lifestyle.Singleton);
 
                 container.Options.AllowOverridingRegistrations = true;

@@ -39,7 +39,6 @@ namespace ZES.Tests.Domain
             c.RegisterQueries(Assembly.GetExecutingAssembly());
         }
         
-        [RootQuery]
         public class Queries : GraphQlQuery 
         {
             public Queries(IBus bus)
@@ -54,7 +53,6 @@ namespace ZES.Tests.Domain
             public LastRecord LastRecordQuery(string id) => Resolve(new LastRecordQuery(id));
         }
         
-        [RootMutation]
         public class Mutations : GraphQlMutation
         {
             public Mutations(IBus bus, ILog log)

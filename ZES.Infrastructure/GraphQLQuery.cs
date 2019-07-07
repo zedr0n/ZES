@@ -1,4 +1,5 @@
 using ZES.Interfaces.Domain;
+using ZES.Interfaces.GraphQL;
 using ZES.Interfaces.Pipes;
 
 namespace ZES.Infrastructure
@@ -6,7 +7,7 @@ namespace ZES.Infrastructure
     /// <summary>
     /// Base graphQL query
     /// </summary>
-    public class GraphQlQuery
+    public class GraphQlQuery : IGraphQlQuery
     {
         private readonly IBus _bus;
 

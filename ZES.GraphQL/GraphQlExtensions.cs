@@ -26,6 +26,8 @@ namespace ZES.GraphQL
         public static void WireGraphQl(this IServiceCollection services, Type config)
         {
             var container = new Container();
+            container.Options.DefaultLifestyle = Lifestyle.Singleton;
+
             WireGraphQl(services, container, new[] { config });
         }
 
@@ -56,7 +58,7 @@ namespace ZES.GraphQL
             container.Verify();
             
             var schemaProvider = container.GetInstance<ISchemaProvider>();
-            schemaProvider.Services();
+            // schemaProvider.Services();
         }
     }
 }

@@ -58,6 +58,8 @@ namespace ZES.Tests
             lock (_lock)
             {
                 var container = new Container();
+                container.Options.DefaultLifestyle = Lifestyle.Singleton;
+
                 CreateRoot().ComposeApplication(container);
                 container.Register<IGraphQlGenerator, GraphQlGenerator>(Lifestyle.Singleton);
                 container.Register<IServiceCollection>(() => new ServiceCollection(), Lifestyle.Singleton);

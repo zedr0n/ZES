@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Reactive.Linq;
 using System.Reflection;
 using HotChocolate;
 using HotChocolate.Execution;
@@ -9,7 +8,6 @@ using HotChocolate.Stitching;
 using HotChocolate.Subscriptions;
 using HotChocolate.Types;
 using Microsoft.Extensions.DependencyInjection;
-using ZES.Infrastructure;
 using ZES.Interfaces;
 using ZES.Interfaces.Domain;
 using ZES.Interfaces.GraphQL;
@@ -43,10 +41,40 @@ namespace ZES.GraphQL
             _mutations = mutations;
             _queries = queries;
             _services = services;
+
+            InitialiseServices();
         }
 
         /// <inheritdoc />
-        public IServiceCollection Services()
+        public IQueryExecutor Build()
+        {
+            var provider = _services.BuildServiceProvider();
+            
+            /*var baseSchema = Schema.Create(c =>
+            {
+                c.RegisterServiceProvider(provider);
+                
+                c.RegisterExtendedScalarTypes();
+                // c.Use(Middleware());
+                c.RegisterQueryType(typeof(BaseQuery));
+                c.RegisterSubscriptionType<SubscriptionType>();
+            });
+
+            var executor = baseSchema.MakeExecutable();
+            var eventRegistry = provider.GetService<IEventRegistry>();
+ 
+            */
+            
+            var executor = provider.GetService<IQueryExecutor>();
+            var sender = provider.GetService<IEventSender>();
+
+            _log.Logs.Subscribe(async m => await sender.SendAsync(
+                new OnLogMessage(new LogMessage(m))));
+
+            return executor;
+        }
+        
+        private void InitialiseServices()
         {
             var rootQuery = _queries.Select(t => t.GetType());
             var rootMutation = _mutations.Select(t => t.GetType());
@@ -103,39 +131,7 @@ namespace ZES.GraphQL
             }
            
             _services.AddStitchedSchema(AggregateSchemas);
-            
-            return _services;
         }
 
-        /// <inheritdoc />
-        public IQueryExecutor Build()
-        {
-            var services = Services();
-
-            var provider = services.BuildServiceProvider();
-            
-            /*var baseSchema = Schema.Create(c =>
-            {
-                c.RegisterServiceProvider(provider);
-                
-                c.RegisterExtendedScalarTypes();
-                // c.Use(Middleware());
-                c.RegisterQueryType(typeof(BaseQuery));
-                c.RegisterSubscriptionType<SubscriptionType>();
-            });
-
-            var executor = baseSchema.MakeExecutable();
-            var eventRegistry = provider.GetService<IEventRegistry>();
- 
-            */
-            
-            var executor = provider.GetService<IQueryExecutor>();
-            var sender = provider.GetService<IEventSender>();
-
-            _log.Logs.Subscribe(async m => await sender.SendAsync(
-                new OnLogMessage(new LogMessage(m))));
-
-            return executor;
-        }
     }
 }

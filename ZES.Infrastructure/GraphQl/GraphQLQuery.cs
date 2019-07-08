@@ -2,7 +2,7 @@ using ZES.Interfaces.Domain;
 using ZES.Interfaces.GraphQL;
 using ZES.Interfaces.Pipes;
 
-namespace ZES.Infrastructure
+namespace ZES.Infrastructure.GraphQl
 {
     /// <summary>
     /// Base graphQL query

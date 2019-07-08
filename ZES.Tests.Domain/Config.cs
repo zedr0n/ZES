@@ -2,6 +2,7 @@ using System.Reflection;
 using SimpleInjector;
 using ZES.Infrastructure;
 using ZES.Infrastructure.Attributes;
+using ZES.Infrastructure.GraphQl;
 using ZES.Interfaces;
 using ZES.Interfaces.Domain;
 using ZES.Interfaces.Pipes;

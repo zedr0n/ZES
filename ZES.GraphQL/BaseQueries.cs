@@ -1,6 +1,7 @@
 using System.Linq;
 using System.Reactive.Linq;
 using ZES.Infrastructure;
+using ZES.Infrastructure.GraphQl;
 using ZES.Interfaces;
 using ZES.Interfaces.Pipes;
 using static ZES.Infrastructure.ErrorLog;

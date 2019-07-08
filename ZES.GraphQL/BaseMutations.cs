@@ -1,4 +1,5 @@
 using ZES.Infrastructure;
+using ZES.Infrastructure.GraphQl;
 using ZES.Interfaces;
 using ZES.Interfaces.Pipes;
 

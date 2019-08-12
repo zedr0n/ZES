@@ -14,6 +14,7 @@ using ZES.Infrastructure.Projections;
 using ZES.Infrastructure.Serialization;
 using ZES.Infrastructure.Streams;
 using ZES.Interfaces;
+using ZES.Interfaces.Causality;
 using ZES.Interfaces.Domain;
 using ZES.Interfaces.EventStore;
 using ZES.Interfaces.Pipes;
@@ -87,6 +88,7 @@ namespace ZES
 
             container.Register(typeof(IStreamLocator<>), typeof(StreamLocator<>), Lifestyle.Singleton);    
             container.Register(typeof(IEsRepository<>), typeof(EsRepository<>), Lifestyle.Singleton);
+            container.Register<IGraph, VGraph>(Lifestyle.Singleton);
             
             container.Register<ICausalityGraph, CausalityGraph>(Lifestyle.Singleton);
             

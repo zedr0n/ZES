@@ -33,6 +33,7 @@ namespace ZES.GraphQL
         /// <param name="manager">Branch manager service</param>
         /// <param name="mutations">GraphQL mutations</param>
         /// <param name="queries">GraphQL queries</param>
+        /// <param name="services">Asp.Net services collection</param>
         public SchemaProvider(IBus bus, ILog log, IBranchManager manager, IEnumerable<IGraphQlMutation> mutations, IEnumerable<IGraphQlQuery> queries, IServiceCollection services)
         {
             _bus = bus;
@@ -132,6 +133,5 @@ namespace ZES.GraphQL
            
             _services.AddStitchedSchema(AggregateSchemas);
         }
-
     }
 }

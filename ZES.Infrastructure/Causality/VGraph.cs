@@ -1,48 +1,18 @@
 using System;
-using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Reactive.Linq;
 using System.Reactive.Subjects;
 using System.Threading;
 using System.Threading.Tasks;
-using Frontenac.Blueprints;
 using SqlStreamStore.Streams;
 using VelocityDb.Session;
 using VelocityGraph;
 using ZES.Interfaces;
 using ZES.Interfaces.Causality;
-using EdgeType = VelocityGraph.EdgeType;
 using IGraph = ZES.Interfaces.Causality.IGraph;
 
 namespace ZES.Infrastructure.Causality
 {
-    public static class GraphExtensions
-    {
-        public static IEnumerable<Vertex> GetPath(this Vertex from, EdgeType edgeType, Vertex to = null)
-        {
-            var vertices = new List<Vertex> { from };
-
-            var descendants = from.Traverse(Direction.Out, new HashSet<EdgeType> { edgeType });
-            while (descendants.Count > 0)
-            {
-                from = descendants.FirstOrDefault().Key;
-                vertices.Add(from);
-                if (from.VertexId == to?.VertexId)
-                    break;
-                
-                descendants = from.Traverse(Direction.Out, new HashSet<EdgeType> { edgeType }); 
-            }
-
-            return vertices;
-        }
-
-        public static Vertex End(this Vertex from, EdgeType edgeType)
-        {
-            return from.GetPath(edgeType).LastOrDefault();
-        }
-    }
-    
     /// <summary>
     /// Event graph
     /// </summary>
@@ -61,6 +31,8 @@ namespace ZES.Infrastructure.Causality
         
         private const string SystemDir = "VelocityGraph";
         
+        private readonly object _lock = new object();
+
         private readonly BehaviorSubject<GraphState> _state = new BehaviorSubject<GraphState>(GraphState.Sleeping);
         private readonly BehaviorSubject<bool> _request = new BehaviorSubject<bool>(false);
         private readonly BehaviorSubject<int> _readRequestsSubject = new BehaviorSubject<int>(0);
@@ -71,25 +43,26 @@ namespace ZES.Infrastructure.Causality
         private int _reading = 0;
         private int _readRequests = 0;
 
-        private readonly object _lock = new object();
-
-        /// <inheritdoc />
-        public IObservable<GraphState> State => _state.AsObservable();
-
-        public IObservable<int> ReadRequests => _readRequestsSubject.AsObservable();
-
+        /// <summary>
+        /// Initializes a new instance of the <see cref="VGraph"/> class.
+        /// </summary>
+        /// <param name="log">Application log</param>
         public VGraph(ILog log)
         {
             _log = log;
-            // _request.Subscribe(b => _log.Info($"Graph update requested : {b}"));
-            // _state.Subscribe(s => _log.Info($"Graph state : {s}"));
         }
+
+        /// <inheritdoc />
+        public IObservable<GraphState> State => _state.AsObservable();
         
+        /// <inheritdoc />
+        public IObservable<int> ReadRequests => _readRequestsSubject.AsObservable();
+
         /// <summary>
         /// Create graph schema
         /// </summary>
         /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
-        public async Task Reinitialize()
+        public async Task Initialize()
         {
             using (var session = await BeginUpdate(true))
             {
@@ -113,11 +86,21 @@ namespace ZES.Infrastructure.Causality
             }
         }
 
+        /// <inheritdoc />
+        public async Task Pause(int ms)
+        {
+            using (var session = await BeginUpdate())
+            {
+                Thread.Sleep(ms);
+                await EndUpdate(session);
+            }
+        }
+
+        /// <inheritdoc />
         public async Task<int> GetStreamVersion(string key)
         {
             var version = ExpectedVersion.NoStream;
             await BeginRead();
-            // Thread.Sleep(20);
 
             var g = _graph; 
                 
@@ -126,15 +109,13 @@ namespace ZES.Infrastructure.Causality
                 return version;
                 
             var vertex = stream.End(g.FindEdgeType(EdgeStreamType));
-            version = (int) vertex.VertexType.FindProperty(VertexVersion).GetPropertyValue(vertex.VertexId);
+            version = (int)vertex.VertexType.FindProperty(VertexVersion).GetPropertyValue(vertex.VertexId);
 
             await EndRead();
             return version;
         }
-        
-        /// <summary>
-        /// 
-        /// </summary>
+
+        /// <inheritdoc />
         public async void AddEvent(IEvent e)
         {
             await _state.FirstAsync(s => s == GraphState.Sleeping);
@@ -195,7 +176,6 @@ namespace ZES.Infrastructure.Causality
 
             if ( Interlocked.Decrement(ref _reading) == 0 && await _state.FirstAsync() == GraphState.Reading)
                 _state.OnNext(GraphState.Sleeping);
-            // _log.Info(_reading);
             
             _readRequestsSubject.OnNext(Interlocked.Decrement(ref _readRequests));
         }
@@ -212,15 +192,6 @@ namespace ZES.Infrastructure.Causality
 
             _readSession = null;
             _graph = null;
-        }
-
-        public async Task Pause(int ms)
-        {
-            using (var session = await BeginUpdate())
-            {
-                Thread.Sleep(ms);
-                await EndUpdate(session);
-            }
         }
 
         private async Task<SessionBase> BeginUpdate(bool reset = false)

@@ -90,7 +90,7 @@ namespace ZES.Tests
             repeat = 0;
             while (repeat < numberOfRepeats)
             {
-                Task.Run(() => graph.GetStreamVersion(stream));
+                var t = Task.Run(() => graph.GetStreamVersion(stream));
                 repeat++;
             }
 
@@ -102,11 +102,13 @@ namespace ZES.Tests
             repeat = 0;
             while (repeat < numberOfRepeats)
             {
-                Task.Run(() => graph.GetStreamVersion(stream));
+                var t = Task.Run(() => graph.GetStreamVersion(stream));
                 repeat++;
 
                 if (repeat == 10)
-                    Task.Run(() => graph.Pause(200));
+                {
+                    var pause = Task.Run(() => graph.Pause(200));
+                }
             }
 
             await graph.State.FirstAsync(s => s == GraphState.Updating).Timeout(Configuration.Timeout);

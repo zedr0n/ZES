@@ -39,7 +39,11 @@ namespace ZES.GraphQL
             return (Error)error;
         }
 
-        // public string ActiveBranch() => _manager.ActiveBranch;
+        /// <summary>
+        /// Active branch property
+        /// </summary>
+        /// <returns>Active branch</returns>
+        public string ActiveBranch() => _manager.ActiveBranch;
 
         /// <summary>
         /// GraphQL log query

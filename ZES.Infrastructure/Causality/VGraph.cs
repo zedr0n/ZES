@@ -9,6 +9,7 @@ using VelocityDb.Session;
 using VelocityGraph;
 using ZES.Interfaces;
 using ZES.Interfaces.Causality;
+using ZES.Interfaces.Domain;
 using IGraph = ZES.Interfaces.Causality.IGraph;
 
 namespace ZES.Infrastructure.Causality
@@ -19,15 +20,17 @@ namespace ZES.Infrastructure.Causality
     public class VGraph : IGraph
     {
         private const string VertexEventType = "Event";
+        private const string VertexCommandType = "Command";
         private const string StreamVertexType = "Stream";
 
         private const string StreamKey = "streamKey";    
         private const string VertexMessageId = "messageId";
         private const string VertexMerkleHash = "merkleHash";
         private const string VertexVersion = "version";
+        
         private const string EdgeType = "CAUSES";
         private const string EdgeStreamType = "STREAM";
-        private const string EdgeProperty = "EdgeType";
+        private const string EdgeCommandType = "COMMAND";
         
         private const string SystemDir = "VelocityGraph";
         
@@ -77,9 +80,8 @@ namespace ZES.Infrastructure.Causality
                 g.NewVertexProperty(eventType, VertexMerkleHash, DataType.String, PropertyKind.Indexed);
                 g.NewVertexProperty(eventType, VertexVersion, DataType.Integer, PropertyKind.Indexed);
 
-                var edge = g.NewEdgeType(EdgeType, false);
-                edge.NewProperty(EdgeProperty, DataType.Integer, PropertyKind.Indexed);
-
+                g.NewEdgeType(EdgeType, false);
+                g.NewEdgeType(EdgeCommandType, false);
                 g.NewEdgeType(EdgeStreamType, true);
                 
                 await EndUpdate(session);
@@ -115,11 +117,28 @@ namespace ZES.Infrastructure.Causality
             return version;
         }
 
+        /// <summary>
+        /// Add command vertex
+        /// </summary>
+        /// <param name="command">Command instance</param>
+        public async void AddCommand(ICommand command)
+        {
+            using (var session = await BeginUpdate())
+            {
+                var g = Graph.Open(session);
+
+                var commandType = g.FindVertexType(VertexCommandType);
+                var vertex = g.NewVertex(commandType);
+                
+                vertex.SetProperty(commandType.FindProperty(VertexMessageId), command.MessageId);
+
+                await EndUpdate(session);
+            }
+        }
+
         /// <inheritdoc />
         public async void AddEvent(IEvent e)
         {
-            await _state.FirstAsync(s => s == GraphState.Sleeping);
-            
             using (var session = await BeginUpdate()) 
             {
                 var g = Graph.Open(session);

@@ -9,6 +9,24 @@ namespace ZES.Infrastructure
     /// </summary>
     public static class Configuration
     {
+        public static class Graph
+        {
+            public const string SystemDir = "VelocityGraph";
+            
+            public const string VertexEventType = "Event";
+            public const string VertexCommandType = "Command";
+            public const string StreamVertexType = "Stream";
+
+            public const string StreamKey = "streamKey";    
+            public const string VertexMessageId = "messageId";
+            public const string VertexMerkleHash = "merkleHash";
+            public const string VertexVersion = "version";
+        
+            public const string EdgeType = "CAUSES";
+            public const string EdgeStreamType = "STREAM";
+            public const string EdgeCommandType = "COMMAND";
+        }
+
         private static readonly HashSet<string> Variables = new HashSet<string>
         {
             "AddCommand",

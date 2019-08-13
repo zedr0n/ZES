@@ -3,6 +3,15 @@ using System.Threading.Tasks;
 
 namespace ZES.Interfaces.Causality
 {
+
+    public enum GraphReadState
+    {
+        Sleeping,
+        Pausing,
+        Queued,
+        Reading
+    }
+    
     /// <summary>
     /// Graph state enum
     /// </summary>

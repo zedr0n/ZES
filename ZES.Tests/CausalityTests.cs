@@ -4,11 +4,11 @@ using System.Diagnostics;
 using System.Linq;
 using System.Reactive.Linq;
 using System.Threading.Tasks;
-using SqlStreamStore.Streams;
 using Xunit;
 using Xunit.Abstractions;
 using ZES.Infrastructure;
 using ZES.Infrastructure.Branching;
+using ZES.Infrastructure.Causality;
 using ZES.Interfaces;
 using ZES.Interfaces.Causality;
 using ZES.Interfaces.Domain;
@@ -48,14 +48,15 @@ namespace ZES.Tests
         }
 
         // [Theory]
-        // [InlineData(100)]
+        // [InlineData(10000)]
         private async void CanCreateVGraph(int numberOfRepeats)
         {
             var container = CreateContainer();
             var bus = container.GetInstance<IBus>();
             var log = container.GetInstance<ILog>();
-            var graph = container.GetInstance<IGraph>();
-            await graph.Initialize();
+            var graph = container.GetInstance<IUpdateGraph>();
+            var readGraph = container.GetInstance<IReadOnlyGraph>();
+            graph.Initialize();
             var oEvents = container.GetInstance<IMessageQueue>().Messages;
 
             var events = new List<IEvent>();
@@ -68,21 +69,21 @@ namespace ZES.Tests
             var stream = string.Empty;
             foreach (var e in events)
             {
-                graph.AddEvent(e);
+                await graph.AddEvent(e);
                 stream = e.Stream;
             }
 
             var repeat = 0;
-            var version = await graph.GetStreamVersion(stream); 
+            var version = await readGraph.GetStreamVersion(stream); 
 
             var stopWatch = Stopwatch.StartNew();
             while (repeat < numberOfRepeats)
             {
-                await graph.GetStreamVersion(stream);
+                await readGraph.GetStreamVersion(stream);
                 repeat++;
             }
-            
-            await graph.ReadRequests.FirstAsync(r => r == 0).Timeout(Configuration.Timeout);
+
+            await readGraph.State.FirstAsync(s => s == GraphReadState.Sleeping).Timeout(Configuration.Timeout);
 
             log.Info($"No threading : {stopWatch.ElapsedMilliseconds}ms per {numberOfRepeats}");
             
@@ -90,29 +91,29 @@ namespace ZES.Tests
             repeat = 0;
             while (repeat < numberOfRepeats)
             {
-                var t = Task.Run(() => graph.GetStreamVersion(stream));
+                var t = Task.Run(() => readGraph.GetStreamVersion(stream));
                 repeat++;
             }
 
-            await graph.ReadRequests.FirstAsync(r => r == 0).Timeout(Configuration.Timeout);
+            await readGraph.State.FirstAsync(s => s == GraphReadState.Sleeping).Timeout(Configuration.Timeout);
 
             log.Info($"Threading : {stopWatch.ElapsedMilliseconds}ms per {numberOfRepeats}");
 
             stopWatch = Stopwatch.StartNew();
             repeat = 0;
+
             while (repeat < numberOfRepeats)
             {
-                var t = Task.Run(() => graph.GetStreamVersion(stream));
+                var t = readGraph.GetStreamVersion(stream);
                 repeat++;
 
-                if (repeat == 10)
+                if (repeat == numberOfRepeats / 4)
                 {
-                    var pause = Task.Run(() => graph.Pause(200));
+                    var pause = graph.Pause(500);
                 }
             }
 
-            await graph.State.FirstAsync(s => s == GraphState.Updating).Timeout(Configuration.Timeout);
-            await graph.State.FirstAsync(s => s == GraphState.Sleeping).Timeout(Configuration.Timeout);
+            await readGraph.State.FirstAsync(s => s == GraphReadState.Sleeping).Timeout(Configuration.Timeout);
             
             log.Info($"Threading with pause : {stopWatch.ElapsedMilliseconds}ms per {numberOfRepeats}");
             

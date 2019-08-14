@@ -68,8 +68,8 @@ namespace ZES.Tests
             await graph.AddCommand(command);
         }
         
-        [Theory]
-        [InlineData(1000)]
+        // [Theory]
+        // [InlineData(1000)]
         public async void CanCreateVGraph(int numberOfRepeats)
         {
             var container = CreateContainer();

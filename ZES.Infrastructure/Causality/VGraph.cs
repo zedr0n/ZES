@@ -1,6 +1,6 @@
 using System;
 using System.IO;
-using System.Reactive.Subjects;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Threading.Tasks.Dataflow;
@@ -8,26 +8,28 @@ using VelocityDb.Session;
 using VelocityGraph;
 using ZES.Interfaces;
 using ZES.Interfaces.Causality;
+using ZES.Interfaces.Domain;
 using static ZES.Infrastructure.Configuration.Graph;
+using Stream = ZES.Infrastructure.Streams.Stream;
 
 namespace ZES.Infrastructure.Causality
 {
     /// <inheritdoc />
-    public class VUpdateGraph : IUpdateGraph
+    public class VGraph : IGraph
     {
         private readonly ActionBlock<(TaskCompletionSource<bool>, Action)> _transactions;
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="VUpdateGraph"/> class.
+        /// Initializes a new instance of the <see cref="VGraph"/> class.
         /// </summary>
-        /// <param name="readOnlyGraph">Read graph interface</param>
-        public VUpdateGraph(IReadOnlyGraph readOnlyGraph)
+        /// <param name="readGraph">Read graph interface</param>
+        public VGraph(IReadGraph readGraph)
         {
             _transactions = new ActionBlock<(TaskCompletionSource<bool> t, Action a)>(async x =>
             {
-                await readOnlyGraph.Pause();
+                await readGraph.Pause();
                 x.a();
-                readOnlyGraph.Start();
+                readGraph.Start();
                 x.t.SetResult(true);
             });
         }
@@ -46,13 +48,18 @@ namespace ZES.Infrastructure.Causality
                 var g = new Graph(session);
                 session.Persist(g);
 
-                var streamType = g.NewVertexType(StreamVertexType);
+                var streamType = g.NewVertexType(VertexStreamType);
                 g.NewVertexProperty(streamType, StreamKey, DataType.String, PropertyKind.Indexed);
                 
                 var eventType = g.NewVertexType(VertexEventType);
                 g.NewVertexProperty(eventType, VertexMessageId, DataType.String, PropertyKind.Indexed);
                 g.NewVertexProperty(eventType, VertexMerkleHash, DataType.String, PropertyKind.Indexed);
                 g.NewVertexProperty(eventType, VertexVersion, DataType.Integer, PropertyKind.Indexed);
+                g.NewVertexProperty(eventType, VertexAncestorId, DataType.String, PropertyKind.Indexed);
+                g.NewVertexProperty(eventType, VertexStream, DataType.String, PropertyKind.Indexed);
+
+                var commandType = g.NewVertexType(VertexCommandType);
+                g.NewVertexProperty(commandType, VertexMessageId, DataType.String, PropertyKind.Indexed);
 
                 g.NewEdgeType(EdgeCommandType, false);
                 g.NewEdgeType(EdgeStreamType, true);
@@ -67,11 +74,48 @@ namespace ZES.Infrastructure.Causality
         /// <inheritdoc />
         public async Task AddEvent(IEvent e) => await Execute(() => AddEventInt(e));
 
+        public async Task AddCommand(ICommand command) => await Execute(() => AddCommandInt(command));
+
         private async Task Execute(Action command)
         {
             var tsc = new TaskCompletionSource<bool>();
             await _transactions.SendAsync((tsc, command));
             await tsc.Task;
+        }
+
+        private void AddCommandInt(ICommand command)
+        {
+            using (var session = new SessionNoServerShared(SystemDir))
+            {
+                session.BeginUpdate();
+                var g = Graph.Open(session);
+
+                var commandType = g.FindVertexType(VertexCommandType);
+                var vertex = g.NewVertex(commandType);
+                
+                vertex.SetProperty(commandType.FindProperty(VertexMessageId), command.MessageId.ToString());
+
+                var resultEvents = g.FindVertexType(VertexEventType)
+                    .GetVertices()
+                    .Where(v => (string)v.GetProperty(VertexAncestorId) == command.MessageId.ToString())
+                    .ToList();
+                var streamKey = (string)resultEvents.Select( v => v.GetProperty(VertexStream)).Distinct().SingleOrDefault();
+                if (streamKey == null)
+                    throw new InvalidOperationException();
+                
+                var streamType = g.FindVertexType(VertexStreamType);
+                var stream = streamType.GetVertices().SingleOrDefault(v => (string)v.GetProperty(StreamKey) == streamKey);
+
+                var streamEdge = g.FindEdgeType(EdgeStreamType);
+                var prevVertex = stream.End(streamEdge);
+                prevVertex.AddEdge(streamEdge, vertex);
+
+                var commandEdge = g.FindEdgeType(EdgeCommandType);
+                foreach (var e in resultEvents)
+                    vertex.AddEdge(commandEdge, e);
+
+                session.Commit();
+            }
         }
         
         private void AddEventInt(IEvent e)
@@ -86,8 +130,10 @@ namespace ZES.Infrastructure.Causality
                 
                 vertex.SetProperty(eventType.FindProperty(VertexMessageId), e.MessageId.ToString());
                 vertex.SetProperty(eventType.FindProperty(VertexVersion), e.Version);
+                vertex.SetProperty(eventType.FindProperty(VertexAncestorId), e.AncestorId.ToString());
+                vertex.SetProperty(eventType.FindProperty(VertexStream), e.Stream);
 
-                var streamType = g.FindVertexType(StreamVertexType);
+                var streamType = g.FindVertexType(VertexStreamType);
                 var stream = streamType.FindProperty(StreamKey).GetPropertyVertex(e.Stream);
 
                 var edgeStream = g.FindEdgeType(EdgeStreamType);

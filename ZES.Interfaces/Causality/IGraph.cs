@@ -1,28 +1,32 @@
+using System.Threading.Tasks;
+using ZES.Interfaces.Domain;
+
 namespace ZES.Interfaces.Causality
 {
     /// <summary>
-    /// Graph read processing states
+    /// Update interface for graph
     /// </summary>
-    public enum GraphReadState
+    public interface IGraph
     {
         /// <summary>
-        /// Graph reading is idle
+        /// Create graph schema
         /// </summary>
-        Sleeping,
-        
+        void Initialize();
+
         /// <summary>
-        /// Graph reads are being paused
+        /// Pause all graph operations for <paramref name="ms"/>
         /// </summary>
-        Pausing,
-        
+        /// <param name="ms">Number of milliseconds to pause for</param>
+        /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
+        Task Pause(int ms);
+
         /// <summary>
-        /// Reads queued 
+        /// Add new event node 
         /// </summary>
-        Queued,
-        
-        /// <summary>
-        /// Reads are being executed
-        /// </summary>
-        Reading
+        /// <param name="e">Event instance</param>
+        /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
+        Task AddEvent(IEvent e);
+
+        Task AddCommand(ICommand command);
     }
 }

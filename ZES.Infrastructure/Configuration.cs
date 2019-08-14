@@ -98,17 +98,27 @@ namespace ZES.Infrastructure
             /// <summary>
             /// Stream vertex
             /// </summary>
-            public const string StreamVertexType = "Stream";
+            public const string VertexStreamType = "Stream";
 
             /// <summary>
             /// Stream key property
             /// </summary>
-            public const string StreamKey = "streamKey";    
+            public const string StreamKey = "streamKey";
+
+            /// <summary>
+            /// Underlying stream id
+            /// </summary>
+            public const string StreamId = "streamId";
             
             /// <summary>
             /// MessageId property 
             /// </summary>
             public const string VertexMessageId = "messageId";
+
+            /// <summary>
+            /// Ancestor id proparty
+            /// </summary>
+            public const string VertexAncestorId = "ancestorId";
             
             /// <summary>
             /// Merkle hash property
@@ -119,6 +129,11 @@ namespace ZES.Infrastructure
             /// Version property
             /// </summary>
             public const string VertexVersion = "version";
+
+            /// <summary>
+            /// Vertex stream
+            /// </summary>
+            public const string VertexStream = "stream";
         
             /// <summary>
             /// Stream edge

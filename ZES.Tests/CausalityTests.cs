@@ -47,15 +47,36 @@ namespace ZES.Tests
             Assert.Equal(3, causes.Count());
         }
 
-        // [Theory]
-        // [InlineData(10000)]
-        private async void CanCreateVGraph(int numberOfRepeats)
+        // [Fact]
+        public async void CanSaveCommandInGraph()
+        {
+            var container = CreateContainer();
+            var bus = container.GetInstance<IBus>();
+            var graph = container.GetInstance<IGraph>();
+            var readGraph = container.GetInstance<IReadGraph>();
+            graph.Initialize();
+            var oEvents = container.GetInstance<IMessageQueue>().Messages;
+
+            var events = new List<IEvent>();
+            
+            oEvents.Subscribe(e => events.Add(e));
+            
+            var command = new CreateRoot("Root");
+            await await bus.CommandAsync( command );
+
+            await graph.AddEvent(events.Last());
+            await graph.AddCommand(command);
+        }
+        
+        [Theory]
+        [InlineData(1000)]
+        public async void CanCreateVGraph(int numberOfRepeats)
         {
             var container = CreateContainer();
             var bus = container.GetInstance<IBus>();
             var log = container.GetInstance<ILog>();
-            var graph = container.GetInstance<IUpdateGraph>();
-            var readGraph = container.GetInstance<IReadOnlyGraph>();
+            var graph = container.GetInstance<IGraph>();
+            var readGraph = container.GetInstance<IReadGraph>();
             graph.Initialize();
             var oEvents = container.GetInstance<IMessageQueue>().Messages;
 
@@ -107,7 +128,7 @@ namespace ZES.Tests
                 var t = readGraph.GetStreamVersion(stream);
                 repeat++;
 
-                if (repeat == numberOfRepeats / 4)
+                if (repeat == numberOfRepeats / 2)
                 {
                     var pause = graph.Pause(500);
                 }

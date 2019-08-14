@@ -6,7 +6,7 @@ namespace ZES.Interfaces.Causality
     /// <summary>
     /// Read-only graph interface
     /// </summary>
-    public interface IReadOnlyGraph
+    public interface IReadGraph
     {
         /// <summary>
         /// Gets reading state

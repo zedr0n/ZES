@@ -1,6 +1,4 @@
 using System;
-using System.Collections;
-using System.Collections.Generic;
 using System.Reactive.Linq;
 using System.Reactive.Subjects;
 using System.Threading;
@@ -18,7 +16,7 @@ namespace ZES.Infrastructure.Causality
     /// <summary>
     /// Read-only graph with persistent session
     /// </summary>
-    public class VReadOnlyGraph : IReadOnlyGraph
+    public class VReadGraph : IReadGraph
     {
         private readonly Lazy<Graph> _graph;
 
@@ -28,17 +26,17 @@ namespace ZES.Infrastructure.Causality
         private int _reading;
         
         /// <summary>
-        /// Initializes a new instance of the <see cref="VReadOnlyGraph"/> class.
+        /// Initializes a new instance of the <see cref="VReadGraph"/> class.
         /// </summary>
-        public VReadOnlyGraph()
+        public VReadGraph()
         {
             State = _state.DistinctUntilChanged();
             
-            var session = new Lazy<SessionBase>(() => new SessionNoServerShared(SystemDir));
             _graph = new Lazy<Graph>(() =>
             {
-                session.Value.BeginRead();
-                return Graph.Open(session.Value);
+                var session = new SessionNoServerShared(SystemDir);
+                session.BeginRead();
+                return Graph.Open(session);
             });
             
             _flow = new Flow(this);
@@ -63,13 +61,11 @@ namespace ZES.Infrastructure.Causality
             var nextFlow = new Flow(this);
             _flow = nextFlow;
             
-            // _flow.OutputBlock.LinkTo(nextFlow.InputBlock);
             // linking blocks directly as otherwise nextFlow will also complete
             flow.OutputBlock.LinkTo(nextFlow.InputBlock);
             
             await flow.SignalAndWaitForCompletionAsync();
 
-            // _flow = nextFlow;
             _state.OnNext(state);
         }
 
@@ -82,7 +78,7 @@ namespace ZES.Infrastructure.Causality
 
             var g = _graph.Value; 
                 
-            var stream = g.FindVertexType(StreamVertexType).FindProperty(StreamKey).GetPropertyVertex(key);
+            var stream = g.FindVertexType(VertexStreamType).FindProperty(StreamKey).GetPropertyVertex(key);
             if (stream == null) 
                 return version;
                 
@@ -110,7 +106,7 @@ namespace ZES.Infrastructure.Causality
             /// Initializes a new instance of the <see cref="Flow"/> class.
             /// </summary>
             /// <param name="graph">Read graph object</param>
-            public Flow(VReadOnlyGraph graph)
+            public Flow(VReadGraph graph)
                 : base(DataflowOptions.Default)
             { 
                 var inputBlock = new TransformBlock<(TaskCompletionSource<object> t, Func<object> f),

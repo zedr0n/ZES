@@ -88,8 +88,7 @@ namespace ZES
 
             container.Register(typeof(IStreamLocator<>), typeof(StreamLocator<>), Lifestyle.Singleton);    
             container.Register(typeof(IEsRepository<>), typeof(EsRepository<>), Lifestyle.Singleton);
-            container.Register<IGraph, VGraph>(Lifestyle.Singleton);
-            container.Register<IWriteGraph, VWriteGraph>(Lifestyle.Singleton);
+            container.Register<IUpdateGraph, VUpdateGraph>(Lifestyle.Singleton);
             container.Register<IReadOnlyGraph, VReadOnlyGraph>(Lifestyle.Singleton);
             
             container.Register<ICausalityGraph, CausalityGraph>(Lifestyle.Singleton);

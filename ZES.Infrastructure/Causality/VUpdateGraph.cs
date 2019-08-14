@@ -12,42 +12,28 @@ using static ZES.Infrastructure.Configuration.Graph;
 
 namespace ZES.Infrastructure.Causality
 {
-    public interface IWriteGraph
+    /// <inheritdoc />
+    public class VUpdateGraph : IUpdateGraph
     {
-        Task Pause(int ms);
-        Task AddEvent(IEvent e);
+        private readonly ActionBlock<(TaskCompletionSource<bool>, Action)> _transactions;
 
         /// <summary>
-        /// Create graph schema
+        /// Initializes a new instance of the <see cref="VUpdateGraph"/> class.
         /// </summary>
-        /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
-        Task Initialize();
-    }
-
-    public class VWriteGraph : IWriteGraph
-    {
-        private readonly IReadOnlyGraph _readOnlyGraph;
-
-        private readonly ActionBlock<(TaskCompletionSource<bool>,Action)> _transactions;
-
-        public VWriteGraph(IReadOnlyGraph readOnlyGraph)
+        /// <param name="readOnlyGraph">Read graph interface</param>
+        public VUpdateGraph(IReadOnlyGraph readOnlyGraph)
         {
-            _readOnlyGraph = readOnlyGraph;
-            
             _transactions = new ActionBlock<(TaskCompletionSource<bool> t, Action a)>(async x =>
             {
-                await _readOnlyGraph.Pause();
+                await readOnlyGraph.Pause();
                 x.a();
-                _readOnlyGraph.Start();
+                readOnlyGraph.Start();
                 x.t.SetResult(true);
             });
         }
-        
-        /// <summary>
-        /// Create graph schema
-        /// </summary>
-        /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
-        public async Task Initialize()
+
+        /// <inheritdoc />
+        public void Initialize()
         {
             using (var session = new SessionNoServerShared(SystemDir))
             {
@@ -68,12 +54,24 @@ namespace ZES.Infrastructure.Causality
                 g.NewVertexProperty(eventType, VertexMerkleHash, DataType.String, PropertyKind.Indexed);
                 g.NewVertexProperty(eventType, VertexVersion, DataType.Integer, PropertyKind.Indexed);
 
-                g.NewEdgeType(Configuration.Graph.EdgeType, false);
                 g.NewEdgeType(EdgeCommandType, false);
                 g.NewEdgeType(EdgeStreamType, true);
                 
                 session.Commit();
             }
+        }
+
+        /// <inheritdoc />
+        public async Task Pause(int ms) => await Execute(() => Thread.Sleep(ms));
+
+        /// <inheritdoc />
+        public async Task AddEvent(IEvent e) => await Execute(() => AddEventInt(e));
+
+        private async Task Execute(Action command)
+        {
+            var tsc = new TaskCompletionSource<bool>();
+            await _transactions.SendAsync((tsc, command));
+            await tsc.Task;
         }
         
         private void AddEventInt(IEvent e)
@@ -105,20 +103,6 @@ namespace ZES.Infrastructure.Causality
                 
                 session.Commit();
             }
-        }
-
-        public async Task Pause(int ms)
-        {
-            var tsc = new TaskCompletionSource<bool>();
-            await _transactions.SendAsync((tsc, () => Thread.Sleep(ms)));
-            await tsc.Task;
-        }
-        
-        public async Task AddEvent(IEvent e)
-        {
-            var tsc = new TaskCompletionSource<bool>();
-            await _transactions.SendAsync((tsc, () => AddEventInt(e)));
-            await tsc.Task;
         }
     }
 }

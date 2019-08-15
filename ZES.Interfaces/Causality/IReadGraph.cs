@@ -30,5 +30,7 @@ namespace ZES.Interfaces.Causality
         /// <param name="key">Stream key</param>
         /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
         Task<int> GetStreamVersion(string key);
+
+        void Export(string path);
     }
 }

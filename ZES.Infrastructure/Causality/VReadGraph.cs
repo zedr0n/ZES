@@ -49,6 +49,11 @@ namespace ZES.Infrastructure.Causality
         /// <inheritdoc />
         public void Start() => _flow.Start();
 
+        public void Export(string path)
+        {
+            _graph?.Value.ExportToGraphJson(path);
+        }
+
         /// <inheritdoc />
         public async Task Pause()
         {
@@ -78,12 +83,12 @@ namespace ZES.Infrastructure.Causality
 
             var g = _graph.Value; 
                 
-            var stream = g.FindVertexType(VertexStreamType).FindProperty(StreamKey).GetPropertyVertex(key);
+            var stream = g.FindVertexType(StreamVertex).FindProperty(StreamKeyProperty).GetPropertyVertex(key);
             if (stream == null) 
                 return version;
                 
-            var vertex = stream.End(g.FindEdgeType(EdgeStreamType));
-            version = (int)vertex.VertexType.FindProperty(VertexVersion).GetPropertyValue(vertex.VertexId);
+            var vertex = stream.End(g.FindEdgeType(StreamEdge));
+            version = (int)vertex.VertexType.FindProperty(VersionProperty).GetPropertyValue(vertex.VertexId);
 
             return version;
         }

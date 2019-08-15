@@ -27,6 +27,11 @@ namespace ZES.Interfaces.Causality
         /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
         Task AddEvent(IEvent e);
 
+        /// <summary>
+        /// Add new command node
+        /// </summary>
+        /// <param name="command">Command</param>
+        /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
         Task AddCommand(ICommand command);
     }
 }

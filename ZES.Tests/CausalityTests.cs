@@ -47,7 +47,7 @@ namespace ZES.Tests
             Assert.Equal(3, causes.Count());
         }
 
-        // [Fact]
+        [Fact]
         public async void CanSaveCommandInGraph()
         {
             var container = CreateContainer();
@@ -66,10 +66,11 @@ namespace ZES.Tests
 
             await graph.AddEvent(events.Last());
             await graph.AddCommand(command);
+            readGraph.Export("graph.json");
         }
         
-        // [Theory]
-        // [InlineData(1000)]
+        [Theory]
+        [InlineData(1000)]
         public async void CanCreateVGraph(int numberOfRepeats)
         {
             var container = CreateContainer();
@@ -138,7 +139,7 @@ namespace ZES.Tests
             
             log.Info($"Threading with pause : {stopWatch.ElapsedMilliseconds}ms per {numberOfRepeats}");
             
-            Assert.Equal(1, version);
+            Assert.Equal(Configuration.GraphEnabled() ? 1 : 0, version);
         }
     }
 }

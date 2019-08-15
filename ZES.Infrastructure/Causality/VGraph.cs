@@ -48,21 +48,22 @@ namespace ZES.Infrastructure.Causality
                 var g = new Graph(session);
                 session.Persist(g);
 
-                var streamType = g.NewVertexType(VertexStreamType);
-                g.NewVertexProperty(streamType, StreamKey, DataType.String, PropertyKind.Indexed);
+                var streamType = g.NewVertexType(StreamVertex);
+                g.NewVertexProperty(streamType, StreamKeyProperty, DataType.String, PropertyKind.Indexed);
+                g.NewVertexProperty(streamType, ParentStreamProperty, DataType.String, PropertyKind.Indexed);
                 
-                var eventType = g.NewVertexType(VertexEventType);
-                g.NewVertexProperty(eventType, VertexMessageId, DataType.String, PropertyKind.Indexed);
-                g.NewVertexProperty(eventType, VertexMerkleHash, DataType.String, PropertyKind.Indexed);
-                g.NewVertexProperty(eventType, VertexVersion, DataType.Integer, PropertyKind.Indexed);
-                g.NewVertexProperty(eventType, VertexAncestorId, DataType.String, PropertyKind.Indexed);
-                g.NewVertexProperty(eventType, VertexStream, DataType.String, PropertyKind.Indexed);
+                var eventType = g.NewVertexType(EventVertex);
+                g.NewVertexProperty(eventType, MessageIdProperty, DataType.String, PropertyKind.Indexed);
+                g.NewVertexProperty(eventType, MerkleHashProperty, DataType.String, PropertyKind.Indexed);
+                g.NewVertexProperty(eventType, VersionProperty, DataType.Integer, PropertyKind.Indexed);
+                g.NewVertexProperty(eventType, AncestorIdProperty, DataType.String, PropertyKind.Indexed);
+                g.NewVertexProperty(eventType, StreamKeyProperty, DataType.String, PropertyKind.Indexed);
 
-                var commandType = g.NewVertexType(VertexCommandType);
-                g.NewVertexProperty(commandType, VertexMessageId, DataType.String, PropertyKind.Indexed);
+                var commandType = g.NewVertexType(CommandVertex);
+                g.NewVertexProperty(commandType, MessageIdProperty, DataType.String, PropertyKind.Indexed);
 
-                g.NewEdgeType(EdgeCommandType, false);
-                g.NewEdgeType(EdgeStreamType, true);
+                g.NewEdgeType(CommandEdge, false);
+                g.NewEdgeType(StreamEdge, true);
                 
                 session.Commit();
             }
@@ -90,27 +91,27 @@ namespace ZES.Infrastructure.Causality
                 session.BeginUpdate();
                 var g = Graph.Open(session);
 
-                var commandType = g.FindVertexType(VertexCommandType);
+                var commandType = g.FindVertexType(CommandVertex);
                 var vertex = g.NewVertex(commandType);
                 
-                vertex.SetProperty(commandType.FindProperty(VertexMessageId), command.MessageId.ToString());
+                vertex.SetProperty(commandType.FindProperty(MessageIdProperty), command.MessageId.ToString());
 
-                var resultEvents = g.FindVertexType(VertexEventType)
+                var resultEvents = g.FindVertexType(EventVertex)
                     .GetVertices()
-                    .Where(v => (string)v.GetProperty(VertexAncestorId) == command.MessageId.ToString())
+                    .Where(v => (string)v.GetProperty(AncestorIdProperty) == command.MessageId.ToString())
                     .ToList();
-                var streamKey = (string)resultEvents.Select( v => v.GetProperty(VertexStream)).Distinct().SingleOrDefault();
+                var streamKey = (string)resultEvents.Select( v => v.GetProperty(StreamKeyProperty)).Distinct().SingleOrDefault();
                 if (streamKey == null)
                     throw new InvalidOperationException();
                 
-                var streamType = g.FindVertexType(VertexStreamType);
-                var stream = streamType.GetVertices().SingleOrDefault(v => (string)v.GetProperty(StreamKey) == streamKey);
+                var streamType = g.FindVertexType(StreamVertex);
+                var stream = streamType.GetVertices().SingleOrDefault(v => (string)v.GetProperty(StreamKeyProperty) == streamKey);
 
-                var streamEdge = g.FindEdgeType(EdgeStreamType);
+                var streamEdge = g.FindEdgeType(StreamEdge);
                 var prevVertex = stream.End(streamEdge);
                 prevVertex.AddEdge(streamEdge, vertex);
 
-                var commandEdge = g.FindEdgeType(EdgeCommandType);
+                var commandEdge = g.FindEdgeType(CommandEdge);
                 foreach (var e in resultEvents)
                     vertex.AddEdge(commandEdge, e);
 
@@ -125,23 +126,23 @@ namespace ZES.Infrastructure.Causality
                 session.BeginUpdate();
                 var g = Graph.Open(session);
 
-                var eventType = g.FindVertexType(VertexEventType);
+                var eventType = g.FindVertexType(EventVertex);
                 var vertex = g.NewVertex(eventType);
                 
-                vertex.SetProperty(eventType.FindProperty(VertexMessageId), e.MessageId.ToString());
-                vertex.SetProperty(eventType.FindProperty(VertexVersion), e.Version);
-                vertex.SetProperty(eventType.FindProperty(VertexAncestorId), e.AncestorId.ToString());
-                vertex.SetProperty(eventType.FindProperty(VertexStream), e.Stream);
+                vertex.SetProperty(eventType.FindProperty(MessageIdProperty), e.MessageId.ToString());
+                vertex.SetProperty(eventType.FindProperty(VersionProperty), e.Version);
+                vertex.SetProperty(eventType.FindProperty(AncestorIdProperty), e.AncestorId.ToString());
+                vertex.SetProperty(eventType.FindProperty(StreamKeyProperty), e.Stream);
 
-                var streamType = g.FindVertexType(VertexStreamType);
-                var stream = streamType.FindProperty(StreamKey).GetPropertyVertex(e.Stream);
+                var streamType = g.FindVertexType(StreamVertex);
+                var stream = streamType.FindProperty(StreamKeyProperty).GetPropertyVertex(e.Stream);
 
-                var edgeStream = g.FindEdgeType(EdgeStreamType);
+                var edgeStream = g.FindEdgeType(StreamEdge);
                 
                 if (stream == null)
                 {
                     stream = g.NewVertex(streamType);
-                    stream.SetProperty(streamType.FindProperty(StreamKey), e.Stream);
+                    stream.SetProperty(streamType.FindProperty(StreamKeyProperty), e.Stream);
                 }
 
                 var prevVertex = stream.End(edgeStream);

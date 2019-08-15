@@ -74,6 +74,16 @@ namespace ZES.Infrastructure
             var env = Environment.GetEnvironmentVariable(name.ToUpper());
             return env != null && env != 0.ToString();
         }
+
+        /// <summary>
+        /// Check if graph is enabled
+        /// </summary>
+        /// <returns>True if graph is enabled</returns>
+        public static bool GraphEnabled()
+        {
+            var enabled = Environment.GetEnvironmentVariable("Graph".ToUpper());
+            return enabled != null && enabled == 1.ToString();
+        }
         
         /// <summary>
         /// Graph constants
@@ -88,62 +98,57 @@ namespace ZES.Infrastructure
             /// <summary>
             /// Event vertex 
             /// </summary>
-            public const string VertexEventType = "Event";
+            public const string EventVertex = "Event";
             
             /// <summary>
             /// Command vertex 
             /// </summary>
-            public const string VertexCommandType = "Command";
+            public const string CommandVertex = "Command";
             
             /// <summary>
             /// Stream vertex
             /// </summary>
-            public const string VertexStreamType = "Stream";
+            public const string StreamVertex = "Stream";
 
             /// <summary>
             /// Stream key property
             /// </summary>
-            public const string StreamKey = "streamKey";
+            public const string StreamKeyProperty = "stream";
 
             /// <summary>
-            /// Underlying stream id
+            /// Parent stream key property
             /// </summary>
-            public const string StreamId = "streamId";
-            
+            public const string ParentStreamProperty = "parentStream";
+
             /// <summary>
             /// MessageId property 
             /// </summary>
-            public const string VertexMessageId = "messageId";
+            public const string MessageIdProperty = "messageId";
 
             /// <summary>
-            /// Ancestor id proparty
+            /// Ancestor id property
             /// </summary>
-            public const string VertexAncestorId = "ancestorId";
+            public const string AncestorIdProperty = "ancestorId";
             
             /// <summary>
             /// Merkle hash property
             /// </summary>
-            public const string VertexMerkleHash = "merkleHash";
+            public const string MerkleHashProperty = "merkleHash";
             
             /// <summary>
             /// Version property
             /// </summary>
-            public const string VertexVersion = "version";
+            public const string VersionProperty = "version";
 
-            /// <summary>
-            /// Vertex stream
-            /// </summary>
-            public const string VertexStream = "stream";
-        
             /// <summary>
             /// Stream edge
             /// </summary>
-            public const string EdgeStreamType = "STREAM";
+            public const string StreamEdge = "STREAM";
             
             /// <summary>
             /// Command edge 
             /// </summary>
-            public const string EdgeCommandType = "COMMAND";
+            public const string CommandEdge = "COMMAND";
         }
     }
 }

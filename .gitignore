@@ -6,6 +6,7 @@ html
 *.db
 lib/
 .vscode
+data/
 
 # User-specific files
 *.suo
@@ -13,6 +14,9 @@ lib/
 *.userosscache
 *.sln.docstates
 *.DotSettings
+*.json
+*.odb
+*.html
 
 # User-specific files (MonoDevelop/Xamarin Studio)
 *.userprefs

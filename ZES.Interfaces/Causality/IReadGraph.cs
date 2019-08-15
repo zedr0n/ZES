@@ -31,6 +31,10 @@ namespace ZES.Interfaces.Causality
         /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
         Task<int> GetStreamVersion(string key);
 
+        /// <summary>
+        /// Export graph to json
+        /// </summary>
+        /// <param name="path">JSON string</param>
         void Export(string path);
     }
 }

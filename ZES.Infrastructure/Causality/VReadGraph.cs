@@ -49,6 +49,7 @@ namespace ZES.Infrastructure.Causality
         /// <inheritdoc />
         public void Start() => _flow.Start();
 
+        /// <inheritdoc />
         public void Export(string path)
         {
             _graph?.Value.ExportToGraphJson(path);

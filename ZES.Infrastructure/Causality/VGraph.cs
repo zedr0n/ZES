@@ -75,6 +75,7 @@ namespace ZES.Infrastructure.Causality
         /// <inheritdoc />
         public async Task AddEvent(IEvent e) => await Execute(() => AddEventInt(e));
 
+        /// <inheritdoc />
         public async Task AddCommand(ICommand command) => await Execute(() => AddCommandInt(command));
 
         private async Task Execute(Action command)

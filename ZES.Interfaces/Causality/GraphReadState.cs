@@ -11,11 +11,6 @@ namespace ZES.Interfaces.Causality
         Sleeping,
         
         /// <summary>
-        /// Graph reads are being paused
-        /// </summary>
-        Pausing,
-        
-        /// <summary>
         /// Reads queued 
         /// </summary>
         Queued,

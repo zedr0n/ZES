@@ -17,27 +17,29 @@ namespace ZES
     {
         private readonly Container _container;
         private readonly CommandDispatcher _commandDispatcher;
-        private readonly IErrorLog _errorLog;
+        private readonly ILog _log;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="Bus"/> class.
         /// </summary>
         /// <param name="container"><see cref="SimpleInjector"/> container</param>
         /// <param name="errorLog">Application error log</param>
-        public Bus(Container container, IErrorLog errorLog)
+        public Bus(Container container, ILog log)
         {
             _container = container;
-            _errorLog = errorLog;
+            _log = log;
             _commandDispatcher = new CommandDispatcher(
                 HandleCommand, 
-                new DataflowOptions { RecommendedParallelismIfMultiThreaded = 1 });
+                new DataflowOptions { RecommendedParallelismIfMultiThreaded = 1 },
+                log);
         }
 
         /// <inheritdoc />
         public async Task<Task> CommandAsync(ICommand command)
         {
-            await _commandDispatcher.SendAsync(command);
-            return _commandDispatcher.ReceiveAsync(command);
+            var tracked = new Tracked<ICommand>(command);
+            await _commandDispatcher.SendAsync(tracked);
+            return tracked.Task;
         }
 
         /// <inheritdoc />
@@ -61,7 +63,7 @@ namespace ZES
             }
             catch (Exception e)
             {
-                _errorLog.Add(e); 
+                _log.Errors.Add(e); 
                 if (e is ActivationException)
                     return null;
                 throw;
@@ -76,46 +78,27 @@ namespace ZES
                 await handler.Handle(command as dynamic).ConfigureAwait(false);
         }
 
-        private class CommandFlow : Dataflow<ICommand, Task>
-        {
-            public CommandFlow(Func<ICommand, Task> handler, DataflowOptions options)
-                : base(options)
-            {
-                var outputBlock = new BufferBlock<Task>();
-                var inputBlock = new ActionBlock<ICommand>(
-                    async c =>
-                    {
-                        var task = handler(c);
-                        await outputBlock.SendAsync(task); 
-                        await task; 
-                    }, options.ToExecutionBlockOption());
-                
-                RegisterChild(inputBlock);
-                RegisterChild(outputBlock);
-                
-                InputBlock = inputBlock;
-                OutputBlock = outputBlock;
-            }
-
-            public override ITargetBlock<ICommand> InputBlock { get; }
-            public override ISourceBlock<Task> OutputBlock { get; }
-        }
-        
-        private class CommandDispatcher : ParallelDataDispatcher<string, ICommand, Task>
+        private class CommandDispatcher : ParallelDataDispatcher<string, Tracked<ICommand>>
         {
             private readonly Func<ICommand, Task> _handler;
 
-            public CommandDispatcher(Func<ICommand, Task> handler, DataflowOptions options) 
-                : base(c => c.Target, options, CancellationToken.None)
+            public CommandDispatcher(Func<ICommand, Task> handler, DataflowOptions options, ILog log) 
+                : base(c => c.Value.Target, options, CancellationToken.None)
             {
+                Log = log;
                 _handler = handler;
             }
             
-            public async Task ReceiveAsync(ICommand command) => await Output(command.Target).ReceiveAsync();
-
-            protected override Dataflow<ICommand, Task> CreateChildFlow(string target)
+            protected override Dataflow<Tracked<ICommand>> CreateChildFlow(string target)
             {
-                return new CommandFlow(_handler, DataflowOptions);
+                var block = new ActionBlock<Tracked<ICommand>>(
+                    async c =>
+                    {
+                        await _handler(c.Value);
+                        c.Complete();
+                    }, new ExecutionDataflowBlockOptions { MaxDegreeOfParallelism = 1 } );
+                
+                return block.ToDataflow();
             }
         }
     }

@@ -16,7 +16,13 @@ namespace ZES.Interfaces.Causality
         /// <summary>
         /// Start processing read queries
         /// </summary>
-        void Start();
+        Task Start();
+
+        /// <summary>
+        /// Graph size should match the total event store sizes
+        /// </summary>
+        /// <returns>Graph size</returns>
+        Task<long> Size();
 
         /// <summary>
         /// Pause processing reads 

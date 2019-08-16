@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Threading;
 using SimpleInjector;
@@ -124,6 +125,38 @@ namespace ZES.Tests
             var rootInfo = await bus.QueryUntil(new RootInfoQuery("Root"), r => r.UpdatedAt > r.CreatedAt);
             Assert.True(rootInfo.UpdatedAt == root.UpdatedAt);
             Assert.True(rootInfo.UpdatedAt > rootInfo.CreatedAt);
+        }
+
+        [Theory]
+        [InlineData(1000)]
+        public async void CanCreateMultipleRoots(int numRoots)
+        {
+            var container = CreateContainer();
+            var bus = container.GetInstance<IBus>();
+            var log = container.GetInstance<ILog>();
+            var repository = container.GetInstance<IEsRepository<IAggregate>>();
+
+            var i = 0;
+            var stopWatch = Stopwatch.StartNew();
+            while ( i < numRoots )
+            {
+                await await bus.CommandAsync(new CreateRoot($"Root{i}"));
+                i++;
+            }
+            
+            log.Info($"No threading : {stopWatch.ElapsedMilliseconds}ms per {numRoots}");
+            
+            stopWatch = Stopwatch.StartNew();
+            i = 0;
+            while ( i < numRoots )
+            {
+                await bus.CommandAsync(new CreateRoot($"ThreadRoot{i}"));
+                i++;
+            }
+            
+            await repository.FindUntil<Root>($"ThreadRoot{numRoots - 1}");
+            log.Info($"Threading : {stopWatch.ElapsedMilliseconds}ms per {numRoots}");
+
         }
 
         [Fact]

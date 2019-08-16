@@ -40,14 +40,20 @@ namespace ZES.Infrastructure.Causality
             });
             
             _flow = new Flow(this);
-            Start();
+            Start().Wait();
         }
 
         /// <inheritdoc />
         public IObservable<GraphReadState> State { get; }
 
         /// <inheritdoc />
-        public void Start() => _flow.Start();
+        public async Task Start()
+        {
+            _flow.Start();
+        }
+
+        /// <inheritdoc />
+        public async Task<long> Size() => await Execute(SizeInt);
 
         /// <inheritdoc />
         public void Export(string path)
@@ -58,21 +64,17 @@ namespace ZES.Infrastructure.Causality
         /// <inheritdoc />
         public async Task Pause()
         {
-            var state = _state.Value;
- 
-            _state.OnNext(GraphReadState.Pausing);
             _flow.Paused = true;
-
-            var flow = _flow;
             var nextFlow = new Flow(this);
-            _flow = nextFlow;
             
             // linking blocks directly as otherwise nextFlow will also complete
-            flow.OutputBlock.LinkTo(nextFlow.InputBlock);
-            
-            await flow.SignalAndWaitForCompletionAsync();
+            _flow.OutputBlock.LinkTo(nextFlow.InputBlock);
 
-            _state.OnNext(state);
+            var flow = _flow;
+            _flow = nextFlow;
+            await flow.SignalAndWaitForCompletionAsync();
+            
+            // _state.OnNext(GraphReadState.Paused);
         }
 
         /// <inheritdoc />
@@ -89,24 +91,28 @@ namespace ZES.Infrastructure.Causality
                 return version;
                 
             var vertex = stream.End(g.FindEdgeType(StreamEdge));
-            version = (int)vertex.VertexType.FindProperty(VersionProperty).GetPropertyValue(vertex.VertexId);
+            version = (int)vertex.GetProperty(VersionProperty);
 
             return version;
         }
 
         private async Task<T> Execute<T>(Func<T> query)
         {
-            await _state.FirstAsync(s => s != GraphReadState.Pausing);
- 
-            var taskCompletionSource = new TaskCompletionSource<object>();
-            await _flow.SendAsync<(TaskCompletionSource<object>, Func<object>)>((taskCompletionSource,
-                () => query()));
-            
-            return (T)await taskCompletionSource.Task;
+            var trackedQuery = new Tracked<Func<object>, object>(() => query());
+            await _flow.SendAsync(trackedQuery);
+
+            return (T)await trackedQuery.Task;
         }
-        
-        private class Flow : Dataflow<(TaskCompletionSource<object> t, Func<object> f),
-            (TaskCompletionSource<object> t, Func<object> f)>
+
+        private long SizeInt()
+        {
+            var g = _graph.Value;
+            var total = g.CountVertices();
+            var streamCount = g.FindVertexType(StreamVertex).CountVertices();
+            return total - streamCount;
+        }
+
+        private class Flow : Dataflow<Tracked<Func<object>, object>, Tracked<Func<object>, object>>
         {
             /// <summary>
             /// Initializes a new instance of the <see cref="Flow"/> class.
@@ -115,23 +121,22 @@ namespace ZES.Infrastructure.Causality
             public Flow(VReadGraph graph)
                 : base(DataflowOptions.Default)
             { 
-                var inputBlock = new TransformBlock<(TaskCompletionSource<object> t, Func<object> f),
-                    (TaskCompletionSource<object> t, Func<object> f)>(x =>
+                var inputBlock = new TransformBlock<Tracked<Func<object>, object>, Tracked<Func<object>, object>>(x =>
                 {
                     Interlocked.Increment(ref graph._reading);
                     graph._state.OnNext(GraphReadState.Queued);
                     return x;
                 });
                 
-                var actionBlock = new TransformBlock<(TaskCompletionSource<object> t, Func<object> f),
+                var actionBlock = new TransformBlock<Tracked<Func<object>, object>,
                     bool>(
                     x =>
                     {
                         graph._state.OnNext(GraphReadState.Reading);
 
-                        var res = x.f();
+                        var res = x.Value();
 
-                        x.t.SetResult(res);
+                        x.SetResult(res);
                         return true;
                     },
                     new ExecutionDataflowBlockOptions { MaxDegreeOfParallelism = Configuration.ThreadsPerInstance });
@@ -142,8 +147,7 @@ namespace ZES.Infrastructure.Causality
                         graph._state.OnNext(GraphReadState.Sleeping);
                 });
 
-                var outputBlock = new TransformBlock<(TaskCompletionSource<object> t, Func<object> f),
-                    (TaskCompletionSource<object> t, Func<object> f)>(x =>
+                var outputBlock = new TransformBlock<Tracked<Func<object>, object>, Tracked<Func<object>, object>>(x =>
                 {
                     Interlocked.Decrement(ref graph._reading);
                     return x;
@@ -170,8 +174,8 @@ namespace ZES.Infrastructure.Causality
 
             public bool Paused { get; set; }
 
-            public override ITargetBlock<(TaskCompletionSource<object> t, Func<object> f)> InputBlock { get; } 
-            public override ISourceBlock<(TaskCompletionSource<object> t, Func<object> f)> OutputBlock { get; } 
+            public override ITargetBlock<Tracked<Func<object>, object>> InputBlock { get; }
+            public override ISourceBlock<Tracked<Func<object>, object>> OutputBlock { get; }
         }
     }
 }

@@ -10,6 +10,7 @@ using ZES.Infrastructure.Domain;
 using ZES.Infrastructure.Serialization;
 using ZES.Infrastructure.Utils;
 using ZES.Interfaces;
+using ZES.Interfaces.Causality;
 using ZES.Interfaces.Domain;
 using ZES.Interfaces.EventStore;
 using ZES.Interfaces.Pipes;
@@ -27,6 +28,7 @@ namespace ZES.Infrastructure
         private readonly Subject<IStream> _streams = new Subject<IStream>();
         private readonly IMessageQueue _messageQueue;
         private readonly ILog _log;
+        private readonly IGraph _graph;
 
         private readonly bool _isDomainStore;
 
@@ -37,17 +39,22 @@ namespace ZES.Infrastructure
         /// <param name="serializer">Event serializer</param>
         /// <param name="messageQueue">Message queue</param>
         /// <param name="log">Application log</param>
-        public SqlEventStore(IStreamStore streamStore, ISerializer<IEvent> serializer, IMessageQueue messageQueue, ILog log)
+        /// <param name="graph">Graph instance</param>
+        public SqlEventStore(IStreamStore streamStore, ISerializer<IEvent> serializer, IMessageQueue messageQueue, ILog log, IGraph graph)
         {
             _streamStore = streamStore;
             _serializer = serializer;
             _messageQueue = messageQueue;
             _log = log;
+            _graph = graph;
             _isDomainStore = typeof(I) == typeof(IAggregate);
         }
 
         /// <inheritdoc />
         public IObservable<IStream> Streams => _streams.AsObservable().Select(s => s.Copy());
+
+        /// <inheritdoc />
+        public async Task<long> Size() => await _streamStore.ReadHeadPosition() + 1;
 
         /// <inheritdoc />
         public IObservable<IStream> ListStreams(string branch = null)
@@ -127,11 +134,23 @@ namespace ZES.Infrastructure
                 await _streamStore.SetStreamMetadata(
                     stream.Key,
                     metadataJson: JExtensions.JStreamMetadata(stream));
+
+                await _graph.AddStreamMetadata(stream);
                 
                 _streams.OnNext(stream); 
             }
 
-            PublishEvents(events);    
+            PublishEvents(events);
+            await UpdateGraph(events);
+        }
+
+        private async Task UpdateGraph(IEnumerable<IEvent> events)
+        {
+            if (events == null)
+                return;
+
+            foreach (var e in events)
+                await _graph.AddEvent(e);
         }
         
         private async Task ReadSingleStream<T>(IObserver<T> observer, IStream stream, int start, int count)

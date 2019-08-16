@@ -1,4 +1,5 @@
 using System;
+using System.Reactive.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Threading.Tasks.Dataflow;
@@ -44,12 +45,12 @@ namespace ZES.Infrastructure.Sagas
                 .WithOptions(new DataflowOptionsEx { RecommendedParallelismIfMultiThreaded = Configuration.ThreadsPerInstance })
                 .Bind(); 
 
-            _messageQueue.Messages.Subscribe(dispatcher.InputBlock.AsObserver(), _source.Token);
+            _messageQueue.Messages.Select(e => new Tracked<IEvent>(e)).Subscribe(dispatcher.InputBlock.AsObserver(), _source.Token);
             dispatcher.CompletionTask.ContinueWith(t => _source.Cancel());
         }
 
         /// <inheritdoc />
-        public class SagaDispatcher : ParallelDataDispatcher<string, IEvent, Task>
+        public class SagaDispatcher : ParallelDataDispatcher<string, Tracked<IEvent>>
         {
             private readonly SagaFlow.Builder _sagaFlow;
 
@@ -60,14 +61,14 @@ namespace ZES.Infrastructure.Sagas
             /// <param name="log">Log helper</param>
             /// <param name="sagaFlow">Fluent builder</param>
             private SagaDispatcher(DataflowOptions options, ILog log, SagaFlow.Builder sagaFlow)
-                : base(e => new TSaga().SagaId(e), options, CancellationToken.None, typeof(TSaga))
+                : base(e => new TSaga().SagaId(e.Value), options, CancellationToken.None, typeof(TSaga))
             {
                 Log = log;
                 _sagaFlow = sagaFlow;
             }
 
             /// <inheritdoc />
-            protected override Dataflow<IEvent, Task> CreateChildFlow(string sagaId)
+            protected override Dataflow<Tracked<IEvent>> CreateChildFlow(string sagaId)
                 => _sagaFlow.WithOptions(DataflowOptions).Bind(sagaId);
 
             /// <inheritdoc />
@@ -103,7 +104,7 @@ namespace ZES.Infrastructure.Sagas
             }
 
             /// <inheritdoc />
-            public class SagaFlow : Dataflow<IEvent, Task>
+            public class SagaFlow : Dataflow<Tracked<IEvent>>
             {
                 private readonly IEsRepository<ISaga> _repository;
                 private readonly ILog _log;
@@ -117,24 +118,19 @@ namespace ZES.Infrastructure.Sagas
                     _repository = repository; 
                     _log = log;
 
-                    var block = new TransformBlock<IEvent, Task>(
+                    var block = new ActionBlock<Tracked<IEvent>>(
                         async e =>
                         { 
-                            var task = Handle(e);
-                            await task;
-                            return task;
+                            await Handle(e.Value);
+                            e.Complete();
                         }, options.ToExecutionBlockOption());
                 
                     RegisterChild(block);
                     InputBlock = block;
-                    OutputBlock = block;
                 }
 
                 /// <inheritdoc />
-                public override ITargetBlock<IEvent> InputBlock { get; }
-
-                /// <inheritdoc />
-                public override ISourceBlock<Task> OutputBlock { get; }
+                public override ITargetBlock<Tracked<IEvent>> InputBlock { get; }
 
                 private async Task Handle(IEvent e)
                 {

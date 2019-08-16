@@ -2,6 +2,7 @@ using System.Threading.Tasks;
 using ZES.Interfaces;
 using ZES.Interfaces.Causality;
 using ZES.Interfaces.Domain;
+using ZES.Interfaces.EventStore;
 
 namespace ZES.Infrastructure.Causality
 {
@@ -19,5 +20,7 @@ namespace ZES.Infrastructure.Causality
 
         /// <inheritdoc />
         public Task AddCommand(ICommand command) => Task.CompletedTask;
+
+        public Task AddStreamMetadata(IStream stream) => Task.CompletedTask;
     }
 }

@@ -12,6 +12,7 @@ using ZES.Infrastructure.Causality;
 using ZES.Interfaces;
 using ZES.Interfaces.Causality;
 using ZES.Interfaces.Domain;
+using ZES.Interfaces.EventStore;
 using ZES.Interfaces.Pipes;
 using ZES.Tests.Domain;
 using ZES.Tests.Domain.Commands;
@@ -51,6 +52,7 @@ namespace ZES.Tests
         public async void CanSaveCommandInGraph()
         {
             var container = CreateContainer();
+            var store = container.GetInstance<IEventStore<IAggregate>>();
             var bus = container.GetInstance<IBus>();
             var graph = container.GetInstance<IGraph>();
             var readGraph = container.GetInstance<IReadGraph>();
@@ -67,15 +69,18 @@ namespace ZES.Tests
             await graph.AddEvent(events.Last());
             await graph.AddCommand(command);
             readGraph.Export("graph.json");
+
+            Assert.Equal(Configuration.GraphEnabled() ? await store.Size() : 0, await readGraph.Size());
         }
         
         [Theory]
-        [InlineData(1000)]
-        public async void CanCreateVGraph(int numberOfRepeats)
+        [InlineData(10000)]
+        public async void CanPauseGraph(int numberOfRepeats)
         {
             var container = CreateContainer();
             var bus = container.GetInstance<IBus>();
             var log = container.GetInstance<ILog>();
+            var store = container.GetInstance<IEventStore<IAggregate>>();
             var graph = container.GetInstance<IGraph>();
             var readGraph = container.GetInstance<IReadGraph>();
             graph.Initialize();
@@ -88,12 +93,9 @@ namespace ZES.Tests
             await await bus.CommandAsync(new CreateRoot("Root"));
             await await bus.CommandAsync(new UpdateRoot("Root"));
 
-            var stream = string.Empty;
-            foreach (var e in events)
-            {
-                await graph.AddEvent(e);
-                stream = e.Stream;
-            }
+            var stream = events.Last().Stream;
+            
+            Assert.Equal(!Configuration.GraphEnabled() ? 0 : await store.Size(), await readGraph.Size());
 
             var repeat = 0;
             var version = await readGraph.GetStreamVersion(stream); 

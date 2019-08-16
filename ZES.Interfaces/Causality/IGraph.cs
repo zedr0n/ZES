@@ -1,5 +1,6 @@
 using System.Threading.Tasks;
 using ZES.Interfaces.Domain;
+using ZES.Interfaces.EventStore;
 
 namespace ZES.Interfaces.Causality
 {
@@ -33,5 +34,7 @@ namespace ZES.Interfaces.Causality
         /// <param name="command">Command</param>
         /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
         Task AddCommand(ICommand command);
+
+        Task AddStreamMetadata(IStream stream);
     }
 }

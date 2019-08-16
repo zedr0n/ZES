@@ -20,6 +20,13 @@ namespace ZES.Interfaces.EventStore
         IObservable<IStream> Streams { get; }
 
         /// <summary>
+        /// Asynchronously evaluates the size of the event store
+        /// </summary>
+        /// <remarks>Can be used to check if the graph is synced to store</remarks>
+        /// <returns>Event store size</returns>
+        Task<long> Size();
+
+        /// <summary>
         /// Gets the current streams in the store 
         /// </summary>
         /// <param name="branch">Branch to filter by</param>

@@ -29,7 +29,7 @@ namespace ZES.Infrastructure.Causality
             {
                 await readGraph.Pause();
                 x.Value();
-                await readGraph.Start();
+                readGraph.Start();
                 x.Complete();
             });
         }
@@ -143,16 +143,16 @@ namespace ZES.Infrastructure.Causality
                     .GetVertices()
                     .Where(v => (string)v.GetProperty(AncestorIdProperty) == command.MessageId.ToString())
                     .ToList();
-                var streamKey = (string)resultEvents.Select( v => v.GetProperty(StreamKeyProperty)).Distinct().SingleOrDefault();
+                /*var streamKey = (string)resultEvents.Select( v => v.GetProperty(StreamKeyProperty)).Distinct().SingleOrDefault();
                 if (streamKey == null)
                     throw new InvalidOperationException();
                 
                 var streamType = g.FindVertexType(StreamVertex);
                 var stream = streamType.GetVertices().SingleOrDefault(v => (string)v.GetProperty(StreamKeyProperty) == streamKey);
 
-                // var streamEdge = g.FindEdgeType(StreamEdge);
-                // var prevVertex = stream.End(streamEdge);
-                // prevVertex.AddEdge(streamEdge, vertex);
+                var streamEdge = g.FindEdgeType(StreamEdge);
+                var prevVertex = stream.End(streamEdge);
+                prevVertex.AddEdge(streamEdge, vertex);*/
 
                 var commandEdge = g.FindEdgeType(CommandEdge);
                 foreach (var e in resultEvents)

@@ -156,7 +156,6 @@ namespace ZES.Tests
             
             await repository.FindUntil<Root>($"ThreadRoot{numRoots - 1}");
             log.Info($"Threading : {stopWatch.ElapsedMilliseconds}ms per {numRoots}");
-
         }
 
         [Fact]

@@ -12,7 +12,7 @@ namespace ZES.Infrastructure.Causality
         public IObservable<GraphReadState> State => Observable.Return(GraphReadState.Sleeping);
 
         /// <inheritdoc />
-        public Task Start() => Task.CompletedTask;
+        public void Start() { } 
 
         /// <inheritdoc />
         public Task<long> Size() => Task.FromResult((long)0);

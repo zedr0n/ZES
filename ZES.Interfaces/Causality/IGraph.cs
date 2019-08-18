@@ -35,6 +35,11 @@ namespace ZES.Interfaces.Causality
         /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
         Task AddCommand(ICommand command);
 
+        /// <summary>
+        /// Add stream metadata node
+        /// </summary>
+        /// <param name="stream">Stream info</param>
+        /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
         Task AddStreamMetadata(IStream stream);
     }
 }

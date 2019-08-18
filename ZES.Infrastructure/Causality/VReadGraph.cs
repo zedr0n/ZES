@@ -40,17 +40,14 @@ namespace ZES.Infrastructure.Causality
             });
             
             _flow = new Flow(this);
-            Start().Wait();
+            Start();
         }
 
         /// <inheritdoc />
         public IObservable<GraphReadState> State { get; }
 
         /// <inheritdoc />
-        public async Task Start()
-        {
-            _flow.Start();
-        }
+        public void Start() => _flow.Start();
 
         /// <inheritdoc />
         public async Task<long> Size() => await Execute(SizeInt);

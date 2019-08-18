@@ -23,15 +23,14 @@ namespace ZES
         /// Initializes a new instance of the <see cref="Bus"/> class.
         /// </summary>
         /// <param name="container"><see cref="SimpleInjector"/> container</param>
-        /// <param name="errorLog">Application error log</param>
+        /// <param name="log">Application log</param>
         public Bus(Container container, ILog log)
         {
             _container = container;
             _log = log;
             _commandDispatcher = new CommandDispatcher(
                 HandleCommand, 
-                new DataflowOptions { RecommendedParallelismIfMultiThreaded = 1 },
-                log);
+                new DataflowOptions { RecommendedParallelismIfMultiThreaded = 1 });
         }
 
         /// <inheritdoc />
@@ -82,10 +81,9 @@ namespace ZES
         {
             private readonly Func<ICommand, Task> _handler;
 
-            public CommandDispatcher(Func<ICommand, Task> handler, DataflowOptions options, ILog log) 
+            public CommandDispatcher(Func<ICommand, Task> handler, DataflowOptions options) 
                 : base(c => c.Value.Target, options, CancellationToken.None)
             {
-                Log = log;
                 _handler = handler;
             }
             

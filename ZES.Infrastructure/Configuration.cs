@@ -111,11 +111,18 @@ namespace ZES.Infrastructure
             public const string StreamVertex = "Stream";
 
             /// <summary>
-            /// 
+            /// Stream metadata vertex 
             /// </summary>
             public const string StreamMetadataVertex = "StreamMetaData";
 
+            /// <summary>
+            /// Parent stream property
+            /// </summary>
             public const string ParentKeyProperty = "parentKey";
+            
+            /// <summary>
+            /// Parent stream version property 
+            /// </summary>
             public const string ParentVersionProperty = "parentVersion";
             
             /// <summary>
@@ -148,6 +155,9 @@ namespace ZES.Infrastructure
             /// </summary>
             public const string VersionProperty = "version";
 
+            /// <summary>
+            /// Metadata edge
+            /// </summary>
             public const string MetadataEdge = "METADATA";
             
             /// <summary>

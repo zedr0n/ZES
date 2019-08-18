@@ -9,7 +9,6 @@ using ZES.Interfaces;
 
 namespace ZES.Infrastructure.Dataflow
 {
-  
     /// <summary>
   /// Provides an abstract flow that dispatch inputs to multiple child flows by a special dispatch function, which is
   /// useful in situations that you want to group inputs by a certain property and let specific child flows to take
@@ -90,25 +89,7 @@ namespace ZES.Infrastructure.Dataflow
     /// <inheritdoc />
     public override ITargetBlock<TIn> InputBlock => _dispatcherBlock;
 
-    protected ILog Log { get; set; }
-
-    /// <summary>
-    /// Binds an action on completion fault 
-    /// </summary>
-    /// <param name="action">Action to perform</param>
-    /// <returns>Fluent instance</returns>
-    public ParallelDataDispatcher<TKey, TIn> OnError(Action action)
-    {
-      CompletionTask.ContinueWith(t =>
-      {
-        if (!t.IsFaulted)
-          return;
-
-        Log.Errors.Add(t.Exception);
-        action();
-      });
-      return this;
-    }
+    internal ILog Log { get; set; }
 
     /// <summary>Create the child flow on-the-fly by the dispatch key</summary>
     /// <param name="dispatchKey">The unique key to create and identify the child flow</param>
@@ -318,5 +299,4 @@ namespace ZES.Infrastructure.Dataflow
       }
     }
   }
-  
 }

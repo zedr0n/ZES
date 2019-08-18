@@ -21,6 +21,7 @@ namespace ZES.Infrastructure.Causality
         /// <inheritdoc />
         public Task AddCommand(ICommand command) => Task.CompletedTask;
 
+        /// <inheritdoc />
         public Task AddStreamMetadata(IStream stream) => Task.CompletedTask;
     }
 }

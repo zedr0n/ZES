@@ -23,14 +23,14 @@ namespace ZES.GraphQL.AspNetCore
             {
                 app.UseDeveloperExceptionPage();
             }
-            
+
             app.UseCors(builder =>
                 builder
-                    .WithOrigins("https://localhost:3000")
-                    //.AllowAnyOrigin()
+                    //.WithOrigins("https://localhost:3000")
+                    .AllowAnyOrigin()
                     .AllowAnyHeader()
-                    .AllowAnyMethod()
-                    .AllowCredentials());
+                    .AllowAnyMethod());
+                    //.AllowCredentials());
             app.UseGraphQL();
         }
     }

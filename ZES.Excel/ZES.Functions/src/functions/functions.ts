@@ -1,4 +1,5 @@
 ﻿import { request } from 'graphql-request';
+import { graphQlQuery } from './queries';
 
 /**
  * Adds two numbers.
@@ -29,22 +30,16 @@ function clock(invocation: CustomFunctions.StreamingInvocation<string>): void {
 
 /**
  * @customfunction
+ * @param url Server url
+ * @param period Update period
  * @param invocation Stats query custom function handler
  */
-function statsQuery(invocation: CustomFunctions.StreamingInvocation<string>): void {
+function statsQuery(url : string, period: number,invocation: CustomFunctions.StreamingInvocation<string>): void {
   const query = `{
       statsQuery { numberOfRoots }
   }`;
 
-  const timer = setInterval(() => {
-    invocation.setResult("Querying...");
-    request('https://localhost:5001', query).then(data =>
-        invocation.setResult(data.statsQuery.numberOfRoots.toString()));
-  }, 2000);
-
-  invocation.onCanceled = () => {
-    clearInterval(timer);
-  };
+  graphQlQuery(url, query, data => data.statsQuery.numberOfRoots.toString(), period, invocation);
 }
 
 /**

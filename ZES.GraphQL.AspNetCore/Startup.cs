@@ -26,11 +26,9 @@ namespace ZES.GraphQL.AspNetCore
 
             app.UseCors(builder =>
                 builder
-                    //.WithOrigins("https://localhost:3000")
                     .AllowAnyOrigin()
                     .AllowAnyHeader()
                     .AllowAnyMethod());
-                    //.AllowCredentials());
             app.UseGraphQL();
         }
     }

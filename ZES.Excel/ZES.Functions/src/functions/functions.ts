@@ -1,4 +1,6 @@
-﻿/**
+﻿import { request } from 'graphql-request';
+
+/**
  * Adds two numbers.
  * @customfunction 
  * @param first First number
@@ -19,6 +21,26 @@ function clock(invocation: CustomFunctions.StreamingInvocation<string>): void {
     const time = currentTime();
     invocation.setResult(time);
   }, 1000);
+
+  invocation.onCanceled = () => {
+    clearInterval(timer);
+  };
+}
+
+/**
+ * @customfunction
+ * @param invocation Stats query custom function handler
+ */
+function statsQuery(invocation: CustomFunctions.StreamingInvocation<string>): void {
+  const query = `{
+      statsQuery { numberOfRoots }
+  }`;
+
+  const timer = setInterval(() => {
+    invocation.setResult("Querying...");
+    request('https://localhost:5001', query).then(data =>
+        invocation.setResult(data.statsQuery.numberOfRoots.toString()));
+  }, 2000);
 
   invocation.onCanceled = () => {
     clearInterval(timer);

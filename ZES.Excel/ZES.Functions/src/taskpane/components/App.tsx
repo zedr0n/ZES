@@ -3,6 +3,7 @@ import { Button, ButtonType } from 'office-ui-fabric-react';
 import Header from './Header';
 import HeroList, { HeroListItem } from './HeroList';
 import Progress from './Progress';
+import { request } from 'graphql-request';
 
 export interface AppProps {
   title: string;
@@ -51,8 +52,24 @@ export default class App extends React.Component<AppProps, AppState> {
         // Read the range address
         range.load("address");
 
+        // query graphQL
+
+        const query = `{
+          statsQuery { numberOfRoots }
+        }`;
+
+        // process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0";
+        try{
+          const data = await request('https://localhost:5001', query);
+          range.values = data.statsQuery.numberOfRoots; //JSON.stringify(data, undefined, 2);
+        }
+        catch(error){
+          range.values = JSON.stringify(error.message, undefined, 2); 
+        }
+        
         // Update the fill color
-        range.format.fill.color = "yellow";
+        
+        // range.format.fill.color = "yellow";
 
         await context.sync();
         console.log(`The range address was ${range.address}.`);

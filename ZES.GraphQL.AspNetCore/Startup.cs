@@ -12,6 +12,7 @@ namespace ZES.GraphQL.AspNetCore
         // For more information on how to configure your application, visit https://go.microsoft.com/fwlink/?LinkID=398940
         public void ConfigureServices(IServiceCollection services)
         {
+            services.AddCors();
             services.UseGraphQl(typeof(Config));
         }
 
@@ -22,7 +23,14 @@ namespace ZES.GraphQL.AspNetCore
             {
                 app.UseDeveloperExceptionPage();
             }
-
+            
+            app.UseCors(builder =>
+                builder
+                    .WithOrigins("https://localhost:3000")
+                    //.AllowAnyOrigin()
+                    .AllowAnyHeader()
+                    .AllowAnyMethod()
+                    .AllowCredentials());
             app.UseGraphQL();
         }
     }

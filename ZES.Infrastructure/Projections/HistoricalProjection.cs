@@ -39,6 +39,9 @@ namespace ZES.Infrastructure.Projections
         }
 
         /// <inheritdoc />
+        protected override long Now => _timestamp;
+
+        /// <inheritdoc />
         public async Task Init(long timestamp)
         {
             Log.Trace(string.Empty, this);
@@ -47,6 +50,6 @@ namespace ZES.Infrastructure.Projections
         }
 
         /// <inheritdoc />
-        internal override void OnInit() { } 
+        protected override void OnInit() { } 
     }
 }

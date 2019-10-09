@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Concurrent;
 using System.Linq;
 using System.Reactive.Linq;
 using System.Threading;
@@ -27,9 +28,10 @@ namespace ZES.Infrastructure.Projections
         private readonly IEventStore<IAggregate> _eventStore;
         private readonly ILog _log;
         private readonly ITimeline _timeline;
-
-        private ITargetBlock<IMessage> _inputBlock;
+        private readonly ITargetBlock<IMessage> _inputBlock;
         
+        private readonly ConcurrentDictionary<string, int> _versions = new ConcurrentDictionary<string, int>(); 
+
         /// <summary>
         /// Initializes a new instance of the <see cref="SingleProjection{TState}"/> class.
         /// </summary>
@@ -78,6 +80,13 @@ namespace ZES.Infrastructure.Projections
             
             var rebuildDispatcher = new Dispatcher(options, this);
             var liveDispatcher = new BufferedDispatcher(options, this);
+            liveDispatcher.CompletionTask.ContinueWith(t =>
+            {
+                if (!t.IsFaulted)
+                    return;
+
+                _log.Errors.Add(t.Exception);
+            });
 
             _eventStore.Streams
                 .TakeWhile(_ => !CancellationSource.IsCancellationRequested)
@@ -86,53 +95,53 @@ namespace ZES.Infrastructure.Projections
             _eventStore.ListStreams(_timeline.Id)
                 .TakeWhile(_ => !CancellationSource.IsCancellationRequested)
                 .Select(s => new Tracked<IStream>(s))
-                .Finally(() =>
-                {
-                    if (!CancellationSource.IsCancellationRequested)
-                        liveDispatcher.Start();
-                }) 
                 .Subscribe(rebuildDispatcher.InputBlock.AsObserver());
             
             CancellationToken.Register(async () =>
             {
-                StatusSubject.OnNext(Cancelling);
-                await rebuildDispatcher.SignalAndWaitForCompletionAsync();
-                await liveDispatcher.SignalAndWaitForCompletionAsync();
-                StatusSubject.OnNext(Sleeping);
+                if (Status != Failed)
+                    StatusSubject.OnNext(Cancelling);
+                try
+                {
+                    if (!rebuildDispatcher.CompletionTask.IsFaulted)
+                        await rebuildDispatcher.SignalAndWaitForCompletionAsync();
+                    if (!liveDispatcher.CompletionTask.IsFaulted)
+                        await liveDispatcher.SignalAndWaitForCompletionAsync();
+                    StatusSubject.OnNext(Sleeping);
+                }
+                catch (Exception e)
+                {
+                    StatusSubject.OnNext(Failed);
+                    _log.Errors.Add(e);
+                    StatusSubject.OnNext(Sleeping);
+                }
             });
 
             try
             {
                 await rebuildDispatcher.CompletionTask.Timeout();
+                liveDispatcher.Start();
+                StatusSubject.OnNext(Listening);
+                _log?.Debug($"Rebuild finished!", this);
             }
             catch (Exception e)
             {
                 StatusSubject.OnNext(Failed);
-                _log.Errors.Add(e);
+                _log?.Errors.Add(e);
                 CancellationSource.Cancel();
             }
-            
-            _log?.Debug($"Rebuild finished!", this); 
-            StatusSubject.OnNext(Listening);
         }
 
         private class Dispatcher : ParallelDataDispatcher<string, Tracked<IStream>>
         {
             private readonly SingleProjection<TState> _projection;
-            private readonly Dataflow<Tracked<IStream>, Tracked<IStream>> _buffer;
 
             public Dispatcher(DataflowOptions options, SingleProjection<TState> projection) 
                 : base(s => s.Value.Key, options, projection.CancellationToken)
             {
                 Log = projection._log;
                 _projection = projection;
-                
-                _buffer = new BufferBlock<Tracked<IStream>>().ToDataflow();
-                projection.CancellationToken.Register(() =>
-                    _buffer.LinkTo(DataflowBlock.NullTarget<Tracked<IStream>>().ToDataflow()));
             }
-
-            public void Start() => _buffer.LinkTo(InputBlock.ToDataflow());
 
             protected override Dataflow<Tracked<IStream>> CreateChildFlow(string dispatchKey) => new Flow(m_dataflowOptions, _projection);
         }
@@ -167,8 +176,8 @@ namespace ZES.Infrastructure.Projections
             private readonly ILog _log;
             private readonly CancellationToken _token;
             
-            private int _version = ExpectedVersion.EmptyStream;
-
+            private readonly ConcurrentDictionary<string, int> _versions;
+            
             public Flow(DataflowOptions dataflowOptions, SingleProjection<TState> projection)
                 : base(dataflowOptions)
             {
@@ -176,6 +185,7 @@ namespace ZES.Infrastructure.Projections
                 _eventStore = projection._eventStore;
                 _log = projection._log;
                 _token = projection.CancellationToken;
+                _versions = projection._versions;
                 
                 var block = new ActionBlock<Tracked<IStream>>(Process);
                 
@@ -188,24 +198,30 @@ namespace ZES.Infrastructure.Projections
             private async Task Process(Tracked<IStream> s)
             {
                 var stream = s.Value;
-                _log?.Debug($"{stream.Key}@{stream.Version} <- {_version}", $"{Parents.Select(p => p.Name).Aggregate((a, n) => a + n)}->{Name}");
+                var version = _versions.GetOrAdd(stream.Key, ExpectedVersion.EmptyStream);
 
                 if (stream.Version <= ExpectedVersion.EmptyStream)
                     stream.Version = 0;
 
-                if (_version > stream.Version) 
-                    _log?.Warn($"Stream update is version {stream.Version}, behind projection version {_version}", GetDetailedName());
+                if (version > stream.Version) 
+                    _log?.Warn($"Stream update is version {stream.Version}, behind projection version {version}", GetDetailedName());
 
-                if (_version < stream.Version)
+                if (version < stream.Version)
                 {
-                    await _eventStore.ReadStream<IEvent>(stream, _version + 1)
+                    _log?.Debug($"{stream.Key}@{stream.Version} <- {version}", $"{Parents.Select(p => p.Name).Aggregate((a, n) => a + n)}->{Name}");
+                    
+                    var origVersion = version;
+                    await _eventStore.ReadStream<IEvent>(stream, version + 1)
                         .TakeWhile(_ => !_token.IsCancellationRequested)
                         .Do(async e =>
                         {
                             await _projection._inputBlock.SendAsync(e, _token);
-                            _version++;
+                            version++;
                         })
                         .LastOrDefaultAsync();
+                    
+                    if (!_versions.TryUpdate(stream.Key, version, origVersion))
+                        throw new InvalidOperationException("Failed updating concurrent versions of projections");
                 }
                     
                 s.Complete();    

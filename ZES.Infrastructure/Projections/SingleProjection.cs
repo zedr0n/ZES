@@ -68,6 +68,7 @@ namespace ZES.Infrastructure.Projections
             
             StatusSubject.OnNext(Building);
             CancellationSource.Dispose();
+            _versions.Clear();
             
             lock (State)
                 State = new TState();
@@ -80,13 +81,6 @@ namespace ZES.Infrastructure.Projections
             
             var rebuildDispatcher = new Dispatcher(options, this);
             var liveDispatcher = new BufferedDispatcher(options, this);
-            liveDispatcher.CompletionTask.ContinueWith(t =>
-            {
-                if (!t.IsFaulted)
-                    return;
-
-                _log.Errors.Add(t.Exception);
-            });
 
             _eventStore.Streams
                 .TakeWhile(_ => !CancellationSource.IsCancellationRequested)
@@ -141,6 +135,12 @@ namespace ZES.Infrastructure.Projections
             {
                 Log = projection._log;
                 _projection = projection;
+                
+                CompletionTask.ContinueWith(t =>
+                {
+                    if (t.IsFaulted)
+                        Log.Errors.Add(t.Exception);
+                });
             }
 
             protected override Dataflow<Tracked<IStream>> CreateChildFlow(string dispatchKey) => new Flow(m_dataflowOptions, _projection);

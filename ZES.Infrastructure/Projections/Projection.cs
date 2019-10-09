@@ -52,20 +52,14 @@ namespace ZES.Infrastructure.Projections
             _timeline = timeline;
 
             StatusSubject.Where(s => s != Sleeping).Subscribe(s => Log?.Info($"{GetType().GetFriendlyName()} : {s.ToString()}" ));
-
-            OnInit();
+            InvalidateSubscription = new LazySubscription(
+                () => _messageQueue.Alerts.OfType<InvalidateProjections>().Subscribe(async s => await Rebuild()));
         }
         
         internal ILog Log { get; }
 
         /// <inheritdoc />
         protected override long Now => _timeline.Now;
-
-        protected virtual void OnInit()
-        {
-            InvalidateSubscription = new LazySubscription(
-                () => _messageQueue.Alerts.OfType<InvalidateProjections>().Subscribe(async s => await Rebuild()));
-        }
 
         /// <inheritdoc />
         protected override async Task Rebuild()

@@ -14,7 +14,7 @@ namespace ZES.Infrastructure.Projections
     public abstract partial class Projection<TState> : IProjection<TState>
     {
         /// <inheritdoc />
-        public class Dispatcher : ParallelDataDispatcher<string, IStream, int>
+        public class Dispatcher : ParallelDataDispatcherWithOutput<string, IStream, int>
         {
             private readonly Slice.Builder _streamFlow;
 
@@ -87,7 +87,7 @@ namespace ZES.Infrastructure.Projections
                 internal Builder DelayUntil(Task delay) =>
                     Clone(this, b => b._delayUntil = delay);
 
-                internal ParallelDataDispatcher<string, IStream, int> Bind(Projection<TState> projection)
+                internal ParallelDataDispatcherWithOutput<string, IStream, int> Bind(Projection<TState> projection)
                 {
                     if (projection == null)
                         throw new ArgumentNullException();

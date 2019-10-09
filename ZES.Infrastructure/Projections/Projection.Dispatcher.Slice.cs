@@ -16,7 +16,7 @@ namespace ZES.Infrastructure.Projections
     public abstract partial class Projection<TState> : IProjection<TState>
     {
         /// <inheritdoc />
-        public class Slice : ParallelDataDispatcher<string, IStream, int>
+        public class Slice : ParallelDataDispatcherWithOutput<string, IStream, int>
         {
             private readonly ILog _log;
 

@@ -67,22 +67,29 @@ namespace ZES.Infrastructure.Projections
             var version = _versions.GetOrAdd(s.Key, ExpectedVersion.EmptyStream);
             _log?.Debug($"{s.Key}@{s.Version} <- {version}", $"{Parents.Select(p => p.Name).Aggregate((a, n) => a + n)}->{Name}");
 
+            if (s.Version <= ExpectedVersion.EmptyStream)
+                s.Version = 0;
+
             if (version > s.Version)
                 _log?.Warn($"Stream update is version {s.Version}, behind projection version {version}", GetDetailedName());
-
+            
             if (version >= s.Version || _token.IsCancellationRequested) 
                 return version;
             
-            var o = _eventStore.ReadStream<IEvent>(s, version + 1, s.Version - version)
-                .Publish().RefCount();
+            var origVersion = version;
+            await _eventStore.ReadStream<IEvent>(s, version + 1)
+                .TakeWhile(_ => !_token.IsCancellationRequested)
+                .Do(async e =>
+                {
+                    version++;
+                    await _eventBlock.SendAsync(e, _token);
+                })
+                .LastOrDefaultAsync();
 
-            o.Subscribe(async e => await _eventBlock.SendAsync(e), _token);
-
-            if (!_versions.TryUpdate(s.Key, s.Version, version))
+            if (!_versions.TryUpdate(s.Key, s.Version, origVersion))
                 throw new InvalidOperationException("Failed updating concurrent versions of projections");
 
-            await o.LastOrDefaultAsync().ToTask(_token);
-            return version;
+            return s.Version;
         }
 
         /// <inheritdoc />

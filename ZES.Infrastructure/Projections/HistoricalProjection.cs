@@ -35,7 +35,9 @@ namespace ZES.Infrastructure.Projections
         {
             var projection = (Projection<TState>)iProjection;
             foreach (var h in projection.Handlers)
-                Register(h.Key, (e, s) => e.Timestamp <= _timestamp ? h.Value(e, s) : s);
+                Register(h.Key, (e, s) => h.Value(e, s));
+            
+            InvalidateSubscription = new LazySubscription();
         }
 
         /// <inheritdoc />
@@ -48,8 +50,5 @@ namespace ZES.Infrastructure.Projections
             _timestamp = timestamp;
             await Start();
         }
-
-        /// <inheritdoc />
-        protected override void OnInit() { } 
     }
 }

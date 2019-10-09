@@ -70,9 +70,9 @@ namespace ZES.Infrastructure.Projections
         protected LazySubscription InvalidateSubscription { get; set; } = new LazySubscription();
 
         /// <summary>
-        /// Gets the cancellation source for the  projection
+        /// Gets or sets gets the cancellation source for the  projection
         /// </summary>
-        protected RepeatableCancellationTokenSource CancellationSource { get; }
+        protected RepeatableCancellationTokenSource CancellationSource { get; set; }
 
         /// <summary>
         /// Rebuild the projection 

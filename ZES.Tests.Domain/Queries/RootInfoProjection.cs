@@ -8,15 +8,14 @@ using ZES.Tests.Domain.Events;
 
 namespace ZES.Tests.Domain.Queries
 {
-    public class RootInfoProjection : Projection<RootInfoProjection.Results>
+    public class RootInfoProjection : SingleProjection<RootInfoProjection.Results>
     {
         public RootInfoProjection(
             IEventStore<IAggregate> eventStore,
             ILog log,
             IMessageQueue messageQueue,
-            ITimeline timeline,
-            Dispatcher.Builder builder)
-            : base(eventStore, log, messageQueue, timeline, builder)
+            ITimeline timeline)
+            : base(eventStore, log, messageQueue, timeline)
         {
             State = new Results();
             Register<RootCreated>(When);

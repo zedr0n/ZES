@@ -48,7 +48,7 @@ namespace ZES.Infrastructure
         /// <value>
         /// Default number of threads per service 
         /// </value>
-        public static int ThreadsPerInstance => 8;
+        public static int ThreadsPerInstance => 4;
 
         /// <summary>
         /// Check if Common.Logging logging is allowed

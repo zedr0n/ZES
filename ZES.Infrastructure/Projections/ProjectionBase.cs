@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Reactive.Linq;
 using System.Reactive.Subjects;
+using System.Threading;
 using System.Threading.Tasks;
 using ZES.Interfaces;
 using ZES.Interfaces.Domain;
@@ -73,6 +74,11 @@ namespace ZES.Infrastructure.Projections
         /// Gets or sets gets the cancellation source for the  projection
         /// </summary>
         protected RepeatableCancellationTokenSource CancellationSource { get; set; }
+
+        /// <summary>
+        /// Gets projection cancellation token
+        /// </summary>
+        protected CancellationToken CancellationToken => CancellationSource.Token;
 
         /// <summary>
         /// Rebuild the projection 

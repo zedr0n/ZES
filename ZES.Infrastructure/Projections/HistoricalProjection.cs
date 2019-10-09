@@ -33,7 +33,7 @@ namespace ZES.Infrastructure.Projections
             Dispatcher.Builder builder)
             : base(eventStore, log, messageQueue, timeline, builder)
         {
-            var projection = (Projection<TState>)iProjection;
+            var projection = (ProjectionBase<TState>)iProjection;
             foreach (var h in projection.Handlers)
                 Register(h.Key, (e, s) => h.Value(e, s));
             

@@ -44,6 +44,7 @@ namespace ZES.Infrastructure.Projections
         /// <param name="timeline">Active branch tracker</param>
         /// <param name="streamDispatcher">Dispatcher fluent builder</param>
         protected Projection(IEventStore<IAggregate> eventStore, ILog log, IMessageQueue messageQueue, ITimeline timeline, Dispatcher.Builder streamDispatcher)
+            : base(eventStore, log, timeline)
         {
             _eventStore = eventStore;
             _messageQueue = messageQueue;

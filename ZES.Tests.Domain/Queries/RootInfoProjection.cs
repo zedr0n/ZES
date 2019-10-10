@@ -15,7 +15,7 @@ namespace ZES.Tests.Domain.Queries
             ILog log,
             IMessageQueue messageQueue,
             ITimeline timeline)
-            : base(eventStore, log, messageQueue, timeline)
+            : base(eventStore, log, timeline, messageQueue)
         {
             State = new Results();
             Register<RootCreated>(When);

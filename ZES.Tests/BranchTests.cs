@@ -49,7 +49,7 @@ namespace ZES.Tests
             
             await time.Merge("test");
 
-            rootInfo = await bus.QueryAsync(new RootInfoQuery("Root"));
+            rootInfo = await bus.QueryUntil(new RootInfoQuery("Root"), r => r?.CreatedAt < r?.UpdatedAt);
             Assert.True(rootInfo.CreatedAt < rootInfo.UpdatedAt);  
             rootInfo = await bus.QueryAsync(new RootInfoQuery("TestRoot"));
             Assert.NotNull(rootInfo);
@@ -136,7 +136,7 @@ namespace ZES.Tests
             Assert.True(testRootInfo?.CreatedAt > 0);
 
             manager.Reset();
-            rootInfo = await bus.QueryAsync(new RootInfoQuery("Root"));
+            rootInfo = await bus.QueryUntil(new RootInfoQuery("Root"), r => r?.CreatedAt != r?.UpdatedAt);
             Assert.True(rootInfo.CreatedAt != rootInfo.UpdatedAt);
 
             testRootInfo = await bus.QueryAsync(new RootInfoQuery("TestRoot"));

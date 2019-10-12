@@ -6,6 +6,6 @@ namespace ZES.Tests.Domain.Queries
         
         public string Id { get; }
         public long TimeStamp { get; set; } = long.MinValue;
-        public double Value { get; set; }
+        public double Value { get; set; } = -1;
     }
 }

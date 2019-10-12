@@ -75,26 +75,24 @@ namespace ZES.Tests
             var lastRecord = await bus.QueryUntil(new LastRecordQuery("Root"));
             Assert.Equal(1, lastRecord.Value);
 
-            var now = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
-            var timeline = await manager.Branch("Branch", now);
+            var then = ((DateTimeOffset)new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc)).ToUnixTimeMilliseconds(); 
+            await manager.Branch("Branch", then);
 
-            var then = new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc); 
-            timeline.Warp(then);
+            //timeline.Warp(then);
             
-            await await bus.CommandAsync(new RecordRoot("Root", -1));
+            // await await bus.CommandAsync(new RecordRoot("Root", -1));
 
-            lastRecord = await bus.QueryUntil(new LastRecordQuery("Root"), r => r.TimeStamp > 0);
+            lastRecord = await bus.QueryAsync(new LastRecordQuery("Root"));
             Assert.Equal(-1, lastRecord.Value);
 
             await manager.Branch(BranchManager.Master);
             await manager.Merge("Branch");
             
-            lastRecord = await bus.QueryUntil(new LastRecordQuery("Root"), l => l.Value == 1);
+            lastRecord = await bus.QueryUntil(new LastRecordQuery("Root"), r => r.Value > 0);
             Assert.Equal(1, lastRecord.Value);
 
-            lastRecord = await bus.QueryUntil(new HistoricalQuery<LastRecordQuery, LastRecord>(
-                new LastRecordQuery("Root"),
-                ((DateTimeOffset)then).ToUnixTimeMilliseconds()));
+            lastRecord = await bus.QueryAsync(new HistoricalQuery<LastRecordQuery, LastRecord>(
+                new LastRecordQuery("Root"), then));
 
             Assert.Equal(-1, lastRecord.Value);
         }

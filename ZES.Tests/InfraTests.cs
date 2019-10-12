@@ -195,7 +195,7 @@ namespace ZES.Tests
         }
 
         [Theory]
-        [InlineData(1000)]
+        [InlineData(100)]
         public async void CanProjectALotOfRoots(int numRoots)
         {
             var container = CreateContainer();

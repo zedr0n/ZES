@@ -7,7 +7,7 @@ namespace ZES.Infrastructure
     /// </summary>
     /// <typeparam name="T">Underlying type</typeparam>
     /// <typeparam name="TResult">Tracking result type</typeparam>
-    public class Tracked<T, TResult> 
+    public class Tracked<T, TResult> : ITracked 
     {
         private readonly TaskCompletionSource<TResult> _tsc;
 
@@ -31,11 +31,17 @@ namespace ZES.Infrastructure
         /// </summary>
         public Task<TResult> Task => _tsc.Task;
         
+        /// <inheritdoc />
+        public Task Completed => Task;
+        
         /// <summary>
         /// Set completion result
         /// </summary>
         /// <param name="result">Completion result</param>
         public void SetResult(TResult result) { _tsc.SetResult(result); }
+
+        /// <inheritdoc />
+        public void Complete() => _tsc.SetResult(default(TResult));
     }
 
     /// <inheritdoc />
@@ -49,10 +55,5 @@ namespace ZES.Infrastructure
             : base(value)
         {
         }
-
-        /// <summary>
-        /// Set completion
-        /// </summary>
-        public void Complete() => SetResult(true);
     }
 }

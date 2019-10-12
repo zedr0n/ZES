@@ -113,17 +113,14 @@ namespace ZES.Tests
         {
             var container = CreateContainer();
             var bus = container.GetInstance<IBus>();
-            var repository = container.GetInstance<IEsRepository<IAggregate>>();
             
-            var command = new CreateRoot("Root"); 
+            var command = new CreateRoot("UpdateRoot.Root"); 
             await await bus.CommandAsync(command);
             
-            var updateCommand = new UpdateRoot("Root");
+            var updateCommand = new UpdateRoot("UpdateRoot.Root");
             await await bus.CommandAsync(updateCommand);
 
-            var root = await repository.FindUntil<Root>("Root");
-            var rootInfo = await bus.QueryUntil(new RootInfoQuery("Root"), r => r.UpdatedAt > r.CreatedAt);
-            Assert.True(rootInfo.UpdatedAt == root.UpdatedAt);
+            var rootInfo = await bus.QueryUntil(new RootInfoQuery("UpdateRoot.Root"), r => r.UpdatedAt > r.CreatedAt);
             Assert.True(rootInfo.UpdatedAt > rootInfo.CreatedAt);
         }
 
@@ -198,7 +195,7 @@ namespace ZES.Tests
         }
 
         [Theory]
-        [InlineData(10)]
+        [InlineData(1000)]
         public async void CanProjectALotOfRoots(int numRoots)
         {
             var container = CreateContainer();
@@ -212,9 +209,9 @@ namespace ZES.Tests
                 rootId--;
             }
 
-            var query = new RootInfoQuery("Root1");
-            var rootInfo = await bus.QueryUntil(query, c => c?.CreatedAt > 0);
-            Assert.NotEqual(0, rootInfo?.CreatedAt); 
+            // var query = new RootInfoQuery("Root1");
+            // var rootInfo = await bus.QueryUntil(query, c => c?.CreatedAt > 0);
+            // Assert.NotEqual(0, rootInfo?.CreatedAt); 
             
             var statsQuery = new StatsQuery();
             var stats = await bus.QueryUntil(statsQuery, s => s?.NumberOfRoots == numRoots);

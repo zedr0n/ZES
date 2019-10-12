@@ -7,10 +7,10 @@ using ZES.Tests.Domain.Events;
 
 namespace ZES.Tests.Domain.Queries
 {
-    public class LastRecordProjection : Projection<LastRecord>
+    public class LastRecordProjection : SingleProjection<LastRecord>
     {
-        public LastRecordProjection(IEventStore<IAggregate> eventStore, ILog log, IMessageQueue messageQueue, ITimeline timeline, Dispatcher.Builder streamDispatcher) 
-            : base(eventStore, log, messageQueue, timeline, streamDispatcher)
+        public LastRecordProjection(IEventStore<IAggregate> eventStore, ILog log, IMessageQueue messageQueue, ITimeline timeline) 
+            : base(eventStore, log, timeline, messageQueue)
         {
             Register<RootRecorded>(When);
         }

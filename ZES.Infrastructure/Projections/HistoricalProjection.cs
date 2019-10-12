@@ -10,7 +10,7 @@ namespace ZES.Infrastructure.Projections
     /// Historical projection decorator
     /// </summary>
     /// <typeparam name="TState">Projection state</typeparam>
-    public class HistoricalProjection<TState> : Projection<TState>, IHistoricalProjection
+    public class HistoricalProjection<TState> : SingleProjection<TState>, IHistoricalProjection
         where TState : new()
     {
         private long _timestamp;
@@ -20,18 +20,16 @@ namespace ZES.Infrastructure.Projections
         /// </summary>
         /// <param name="eventStore">Aggregate event store</param>
         /// <param name="log">Application log</param>
-        /// <param name="messageQueue">Message queue</param>
         /// <param name="iProjection">Original projection</param>
+        /// <param name="messageQueue">Message queue</param>
         /// <param name="timeline">Active branch</param>
-        /// <param name="builder">Fluent builder</param>
         public HistoricalProjection(
             IEventStore<IAggregate> eventStore,
             ILog log,
-            IMessageQueue messageQueue,
             IProjection<TState> iProjection,
-            ITimeline timeline,
-            Dispatcher.Builder builder)
-            : base(eventStore, log, messageQueue, timeline, builder)
+            IMessageQueue messageQueue,
+            ITimeline timeline)
+            : base(eventStore, log, timeline, messageQueue)
         {
             var projection = (ProjectionBase<TState>)iProjection;
             foreach (var h in projection.Handlers)

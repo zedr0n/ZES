@@ -1,6 +1,7 @@
 using System;
 using System.Reactive.Linq;
 using System.Reactive.Threading.Tasks;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace ZES.Infrastructure.Utils
@@ -41,6 +42,18 @@ namespace ZES.Infrastructure.Utils
             await await Task.WhenAny(task, timeoutTask);
             if (timeoutTask.IsCompleted)
                 throw new TimeoutException();
+        }
+
+        /// <summary>
+        /// Timeout a task
+        /// </summary>
+        /// <param name="task">Task to execute</param>
+        /// <param name="token">Complete the task on cancellation token</param>
+        /// <returns>Completed task or timeout </returns>
+        /// <exception cref="TimeoutException">Throws if execution of task takes longer than timeout</exception>
+        public static async Task Timeout(this Task task, CancellationToken token)
+        {
+            await Task.WhenAny(task, Task.Delay(Configuration.Timeout, token));
         }
 
         /// <summary>

@@ -5,6 +5,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Threading.Tasks.Dataflow;
 using Gridsum.DataflowEx;
+using ZES.Infrastructure.Utils;
 using ZES.Interfaces;
 
 namespace ZES.Infrastructure.Dataflow
@@ -110,6 +111,8 @@ namespace ZES.Infrastructure.Dataflow
             try
             {
                 await block.InputBlock.SendAsync(input, _token);
+                if (input is ITracked tracked)
+                    await tracked.Completed.Timeout(_token);
             }
             catch (Exception e)
             {

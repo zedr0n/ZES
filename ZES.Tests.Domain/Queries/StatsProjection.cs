@@ -1,3 +1,4 @@
+using System.Threading;
 using ZES.Infrastructure.Projections;
 using ZES.Interfaces;
 using ZES.Interfaces.Domain;
@@ -7,15 +8,14 @@ using ZES.Tests.Domain.Events;
 
 namespace ZES.Tests.Domain.Queries
 {
-    public class StatsProjection : Projection<Stats>
+    public class StatsProjection : SingleProjection<Stats>
     {
         public StatsProjection(
             IEventStore<IAggregate> eventStore,
             ILog log,
             IMessageQueue messageQueue,
-            ITimeline timeline,
-            Dispatcher.Builder builder)
-            : base(eventStore, log, messageQueue, timeline, builder)
+            ITimeline timeline)
+            : base(eventStore, log, timeline, messageQueue)
         {
             Register<RootCreated>(When);
         }

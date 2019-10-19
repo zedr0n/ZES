@@ -95,7 +95,7 @@ namespace ZES.Infrastructure.Causality
 
         private async Task<T> Execute<T>(Func<T> query)
         {
-            var trackedQuery = new Tracked<Func<object>, object>(() => query());
+            var trackedQuery = new TrackedResult<Func<object>, object>(() => query());
             await _flow.SendAsync(trackedQuery);
 
             return (T)await trackedQuery.Task;
@@ -109,7 +109,7 @@ namespace ZES.Infrastructure.Causality
             return total - streamCount;
         }
 
-        private class Flow : Dataflow<Tracked<Func<object>, object>, Tracked<Func<object>, object>>
+        private class Flow : Dataflow<TrackedResult<Func<object>, object>, TrackedResult<Func<object>, object>>
         {
             /// <summary>
             /// Initializes a new instance of the <see cref="Flow"/> class.
@@ -118,14 +118,14 @@ namespace ZES.Infrastructure.Causality
             public Flow(VReadGraph graph)
                 : base(DataflowOptions.Default)
             { 
-                var inputBlock = new TransformBlock<Tracked<Func<object>, object>, Tracked<Func<object>, object>>(x =>
+                var inputBlock = new TransformBlock<TrackedResult<Func<object>, object>, TrackedResult<Func<object>, object>>(x =>
                 {
                     Interlocked.Increment(ref graph._reading);
                     graph._state.OnNext(GraphReadState.Queued);
                     return x;
                 });
                 
-                var actionBlock = new TransformBlock<Tracked<Func<object>, object>,
+                var actionBlock = new TransformBlock<TrackedResult<Func<object>, object>,
                     bool>(
                     x =>
                     {
@@ -144,7 +144,7 @@ namespace ZES.Infrastructure.Causality
                         graph._state.OnNext(GraphReadState.Sleeping);
                 });
 
-                var outputBlock = new TransformBlock<Tracked<Func<object>, object>, Tracked<Func<object>, object>>(x =>
+                var outputBlock = new TransformBlock<TrackedResult<Func<object>, object>, TrackedResult<Func<object>, object>>(x =>
                 {
                     Interlocked.Decrement(ref graph._reading);
                     return x;
@@ -171,8 +171,8 @@ namespace ZES.Infrastructure.Causality
 
             public bool Paused { get; set; }
 
-            public override ITargetBlock<Tracked<Func<object>, object>> InputBlock { get; }
-            public override ISourceBlock<Tracked<Func<object>, object>> OutputBlock { get; }
+            public override ITargetBlock<TrackedResult<Func<object>, object>> InputBlock { get; }
+            public override ISourceBlock<TrackedResult<Func<object>, object>> OutputBlock { get; }
         }
     }
 }

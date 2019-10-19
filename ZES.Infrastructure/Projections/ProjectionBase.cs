@@ -4,7 +4,6 @@ using System.Reactive.Linq;
 using System.Reactive.Subjects;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Threading.Tasks.Dataflow;
 using Gridsum.DataflowEx;
 using ZES.Interfaces;
 using ZES.Interfaces.Domain;
@@ -17,26 +16,20 @@ namespace ZES.Infrastructure.Projections
     public abstract class ProjectionBase<TState> : IProjection<TState>
         where TState : new()
     {
-        protected ITargetBlock<Tracked<IEvent>> InputBlock { get; }
-        protected IEventStore<IAggregate> EventStore { get; }
-        protected ITimeline Timeline { get; }
-        protected ILog Log;
-
-        private int _parallel = 0;
-
+        private int _parallel;
+        
         /// <summary>
         /// Initializes a new instance of the <see cref="ProjectionBase{TState}"/> class.
         /// </summary>
+        /// <param name="eventStore">Event store service</param>
+        /// <param name="log">Log service</param>
+        /// <param name="timeline">Timeline service</param>
         public ProjectionBase(IEventStore<IAggregate> eventStore, ILog log, ITimeline timeline)
         {
             EventStore = eventStore;
             Log = log;
             Timeline = timeline;
             CancellationSource = new RepeatableCancellationTokenSource();
-            InputBlock = new ActionBlock<Tracked<IEvent>>(m => When(m), new ExecutionDataflowBlockOptions
-            {
-                MaxDegreeOfParallelism = Configuration.ThreadsPerInstance
-            });
 
             StatusSubject.Where(s => s != Sleeping)
                 .Subscribe(s => Log?.Info($"{GetType().GetFriendlyName()} : {s.ToString()}"));
@@ -71,9 +64,21 @@ namespace ZES.Infrastructure.Projections
         /// </summary>
         protected virtual long Now => Timeline.Now;
 
-        /// <inheritdoc />
-        public virtual string Key(IStream stream) => stream.Key;
-
+        /// <summary>
+        /// Gets event store 
+        /// </summary>
+        protected IEventStore<IAggregate> EventStore { get; }
+        
+        /// <summary>
+        /// Gets current timeline
+        /// </summary>
+        protected ITimeline Timeline { get; }
+        
+        /// <summary>
+        /// Gets or sets gets log service 
+        /// </summary>
+        protected ILog Log { get; set; }
+        
         /// <summary>
         /// Gets observable representing the projection status
         /// </summary>
@@ -99,6 +104,9 @@ namespace ZES.Infrastructure.Projections
         /// Gets projection cancellation token
         /// </summary>
         protected CancellationToken CancellationToken => CancellationSource.Token;
+
+        /// <inheritdoc />
+        public virtual string Key(IStream stream) => stream.Key;
 
         /// <summary>
         /// Rebuild the projection 
@@ -141,7 +149,6 @@ namespace ZES.Infrastructure.Projections
             Handlers.Add(tEvent, (m, s) => when(m as IEvent, s));
         }
 
-
         /// <summary>
         /// Projection message processor
         /// </summary>
@@ -164,32 +171,5 @@ namespace ZES.Infrastructure.Projections
             Log.Debug($"{e.Stream}@{e.Version}:{_parallel}", this);
             Interlocked.Decrement(ref _parallel);
         }
-        
-        /// <summary>
-        /// Projection message processor
-        /// </summary>
-        /// <param name="e">Message to process</param>
-        protected void When(Tracked<IEvent> e)
-        {
-            var @event = e.Value;
-            Interlocked.Increment(ref _parallel);
-            
-            // do not project the future events
-            if ( @event == null 
-                 || CancellationSource.IsCancellationRequested
-                 || !Handlers.TryGetValue(@event.GetType(), out var handler) 
-                 || @event.Timestamp > Now)
-            {
-                e.Complete();
-                Interlocked.Decrement(ref _parallel);
-                return;
-            }
-
-            State = handler(@event, State);
-            e.Complete();
-            Log.Debug($"{@event.Stream}@{@event.Version}:{_parallel}", this);
-            Interlocked.Decrement(ref _parallel);
-        }
-
     }
 }

@@ -57,8 +57,6 @@ namespace ZES.Infrastructure.Projections
                 () => _messageQueue.Alerts.OfType<InvalidateProjections>().Subscribe(async s => await Rebuild()));
         }
         
-        internal ILog Log { get; }
-
         /// <inheritdoc />
         protected override long Now => _timeline.Now;
 

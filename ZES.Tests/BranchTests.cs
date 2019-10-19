@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using SimpleInjector;
 using Xunit;
 using Xunit.Abstractions;
@@ -78,13 +79,12 @@ namespace ZES.Tests
             var then = ((DateTimeOffset)new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc)).ToUnixTimeMilliseconds(); 
             await manager.Branch("Branch", then);
 
-            //timeline.Warp(then);
-            
-            // await await bus.CommandAsync(new RecordRoot("Root", -1));
-
             lastRecord = await bus.QueryAsync(new LastRecordQuery("Root"));
             Assert.Equal(-1, lastRecord.Value);
-
+            
+            await await bus.CommandAsync(new CreateRecord("InitialRoot"));
+            await await bus.CommandAsync(new RecordRoot("InitialRoot", 10));
+            
             await manager.Branch(BranchManager.Master);
             await manager.Merge("Branch");
             
@@ -94,7 +94,7 @@ namespace ZES.Tests
             lastRecord = await bus.QueryAsync(new HistoricalQuery<LastRecordQuery, LastRecord>(
                 new LastRecordQuery("Root"), then));
 
-            Assert.Equal(-1, lastRecord.Value);
+            Assert.Equal(10, lastRecord.Value);
         }
         
         [Fact]

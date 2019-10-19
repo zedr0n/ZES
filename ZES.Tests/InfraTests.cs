@@ -209,10 +209,6 @@ namespace ZES.Tests
                 rootId--;
             }
 
-            // var query = new RootInfoQuery("Root1");
-            // var rootInfo = await bus.QueryUntil(query, c => c?.CreatedAt > 0);
-            // Assert.NotEqual(0, rootInfo?.CreatedAt); 
-            
             var statsQuery = new StatsQuery();
             var stats = await bus.QueryUntil(statsQuery, s => s?.NumberOfRoots == numRoots);
             Assert.Equal(numRoots, stats?.NumberOfRoots);

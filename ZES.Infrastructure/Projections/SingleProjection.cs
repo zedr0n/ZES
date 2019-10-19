@@ -31,6 +31,10 @@ namespace ZES.Infrastructure.Projections
         /// <summary>
         /// Initializes a new instance of the <see cref="SingleProjection{TState}"/> class.
         /// </summary>
+        /// <param name="eventStore">Event store service</param>
+        /// <param name="log">Log service</param>
+        /// <param name="timeline">Timeline service</param>
+        /// <param name="messageQueue">Message queue service</param>
         public SingleProjection(IEventStore<IAggregate> eventStore, ILog log, ITimeline timeline, IMessageQueue messageQueue)
             : base(eventStore, log, timeline)
         {
@@ -176,7 +180,9 @@ namespace ZES.Infrastructure.Projections
                 
                 // RegisterChild(awaiter);
                 _buffer.LinkTo(_dispatcher);
-                //_buffer.LinkToMultiple(awaiter, _dispatcher);
+                await Task.CompletedTask;
+
+                // _buffer.LinkToMultiple(awaiter, _dispatcher);
 
                 // await awaiter.CompletionTask;
             }

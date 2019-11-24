@@ -2,7 +2,7 @@
 <#@ import namespace="System.IO"#>
 <#@ import namespace="System.Collections.Generic" #>
 <#@ output extension=".cs" #>
-<#@ include file="../../ZES.Infrastructure/T4/Command.ttinclude" #><#@ import namespace="System.Text.RegularExpressions" #>
+<#@ include file="../../ZES.Infrastructure/T4/Command.ttinclude" #>
 using ZES.Infrastructure.Domain;
 using ZES.Interfaces.Domain;
 

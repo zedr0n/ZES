@@ -20,6 +20,7 @@
       <None Update="Commands\ReplaceRootHandler.tt">
         <Generator>TextTemplatingFileGenerator</Generator>
         <LastGenOutput>ReplaceRootHandler.cs</LastGenOutput>
+        <DependentUpon>ReplaceRoot.tt</DependentUpon>
       </None>
     </ItemGroup>
 

@@ -116,8 +116,6 @@ namespace ZES
                     !c.Consumer.ImplementationType.IsClosedTypeOf(typeof(QueryHandlerDecorator<,>))));
             
             container.Register<IBranchManager, BranchManager>(Lifestyle.Singleton);
-            
-            container.Register<StreamFlow.Builder>(Lifestyle.Singleton);
         }
 
         /// <summary>

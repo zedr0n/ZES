@@ -1,5 +1,4 @@
 using System;
-using Newtonsoft.Json;
 using ZES.Interfaces;
 
 namespace ZES.Infrastructure.Domain
@@ -17,10 +16,6 @@ namespace ZES.Infrastructure.Domain
 
         /// <inheritdoc />
         public bool Idempotent { get; set; }
-
-        /// <inheritdoc />
-        [JsonIgnore]
-        public long Position { get; set; }
 
         /// <inheritdoc />
         public long Timestamp { get; set; }

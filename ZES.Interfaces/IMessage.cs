@@ -32,14 +32,6 @@ namespace ZES.Interfaces
         bool Idempotent { get; }
 
         /// <summary>
-        /// Gets .Global position in event store
-        /// </summary>
-        /// <value>
-        /// Global position in event store
-        /// </value>
-        long Position { get; }
-        
-        /// <summary>
         /// Gets event unix epoch timestamp
         /// </summary>
         /// <value>

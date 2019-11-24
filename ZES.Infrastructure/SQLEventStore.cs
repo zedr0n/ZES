@@ -174,7 +174,6 @@ namespace ZES.Infrastructure
                     {
                         var payload = await m.GetJsonData();
                         var @event = _serializer.Deserialize(payload);
-                        ((Event)@event).Position = m.Position;
                         observer.OnNext((T)@event);
                     }
                     else

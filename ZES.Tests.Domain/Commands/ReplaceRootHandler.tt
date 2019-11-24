@@ -1,0 +1,21 @@
+<#@ template language="C#" #>
+<#@ import namespace="System.IO"#>
+<#@ import namespace="System.Collections.Generic" #>
+<#@ output extension=".cs" #>
+<#@ include file="../../ZES.Infrastructure/T4/Command.ttinclude" #><#@ import namespace="System.Text.RegularExpressions" #>
+using ZES.Infrastructure.Domain;
+using ZES.Interfaces.Domain;
+
+namespace <#= GetNamespace() #>
+{
+    public class <#= GetFilename() #> : CommandHandlerBase<<#= GetCommandName() #>, <#= GetRootName() #>>
+    {
+        public <#=  GetFilename() #>(IEsRepository<IAggregate> repository)
+            : base(repository) { }
+
+        protected override void Act(<#= GetRootName() #> <#= GetRootName().ToLower() #>, <#= GetCommandName() #> command) 
+        {
+            throw new System.NotImplementedException();
+        }
+    }
+}

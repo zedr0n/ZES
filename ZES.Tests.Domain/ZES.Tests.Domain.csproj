@@ -12,4 +12,24 @@
       <ProjectReference Include="..\ZES\ZES.csproj" />
     </ItemGroup>
 
+    <ItemGroup>
+      <None Update="Commands\ReplaceRoot.tt">
+        <Generator>TextTemplatingFileGenerator</Generator>
+        <LastGenOutput>ReplaceRoot.cs</LastGenOutput>
+      </None>
+      <None Update="Commands\ReplaceRootHandler.tt">
+        <Generator>TextTemplatingFileGenerator</Generator>
+        <LastGenOutput>ReplaceRootHandler.cs</LastGenOutput>
+      </None>
+    </ItemGroup>
+
+    <ItemGroup>
+      <Compile Update="Commands\ReplaceRoot.cs">
+        <DependentUpon>ReplaceRoot.tt</DependentUpon>
+      </Compile>
+      <Compile Update="Commands\ReplaceRootHandler.cs">
+        <DependentUpon>ReplaceRootHandler.tt</DependentUpon>
+      </Compile>
+    </ItemGroup>
+
 </Project>

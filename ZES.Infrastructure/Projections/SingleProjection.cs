@@ -39,7 +39,8 @@ namespace ZES.Infrastructure.Projections
             : base(eventStore, log, timeline)
         {
             InvalidateSubscription = new LazySubscription(() =>
-                messageQueue.Alerts.OfType<InvalidateProjections>().Subscribe(async s => await Rebuild()));
+                messageQueue.Alerts.OfType<InvalidateProjections>()
+                    .Subscribe(s => Rebuild()));
         }
 
         /// <inheritdoc />
@@ -145,6 +146,8 @@ namespace ZES.Infrastructure.Projections
             private readonly Dataflow<Tracked<IStream>, Tracked<IStream>> _buffer;
             private readonly Dispatcher _dispatcher;
             private readonly ILog _log;
+            private CancellationToken _token;
+            private int _processed;
 
             public BufferedDispatcher(DataflowOptions dataflowOptions, SingleProjection<TState> projection) 
                 : base(dataflowOptions)
@@ -152,10 +155,8 @@ namespace ZES.Infrastructure.Projections
                 _buffer = new BufferBlock<Tracked<IStream>>().ToDataflow();
                 _dispatcher = new Dispatcher(dataflowOptions, projection);
                 _log = projection.Log;
+                _token = projection.CancellationToken;
 
-                projection.CancellationToken.Register(() =>
-                    _buffer.LinkTo(DataflowBlock.NullTarget<Tracked<IStream>>().ToDataflow()));
-                
                 RegisterChild(_buffer);
                 RegisterChild(_dispatcher);
             }
@@ -164,27 +165,24 @@ namespace ZES.Infrastructure.Projections
             
             public async Task Start()
             {
-                var task = Task.CompletedTask;
                 var count = _buffer.BufferedCount;
                 _log.Info($"{count} streams in buffer", this);
                 
-                var awaiter = new ActionBlock<Tracked<IStream>>(
-                    async s =>
+                _token.Register(() =>
+                    _buffer.LinkTo(DataflowBlock.NullTarget<Tracked<IStream>>().ToDataflow()));
+
+                if (count > 0)
                 {
-                    _log.Info($"{s.Value.Key}@{s.Value.Version}");
-                    await s.Task;
-                    Interlocked.Decrement(ref count);
-                    if (count <= 0)
-                        Complete();
-                }, new ExecutionDataflowBlockOptions { MaxDegreeOfParallelism = Configuration.ThreadsPerInstance }).ToDataflow();
-                
-                // RegisterChild(awaiter);
+                    var obs = _buffer.OutputBlock.AsObservable().Take(count).Select(async s =>
+                    {
+                        await _dispatcher.SendAsync(s);
+                        return await s.Task;
+                    });
+
+                    await obs;
+                }
+
                 _buffer.LinkTo(_dispatcher);
-                await Task.CompletedTask;
-
-                // _buffer.LinkToMultiple(awaiter, _dispatcher);
-
-                // await awaiter.CompletionTask;
             }
         }
 
@@ -246,6 +244,7 @@ namespace ZES.Infrastructure.Projections
                 }
                 
                 trackedStream.Complete();
+                _log?.Debug($"{s.Key}@{s.Version} completed!");
             }
         }
     }

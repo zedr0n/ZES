@@ -40,7 +40,7 @@ namespace ZES.Infrastructure.Projections
         {
             InvalidateSubscription = new LazySubscription(() =>
                 messageQueue.Alerts.OfType<InvalidateProjections>()
-                    .Subscribe(s => Rebuild()));
+                    .Subscribe(async s => await Rebuild()));
         }
 
         /// <inheritdoc />
@@ -147,7 +147,6 @@ namespace ZES.Infrastructure.Projections
             private readonly Dispatcher _dispatcher;
             private readonly ILog _log;
             private CancellationToken _token;
-            private int _processed;
 
             public BufferedDispatcher(DataflowOptions dataflowOptions, SingleProjection<TState> projection) 
                 : base(dataflowOptions)

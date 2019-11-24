@@ -179,7 +179,7 @@ namespace ZES.Infrastructure.Projections
                         return await s.Task;
                     });
 
-                    await obs;
+                    await obs.LastOrDefaultAsync();
                 }
 
                 _buffer.LinkTo(_dispatcher);

@@ -2,19 +2,21 @@
 <#@ import namespace="System.IO"#>
 <#@ import namespace="System.Collections.Generic" #>
 <#@ output extension=".cs" #>
+using ZES.Infrastructure.Attributes;
 using ZES.Infrastructure.Domain;
-using ZES.Interfaces.Domain;
 
 namespace <#= GetNamespace() #>
 {
+    [Idempotent]
     public class <#= GetFilename() #> : Command   
     {
         public <#= GetFilename() #>() { }
         public <#= GetFilename() #>(string target, double recordValue) 
+            : base(target)
         {
             RecordValue = recordValue;
         }
         
-        public double RecordValue { get; private set; } 
+        public double RecordValue { get; } 
      }
 }<#@ include file="../../ZES.Infrastructure/T4/Command.ttinclude" #>

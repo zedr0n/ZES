@@ -65,8 +65,8 @@ namespace ZES.Tests.Domain
             public bool CreateRootEx(CreateRoot command) => Resolve(command);
             public bool CreateRecord(string target) => Resolve(new CreateRecord(target));
             public bool CreateRecordEx(CreateRecord command) => Resolve(command);
-            public bool RecordRoot(string target, double recordValue) => Resolve(new RecordRoot(target, recordValue));
-            public bool RecordRootEx(RecordRoot command) => Resolve(command);
+            public bool RecordRoot(string target, double recordValue) => Resolve(new AddRecord(target, recordValue));
+            public bool RecordRootEx(AddRecord command) => Resolve(command);
         }
     }
 }

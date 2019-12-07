@@ -51,7 +51,7 @@ namespace ZES.Tests
             var record = await repository.Find<Domain.Record>("Root");
             Assert.Equal("Root", record.Id);
 
-            await await bus.CommandAsync(new RecordRoot("Root", 1));
+            await await bus.CommandAsync(new AddRecord("Root", 1));
             record = await repository.Find<Domain.Record>("Root");
             Assert.Equal(1, record.Values.FirstOrDefault().Value);
         }
@@ -166,7 +166,7 @@ namespace ZES.Tests
             
             var time = (DateTimeOffset)new DateTime(2019, 1, 1, 0, 0, 0, DateTimeKind.Utc); 
             
-            var command = new RecordRoot("Root", 1) { Timestamp = time.ToUnixTimeMilliseconds() };
+            var command = new AddRecord("Root", 1) { Timestamp = time.ToUnixTimeMilliseconds() };
             await await bus.CommandAsync(command);
             
             var query = new LastRecordQuery("Root");

@@ -109,7 +109,7 @@ namespace ZES.Tests
             foreach (var e in commandResult.Errors)
                 log.Error(e.Message, this); 
 
-            command = generator.Mutation(new RecordRoot("Root", 1));
+            command = generator.Mutation(new AddRecord("Root", 1));
             commandResult = executor.Execute(command);
             foreach (var e in commandResult.Errors)
                 log.Error(e.Message, this);

@@ -40,6 +40,24 @@
         <LastGenOutput>CreateRecordHandler.cs</LastGenOutput>
         <DependentUpon>CreateRecord.tt</DependentUpon>
       </None>
+      <None Update="Commands\UpdateRoot.tt">
+        <Generator>TextTemplatingFileGenerator</Generator>
+        <LastGenOutput>UpdateRoot.cs</LastGenOutput>
+      </None>
+      <None Update="Commands\UpdateRootHandler.tt">
+        <Generator>TextTemplatingFileGenerator</Generator>
+        <LastGenOutput>UpdateRootHandler.cs</LastGenOutput>
+        <DependentUpon>UpdateRoot.tt</DependentUpon>
+      </None>
+      <None Update="Commands\AddRecord.tt">
+        <Generator>TextTemplatingFileGenerator</Generator>
+        <LastGenOutput>AddRecord.cs</LastGenOutput>
+      </None>
+      <None Update="Commands\AddRecordHandler.tt">
+        <Generator>TextTemplatingFileGenerator</Generator>
+        <LastGenOutput>AddRecordHandler.cs</LastGenOutput>
+        <DependentUpon>AddRecord2.tt</DependentUpon>
+      </None>
     </ItemGroup>
 
     <ItemGroup>
@@ -60,6 +78,18 @@
       </Compile>
       <Compile Update="Commands\CreateRecordHandler.cs">
         <DependentUpon>CreateRecordHandler.tt</DependentUpon>
+      </Compile>
+      <Compile Update="Commands\UpdateRoot.cs">
+        <DependentUpon>UpdateRoot.tt</DependentUpon>
+      </Compile>
+      <Compile Update="Commands\UpdateRootHandler.cs">
+        <DependentUpon>UpdateRootHandler.tt</DependentUpon>
+      </Compile>
+      <Compile Update="Commands\AddRecord.cs">
+        <DependentUpon>AddRecord.tt</DependentUpon>
+      </Compile>
+      <Compile Update="Commands\AddRecordHandler.cs">
+        <DependentUpon>AddRecordHandler.tt</DependentUpon>
       </Compile>
     </ItemGroup>
 

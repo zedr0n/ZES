@@ -71,7 +71,7 @@ namespace ZES.Tests
 
             await await bus.CommandAsync(new CreateRecord("Root"));
 
-            await await bus.CommandAsync(new RecordRoot("Root", 1));
+            await await bus.CommandAsync(new AddRecord("Root", 1));
 
             var lastRecord = await bus.QueryUntil(new LastRecordQuery("Root"));
             Assert.Equal(1, lastRecord.Value);
@@ -83,7 +83,7 @@ namespace ZES.Tests
             Assert.Equal(-1, lastRecord.Value);
             
             await await bus.CommandAsync(new CreateRecord("InitialRoot"));
-            await await bus.CommandAsync(new RecordRoot("InitialRoot", 10));
+            await await bus.CommandAsync(new AddRecord("InitialRoot", 10));
             
             await manager.Branch(BranchManager.Master);
             await manager.Merge("Branch");

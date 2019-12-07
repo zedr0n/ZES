@@ -25,7 +25,7 @@ namespace ZES.Tests
             var createRoot = new CreateRoot("Root");
             Assert.False(createRoot.Idempotent);
             
-            var recordRoot = new RecordRoot("Root", 0);
+            var recordRoot = new AddRecord("Root", 0);
             Assert.True(recordRoot.Idempotent);
         }
 

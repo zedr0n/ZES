@@ -29,7 +29,6 @@
       <None Update="Commands\CreateRootHandler.tt">
         <Generator>TextTemplatingFileGenerator</Generator>
         <LastGenOutput>CreateRootHandler.cs</LastGenOutput>
-        <DependentUpon>CreateRoot.tt</DependentUpon>
       </None>
       <None Update="Commands\CreateRecord.tt">
         <Generator>TextTemplatingFileGenerator</Generator>
@@ -38,7 +37,6 @@
       <None Update="Commands\CreateRecordHandler.tt">
         <Generator>TextTemplatingFileGenerator</Generator>
         <LastGenOutput>CreateRecordHandler.cs</LastGenOutput>
-        <DependentUpon>CreateRecord.tt</DependentUpon>
       </None>
       <None Update="Commands\UpdateRoot.tt">
         <Generator>TextTemplatingFileGenerator</Generator>
@@ -47,7 +45,6 @@
       <None Update="Commands\UpdateRootHandler.tt">
         <Generator>TextTemplatingFileGenerator</Generator>
         <LastGenOutput>UpdateRootHandler.cs</LastGenOutput>
-        <DependentUpon>UpdateRoot.tt</DependentUpon>
       </None>
       <None Update="Commands\AddRecord.tt">
         <Generator>TextTemplatingFileGenerator</Generator>
@@ -56,41 +53,6 @@
       <None Update="Commands\AddRecordHandler.tt">
         <Generator>TextTemplatingFileGenerator</Generator>
         <LastGenOutput>AddRecordHandler.cs</LastGenOutput>
-        <DependentUpon>AddRecord2.tt</DependentUpon>
       </None>
     </ItemGroup>
-
-    <ItemGroup>
-      <Compile Update="Commands\ReplaceRoot.cs">
-        <DependentUpon>ReplaceRoot.tt</DependentUpon>
-      </Compile>
-      <Compile Update="Commands\ReplaceRootHandler.cs">
-        <DependentUpon>ReplaceRootHandler.tt</DependentUpon>
-      </Compile>
-      <Compile Update="Commands\CreateRoot.cs">
-        <DependentUpon>CreateRoot.tt</DependentUpon>
-      </Compile>
-      <Compile Update="Commands\CreateRootHandler.cs">
-        <DependentUpon>CreateRootHandler.tt</DependentUpon>
-      </Compile>
-      <Compile Update="Commands\CreateRecord.cs">
-        <DependentUpon>CreateRecord.tt</DependentUpon>
-      </Compile>
-      <Compile Update="Commands\CreateRecordHandler.cs">
-        <DependentUpon>CreateRecordHandler.tt</DependentUpon>
-      </Compile>
-      <Compile Update="Commands\UpdateRoot.cs">
-        <DependentUpon>UpdateRoot.tt</DependentUpon>
-      </Compile>
-      <Compile Update="Commands\UpdateRootHandler.cs">
-        <DependentUpon>UpdateRootHandler.tt</DependentUpon>
-      </Compile>
-      <Compile Update="Commands\AddRecord.cs">
-        <DependentUpon>AddRecord.tt</DependentUpon>
-      </Compile>
-      <Compile Update="Commands\AddRecordHandler.cs">
-        <DependentUpon>AddRecordHandler.tt</DependentUpon>
-      </Compile>
-    </ItemGroup>
-
 </Project>

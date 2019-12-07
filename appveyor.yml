@@ -16,12 +16,11 @@ build:
 after_build:
   #- cmd: pushd ZES && dotnet pack --no-build -o .. && popd
 test_script:
-  - cmd: dotnet test
-  #- cmd: dotnet test --filter InfraTests ZES.Tests\ZES.Tests.csproj
-  #- cmd: dotnet test --filter BranchTests ZES.Tests\ZES.Tests.csproj
-  #- cmd: dotnet test --filter SchemaTests ZES.Tests\ZES.Tests.csproj
-  #- cmd: dotnet test --filter FuncTests ZES.Tests\ZES.Tests.csproj
-  #- cmd: dotnet test --filter CausalityTests ZES.Tests\ZES.Tests.csproj
+  - cmd: dotnet test --filter InfraTests ZES.Tests\ZES.Tests.csproj
+  - cmd: dotnet test --filter BranchTests ZES.Tests\ZES.Tests.csproj
+  - cmd: dotnet test --filter SchemaTests ZES.Tests\ZES.Tests.csproj
+  - cmd: dotnet test --filter FuncTests ZES.Tests\ZES.Tests.csproj
+  - cmd: dotnet test --filter CausalityTests ZES.Tests\ZES.Tests.csproj
 on_failure:
   #- cmd: 7z a SqlTests.zip Chronos.Tests\bin\Debug\netcoreapp2.0\*.db
   #- cmd: appveyor PushArtifact SqlTests.zip

@@ -22,6 +22,24 @@
         <LastGenOutput>ReplaceRootHandler.cs</LastGenOutput>
         <DependentUpon>ReplaceRoot.tt</DependentUpon>
       </None>
+      <None Update="Commands\CreateRoot.tt">
+        <Generator>TextTemplatingFileGenerator</Generator>
+        <LastGenOutput>CreateRoot.cs</LastGenOutput>
+      </None>
+      <None Update="Commands\CreateRootHandler.tt">
+        <Generator>TextTemplatingFileGenerator</Generator>
+        <LastGenOutput>CreateRootHandler.cs</LastGenOutput>
+        <DependentUpon>CreateRoot.tt</DependentUpon>
+      </None>
+      <None Update="Commands\CreateRecord.tt">
+        <Generator>TextTemplatingFileGenerator</Generator>
+        <LastGenOutput>CreateRecord.cs</LastGenOutput>
+      </None>
+      <None Update="Commands\CreateRecordHandler.tt">
+        <Generator>TextTemplatingFileGenerator</Generator>
+        <LastGenOutput>CreateRecordHandler.cs</LastGenOutput>
+        <DependentUpon>CreateRecord.tt</DependentUpon>
+      </None>
     </ItemGroup>
 
     <ItemGroup>
@@ -30,6 +48,18 @@
       </Compile>
       <Compile Update="Commands\ReplaceRootHandler.cs">
         <DependentUpon>ReplaceRootHandler.tt</DependentUpon>
+      </Compile>
+      <Compile Update="Commands\CreateRoot.cs">
+        <DependentUpon>CreateRoot.tt</DependentUpon>
+      </Compile>
+      <Compile Update="Commands\CreateRootHandler.cs">
+        <DependentUpon>CreateRootHandler.tt</DependentUpon>
+      </Compile>
+      <Compile Update="Commands\CreateRecord.cs">
+        <DependentUpon>CreateRecord.tt</DependentUpon>
+      </Compile>
+      <Compile Update="Commands\CreateRecordHandler.cs">
+        <DependentUpon>CreateRecordHandler.tt</DependentUpon>
       </Compile>
     </ItemGroup>
 

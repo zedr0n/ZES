@@ -1,8 +1,5 @@
-<#@ import namespace="System.Collections.Generic" #>
-<#@ import namespace="System.IO" #>
 <#@ import namespace="System.Text.RegularExpressions"#>
-<#+
-    string[] SplitCamelCase(string source)
+<#+ string[] SplitCamelCase(string source)
     {
         return Regex.Split(source, @"(?<!^)(?=[A-Z])");
     }
@@ -16,7 +13,7 @@
 
     public string GetFilename()
     {
-        var t = this.GetType().Assembly.Location.Split('/');
+        var t = GetType().Assembly.Location.Split('/');
         return t[t.Length - 2];
     }
     

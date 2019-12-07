@@ -7,10 +7,10 @@ using ZES.Interfaces.Domain;
 
 namespace <#= GetNamespace() #>
 {
-    public class <#= GetFilename() #> : Command   
+    public class <#= GetFilename() #> : Command, ICreateCommand   
     {
         public <#= GetFilename() #>() { }
         public <#= GetFilename() #>(string target) 
             : base(target) { }
     }
-}<#@ include file="../../ZES.Infrastructure/T4/Command.ttinclude" #>
+} <#@ include file="../../ZES.Infrastructure/T4/Command.ttinclude" #>

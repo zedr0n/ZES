@@ -7,14 +7,11 @@ using ZES.Interfaces.Domain;
 
 namespace <#= GetNamespace() #>
 {
-    public class <#= GetFilename() #> : CommandHandlerBase<<#= GetCommandName() #>, <#= GetRootName() #>>
+    public class <#= GetFilename() #> : CreateCommandHandlerBase<<#= GetCommandName() #>, <#= GetRootName() #>>
     {
         public <#=  GetFilename() #>(IEsRepository<IAggregate> repository)
             : base(repository) { }
 
-        protected override void Act(<#= GetRootName() #> <#= GetRootName().ToLower() #>, <#= GetCommandName() #> command) 
-        {
-            throw new System.NotImplementedException();
-        }
+        protected override <#= GetRootName() #> Create(<#= GetCommandName() #> command) => new <#= GetRootName() #>(command.Target);
     }
 }<#@ include file="../../ZES.Infrastructure/T4/Command.ttinclude" #>

@@ -43,6 +43,21 @@ function statsQuery(url : string, period: number,invocation: CustomFunctions.Str
 }
 
 /**
+ * @customfunction
+ * @param url Server url
+ * @param period Update period
+ * @param invocation Custom function handler
+ */
+function activeBranch(url : string, period : number, invocation : CustomFunctions.StreamingInvocation<string>) : void {
+  const query = `{
+    activeBranch
+  }`;
+
+  graphQlQuery(url, query, data => data.activeBranch.toString(), period, invocation);
+
+}
+
+/**
  * Returns the current time.
  * @returns String with the current time formatted for the current locale.
  */

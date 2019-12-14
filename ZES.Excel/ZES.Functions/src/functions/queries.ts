@@ -7,8 +7,14 @@ export function graphQlQuery(server : string,
                                      invocation : CustomFunctions.StreamingInvocation<string>) : void {
     const timer = setInterval(() => {
         invocation.setResult("Querying...");
-        request(server, query).then(data =>
-            invocation.setResult(parseFn(data)))
+        try {
+            request(server, query).then(data =>
+                invocation.setResult(parseFn(data)))
+                .catch(r => invocation.setResult(r.message))
+        }
+        catch(error) {
+            invocation.setResult(error.message)
+        }
     }, period);
 
     invocation.onCanceled = () => {

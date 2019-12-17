@@ -1,0 +1,15 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <OutputType>Exe</OutputType>
+        <TargetFramework>netcoreapp2.2</TargetFramework>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\ZES.GraphQL\ZES.GraphQL.csproj" />
+      <ProjectReference Include="..\ZES.Interfaces\ZES.Interfaces.csproj" />
+      <ProjectReference Include="..\ZES.Tests.Domain\ZES.Tests.Domain.csproj" />
+      <ProjectReference Include="..\ZES\ZES.csproj" />
+    </ItemGroup>
+
+</Project>

@@ -174,7 +174,7 @@ namespace ZES
                     if (dropAll)
                         store.DropAll().Wait();
                     if (dropAll || !store.CheckSchema().Result.IsMatch())
-                        store.CreateSchema().Wait();
+                        store.CreateSchemaIfNotExists().Wait();
 
                     return store;
                 },

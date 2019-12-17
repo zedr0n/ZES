@@ -22,8 +22,7 @@ namespace ZES.Tests.Domain.Queries
 
         private static Stats When(RootCreated e, Stats state)
         {
-            lock (state)
-                state.NumberOfRoots++; 
+            state.Increment();
             
             return state;
         }

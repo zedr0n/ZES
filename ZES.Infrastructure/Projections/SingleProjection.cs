@@ -47,7 +47,10 @@ namespace ZES.Infrastructure.Projections
         protected override async Task Rebuild()
         {
             if (Status == Cancelling)
+            {
+                StatusSubject.OnNext(Cancelling);
                 return;
+            }
 
             CancellationSource.Cancel();
 
@@ -93,14 +96,14 @@ namespace ZES.Infrastructure.Projections
                 try
                 {
                     if (!rebuildDispatcher.CompletionTask.IsFaulted)
-                        await rebuildDispatcher.SignalAndWaitForCompletionAsync();
+                        await rebuildDispatcher.SignalAndWaitForCompletionAsync().Timeout();
                     if (!liveDispatcher.CompletionTask.IsFaulted)
-                        await liveDispatcher.SignalAndWaitForCompletionAsync();
+                        await liveDispatcher.SignalAndWaitForCompletionAsync().Timeout();
                     StatusSubject.OnNext(Sleeping);
                 }
                 catch (Exception e)
                 {
-                    StatusSubject.OnNext(Failed);
+                    // StatusSubject.OnNext(Failed);
                     Log.Errors.Add(e);
                     StatusSubject.OnNext(Sleeping);
                 }
@@ -165,23 +168,31 @@ namespace ZES.Infrastructure.Projections
             public async Task Start()
             {
                 var count = _buffer.BufferedCount;
-                _log.Debug($"{count} streams in buffer", this);
+                _log.Info($"{count} streams in buffer", this);
                 
+                // _buffer.LinkTo(DataflowBlock.NullTarget<Tracked<IStream>>().ToDataflow(), s => _token.IsCancellationRequested);
+
                 _token.Register(() =>
-                    _buffer.LinkTo(DataflowBlock.NullTarget<Tracked<IStream>>().ToDataflow()));
+                {
+                    _buffer.LinkTo(DataflowBlock.NullTarget<Tracked<IStream>>().ToDataflow());
+                    _log.Info("Cancelling live dispatcher...");
+                });
 
                 if (count > 0)
                 {
-                    var obs = _buffer.OutputBlock.AsObservable().Take(count).Select(async s =>
+                    var obs = _buffer.OutputBlock.AsObservable()
+                        .Take(count).Select(async s =>
                     {
                         await _dispatcher.SendAsync(s);
-                        return await s.Task;
+                        if (!_token.IsCancellationRequested) 
+                            return await s.Task;
+                        return false;
                     });
 
                     await obs.LastOrDefaultAsync();
                 }
 
-                _buffer.LinkTo(_dispatcher);
+                _buffer.LinkTo(_dispatcher, s => !_token.IsCancellationRequested);
             }
         }
 

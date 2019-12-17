@@ -1,33 +1,11 @@
 using Newtonsoft.Json.Linq;
 using ZES.Infrastructure.Streams;
-using ZES.Interfaces;
 using ZES.Interfaces.EventStore;
 
 namespace ZES.Infrastructure.Serialization
 {
     internal static class JExtensions
     {
-        public static JProperty JTimestamp(this IMessage m)
-        {
-            return new JProperty(nameof(IMessage.Timestamp), m.Timestamp);        
-        }
-
-        public static JProperty JVersion(this IMessage m)
-        {
-            var version = (m as IEvent)?.Version ?? 0;
-            return new JProperty(nameof(IEvent.Version), version);
-        }
-
-        public static JProperty JAncestorId(this IMessage m)
-        {
-            return new JProperty(nameof(IMessage.AncestorId), m.AncestorId);
-        }
-        
-        public static JProperty JIdempotent(this IMessage m)
-        {
-            return new JProperty(nameof(IMessage.Idempotent), m.Idempotent);
-        }
-
         public static string JStreamMetadata(IStream stream)
         {
             var meta = new JObject(

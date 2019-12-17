@@ -54,5 +54,27 @@
         <Generator>TextTemplatingFileGenerator</Generator>
         <LastGenOutput>AddRecordHandler.cs</LastGenOutput>
       </None>
+      <None Update="Commands\CreateTest.tt">
+        <Generator>TextTemplatingFileGenerator</Generator>
+        <LastGenOutput>CreateTest.cs</LastGenOutput>
+        <DependentUpon>CreateTest.cs</DependentUpon>
+      </None>
+      <None Update="Commands\CreateTestHandler.tt">
+        <Generator>TextTemplatingFileGenerator</Generator>
+        <LastGenOutput>CreateTestHandler.cs</LastGenOutput>
+        <DependentUpon>CreateTestHandler.cs</DependentUpon>
+      </None>
+    </ItemGroup>
+
+    <ItemGroup>
+      <Compile Update="Commands\CreateTest.cs">
+        <DependentUpon>CreateTest.tt</DependentUpon>
+      </Compile>
+      <Compile Update="Commands\CreateTestHandler.cs">
+        <DependentUpon>CreateTestHandler.tt</DependentUpon>
+      </Compile>
+      <Compile Update="Commands\AddRecord.cs">
+        <DependentUpon>AddRecord.tt</DependentUpon>
+      </Compile>
     </ItemGroup>
 </Project>

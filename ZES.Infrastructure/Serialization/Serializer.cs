@@ -52,32 +52,49 @@ namespace ZES.Infrastructure.Serialization
         /// <inheritdoc />
         public string EncodeMetadata(T message)
         {
-            var array = new JObject(message.JTimestamp(), message.JVersion(), message.JAncestorId(), message.JIdempotent());
+            var version = (message as IEvent)?.Version ?? 0;
+
+            var meta = new EventMetadata
+            {
+                AncestorId = message.AncestorId,
+                Idempotent = message.Idempotent,
+                MessageId = message.MessageId,
+                Timestamp = message.Timestamp,
+                Version = version
+            };
             
-            var s = array.ToString();
-            return s;
+            using (var writer = new StringWriter())
+            {
+                var jsonWriter = new JsonTextWriter(writer) { Formatting = Formatting.None };
+
+                _serializer.Serialize(jsonWriter, meta);
+
+                // We don't close the stream as it's owned by the message.
+                writer.Flush();
+                return writer.ToString();
+            }
         }
 
         /// <inheritdoc />
         public IEventMetadata DecodeMetadata(string json)
         {
-            var jarray = JObject.Parse(json);
-            if (!jarray.TryGetValue(nameof(IMessage.Timestamp), out var timestamp))
-                return null;
-            if (!jarray.TryGetValue(nameof(IEventMetadata.Version), out var version))
-                version = -1;
-            if (!jarray.TryGetValue(nameof(IMessage.AncestorId), out var ancestorId))
-                return null;
-            if (!jarray.TryGetValue(nameof(IMessage.Idempotent), out var idempotent))
-                return null;
-            
-            return new EventMetadata
+            using (var reader = new StringReader(json))
             {
-                Timestamp = (long)timestamp, 
-                Version = (int)version,
-                AncestorId = (Guid)ancestorId,
-                Idempotent = (bool)idempotent
-            };
+                var jsonReader = new JsonTextReader(reader);
+
+                try
+                {
+                    return _serializer.Deserialize<EventMetadata>(jsonReader);
+                }
+                catch (Exception e)
+                {
+                    // Wrap in a standard .NET exception.
+                    if (e is JsonSerializationException)
+                        throw new SerializationException(e.Message, e);
+                    
+                    return null;
+                }
+            }
         }
 
         /// <inheritdoc />
@@ -89,7 +106,7 @@ namespace ZES.Infrastructure.Serialization
 
                 try
                 {
-                    return (T)_serializer.Deserialize(jsonReader);
+                    return _serializer.Deserialize<T>(jsonReader);
                 }
                 catch (Exception e)
                 {

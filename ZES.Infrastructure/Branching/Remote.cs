@@ -9,6 +9,7 @@ using ZES.Infrastructure.Attributes;
 using ZES.Infrastructure.Utils;
 using ZES.Interfaces;
 using ZES.Interfaces.Pipes;
+using ZES.Interfaces.Serialization;
 using static ZES.Interfaces.FastForwardResult;
 
 namespace ZES.Infrastructure.Branching
@@ -22,6 +23,7 @@ namespace ZES.Infrastructure.Branching
         private readonly IStreamStore _remoteStore;
         private readonly ILog _log;
         private readonly IMessageQueue _messageQueue;
+        private readonly ISerializer<IEvent> _serializer;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="Remote"/> class.
@@ -30,12 +32,14 @@ namespace ZES.Infrastructure.Branching
         /// <param name="remoteStore">Target remote</param>
         /// <param name="log">Log helper</param>
         /// <param name="messageQueue">Message queue</param>
-        public Remote(IStreamStore localStore, [Remote] IStreamStore remoteStore, ILog log, IMessageQueue messageQueue)
+        /// <param name="serializer">Serializer</param>
+        public Remote(IStreamStore localStore, [Remote] IStreamStore remoteStore, ILog log, IMessageQueue messageQueue, ISerializer<IEvent> serializer)
         {
             _localStore = localStore;
             _remoteStore = remoteStore;
             _log = log;
             _messageQueue = messageQueue;
+            _serializer = serializer;
         }
 
         /// <inheritdoc />
@@ -145,11 +149,11 @@ namespace ZES.Infrastructure.Branching
             {
                 foreach (var s in page.StreamIds.Where(x => !x.StartsWith("$")))
                 {
-                    var source = await from.GetStream(s);
+                    var source = await from.GetStream(s, _serializer);
                     if (source.Timeline != branchId)
                         continue;
 
-                    var target = await to.GetStream(s);
+                    var target = await to.GetStream(s, _serializer);
                     if (target == null) // stream exists but some of the ancestors do not
                         return false;
 

@@ -66,7 +66,7 @@ namespace ZES.Infrastructure
                 {
                     foreach (var s in page.StreamIds.Where(x => !x.Contains("Command") && !x.StartsWith("$")))
                     {
-                        var stream = await _streamStore.GetStream(s).Timeout();
+                        var stream = await _streamStore.GetStream(s, _serializer).Timeout();
                         
                         if (typeof(I) == typeof(ISaga) && !stream.IsSaga) 
                             continue;
@@ -130,10 +130,10 @@ namespace ZES.Infrastructure
             if (version >= stream.Version || result.CurrentVersion == -1)
             {
                 stream.Version = version;
-                
+
                 await _streamStore.SetStreamMetadata(
                     stream.Key,
-                    metadataJson: JExtensions.JStreamMetadata(stream));
+                    metadataJson: _serializer.EncodeStreamMetadata(stream)); // JExtensions.JStreamMetadata(stream));
 
                 await _graph.AddStreamMetadata(stream);
                 

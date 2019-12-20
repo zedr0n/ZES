@@ -1,4 +1,5 @@
 using ZES.Interfaces.Domain;
+using ZES.Interfaces.EventStore;
 
 namespace ZES.Interfaces.Serialization
 {
@@ -22,14 +23,29 @@ namespace ZES.Interfaces.Serialization
         /// <param name="message">Underlying message</param>
         /// <returns>JSON serialized string</returns>
         string EncodeMetadata(T message);
-
+        
         /// <summary>
         /// Deserialize the metadata
         /// </summary>
         /// <param name="json">Serialized json</param>
         /// <returns>Event metadata</returns>
-        IEventMetadata DecodeMetadata(string json); 
-        
+        IEventMetadata DecodeMetadata(string json);
+
+        /// <summary>
+        /// Serialize the stream metadata to json 
+        /// </summary>
+        /// <param name="stream">Stream</param>
+        /// <returns>JSON serialized string</returns>
+        string EncodeStreamMetadata(IStream stream);
+
+        /// <summary>
+        /// Serialize the stream metadata to json 
+        /// </summary>
+        /// <param name="json">Metadata JSON</param>
+        /// <param name="key">Stream key</param>
+        /// <returns>JSON serialized string</returns>
+        IStream DecodeStreamMetadata(string json, string key);
+
         /// <summary>
         /// Deserialize the json string to an object instance
         /// </summary>

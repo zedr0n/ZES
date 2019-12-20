@@ -4,7 +4,9 @@ using SqlStreamStore;
 using SqlStreamStore.Streams;
 using ZES.Infrastructure.Serialization;
 using ZES.Infrastructure.Streams;
+using ZES.Interfaces;
 using ZES.Interfaces.EventStore;
+using ZES.Interfaces.Serialization;
 
 namespace ZES.Infrastructure.Utils
 {
@@ -19,12 +21,13 @@ namespace ZES.Infrastructure.Utils
         /// </remarks>
         /// <param name="streamStore">Stream store</param>
         /// <param name="key">Stream key</param>
+        /// <param name="serializer">Serializer</param>
         /// <returns>Stream info</returns>
         public static async Task<IStream> GetStream(
-            this IStreamStore streamStore, string key)
+            this IStreamStore streamStore,  string key, ISerializer<IEvent> serializer)
         {
             var metadata = await streamStore.GetStreamMetadata(key);
-            var stream = metadata.MetadataJson.ParseMetadata(key);
+            var stream = serializer.DecodeStreamMetadata(metadata.MetadataJson, key); 
             if (stream == null)
                 return new Stream(key);
 
@@ -35,7 +38,7 @@ namespace ZES.Infrastructure.Utils
                 if (parentMetadata == null)
                     return null;
 
-                var grandParent = parentMetadata.MetadataJson.ParseMetadata(parent.Key)?.Parent;
+                var grandParent = serializer.DecodeStreamMetadata(parentMetadata.MetadataJson, parent.Key)?.Parent; 
                 
                 parent.Parent = grandParent;
                 parent = grandParent;

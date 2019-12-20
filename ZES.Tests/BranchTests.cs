@@ -69,7 +69,7 @@ namespace ZES.Tests
 
             var then = ((DateTimeOffset)new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc)).ToUnixTimeMilliseconds(); 
             await manager.Branch("Branch", then);
-            await bus.IsTrue(new LastRecordQuery("Root"), r => (int) r.Value == -1);
+            await bus.IsTrue(new LastRecordQuery("Root"), r => (int)r.Value == -1);
             
             await await bus.CommandAsync(new CreateRecord("InitialRoot"));
             await await bus.CommandAsync(new AddRecord("InitialRoot", 10));

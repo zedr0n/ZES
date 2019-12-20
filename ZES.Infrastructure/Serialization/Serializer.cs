@@ -6,6 +6,7 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using ZES.Infrastructure.Domain;
 using ZES.Interfaces;
+using ZES.Interfaces.EventStore;
 using ZES.Interfaces.Serialization;
 
 namespace ZES.Infrastructure.Serialization
@@ -47,6 +48,64 @@ namespace ZES.Infrastructure.Serialization
                 writer.Flush();
                 return writer.ToString();
             }
+        }
+
+        /// <inheritdoc />
+        public string EncodeStreamMetadata(IStream stream)
+        {
+            var meta = new StreamMetadata(stream.Version);
+            
+            if (stream.Parent != null)
+            {
+                var parent = new StreamMetadata(stream.Parent.Version)
+                {
+                    Key = stream.Parent.Key
+                };
+                meta.Parent = parent;
+            }
+
+            using (var writer = new StringWriter())
+            {
+                var jsonWriter = new JsonTextWriter(writer) { Formatting = Formatting.None };
+
+                _serializer.Serialize(jsonWriter, meta);
+
+                // We don't close the stream as it's owned by the message.
+                writer.Flush();
+                return writer.ToString();
+            }
+        }
+
+        /// <inheritdoc />
+        public IStream DecodeStreamMetadata(string json, string key)
+        {
+            if (json == null)
+                return null;
+
+            StreamMetadata meta;
+            using (var reader = new StringReader(json))
+            {
+                var jsonReader = new JsonTextReader(reader);
+
+                try
+                {
+                    meta = _serializer.Deserialize<StreamMetadata>(jsonReader);
+                }
+                catch (Exception e)
+                {
+                    // Wrap in a standard .NET exception.
+                    if (e is JsonSerializationException)
+                        throw new SerializationException(e.Message, e);
+                    
+                    return null;
+                }
+            }
+            
+            var stream = new Streams.Stream(key, meta.Version);
+            if (meta.Parent != null)
+                stream.Parent = new Streams.Stream(meta.Parent.Key, meta.Parent.Version);
+
+            return stream;
         }
 
         /// <inheritdoc />
@@ -117,6 +176,18 @@ namespace ZES.Infrastructure.Serialization
                     return null;
                 }
             }
+        }
+        
+        private class StreamMetadata
+        {
+            public StreamMetadata(int version)
+            {
+                Version = version;
+            }
+                
+            public string Key { get; set; }
+            public int Version { get; set; }
+            public StreamMetadata Parent { get; set; }
         }
     }
 }

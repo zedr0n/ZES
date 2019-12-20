@@ -25,6 +25,12 @@ namespace ZES.Infrastructure.Domain
             var root = Create(iCommand);
             await _repository.Save(root, iCommand.MessageId);
         }
+        
+        /// <inheritdoc />
+        public async Task Handle(ICommand command)
+        {
+            await Handle((TCommand)command);
+        }
 
         /// <summary>
         /// Initialisation of the new aggregate root

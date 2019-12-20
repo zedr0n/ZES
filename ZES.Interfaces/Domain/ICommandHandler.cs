@@ -5,8 +5,21 @@ namespace ZES.Interfaces.Domain
     /// <summary>
     /// CQRS Command Handler
     /// </summary>
+    public interface ICommandHandler
+    {
+        /// <summary>
+        /// Command handler aggregate logic
+        /// </summary>
+        /// <param name="command">Command to handle</param>
+        /// <returns>Task representing the asynchronous processing of the command</returns>
+        Task Handle(ICommand command);
+    }
+    
+    /// <summary>
+    /// CQRS Command Handler
+    /// </summary>
     /// <typeparam name="TCommand">Command type</typeparam>
-    public interface ICommandHandler<in TCommand> 
+    public interface ICommandHandler<in TCommand> : ICommandHandler 
         where TCommand : ICommand
     {
         /// <summary>

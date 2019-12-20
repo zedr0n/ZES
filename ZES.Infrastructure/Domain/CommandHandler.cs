@@ -40,6 +40,12 @@ namespace ZES.Infrastructure.Domain
         }
 
         /// <inheritdoc />
+        public async Task Handle(ICommand command)
+        {
+            await Handle((T)command);
+        }
+        
+        /// <inheritdoc />
         /// <summary>
         /// Wrap the handler and redirect all exception to <see cref="IErrorLog"/>
         /// </summary>

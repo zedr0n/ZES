@@ -40,6 +40,16 @@ namespace ZES.Infrastructure.Domain
         /// </summary>
         /// <param name="query">Query type</param>
         /// <returns>Task representing the asynchronous query processing</returns>
+        public async Task<object> HandleAsync(IQuery query)
+        {
+            return await HandleAsync(query as IQuery<TResult>);
+        }
+
+        /// <summary>
+        /// Dynamic redirect to appropriate async handler
+        /// </summary>
+        /// <param name="query">Query type</param>
+        /// <returns>Task representing the asynchronous query processing</returns>
         public async Task<TResult> HandleAsync(IQuery<TResult> query)
         {
             return await HandleAsync(query as TQuery);

@@ -46,9 +46,9 @@ namespace ZES
         {
             var handlerType = typeof(IQueryHandler<,>).MakeGenericType(query.GetType(), typeof(TResult));
                 
-            dynamic handler = GetInstance(handlerType);
+            var handler = (IQueryHandler)GetInstance(handlerType);
             if (handler != null)
-                return await handler.HandleAsync(query as dynamic);
+                return (TResult)await handler.HandleAsync(query);
 
             return default(TResult);            
         }
@@ -72,9 +72,9 @@ namespace ZES
         private async Task HandleCommand(ICommand command)
         {
             var handlerType = typeof(ICommandHandler<>).MakeGenericType(command.GetType());
-            dynamic handler = GetInstance(handlerType);
+            var handler = (ICommandHandler)GetInstance(handlerType);
             if (handler != null)
-                await handler.Handle(command as dynamic).ConfigureAwait(false);
+                await handler.Handle(command).ConfigureAwait(false);
         }
 
         private class CommandDispatcher : ParallelDataDispatcher<string, Tracked<ICommand>>

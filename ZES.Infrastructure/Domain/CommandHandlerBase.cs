@@ -31,6 +31,12 @@ namespace ZES.Infrastructure.Domain
             
             await _repository.Save(root, iCommand.MessageId);
         }
+        
+        /// <inheritdoc />
+        public async Task Handle(ICommand command)
+        {
+            await Handle((TCommand)command);
+        }
 
         /// <summary>
         /// Command action on the aggregate 

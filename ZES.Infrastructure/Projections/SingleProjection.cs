@@ -170,8 +170,6 @@ namespace ZES.Infrastructure.Projections
                 var count = _buffer.BufferedCount;
                 _log.Info($"{count} streams in buffer", this);
                 
-                // _buffer.LinkTo(DataflowBlock.NullTarget<Tracked<IStream>>().ToDataflow(), s => _token.IsCancellationRequested);
-
                 _token.Register(() =>
                 {
                     _buffer.LinkTo(DataflowBlock.NullTarget<Tracked<IStream>>().ToDataflow());

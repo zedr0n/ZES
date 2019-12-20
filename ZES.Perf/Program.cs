@@ -41,6 +41,7 @@
         {
             var container = CreateContainer();
             var bus = container.GetInstance<IBus>();
+            
             var numRoots = 10000;
             var log = container.GetInstance<ILog>();
             var t = Stopwatch.StartNew();

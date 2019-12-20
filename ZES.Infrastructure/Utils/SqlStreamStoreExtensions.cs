@@ -27,7 +27,7 @@ namespace ZES.Infrastructure.Utils
             this IStreamStore streamStore,  string key, ISerializer<IEvent> serializer)
         {
             var metadata = await streamStore.GetStreamMetadata(key);
-            var stream = serializer.DecodeStreamMetadata(metadata.MetadataJson, key); 
+            var stream = serializer.DecodeStreamMetadata(metadata.MetadataJson); 
             if (stream == null)
                 return new Stream(key);
 
@@ -38,7 +38,7 @@ namespace ZES.Infrastructure.Utils
                 if (parentMetadata == null)
                     return null;
 
-                var grandParent = serializer.DecodeStreamMetadata(parentMetadata.MetadataJson, parent.Key)?.Parent; 
+                var grandParent = serializer.DecodeStreamMetadata(parentMetadata.MetadataJson)?.Parent; 
                 
                 parent.Parent = grandParent;
                 parent = grandParent;

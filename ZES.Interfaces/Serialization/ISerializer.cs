@@ -42,9 +42,8 @@ namespace ZES.Interfaces.Serialization
         /// Serialize the stream metadata to json 
         /// </summary>
         /// <param name="json">Metadata JSON</param>
-        /// <param name="key">Stream key</param>
         /// <returns>JSON serialized string</returns>
-        IStream DecodeStreamMetadata(string json, string key);
+        IStream DecodeStreamMetadata(string json);
 
         /// <summary>
         /// Deserialize the json string to an object instance

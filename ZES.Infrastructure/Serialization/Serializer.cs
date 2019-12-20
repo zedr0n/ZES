@@ -16,6 +16,7 @@ namespace ZES.Infrastructure.Serialization
         where T : class, IMessage
     {
         private readonly JsonSerializer _serializer;
+        private readonly JsonSerializer _simpleSerializer;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="Serializer{T}"/> class.
@@ -32,6 +33,14 @@ namespace ZES.Infrastructure.Serialization
                 TypeNameAssemblyFormatHandling = TypeNameAssemblyFormatHandling.Simple,
                 Converters = new List<JsonConverter>(),
                 DateParseHandling = DateParseHandling.None
+            });
+            
+            _simpleSerializer = JsonSerializer.Create(new JsonSerializerSettings
+            {
+                TypeNameHandling = TypeNameHandling.None,
+                TypeNameAssemblyFormatHandling = TypeNameAssemblyFormatHandling.Simple,
+                DateParseHandling = DateParseHandling.None,
+                Converters = new List<JsonConverter>()
             });
         }
 
@@ -53,14 +62,11 @@ namespace ZES.Infrastructure.Serialization
         /// <inheritdoc />
         public string EncodeStreamMetadata(IStream stream)
         {
-            var meta = new StreamMetadata(stream.Version);
+            var meta = new StreamMetadata(stream.Key, stream.Version);
             
             if (stream.Parent != null)
             {
-                var parent = new StreamMetadata(stream.Parent.Version)
-                {
-                    Key = stream.Parent.Key
-                };
+                var parent = new StreamMetadata(stream.Parent.Key, stream.Parent.Version);
                 meta.Parent = parent;
             }
 
@@ -68,7 +74,7 @@ namespace ZES.Infrastructure.Serialization
             {
                 var jsonWriter = new JsonTextWriter(writer) { Formatting = Formatting.None };
 
-                _serializer.Serialize(jsonWriter, meta);
+                _simpleSerializer.Serialize(jsonWriter, meta);
 
                 // We don't close the stream as it's owned by the message.
                 writer.Flush();
@@ -77,7 +83,7 @@ namespace ZES.Infrastructure.Serialization
         }
 
         /// <inheritdoc />
-        public IStream DecodeStreamMetadata(string json, string key)
+        public IStream DecodeStreamMetadata(string json)
         {
             if (json == null)
                 return null;
@@ -89,7 +95,7 @@ namespace ZES.Infrastructure.Serialization
 
                 try
                 {
-                    meta = _serializer.Deserialize<StreamMetadata>(jsonReader);
+                    meta = _simpleSerializer.Deserialize<StreamMetadata>(jsonReader);
                 }
                 catch (Exception e)
                 {
@@ -101,7 +107,7 @@ namespace ZES.Infrastructure.Serialization
                 }
             }
             
-            var stream = new Streams.Stream(key, meta.Version);
+            var stream = new Streams.Stream(meta.Key, meta.Version);
             if (meta.Parent != null)
                 stream.Parent = new Streams.Stream(meta.Parent.Key, meta.Parent.Version);
 
@@ -126,7 +132,7 @@ namespace ZES.Infrastructure.Serialization
             {
                 var jsonWriter = new JsonTextWriter(writer) { Formatting = Formatting.None };
 
-                _serializer.Serialize(jsonWriter, meta);
+                _simpleSerializer.Serialize(jsonWriter, meta);
 
                 // We don't close the stream as it's owned by the message.
                 writer.Flush();
@@ -143,7 +149,7 @@ namespace ZES.Infrastructure.Serialization
 
                 try
                 {
-                    return _serializer.Deserialize<EventMetadata>(jsonReader);
+                    return _simpleSerializer.Deserialize<EventMetadata>(jsonReader);
                 }
                 catch (Exception e)
                 {
@@ -180,13 +186,14 @@ namespace ZES.Infrastructure.Serialization
         
         private class StreamMetadata
         {
-            public StreamMetadata(int version)
+            public StreamMetadata(string key, int version)
             {
+                Key = key;
                 Version = version;
             }
                 
-            public string Key { get; set; }
-            public int Version { get; set; }
+            public string Key { get; }
+            public int Version { get; }
             public StreamMetadata Parent { get; set; }
         }
     }

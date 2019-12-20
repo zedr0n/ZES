@@ -37,11 +37,9 @@ namespace ZES.Tests
             var log = container.GetInstance<ILog>();
  
             var schemaProvider = container.GetInstance<ISchemaProvider>();
-            
             var executor = schemaProvider.Build();
             
             var errorResult = await executor.ExecuteAsync(@"query{ error { message } }") as IReadOnlyQueryResult;
-            
             var responseStream = await executor.ExecuteAsync(@"subscription{ log { message } }") as IResponseStream;
 
             var message = "Ping!";
@@ -55,8 +53,6 @@ namespace ZES.Tests
 
             // subscription stitching is not working yet
             Assert.Null(dict);
-            
-            // Assert.Contains(message, dict["message"]);
         }
 
         [Fact]

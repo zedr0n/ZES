@@ -102,12 +102,9 @@ namespace ZES.Tests
             var bus = container.GetInstance<IBus>();
             
             var command = new CreateRoot("Root");
-            await await bus.CommandAsync(command); 
-            Thread.Sleep(10);
+            await bus.CommandAsync(command); 
             
-            var query = new RootInfoQuery("Root");
-            var rootInfo = await bus.QueryUntil(query, c => c?.CreatedAt != 0);
-            Assert.NotEqual(0, rootInfo?.CreatedAt);
+            await bus.IsTrue(new RootInfoQuery("Root"), c => c?.CreatedAt != 0);
         }
         
         [Fact]
@@ -122,8 +119,7 @@ namespace ZES.Tests
             var updateCommand = new UpdateRoot("UpdateRoot.Root");
             await await bus.CommandAsync(updateCommand);
 
-            var rootInfo = await bus.QueryUntil(new RootInfoQuery("UpdateRoot.Root"), r => r.UpdatedAt > r.CreatedAt);
-            Assert.True(rootInfo.UpdatedAt > rootInfo.CreatedAt);
+            await bus.IsTrue(new RootInfoQuery("UpdateRoot.Root"), r => r.UpdatedAt > r.CreatedAt);
         }
 
         [Theory]
@@ -171,9 +167,7 @@ namespace ZES.Tests
             var command = new AddRecord("Root", 1) { Timestamp = time.ToUnixTimeMilliseconds() };
             await await bus.CommandAsync(command);
             
-            var query = new LastRecordQuery("Root");
-            var lastRecord = await bus.QueryAsync(query);
-            Assert.True(lastRecord.TimeStamp == time.ToUnixTimeMilliseconds());
+            await bus.IsTrue(new LastRecordQuery("Root"), c => c.TimeStamp == time.ToUnixTimeMilliseconds());
         }
         
         [Fact]
@@ -188,16 +182,14 @@ namespace ZES.Tests
             var statsQuery = new StatsQuery();
             
             var historicalQuery = new HistoricalQuery<StatsQuery, Stats>(statsQuery, 0);
-            var historicalStats = await bus.QueryAsync(historicalQuery);
-            Assert.Equal(0, historicalStats.NumberOfRoots);
+            await bus.IsTrue(historicalQuery, s => s.NumberOfRoots == 0);
             
             var liveQuery = new HistoricalQuery<StatsQuery, Stats>(statsQuery, DateTimeOffset.UtcNow.ToUnixTimeMilliseconds());
-            var liveStats = await bus.QueryAsync(liveQuery);
-            Assert.Equal(1, liveStats.NumberOfRoots);
+            await bus.IsTrue(liveQuery, s => s.NumberOfRoots == 1);
         }
 
         [Theory]
-        [InlineData(100)]
+        [InlineData(1000)]
         public async void CanProjectALotOfRoots(int numRoots)
         {
             var container = CreateContainer();
@@ -211,9 +203,7 @@ namespace ZES.Tests
                 rootId--;
             }
 
-            var statsQuery = new StatsQuery();
-            var stats = await bus.QueryUntil(statsQuery, s => s?.NumberOfRoots == numRoots);
-            Assert.Equal(numRoots, stats?.NumberOfRoots);
+            await bus.IsTrue(new StatsQuery(), s => s?.NumberOfRoots == numRoots, TimeSpan.FromMilliseconds(numRoots));
         }
 
         [Fact]
@@ -225,10 +215,7 @@ namespace ZES.Tests
             var command = new CreateRoot("Root");
             await bus.CommandAsync(command);
 
-            var query = new RootInfoQuery("RootCopy");
-            var rootInfo = await bus.QueryUntil(query, x => x.CreatedAt > 0); 
-            
-            Assert.NotEqual(0, rootInfo.CreatedAt);
+            await bus.IsTrue(new RootInfoQuery("RootCopy"), r => r.CreatedAt > 0);
         }
 
         [Theory]
@@ -237,7 +224,6 @@ namespace ZES.Tests
         {
             var container = CreateContainer(new List<Action<Container>> { Config.RegisterSagas });
             var bus = container.GetInstance<IBus>();
-            var repository = container.GetInstance<IEsRepository<IAggregate>>();
             
             var rootId = numRoots; 
             while (rootId > 0)
@@ -257,9 +243,7 @@ namespace ZES.Tests
                 rootId--;
             }
 
-            await repository.FindUntil<Root>("Root1Copy");
-            var stats = await bus.QueryUntil(new StatsQuery(), s => s != null && s.NumberOfRoots == 2 * numRoots);
-            Assert.Equal(2 * numRoots, stats?.NumberOfRoots);
+            await bus.IsTrue(new StatsQuery(), s => s?.NumberOfRoots == 2 * numRoots);
 
             /*var remote = container.GetInstance<IRemote>();
             await remote.Push(BranchManager.Master);*/
@@ -283,18 +267,14 @@ namespace ZES.Tests
             
             var query = new RootInfoQuery("Root1");
             await bus.QueryUntil(query, c => c.CreatedAt > 0);
-            
-            var statsQuery = new StatsQuery();
             messageQueue.Alert(new InvalidateProjections());
-            Thread.Sleep(10);
-            var stats = await bus.QueryUntil(statsQuery, s => s?.NumberOfRoots == numberOfRoots);
-            Assert.Equal(numberOfRoots, stats?.NumberOfRoots);
+
+            var statsQuery = new StatsQuery();
+            await bus.IsTrue(statsQuery, s => s?.NumberOfRoots == numberOfRoots);
             
             var newCommand = new CreateRoot("OtherRoot");
             await bus.CommandAsync(newCommand);
-            stats = await bus.QueryUntil(statsQuery, s => s?.NumberOfRoots > numberOfRoots);
-            
-            Assert.Equal(numberOfRoots + 1, stats?.NumberOfRoots);
+            await bus.IsTrue(statsQuery, s => s?.NumberOfRoots == numberOfRoots + 1);
         }
         
         [Theory]
@@ -304,6 +284,7 @@ namespace ZES.Tests
             var container = CreateContainer();
             var bus = container.GetInstance<IBus>();
             var messageQueue = container.GetInstance<IMessageQueue>();
+            var log = container.GetInstance<ILog>();
 
             var rootId = numberOfRoots;
             while (rootId > 0)
@@ -313,15 +294,16 @@ namespace ZES.Tests
                 rootId--;
             }
             
+            log.Info($"{numberOfRoots} roots submitted");
+            
             var statsQuery = new StatsQuery();
-            var stats = await bus.QueryUntil(statsQuery, s => s?.NumberOfRoots == numberOfRoots);
-            Assert.Equal(numberOfRoots, stats?.NumberOfRoots);
+            await bus.IsTrue(statsQuery, s => s?.NumberOfRoots == numberOfRoots);
             
             messageQueue.Alert(new InvalidateProjections());
             messageQueue.Alert(new InvalidateProjections());
+            messageQueue.Alert(new InvalidateProjections());
             
-            stats = await bus.QueryUntil(statsQuery, s => s?.NumberOfRoots == numberOfRoots);
-            Assert.Equal(numberOfRoots, stats?.NumberOfRoots);
+            await bus.IsTrue(statsQuery, s => s?.NumberOfRoots == numberOfRoots);
         }
     }
 }

@@ -6,12 +6,10 @@ using System.IO;
 using System.Runtime.Serialization;
 using Jil;
 using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
 using ZES.Infrastructure.Domain;
 using ZES.Interfaces;
 using ZES.Interfaces.EventStore;
 using ZES.Interfaces.Serialization;
-
 
 namespace ZES.Infrastructure.Serialization
 {
@@ -226,7 +224,7 @@ namespace ZES.Infrastructure.Serialization
 #if USE_UTF8
             return Utf8Json.JsonSerializer.ToJsonString(meta);
 #elif USE_JIL
-            return Jil.JSON.Serialize(meta);
+            return Jil.JSON.Serialize(meta,  Options.IncludeInherited);
 #else
             using (var writer = new StringWriter())
             {
@@ -292,17 +290,40 @@ namespace ZES.Infrastructure.Serialization
 
 #if USE_EXPLICIT
 #else        
+        /// <summary>
+        /// Stream metadata class
+        /// </summary>
         public class StreamMetadata
         {
+            /// <summary>
+            /// Initializes a new instance of the <see cref="StreamMetadata"/> class.
+            /// </summary>
             public StreamMetadata() { }
+            
+            /// <summary>
+            /// Initializes a new instance of the <see cref="StreamMetadata"/> class.
+            /// </summary>
+            /// <param name="key">Stream key</param>
+            /// <param name="version">Stream version</param>
             public StreamMetadata(string key, int version)
             {
                 Key = key;
                 Version = version;
             }
                 
+            /// <summary>
+            /// Gets or sets stream key 
+            /// </summary>
             public string Key { get; set; }
+            
+            /// <summary>
+            /// Gets or sets stream version 
+            /// </summary>
             public int Version { get; set; }
+            
+            /// <summary>
+            /// Gets or sets metadata of parent stream if any
+            /// </summary>
             public StreamMetadata Parent { get; set; }
         }
 #endif

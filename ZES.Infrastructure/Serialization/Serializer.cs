@@ -1,4 +1,4 @@
-#define USE_JIL
+#define USE_EXPLICIT
 
 using System;
 using System.Collections.Generic;
@@ -6,6 +6,7 @@ using System.IO;
 using System.Runtime.Serialization;
 using Jil;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using ZES.Infrastructure.Domain;
 using ZES.Interfaces;
 using ZES.Interfaces.EventStore;
@@ -205,6 +206,7 @@ namespace ZES.Infrastructure.Serialization
             var version = (message as IEvent)?.Version ?? 0;
 #if USE_EXPLICIT
             var meta = new JObject(
+                new JProperty(nameof(IEventMetadata.MessageId), message.MessageId),
                 new JProperty(nameof(IEventMetadata.AncestorId), message.AncestorId),
                 new JProperty(nameof(IEventMetadata.Idempotent), message.Idempotent),
                 new JProperty(nameof(IEventMetadata.Timestamp), message.Timestamp),
@@ -251,11 +253,13 @@ namespace ZES.Infrastructure.Serialization
             isValid &= jarray.TryGetValue(nameof(IEventMetadata.Idempotent), out var jIdempotent);
             isValid &= jarray.TryGetValue(nameof(IEventMetadata.Timestamp), out var jTimestamp);
             isValid &= jarray.TryGetValue(nameof(IEventMetadata.Version), out var jVersion);
+            isValid &= jarray.TryGetValue(nameof(IEventMetadata.MessageId), out var jMessageId);
 
             if (!isValid)
                 return null;
             return new EventMetadata
             {
+                MessageId = (Guid)jMessageId,
                 AncestorId = (Guid)jAncestorId,
                 Idempotent = (bool)jIdempotent,
                 Timestamp = (long)jTimestamp,
@@ -265,7 +269,7 @@ namespace ZES.Infrastructure.Serialization
 #if USE_UTF8
             return Utf8Json.JsonSerializer.Deserialize<EventMetadata>(json);
 #elif USE_JIL
-            return Jil.JSON.Deserialize<EventMetadata>(json);
+            return Jil.JSON.Deserialize<EventMetadata>(json, Options.IncludeInherited);
 #else
             using (var reader = new StringReader(json))
             {

@@ -192,7 +192,7 @@ namespace ZES.Tests
         }
 
         [Theory]
-        [InlineData(1000)]
+        [InlineData(100)]
         public async void CanProjectALotOfRoots(int numRoots)
         {
             var container = CreateContainer();
@@ -207,7 +207,7 @@ namespace ZES.Tests
             }
 
             // await bus.IsTrue(new StatsQuery(), s => s?.NumberOfRoots == numRoots, TimeSpan.FromMilliseconds(numRoots));
-            await bus.Equal(new StatsQuery(), s => s?.NumberOfRoots, numRoots, TimeSpan.FromMilliseconds(numRoots));
+            await bus.Equal(new StatsQuery(), s => s?.NumberOfRoots, numRoots);
         }
 
         [Fact]

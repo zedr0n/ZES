@@ -122,7 +122,7 @@ namespace ZES.Tests
 
             await bus.IsTrue(new RootInfoQuery("UpdateRoot.Root"), r => r.UpdatedAt > r.CreatedAt);
             var graph = container.GetInstance<IQGraph>();
-            graph.Serialise();
+            graph.Serialise(nameof(CanUpdateRoot));
         }
 
         [Theory]

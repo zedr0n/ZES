@@ -58,9 +58,9 @@ namespace ZES.Infrastructure.Causality
         }
 
         /// <inheritdoc />
-        public void Serialise(string filename = "streams.graphml")
+        public void Serialise(string filename = "streams")
         {
-            _graph.SerializeToGraphML<ICVertex, QEdge<ICVertex>, BidirectionalGraph<ICVertex,  QEdge<ICVertex>>>(filename);
+            _graph.SerializeToGraphML<ICVertex, QEdge<ICVertex>, BidirectionalGraph<ICVertex,  QEdge<ICVertex>>>(filename + ".graphml");
         }
 
         private async Task PopulateStreams()

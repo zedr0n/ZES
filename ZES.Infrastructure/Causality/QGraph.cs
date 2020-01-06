@@ -99,9 +99,12 @@ namespace ZES.Infrastructure.Causality
                     source = new StreamVertex(stream.Parent.Key, stream.Parent.Version);
                     _graph.AddVertex(source);
                 }
-                            
-                var edge = new StreamEdge(source, vertex);
-                _graph.AddEdge(edge);
+
+                if (source.Key != vertex.Key)
+                {
+                    var edge = new StreamEdge(source, vertex);
+                    _graph.AddEdge(edge);
+                }
             }
 
             return vertex;

@@ -4,8 +4,16 @@ using System.Text;
 
 namespace ZES.Infrastructure
 {
+    /// <summary>
+    /// Hashing methods
+    /// </summary>
     public static class Hashing
     {
+        /// <summary>
+        /// Sha256 string hash
+        /// </summary>
+        /// <param name="value">String to hash</param>
+        /// <returns>String hash</returns>
         public static string Sha256(string value)
         {
             var sb = new StringBuilder();

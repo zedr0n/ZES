@@ -26,14 +26,6 @@ namespace ZES.Infrastructure.Causality
         private readonly BidirectionalGraph<ICVertex, QEdge<ICVertex>> _graph
             = new BidirectionalGraph<ICVertex, QEdge<ICVertex>>();
 
-        private interface ICVertex
-        {
-            [XmlAttribute("Label")]
-            string Label { get; }
-            [XmlAttribute("Kind")]
-            string Kind { get; }
-        }
-        
         /// <summary>
         /// Initializes a new instance of the <see cref="QGraph"/> class.
         /// </summary>
@@ -44,6 +36,14 @@ namespace ZES.Infrastructure.Causality
             _store = store;
             _serializer = serializer;
             store.SubscribeToAll(Position.Start - 1, MessageReceived);
+        }
+        
+        private interface ICVertex
+        {
+            [XmlAttribute("Label")]
+            string Label { get; }
+            [XmlAttribute("Kind")]
+            string Kind { get; }
         }
 
         /// <inheritdoc/>
@@ -239,8 +239,7 @@ namespace ZES.Infrastructure.Causality
 
             public TVertex Source => _edge.Source;
             public TVertex Target => _edge.Target;
-            [XmlAttribute("Kind")] public virtual string Kind { get; }
-
+            public virtual string Kind { get; }
         }
         
         private class StreamEdge : QEdge<ICVertex>
@@ -288,7 +287,7 @@ namespace ZES.Infrastructure.Causality
             }
 
             public string MerkleHash { get; set; }
-            [XmlAttribute("Label")] public string Label => $"{Key}@{Version}";
+            public string Label => $"{Key}@{Version}";
             public string Kind => "Stream";
             public string Key { get; }
             public int Version { get; set; }
@@ -327,7 +326,6 @@ namespace ZES.Infrastructure.Causality
             public override string Label => $"{EventType}@{Version}";
             public override string Kind => "Event";
         }
-
 
         [Serializable]
         private class CommandVertex : CausalityVertex

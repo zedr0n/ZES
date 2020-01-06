@@ -207,8 +207,6 @@ namespace ZES.Tests
             }
 
             await bus.IsTrue(new StatsQuery(), s => s?.NumberOfRoots == numRoots, TimeSpan.FromMilliseconds(numRoots));
-            var graph = container.GetInstance<IQGraph>();
-            await graph.Populate();
         }
 
         [Fact]

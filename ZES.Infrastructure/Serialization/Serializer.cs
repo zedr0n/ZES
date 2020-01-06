@@ -157,7 +157,6 @@ namespace ZES.Infrastructure.Serialization
             if (!jarray.TryGetValue(nameof(IStream.Key), out var key))
                 return null;
 
-
             var stream = new Streams.Stream((string)key, (int)version);
 
             if (!jarray.TryGetValue(nameof(IStream.Parent), out var jParent))

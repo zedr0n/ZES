@@ -206,7 +206,8 @@ namespace ZES.Tests
                 rootId--;
             }
 
-            await bus.IsTrue(new StatsQuery(), s => s?.NumberOfRoots == numRoots, TimeSpan.FromMilliseconds(numRoots));
+            // await bus.IsTrue(new StatsQuery(), s => s?.NumberOfRoots == numRoots, TimeSpan.FromMilliseconds(numRoots));
+            await bus.Equal(new StatsQuery(), s => s?.NumberOfRoots, numRoots, TimeSpan.FromMilliseconds(numRoots));
         }
 
         [Fact]

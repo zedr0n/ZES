@@ -264,6 +264,7 @@ namespace ZES.Infrastructure.Causality
 
             public TVertex Source => _edge.Source;
             public TVertex Target => _edge.Target;
+            [XmlAttribute("Kind")]
             public virtual string Kind { get; }
         }
         

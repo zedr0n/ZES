@@ -44,6 +44,8 @@ namespace ZES.Infrastructure.Causality
             string Label { get; }
             [XmlAttribute("Kind")]
             string Kind { get; }
+            [XmlAttribute("Hash")]
+            string MerkleHash { get; }
         }
 
         /// <inheritdoc/>
@@ -114,7 +116,7 @@ namespace ZES.Infrastructure.Causality
                 foreach (var m in eventsPage.Messages.Where(m => !m.StreamId.StartsWith("$")))
                 {
                     if (m.StreamId.Contains("Command"))
-                        AddCommand(m);
+                        await AddCommand(m);
                     else
                         await AddEvent(m);
                 }
@@ -169,9 +171,12 @@ namespace ZES.Infrastructure.Causality
                     e.Source.MessageId == metadata.AncestorId && e.Target.MessageId == metadata.MessageId))
                     _graph.AddEdge(new CommandEdge(a, vertex));
             }
+
+            vertex.MerkleHash = CalculateHash(vertex, await m.GetJsonData());
+            streamVertex.MerkleHash = CalculateStreamHash(streamVertex);
         }
         
-        private void AddCommand(StreamMessage m)
+        private async Task AddCommand(StreamMessage m)
         {
             var metadata = _serializer.DecodeMetadata(m.JsonMetadata);
 
@@ -191,6 +196,8 @@ namespace ZES.Infrastructure.Causality
                 if (!_graph.Edges.OfType<EventEdge>().Any(e => e.Source?.MessageId == a.MessageId && e.Target?.MessageId == m.MessageId))
                     _graph.AddEdge(new EventEdge(a, vertex));
             }
+
+            vertex.MerkleHash = CalculateHash(vertex, await m.GetJsonData());
         }
         
         private async Task MessageReceived(
@@ -202,9 +209,18 @@ namespace ZES.Infrastructure.Causality
                 return;
             
             if (streamMessage.StreamId.Contains("Command"))
-                AddCommand(streamMessage);
+                await AddCommand(streamMessage);
             else
                 await AddEvent(streamMessage);
+        }
+
+        private string CalculateHash(ICVertex vertex, string jsonData)
+        {
+            var causes = new List<ICVertex>();
+            GetCauses(vertex, causes);
+
+            var aggr = jsonData + causes.OfType<CausalityVertex>().Select(v => v.MerkleHash).Aggregate(string.Empty, (c, n) => c + n);
+            return Hashing.Sha256(aggr);
         }
 
         private string CalculateStreamHash(StreamVertex vertex)
@@ -214,6 +230,15 @@ namespace ZES.Infrastructure.Causality
             var hashes = vertices.OfType<EventVertex>().Select(e => e.MerkleHash);
             var hashString = hashes.Aggregate(string.Empty, (c, n) => c + n);
             return Hashing.Sha256(hashString);
+        }
+
+        private void GetCauses(ICVertex vertex, ICollection<ICVertex> causes)
+        {
+            foreach (var e in _graph.InEdges(vertex))
+            {
+                causes.Add(e.Source);
+                GetCauses(e.Source, causes);
+            }
         }
 
         private void GetDependents<TEdge>(ICVertex vertex, ICollection<ICVertex> dependents)
@@ -304,6 +329,7 @@ namespace ZES.Infrastructure.Causality
                 
             public Guid MessageId { get; }
             public Guid AncestorId { get; }
+            public string MerkleHash { get; set; }
             public abstract string Label { get; }
             public abstract string Kind { get; }
         }
@@ -322,7 +348,6 @@ namespace ZES.Infrastructure.Causality
             public string StreamKey { get; }
             public int Version { get; }
             public string EventType { get; }
-            public string MerkleHash { get; }
             public override string Label => $"{EventType}@{Version}";
             public override string Kind => "Event";
         }

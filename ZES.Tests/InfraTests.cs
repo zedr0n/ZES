@@ -11,6 +11,7 @@ using ZES.Infrastructure.Alerts;
 using ZES.Infrastructure.Domain;
 using ZES.Infrastructure.Utils;
 using ZES.Interfaces;
+using ZES.Interfaces.Causality;
 using ZES.Interfaces.Domain;
 using ZES.Interfaces.Pipes;
 using ZES.Tests.Domain;
@@ -120,6 +121,8 @@ namespace ZES.Tests
             await await bus.CommandAsync(updateCommand);
 
             await bus.IsTrue(new RootInfoQuery("UpdateRoot.Root"), r => r.UpdatedAt > r.CreatedAt);
+            var graph = container.GetInstance<IQGraph>();
+            graph.Serialise();
         }
 
         [Theory]
@@ -204,6 +207,8 @@ namespace ZES.Tests
             }
 
             await bus.IsTrue(new StatsQuery(), s => s?.NumberOfRoots == numRoots, TimeSpan.FromMilliseconds(numRoots));
+            var graph = container.GetInstance<IQGraph>();
+            await graph.Populate();
         }
 
         [Fact]
@@ -216,6 +221,9 @@ namespace ZES.Tests
             await bus.CommandAsync(command);
 
             await bus.IsTrue(new RootInfoQuery("RootCopy"), r => r.CreatedAt > 0);
+
+            var graph = container.GetInstance<IQGraph>();
+            graph.Serialise();
         }
 
         [Theory]

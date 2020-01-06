@@ -52,7 +52,7 @@ namespace ZES
                      c.Consumer.ImplementationType.GetGenericArguments().Contains(typeof(IAggregate)) ||
                      c.Consumer.ImplementationType.GetInterfaces().Contains(typeof(IBranchManager)) || 
                      c.Consumer.ImplementationType == typeof(CommandLog) ||
-                     c.Consumer.ImplementationType == typeof(CausalityGraph))
+                     c.Consumer.ImplementationType == typeof(QGraph))
                 ;
 
             /* container.RegisterConditional(
@@ -99,7 +99,7 @@ namespace ZES
                 container.Register<IReadGraph, NullReadGraph>(Lifestyle.Singleton);
             }
             
-            container.Register<ICausalityGraph, CausalityGraph>(Lifestyle.Singleton);
+            container.Register<IQGraph, QGraph>(Lifestyle.Singleton);
             
             container.RegisterDecorator(
                 typeof(ICommandHandler<>),

@@ -19,7 +19,9 @@ namespace ZES.Infrastructure.Serialization
         where T : class, IMessage
     {
         private readonly JsonSerializer _serializer;
+#if USE_JSON        
         private readonly JsonSerializer _simpleSerializer;
+#endif
 
         /// <summary>
         /// Initializes a new instance of the <see cref="Serializer{T}"/> class.
@@ -37,7 +39,7 @@ namespace ZES.Infrastructure.Serialization
                 Converters = new List<JsonConverter>(),
                 DateParseHandling = DateParseHandling.None
             });
-            
+#if USE_JSON            
             _simpleSerializer = JsonSerializer.Create(new JsonSerializerSettings
             {
                 TypeNameHandling = TypeNameHandling.None,
@@ -45,6 +47,7 @@ namespace ZES.Infrastructure.Serialization
                 DateParseHandling = DateParseHandling.None,
                 Converters = new List<JsonConverter>()
             });
+#endif
 #if USE_JIL            
             // warm up serializers
             JSON.Serialize(new EventMetadata
@@ -125,7 +128,7 @@ namespace ZES.Infrastructure.Serialization
             return Utf8Json.JsonSerializer.ToJsonString(meta);
 #elif USE_JIL
             return Jil.JSON.Serialize(meta);
-#else
+#elif USE_JSON
             using (var writer = new StringWriter())
             {
                 var jsonWriter = new JsonTextWriter(writer) { Formatting = Formatting.None };
@@ -173,7 +176,7 @@ namespace ZES.Infrastructure.Serialization
             meta = Utf8Json.JsonSerializer.Deserialize<StreamMetadata>(json);
 #elif USE_JIL
             meta = Jil.JSON.Deserialize<StreamMetadata>(json);
-#else            
+#elif USE_JSON            
             using (var reader = new StringReader(json))
             {
                 var jsonReader = new JsonTextReader(reader);
@@ -203,14 +206,16 @@ namespace ZES.Infrastructure.Serialization
         /// <inheritdoc />
         public string EncodeMetadata(T message)
         {
-            var version = (message as IEvent)?.Version ?? 0;
+            var e = message as IEvent;
+            var version = e?.Version ?? 0;
 #if USE_EXPLICIT
             var meta = new JObject(
                 new JProperty(nameof(IEventMetadata.MessageId), message.MessageId),
                 new JProperty(nameof(IEventMetadata.AncestorId), message.AncestorId),
                 new JProperty(nameof(IEventMetadata.Idempotent), message.Idempotent),
                 new JProperty(nameof(IEventMetadata.Timestamp), message.Timestamp),
-                new JProperty(nameof(IEventMetadata.Version), version));
+                new JProperty(nameof(IEventMetadata.Version), version),
+                new JProperty(nameof(IEventMetadata.MessageType), message.GetType().Name));
 
             return meta.ToString();
 #else
@@ -227,7 +232,7 @@ namespace ZES.Infrastructure.Serialization
             return Utf8Json.JsonSerializer.ToJsonString(meta);
 #elif USE_JIL
             return Jil.JSON.Serialize(meta,  Options.IncludeInherited);
-#else
+#elif USE_JSON
             using (var writer = new StringWriter())
             {
                 var jsonWriter = new JsonTextWriter(writer) { Formatting = Formatting.None };
@@ -254,6 +259,7 @@ namespace ZES.Infrastructure.Serialization
             isValid &= jarray.TryGetValue(nameof(IEventMetadata.Timestamp), out var jTimestamp);
             isValid &= jarray.TryGetValue(nameof(IEventMetadata.Version), out var jVersion);
             isValid &= jarray.TryGetValue(nameof(IEventMetadata.MessageId), out var jMessageId);
+            isValid &= jarray.TryGetValue(nameof(IEventMetadata.MessageType), out var jEventType);
 
             if (!isValid)
                 return null;
@@ -263,14 +269,15 @@ namespace ZES.Infrastructure.Serialization
                 AncestorId = (Guid)jAncestorId,
                 Idempotent = (bool)jIdempotent,
                 Timestamp = (long)jTimestamp,
-                Version = (int)jVersion
+                Version = (int)jVersion,
+                MessageType = (string)jEventType
             };
 #else
 #if USE_UTF8
             return Utf8Json.JsonSerializer.Deserialize<EventMetadata>(json);
 #elif USE_JIL
             return Jil.JSON.Deserialize<EventMetadata>(json, Options.IncludeInherited);
-#else
+#elif USE_JSON
             using (var reader = new StringReader(json))
             {
                 var jsonReader = new JsonTextReader(reader);

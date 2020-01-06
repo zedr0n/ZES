@@ -26,7 +26,7 @@ namespace ZES.Tests
         {
         }
 
-        [Fact]
+        /*[Fact]
         public async void CanCreateGraph()
         {
             var container = CreateContainer();
@@ -46,6 +46,23 @@ namespace ZES.Tests
 
             var causes = graph.GetCauses(root, root.Version, BranchManager.Master);
             Assert.Equal(3, causes.Count());
+        }*/
+
+        [Fact]
+        public async void CanCreateGraph()
+        {
+            var container = CreateContainer();
+            var bus = container.GetInstance<IBus>();
+            var graph = container.GetInstance<IQGraph>();
+            var manager = container.GetInstance<IBranchManager>();
+
+            var command = new CreateRoot("Root");
+            await await bus.CommandAsync(command);
+            await manager.Branch("test"); 
+
+            await await bus.CommandAsync(new UpdateRoot("Root"));
+
+            await graph.Populate();
         }
 
         [Fact]

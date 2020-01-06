@@ -6,6 +6,9 @@ namespace ZES.Infrastructure.Domain
     public class EventMetadata : Message, IEventMetadata
     {
         /// <inheritdoc />
+        public string MessageType { get; set; }
+
+        /// <inheritdoc />
         public int Version { get; set; }
     }
 }

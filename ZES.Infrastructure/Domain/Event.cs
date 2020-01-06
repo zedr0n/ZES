@@ -11,12 +11,12 @@ namespace ZES.Infrastructure.Domain
         /// </summary>
         protected Event()
         {
-            EventType = GetType().Name;
+            MessageType = GetType().Name;
             MessageId = Guid.NewGuid();
         }
 
         /// <inheritdoc />
-        public string EventType { get; set; }
+        public string EventType => MessageType;
 
         /// <inheritdoc />
         public string Stream { get; set; }

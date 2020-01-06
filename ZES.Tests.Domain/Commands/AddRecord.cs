@@ -13,6 +13,6 @@ namespace ZES.Tests.Domain.Commands
             RecordValue = recordValue;
         }
         
-        public double RecordValue { get; private set; } 
+        public double RecordValue { get; } 
      }
 }

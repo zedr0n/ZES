@@ -7,6 +7,7 @@ using Xunit.Abstractions;
 using ZES.Infrastructure.Branching;
 using ZES.Infrastructure.Domain;
 using ZES.Interfaces;
+using ZES.Interfaces.Causality;
 using ZES.Interfaces.Domain;
 using ZES.Interfaces.Pipes;
 using ZES.Tests.Domain;
@@ -156,6 +157,10 @@ namespace ZES.Tests
 
             await timeTraveller.Merge("test");
             await bus.IsTrue(new StatsQuery(), s => s.NumberOfRoots == 3);
+
+            var graph = container.GetInstance<IQGraph>();
+            await graph.Populate();
+            graph.Serialise();
         }
 
         [Fact]

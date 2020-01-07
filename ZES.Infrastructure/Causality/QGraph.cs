@@ -141,17 +141,16 @@ namespace ZES.Infrastructure.Causality
             var vertex = new EventVertex(m.MessageId, metadata.AncestorId, metadata.MessageType, m.StreamId, metadata.Version);
             _graph.AddVertex(vertex);
 
-            if (m.StreamVersion == 0 && streamVertex != null)
+            if (m.StreamVersion == 0)
                 _graph.AddEdge(new StreamEdge(streamVertex, vertex));
+            
+            var previousInStream = _graph.Vertices.OfType<EventVertex>().SingleOrDefault(s =>
+                s.StreamKey == m.StreamId && s.Version == metadata.Version - 1);
+            if (previousInStream != null && !metadata.Idempotent)
+                _graph.AddEdge(new EventEdge(previousInStream, vertex));
+            if (m.StreamVersion > 0)
+                _graph.AddEdge(new StreamEdge(previousInStream, vertex));
 
-            if (!metadata.Idempotent)
-            {
-                var previousInStream = _graph.Vertices.OfType<EventVertex>().SingleOrDefault(s =>
-                    s.StreamKey == m.StreamId && s.Version == metadata.Version - 1);
-                if (previousInStream != null)
-                    _graph.AddEdge(new EventEdge(previousInStream, vertex));
-            }
- 
             if (metadata.AncestorId != Guid.Empty)
             {
                 var ancestor = _graph.Vertices.OfType<EventVertex>().SingleOrDefault(s => s.MessageId == metadata.AncestorId);

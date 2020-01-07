@@ -24,12 +24,12 @@ namespace ZES.Interfaces
         Guid AncestorId { get; }
 
         /// <summary>
-        /// Gets a value indicating whether the message is idempotent
+        /// Gets or sets a value indicating whether gets a value indicating whether the message is idempotent
         /// </summary>
         /// <value>
         /// A value indicating whether the message is idempotent
         /// </value>
-        bool Idempotent { get; }
+        bool Idempotent { get; set; }
 
         /// <summary>
         /// Gets event unix epoch timestamp

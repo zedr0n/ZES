@@ -36,5 +36,10 @@ namespace ZES.Interfaces
         /// <typeparam name="T">Event sourced type</typeparam>
         void LoadFrom<T>(IEnumerable<IEvent> pastEvents)
             where T : class, IEventSourced;
+
+        /// <summary>
+        /// Make current changes idempotent
+        /// </summary>
+        void MakeIdempotent();
     }
 }

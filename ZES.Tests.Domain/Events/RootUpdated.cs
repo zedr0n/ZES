@@ -1,3 +1,4 @@
+using ZES.Infrastructure.Attributes;
 using ZES.Infrastructure.Domain;
 
 namespace ZES.Tests.Domain.Events

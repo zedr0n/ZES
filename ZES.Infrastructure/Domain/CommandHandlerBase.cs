@@ -1,5 +1,7 @@
 using System;
+using System.Reflection;
 using System.Threading.Tasks;
+using ZES.Infrastructure.Attributes;
 using ZES.Interfaces.Domain;
 
 namespace ZES.Infrastructure.Domain
@@ -28,6 +30,8 @@ namespace ZES.Infrastructure.Domain
                 throw new ArgumentNullException(); 
             
             Act(root, iCommand);
+            if (iCommand.GetType().GetCustomAttribute<IdempotentAttribute>() != null)
+                root.MakeIdempotent();
             
             await _repository.Save(root, iCommand.MessageId);
         }

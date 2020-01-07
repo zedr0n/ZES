@@ -40,6 +40,16 @@ namespace ZES.Infrastructure.Domain
                 return _changes.ToArray();
         }
 
+        /// <inheritdoc />
+        public void MakeIdempotent()
+        {
+            lock (_changes)
+            {
+                foreach (var c in _changes)
+                    c.Idempotent = true;
+            }
+        }
+
         /// <summary>
         /// Base event handler
         /// <para>* Applies the event to the event sourced instance 

@@ -16,6 +16,7 @@ namespace ZES.Infrastructure.Projections
     public abstract class ProjectionBase<TState> : IProjection<TState>
         where TState : new()
     {
+        private readonly Lazy<Task> _start;
         private int _parallel;
         
         /// <summary>
@@ -30,6 +31,7 @@ namespace ZES.Infrastructure.Projections
             Log = log;
             Timeline = timeline;
             CancellationSource = new RepeatableCancellationTokenSource();
+            _start = new Lazy<Task>(() => Task.Run(Start));
 
             StatusSubject.Where(s => s != Sleeping)
                 .Subscribe(s => Log?.Info($"{GetType().GetFriendlyName()} : {s.ToString()}"));
@@ -40,7 +42,7 @@ namespace ZES.Infrastructure.Projections
         {
             get
             {
-                Task.Run(Start);
+                var unused = _start.Value;
                 return StatusSubject.AsObservable()
                     .Timeout(Configuration.Timeout)
                     .FirstAsync(s => s == Listening);

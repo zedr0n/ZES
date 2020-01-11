@@ -60,7 +60,12 @@ export default class App extends React.Component<AppProps, AppState> {
           var data = range.values;
           var rInput = new RangeInput(data);
           
-          var names = rInput.getByHeader("Name");
+          var names : any[];
+          if (data.length == 1 && data[0].length == 1)
+              names = data[0];
+          else
+              names = rInput.getByHeader("Name");
+          
           if (names != undefined) {
             for( var n of names)
             {

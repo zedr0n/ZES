@@ -64,14 +64,13 @@ namespace ZES.Infrastructure.Domain
             try
             {
                 await _handler.Handle(iCommand);
+                await _commandLog.AppendCommand(iCommand);
+                await _graph.AddCommand(iCommand);
             }
             catch (Exception e)
             {
                 _errorLog.Add(e);
             }
-            
-            await _commandLog.AppendCommand(iCommand);
-            await _graph.AddCommand(iCommand);
         }
     }
 }

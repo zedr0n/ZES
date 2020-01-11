@@ -46,6 +46,8 @@ namespace ZES.Infrastructure.Causality
             string Kind { get; }
             [XmlAttribute("Hash")]
             string MerkleHash { get; }
+            [XmlAttribute("Timestamp")]
+            string Timestamp { get; }
         }
 
         /// <inheritdoc/>
@@ -138,7 +140,7 @@ namespace ZES.Infrastructure.Causality
             var metadata = _serializer.DecodeMetadata(m.JsonMetadata);
 
             var streamVertex = await AddStream(m.StreamId); 
-            var vertex = new EventVertex(m.MessageId, metadata.AncestorId, metadata.MessageType, m.StreamId, metadata.Version);
+            var vertex = new EventVertex(m.MessageId, metadata.AncestorId, metadata.MessageType, m.StreamId, metadata.Version, metadata.Timestamp);
             _graph.AddVertex(vertex);
 
             if (m.StreamVersion == 0)
@@ -187,7 +189,7 @@ namespace ZES.Infrastructure.Causality
         {
             var metadata = _serializer.DecodeMetadata(m.JsonMetadata);
 
-            var vertex = new CommandVertex(metadata.MessageId, metadata.AncestorId, metadata.MessageType);
+            var vertex = new CommandVertex(metadata.MessageId, metadata.AncestorId, metadata.MessageType, metadata.Timestamp);
             _graph.AddVertex(vertex);
 
             var dependents = _graph.Vertices.OfType<EventVertex>().Where(v => v.AncestorId == m.MessageId);
@@ -329,6 +331,8 @@ namespace ZES.Infrastructure.Causality
             }
 
             public string MerkleHash { get; set; }
+            public string Timestamp => DateTime.Now.ToUniversalTime()
+                .ToString("yyyy'-'MM'-'dd'T'HH':'mm':'ss'.'fff'Z'");
             public string Label => $"{Key}@{Version}";
             public string Kind => GraphKind.Stream;
             public string Key { get; }
@@ -338,10 +342,12 @@ namespace ZES.Infrastructure.Causality
         [Serializable]
         private abstract class CausalityVertex : ICVertex
         {
-            public CausalityVertex(Guid messageId, Guid ancestorId)
+            public CausalityVertex(Guid messageId, Guid ancestorId, long timestamp)
             {
                 MessageId = messageId;
                 AncestorId = ancestorId;
+                Timestamp = DateTimeOffset.FromUnixTimeMilliseconds(timestamp).DateTime.ToUniversalTime()
+                    .ToString("yyyy'-'MM'-'dd'T'HH':'mm':'ss'.'fff'Z'");
             }
                 
             public Guid MessageId { get; }
@@ -349,13 +355,15 @@ namespace ZES.Infrastructure.Causality
             public string MerkleHash { get; set; }
             public abstract string Label { get; }
             public virtual string Kind => GraphKind.Causality;
+            public string Timestamp { get; }
+
         }
 
         [Serializable]
         private class EventVertex : CausalityVertex 
         {
-            public EventVertex(Guid messageId, Guid ancestorId, string eventType, string streamKey, int version)
-                : base(messageId, ancestorId)
+            public EventVertex(Guid messageId, Guid ancestorId, string eventType, string streamKey, int version, long timestamp)
+                : base(messageId, ancestorId, timestamp)
             {
                 EventType = eventType;
                 StreamKey = streamKey;
@@ -372,8 +380,8 @@ namespace ZES.Infrastructure.Causality
         [Serializable]
         private class CommandVertex : CausalityVertex
         {
-            public CommandVertex(Guid messageId, Guid ancestorId, string commandType)
-                : base(messageId, ancestorId)
+            public CommandVertex(Guid messageId, Guid ancestorId, string commandType, long timestamp)
+                : base(messageId, ancestorId, timestamp)
             {
                 CommandType = commandType;
             }

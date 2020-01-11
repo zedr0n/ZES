@@ -55,20 +55,25 @@ export default class App extends React.Component<AppProps, AppState> {
         range.load("values");
 
         await context.sync();
-
+        
         try {
-          var rInput = new RangeInput(range.values);
+          var data = range.values;
+          var rInput = new RangeInput(data);
           
           var names = rInput.getByHeader("Name");
           if (names != undefined) {
-            var cur = range.values;
-            cur[1][0] = names.join(',');
-            console.log(`${names.join(',')}`);
-            range.values = cur;
+            for( var n of names)
+            {
+              const mutation = `mutation {
+                createRoot(name: "${n}" ) 
+              }`;
+              await request('https://localhost:5001', mutation);
+            }
           }
           else {
             console.error("Name header not found!")
           }
+          
               
         }
         catch (error) {

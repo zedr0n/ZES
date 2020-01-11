@@ -4,6 +4,7 @@ import Header from './Header';
 import HeroList, { HeroListItem } from './HeroList';
 import Progress from './Progress';
 import { request } from 'graphql-request';
+import RangeInput from "./RangeInput";
 
 export interface AppProps {
   title: string;
@@ -41,6 +42,46 @@ export default class App extends React.Component<AppProps, AppState> {
     });
   }
 
+  rootClick = async() => {
+    try{
+      await Excel.run(async context => {
+        /**
+         * Insert your Excel code here
+         */
+        const range = context.workbook.getSelectedRange();
+
+        // Read the range address
+        range.load("address");
+        range.load("values");
+
+        await context.sync();
+
+        try {
+          var rInput = new RangeInput(range.values);
+          
+          var names = rInput.getByHeader("Name");
+          if (names != undefined) {
+            var cur = range.values;
+            cur[1][0] = names.join(',');
+            console.log(`${names.join(',')}`);
+            range.values = cur;
+          }
+          else {
+            console.error("Name header not found!")
+          }
+              
+        }
+        catch (error) {
+          range.values[0][0] = JSON.stringify(error.message, undefined, 2);
+          console.error(error);
+        }
+        
+        await context.sync();
+      })
+    } 
+    catch (error) {console.error(error);}
+  }
+  
   click = async () => {
     try {
       await Excel.run(async context => {
@@ -64,7 +105,7 @@ export default class App extends React.Component<AppProps, AppState> {
           range.values = data.statsQuery.numberOfRoots; //JSON.stringify(data, undefined, 2);
         }
         catch(error){
-          range.values = JSON.stringify(error.message, undefined, 2); 
+          range.values[0][0] = JSON.stringify(error.message, undefined, 2); 
         }
         
         // Update the fill color
@@ -101,6 +142,7 @@ export default class App extends React.Component<AppProps, AppState> {
         <HeroList message='' items={this.state.listItems}>
           <p className='ms-font-l'>Modify the source files, then click <b>Run</b>.</p>
           <Button className='ms-welcome__action' buttonType={ButtonType.hero} iconProps={{ iconName: 'ChevronRight' }} onClick={this.click}>Run</Button>
+          <Button className='ms-root__action' buttonType={ButtonType.hero} iconProps={{ iconName: 'ChevronRight' }} onClick={this.rootClick}>Create root</Button>
         </HeroList>
       </div>
     );

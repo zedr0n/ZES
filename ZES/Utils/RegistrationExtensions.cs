@@ -83,8 +83,9 @@ namespace ZES.Utils
                 c.RegisterConditional(iQueryHandler, handler, Lifestyle.Singleton, x => !x.Handled);
                 c.RegisterConditional(iHistoricalQueryHandler, historicalHandler, Lifestyle.Transient, x => !x.Handled);
             }
-            
-            c.Collection.Register<IGraphQlQuery>(assembly);
+
+            foreach (var q in assembly.GetTypesFromInterface(typeof(IGraphQlQuery)))
+                c.Collection.Append(typeof(IGraphQlQuery), q);
         }
         
         /// <summary>
@@ -129,8 +130,10 @@ namespace ZES.Utils
                 var handler = assembly.GetTypesFromInterface(iHandler).SingleOrDefault();
                 c.Register(iHandler, handler, Lifestyle.Singleton);
             }
-            
-            c.Collection.Register<IGraphQlMutation>(assembly);
+
+            var mutations = assembly.GetTypesFromInterface(typeof(IGraphQlMutation));
+            foreach (var mutation in mutations)
+               c.Collection.Append(typeof(IGraphQlMutation), mutation ); 
         }
 
         private static IEnumerable<Type> GetTypesFromInterface(this Assembly assembly, Type t)

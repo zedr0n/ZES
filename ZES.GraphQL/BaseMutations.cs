@@ -44,6 +44,7 @@ namespace ZES.GraphQL
         /// <summary>
         /// Serialise the graph
         /// </summary>
+        /// <returns>True if successful</returns>
         public bool SerialiseGraph()
         {
             _graph.Serialise("live");

@@ -28,6 +28,19 @@ namespace ZES.GraphQL
         }
 
         /// <summary>
+        /// Wires the root queries and mutations for multiple config types
+        /// </summary>
+        /// <param name="services"><see cref="IServiceCollection"/>></param>
+        /// <param name="configs">Root configs</param>
+        public static void UseGraphQl(this IServiceCollection services, IEnumerable<Type> configs)
+        {
+            var container = new Container();
+            container.Options.DefaultLifestyle = Lifestyle.Singleton;
+
+            UseGraphQl(services, container, configs);
+        }
+
+        /// <summary>
         /// Wires the root queries and mutations for multiple domains defined by their respective config types 
         /// </summary>
         /// <param name="services"><see cref="IServiceCollection"/></param>

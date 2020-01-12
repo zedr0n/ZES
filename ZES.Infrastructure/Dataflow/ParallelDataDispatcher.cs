@@ -106,6 +106,12 @@ namespace ZES.Infrastructure.Dataflow
             Log?.Debug($"Parallel {typeof(TIn).GetFriendlyName()} count : {_parallelCount}", (_declaringType ?? GetType().DeclaringType)?.GetFriendlyName());
 
             var key = _dispatchFunc(input);
+            if (key == null)
+            {
+                (input as ITracked)?.Complete();
+                return;
+            }
+
             var block = _destinations.GetOrAdd(key, _initer).Value;
 
             try

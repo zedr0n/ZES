@@ -64,7 +64,7 @@ namespace ZES.Infrastructure.Projections
         /// <summary>
         /// Gets projection timestamp
         /// </summary>
-        protected virtual long Now => Timeline.Now;
+        protected virtual long Latest => long.MaxValue;
 
         /// <summary>
         /// Gets event store 
@@ -165,7 +165,7 @@ namespace ZES.Infrastructure.Projections
                 return;
 
             // do not project the future events
-            if (e.Timestamp > Now)
+            if (e.Timestamp > Latest)
                 return;
             Interlocked.Increment(ref _parallel);
 

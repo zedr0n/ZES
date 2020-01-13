@@ -39,7 +39,7 @@ namespace ZES.Infrastructure.Projections
         }
 
         /// <inheritdoc />
-        protected override long Now => _timestamp;
+        protected override long Latest => _timestamp;
 
         /// <inheritdoc />
         public async Task Init(long timestamp)

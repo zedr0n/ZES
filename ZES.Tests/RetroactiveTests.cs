@@ -1,3 +1,4 @@
+using System;
 using System.Reactive.Linq;
 using System.Threading.Tasks;
 using Xunit;
@@ -10,6 +11,7 @@ using ZES.Interfaces.EventStore;
 using ZES.Interfaces.Pipes;
 using ZES.Tests.Domain;
 using ZES.Tests.Domain.Commands;
+using ZES.Tests.Domain.Queries;
 
 namespace ZES.Tests
 {
@@ -36,7 +38,9 @@ namespace ZES.Tests
             var timestamp = timeline.Now;
 
             var branch = await manager.Branch("test0");
-            await await bus.CommandAsync(new UpdateRoot("Root") { Timestamp = timestamp + (1000 * 60) });
+            var lastTime = timestamp + (1000 * 60);
+            branch.Warp(DateTimeOffset.FromUnixTimeMilliseconds(lastTime).DateTime);
+            await await bus.CommandAsync(new UpdateRoot("Root"));
 
             manager.Reset();
             await manager.Branch("test", timestamp);
@@ -52,12 +56,16 @@ namespace ZES.Tests
 
             manager.Reset();
             await manager.Merge("test0-Root-1");
-            
+
+            graph.Serialise(nameof(CanInsertIntoStream) + "-full");
+
             await manager.DeleteBranch("test");
             await manager.DeleteBranch("test0");
             await manager.DeleteBranch("test0-Root-1");
             
             graph.Serialise(nameof(CanInsertIntoStream));
+            
+            await bus.Equal(new RootInfoQuery("Root"), r => r.UpdatedAt, lastTime);
         }
     }
 }

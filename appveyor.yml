@@ -21,6 +21,7 @@ test_script:
   - cmd: dotnet test --filter SchemaTests ZES.Tests\ZES.Tests.csproj
   - cmd: dotnet test --filter FuncTests ZES.Tests\ZES.Tests.csproj
   - cmd: dotnet test --filter CausalityTests ZES.Tests\ZES.Tests.csproj
+  - cmd: dotnet test --filter RetroactiveTests ZES.Tests\ZES.Tests.csproj
 on_failure:
   #- cmd: 7z a SqlTests.zip Chronos.Tests\bin\Debug\netcoreapp2.0\*.db
   #- cmd: appveyor PushArtifact SqlTests.zip

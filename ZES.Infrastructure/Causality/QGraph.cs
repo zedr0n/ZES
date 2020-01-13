@@ -65,6 +65,23 @@ namespace ZES.Infrastructure.Causality
             _graph.SerializeToGraphML<ICVertex, QEdge<ICVertex>, BidirectionalGraph<ICVertex,  QEdge<ICVertex>>>(filename + ".graphml");
         }
 
+        /// <inheritdoc />
+        public long GetTimestamp(string key, int version)
+        {
+            var stream = _graph.Vertices.OfType<StreamVertex>().SingleOrDefault(v => v.Key == key);
+            if (stream == null)
+                return default(long);
+
+            var events = new List<ICVertex>();
+            GetDependents<StreamEdge>(stream, events);
+            var e = events.OfType<EventVertex>().LastOrDefault(v => v.Version <= version);
+            if (e == null)
+                return default(long);
+
+            DateTimeOffset.TryParse(e.Timestamp, out var timestamp);
+            return timestamp.ToUnixTimeMilliseconds();
+        }
+
         private async Task PopulateStreams()
         {
             var page = await _store.ListStreams();
@@ -356,7 +373,6 @@ namespace ZES.Infrastructure.Causality
             public abstract string Label { get; }
             public virtual string Kind => GraphKind.Causality;
             public string Timestamp { get; }
-
         }
 
         [Serializable]

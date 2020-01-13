@@ -18,5 +18,13 @@ namespace ZES.Interfaces.Causality
         /// </summary>
         /// <param name="filename">GraphML output filename</param>
         void Serialise(string filename = "streams.graphml");
+
+        /// <summary>
+        /// Get timestamp of event in stream
+        /// </summary>
+        /// <param name="key">Stream key</param>
+        /// <param name="version">Event version</param>
+        /// <returns>Event timestamp</returns>
+        long GetTimestamp(string key, int version);
     }
 }

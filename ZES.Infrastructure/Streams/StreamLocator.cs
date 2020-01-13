@@ -48,6 +48,13 @@ namespace ZES.Infrastructure.Streams
         }
 
         /// <inheritdoc />
+        public IStream FindBranched(IStream stream, string timeline)
+        {
+            var aStream = new Stream(stream.Id, stream.Type, ExpectedVersion.NoStream, timeline);
+            return _streams.TryGetValue(aStream.Key, out var theStream) ? theStream : default(IStream);
+        }
+
+        /// <inheritdoc />
         public IStream GetOrAdd(I es, string timeline = "master")
         {
             if (es == null)

@@ -55,6 +55,9 @@ namespace ZES.Tests
 
             await time.Merge("test");
             await bus.IsTrue(new StatsQuery(), s => s.NumberOfRoots == 2);
+
+            var graph = container.GetInstance<IQGraph>();
+            graph.Serialise(nameof(CanMergeTimeline));
         }
 
         [Fact]
@@ -122,6 +125,9 @@ namespace ZES.Tests
             await manager.Branch("test");
             await bus.IsTrue(new RootInfoQuery("TestRoot"), r => r.CreatedAt > 0);
             await bus.IsTrue(new RootInfoQuery("Root"), r => r.CreatedAt > 0 && r.CreatedAt == r.UpdatedAt);
+
+            var graph = container.GetInstance<IQGraph>();
+            graph.Serialise();
         }
 
         [Fact]

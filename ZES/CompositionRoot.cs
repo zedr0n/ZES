@@ -11,6 +11,7 @@ using ZES.Infrastructure.Branching;
 using ZES.Infrastructure.Causality;
 using ZES.Infrastructure.Domain;
 using ZES.Infrastructure.Projections;
+using ZES.Infrastructure.Retroactive;
 using ZES.Infrastructure.Serialization;
 using ZES.Infrastructure.Streams;
 using ZES.Interfaces;
@@ -116,6 +117,7 @@ namespace ZES
                     !c.Consumer.ImplementationType.IsClosedTypeOf(typeof(QueryHandlerDecorator<,>))));
             
             container.Register<IBranchManager, BranchManager>(Lifestyle.Singleton);
+            container.Register<IRetroactive, Retroactive>(Lifestyle.Singleton);
         }
 
         /// <summary>

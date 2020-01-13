@@ -123,7 +123,7 @@ namespace ZES.Interfaces.EventStore
         /// <returns>Stream with given id</returns>
         IStream Find<T>(string id, string timeline = "master")
             where T : I;
-
+        
         /// <summary>
         /// Extract and cache the stream details for event sourced instance
         /// </summary>
@@ -148,5 +148,13 @@ namespace ZES.Interfaces.EventStore
         /// <param name="stream">Steam</param>
         /// <returns>Current version of the stream</returns>
         IStream Find(IStream stream);
+
+        /// <summary>
+        /// Find the branched stream in specified timeline if any
+        /// </summary>
+        /// <param name="stream">Stream descriptor</param>
+        /// <param name="timeline">Branch id</param>
+        /// <returns>Stream descriptor in the the specified timeline</returns>
+        IStream FindBranched(IStream stream, string timeline);
     }
 }

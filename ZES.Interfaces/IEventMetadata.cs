@@ -14,11 +14,11 @@ namespace ZES.Interfaces
         string MessageType { get; }
         
         /// <summary>
-        /// Gets event version in appropriate stream
+        /// Gets or sets gets event version in appropriate stream
         /// </summary>
         /// <value>
         /// Event version in appropriate stream
         /// </value>
-        int Version { get; }
+        int Version { get; set; }
     }
 }

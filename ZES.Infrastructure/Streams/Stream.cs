@@ -141,8 +141,8 @@ namespace ZES.Infrastructure.Streams
             if (Parent == null || Parent?.Version <= ExpectedVersion.NoStream) 
                 return version;
             
-            version -= Parent.Version;
-            return version == 0 ? ExpectedVersion.Any : version;
+            version -= Parent.Version + 1;
+            return version < 0 ? ExpectedVersion.Any : version;
         }
 
         /// <inheritdoc />

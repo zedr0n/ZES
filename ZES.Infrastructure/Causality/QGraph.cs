@@ -82,6 +82,20 @@ namespace ZES.Infrastructure.Causality
             return timestamp.ToUnixTimeMilliseconds();
         }
 
+        /// <inheritdoc />
+        public void DeleteStream(string key)
+        {
+            var vertex = _graph.Vertices.OfType<StreamVertex>().SingleOrDefault(v => v.Key == key);
+            if (vertex == null)
+                return;
+
+            var dependents = new List<ICVertex>();
+            GetDependents<StreamEdge>(vertex, dependents);
+            foreach (var d in dependents)
+                _graph.RemoveVertex(d);
+            _graph.RemoveVertex(vertex);
+        }
+
         private async Task PopulateStreams()
         {
             var page = await _store.ListStreams();
@@ -165,6 +179,18 @@ namespace ZES.Infrastructure.Causality
             
             var previousInStream = _graph.Vertices.OfType<EventVertex>().SingleOrDefault(s =>
                 s.StreamKey == m.StreamId && s.Version == metadata.Version - 1);
+            /*if (previousInStream == null)
+            {
+                var parentStreamVertex = _graph.InEdges(streamVertex).OfType<StreamEdge>().SingleOrDefault()?.Source;
+                if (parentStreamVertex != null)
+                {
+                    var previousStreamDependents = new List<ICVertex>();
+                    GetDependents<StreamEdge>(parentStreamVertex, previousStreamDependents);
+                    previousInStream = previousStreamDependents.OfType<EventVertex>()
+                        .SingleOrDefault(p => p.Version == m.StreamVersion);
+                }
+            }*/
+            
             if (previousInStream != null && !metadata.Idempotent)
                 _graph.AddEdge(new CausalityEdge(previousInStream, vertex));
             if (m.StreamVersion > 0)

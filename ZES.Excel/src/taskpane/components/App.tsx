@@ -150,8 +150,6 @@ export default class App extends React.Component<AppProps, AppState> {
       <div className='ms-welcome'>
         <Header logo='assets/logo-filled.png' title={this.props.title} message='Welcome' />
         <HeroList message='' items={this.state.listItems}>
-          <p className='ms-font-l'>Modify the source files, then click <b>Run</b>.</p>
-          <Button className='ms-welcome__action' buttonType={ButtonType.hero} iconProps={{ iconName: 'ChevronRight' }} onClick={this.click}>Run</Button>
           <Button className='ms-root__action' buttonType={ButtonType.hero} iconProps={{ iconName: 'ChevronRight' }} onClick={this.rootClick}>Create root</Button>
         </HeroList>
       </div>

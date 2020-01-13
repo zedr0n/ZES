@@ -36,5 +36,7 @@ namespace ZES.Interfaces
         /// </summary>
         /// <returns>Main timeline</returns>
         ITimeline Reset();
+
+        Task DeleteBranch(string branchId);
     }
 }

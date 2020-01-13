@@ -39,7 +39,7 @@ namespace ZES.Infrastructure.Retroactive
             var laterEvents = await _eventStore.ReadStream<IEvent>(stream, version).ToList();
             
             var time = _graph.GetTimestamp(stream.Key, version);
-            var branch = await _manager.Branch($"{stream.Id}-{version}", time);
+            var branch = await _manager.Branch($"{stream.Timeline}-{stream.Id}-{version}", time - 1);
 
             var newStream = _streamLocator.FindBranched(stream, branch.Id);
             if (newStream == null)
@@ -57,6 +57,7 @@ namespace ZES.Infrastructure.Retroactive
             foreach (var e in laterEvents)
             {
                 e.Version = version;
+                e.Stream = stream.Key;
                 version++;
             }
 

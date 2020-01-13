@@ -26,5 +26,7 @@ namespace ZES.Interfaces.Causality
         /// <param name="version">Event version</param>
         /// <returns>Event timestamp</returns>
         long GetTimestamp(string key, int version);
+
+        void DeleteStream(string key);
     }
 }

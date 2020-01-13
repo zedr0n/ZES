@@ -51,5 +51,7 @@ namespace ZES.Interfaces.EventStore
         /// <param name="events">Events to append</param>
         /// <returns>Task representing the append operation</returns>
         Task AppendToStream(IStream stream, IEnumerable<IEvent> events = null);
+
+        Task DeleteStream(IStream stream);
     }
 }

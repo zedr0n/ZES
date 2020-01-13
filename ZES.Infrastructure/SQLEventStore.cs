@@ -144,6 +144,12 @@ namespace ZES.Infrastructure
             await UpdateGraph(events);
         }
 
+        /// <inheritdoc />
+        public async Task DeleteStream(IStream stream)
+        {
+            await _streamStore.DeleteStream(stream.Key);
+        }
+
         private async Task UpdateGraph(IEnumerable<IEvent> events)
         {
             if (events == null)

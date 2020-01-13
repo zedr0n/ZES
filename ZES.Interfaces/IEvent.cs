@@ -14,11 +14,11 @@ namespace ZES.Interfaces
         string EventType { get; }
 
         /// <summary>
-        /// Gets originating stream key
+        /// Gets or sets gets originating stream key
         /// </summary>
         /// <value>
         /// Originating stream key
         /// </value>
-        string Stream { get;  }
+        string Stream { get; set; }
     }
 }

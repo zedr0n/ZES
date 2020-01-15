@@ -52,6 +52,19 @@ namespace ZES.Interfaces.EventStore
         /// <returns>Task representing the append operation</returns>
         Task AppendToStream(IStream stream, IEnumerable<IEvent> events = null);
 
+        /// <summary>
+        /// Delete the stream
+        /// </summary>
+        /// <param name="stream">Stream descriptor</param>
+        /// <returns>Task completes when the stream is deleted</returns>
         Task DeleteStream(IStream stream);
+
+        /// <summary>
+        /// Trim the stream removing events after the version
+        /// </summary>
+        /// <param name="stream">Stream descriptor</param>
+        /// <param name="version">Last version to keep</param>
+        /// <returns>Task completes when the stream is trimmed</returns>
+        Task TrimStream(IStream stream, int version);
     }
 }

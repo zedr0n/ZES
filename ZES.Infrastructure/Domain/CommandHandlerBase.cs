@@ -2,6 +2,7 @@ using System;
 using System.Reflection;
 using System.Threading.Tasks;
 using ZES.Infrastructure.Attributes;
+using ZES.Infrastructure.Utils;
 using ZES.Interfaces.Domain;
 
 namespace ZES.Infrastructure.Domain
@@ -26,7 +27,13 @@ namespace ZES.Infrastructure.Domain
         public async Task Handle(TCommand iCommand)
         {
             var root = await _repository.Find<TRoot>(iCommand.Target);
-            if ( root == null )
+            if (iCommand.Timestamp < root.Timestamp)
+            {
+                throw new InvalidOperationException(
+                    $"{typeof(TCommand).Name} command ({iCommand.Timestamp.ToDateString()}) updating the past of the aggregate {typeof(TRoot).Name}:{iCommand.Target} ({root.Timestamp.ToDateString()}) ");
+            }
+
+            if (root == null)
                 throw new ArgumentNullException(); 
             
             Act(root, iCommand);

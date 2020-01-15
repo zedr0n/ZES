@@ -1,5 +1,6 @@
 using System;
 using System.Reactive.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
 using Xunit.Abstractions;
@@ -20,6 +21,27 @@ namespace ZES.Tests
         public RetroactiveTests(ITestOutputHelper outputHelper) 
             : base(outputHelper)
         {
+        }
+
+        [Fact]
+        public async void CanTrimStream()
+        {
+            var container = CreateContainer();
+            var bus = container.GetInstance<IBus>();
+            var streamLocator = container.GetInstance<IStreamLocator<IAggregate>>();
+            var retroactive = container.GetInstance<IRetroactive>();
+
+            await await bus.CommandAsync(new CreateRoot("Root"));
+            await bus.IsTrue(new RootInfoQuery("Root"), c => c.CreatedAt == c.UpdatedAt);
+            await await bus.CommandAsync(new UpdateRoot("Root"));
+            await bus.IsTrue(new RootInfoQuery("Root"), c => c.CreatedAt < c.UpdatedAt);
+            
+            var stream = streamLocator.Find<Root>("Root");
+            await retroactive.TrimStream(stream, 0);
+            await bus.IsTrue(new RootInfoQuery("Root"), c => c.CreatedAt == c.UpdatedAt);
+
+            stream = streamLocator.Find<Root>("Root");
+            Assert.Equal(0, stream.Version);
         }
 
         [Fact]
@@ -54,6 +76,9 @@ namespace ZES.Tests
             stream = streamLocator.Find<Root>("Root", branch.Id);
             await retroactive.InsertIntoStream(stream, 1, new[] { e });
 
+            await manager.Branch("test0");
+            await manager.Merge("test0-Root-1");
+            
             manager.Reset();
             await manager.Merge("test0-Root-1");
 

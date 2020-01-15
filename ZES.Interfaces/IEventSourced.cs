@@ -22,7 +22,12 @@ namespace ZES.Interfaces
         /// Event sourced version 
         /// </value>
         int Version { get; }
-        
+
+        /// <summary>
+        /// Gets the latest update timestamp 
+        /// </summary>
+        long Timestamp { get; }
+
         /// <summary>
         /// Gets events not yet committed 
         /// </summary>

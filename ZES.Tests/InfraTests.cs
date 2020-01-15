@@ -164,8 +164,8 @@ namespace ZES.Tests
 
             var record = new CreateRecord("Root");
             await await bus.CommandAsync(record);
-            
-            var time = (DateTimeOffset)new DateTime(2019, 1, 1, 0, 0, 0, DateTimeKind.Utc); 
+
+            var time = (DateTimeOffset)DateTime.Now.AddMinutes(10); // (DateTimeOffset)new DateTime(2019, 1, 1, 0, 0, 0, DateTimeKind.Utc); 
             
             var command = new AddRecord("Root", 1) { Timestamp = time.ToUnixTimeMilliseconds() };
             await await bus.CommandAsync(command);

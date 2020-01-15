@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using ZES.Interfaces;
 
 namespace ZES.Infrastructure.Domain
@@ -15,6 +16,9 @@ namespace ZES.Infrastructure.Domain
 
         /// <inheritdoc />
         public int Version { get; private set; } = -1;
+
+        /// <inheritdoc />
+        public long Timestamp { get; private set; }
 
         /// <summary>
         /// Static event sourced instance factory
@@ -73,8 +77,11 @@ namespace ZES.Infrastructure.Domain
         public virtual void LoadFrom<T>(IEnumerable<IEvent> pastEvents)
             where T : class, IEventSourced
         {
-            foreach (var e in pastEvents)
+            var enumerable = pastEvents.ToList();
+            foreach (var e in enumerable)
                 When(e);
+
+            Timestamp = enumerable.Max(e => e.Timestamp);
 
             ClearUncommittedEvents();
         }

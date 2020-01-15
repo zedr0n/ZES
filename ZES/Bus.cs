@@ -98,6 +98,11 @@ namespace ZES
                 
                 return block.ToDataflow();
             }
+
+            protected override void CleanUp(Exception dataflowException)
+            {
+                base.CleanUp(dataflowException);
+            }
         }
     }
 }

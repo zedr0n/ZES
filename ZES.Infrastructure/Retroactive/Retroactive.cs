@@ -3,10 +3,12 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reactive.Linq;
 using System.Threading.Tasks;
+using ZES.Infrastructure.Alerts;
 using ZES.Interfaces;
 using ZES.Interfaces.Causality;
 using ZES.Interfaces.Domain;
 using ZES.Interfaces.EventStore;
+using ZES.Interfaces.Pipes;
 
 namespace ZES.Infrastructure.Retroactive
 {
@@ -17,6 +19,7 @@ namespace ZES.Infrastructure.Retroactive
         private readonly IBranchManager _manager;
         private readonly IQGraph _graph;
         private readonly IStreamLocator<IAggregate> _streamLocator;
+        private readonly IMessageQueue _messageQueue;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="Retroactive"/> class.
@@ -25,12 +28,14 @@ namespace ZES.Infrastructure.Retroactive
         /// <param name="graph">Graph</param>
         /// <param name="manager">Branch manager</param>
         /// <param name="streamLocator">Stream locator</param>
-        public Retroactive(IEventStore<IAggregate> eventStore, IQGraph graph, IBranchManager manager, IStreamLocator<IAggregate> streamLocator)
+        /// <param name="messageQueue">Message queue</param>
+        public Retroactive(IEventStore<IAggregate> eventStore, IQGraph graph, IBranchManager manager, IStreamLocator<IAggregate> streamLocator, IMessageQueue messageQueue)
         {
             _eventStore = eventStore;
             _graph = graph;
             _manager = manager;
             _streamLocator = streamLocator;
+            _messageQueue = messageQueue;
         }
 
         /// <inheritdoc />
@@ -63,6 +68,13 @@ namespace ZES.Infrastructure.Retroactive
 
             newStream = _streamLocator.Find(newStream);
             await _eventStore.AppendToStream(newStream, laterEvents);
+        }
+
+        /// <inheritdoc />
+        public async Task TrimStream(IStream stream, int version)
+        {
+            await _eventStore.TrimStream(stream, version);
+            _messageQueue.Alert(new OnTimelineChange());
         }
     }
 }

@@ -28,8 +28,9 @@ namespace ZES.Interfaces
         /// Merges the timeline into master
         /// </summary>
         /// <param name="branchId">Branch to merge</param>
+        /// <param name="force">Force the merge removing the future events</param>
         /// <returns>Master timeline</returns>
-        Task Merge(string branchId);
+        Task Merge(string branchId, bool force = false);
 
         /// <summary>
         /// Reset the timeline

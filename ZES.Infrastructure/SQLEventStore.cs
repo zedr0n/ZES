@@ -6,6 +6,7 @@ using System.Reactive.Subjects;
 using System.Threading.Tasks;
 using SqlStreamStore;
 using SqlStreamStore.Streams;
+using ZES.Infrastructure.Alerts;
 using ZES.Infrastructure.Domain;
 using ZES.Infrastructure.Serialization;
 using ZES.Infrastructure.Utils;
@@ -148,6 +149,19 @@ namespace ZES.Infrastructure
         public async Task DeleteStream(IStream stream)
         {
             await _streamStore.DeleteStream(stream.Key);
+        }
+
+        /// <inheritdoc />
+        public async Task TrimStream(IStream stream, int version)
+        {
+            var events = await ReadStream<IEvent>(stream, version + 1).ToList();
+            foreach (var e in events.Reverse())
+                await _streamStore.DeleteMessage(stream.Key, e.MessageId);
+
+            stream.Version = version;
+            var meta = await _streamStore.GetStreamMetadata(stream.Key);
+            await _streamStore.SetStreamMetadata(stream.Key, meta.MetadataStreamVersion, metadataJson: _serializer.EncodeStreamMetadata(stream));
+            _messageQueue.Alert(new InvalidateProjections());
         }
 
         private async Task UpdateGraph(IEnumerable<IEvent> events)

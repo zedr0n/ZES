@@ -60,7 +60,9 @@ namespace ZES.Tests
             await await bus.CommandAsync(new CreateRoot("Root"));
             await await bus.CommandAsync(new RetroactiveCommand<UpdateRoot>(new UpdateRoot("Root"), lastTime));
 
-            await await bus.CommandAsync(new RetroactiveCommand<UpdateRoot>(new UpdateRoot("Root"), midTime));
+            var task = await bus.CommandAsync(new RetroactiveCommand<UpdateRoot>(new UpdateRoot("Root"), midTime));
+            await await bus.CommandAsync(new CreateRecord("Record"));
+            await task;
             graph.Serialise(nameof(CanProcessRetroactiveCommand));
         }
 

@@ -16,12 +16,12 @@ namespace ZES.Interfaces
         Guid MessageId { get; }
 
         /// <summary>
-        /// Gets id of a message in a causality relationship with this message
+        /// Gets or sets gets id of a message in a causality relationship with this message
         /// </summary>
         /// <value>
         /// Id of a message in a causality relationship with this message
         /// </value>
-        Guid AncestorId { get; }
+        Guid AncestorId { get; set; }
 
         /// <summary>
         /// Gets or sets a value indicating whether gets a value indicating whether the message is idempotent
@@ -32,11 +32,11 @@ namespace ZES.Interfaces
         bool Idempotent { get; set; }
 
         /// <summary>
-        /// Gets event unix epoch timestamp
+        /// Gets or sets gets event unix epoch timestamp
         /// </summary>
         /// <value>
         /// Event unix epoch timestamp
         /// </value>
-        long Timestamp { get; }
+        long Timestamp { get; set; }
     }
 }

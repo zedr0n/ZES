@@ -72,5 +72,8 @@ namespace ZES.Infrastructure.Domain
                 _errorLog.Add(e);
             }
         }
+
+        /// <inheritdoc />
+        public async Task<bool> IsRetroactive(T iCommand) => await _handler.IsRetroactive(iCommand);
     }
 }

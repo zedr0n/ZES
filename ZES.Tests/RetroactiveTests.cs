@@ -4,6 +4,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
 using Xunit.Abstractions;
+using ZES.Infrastructure.Domain;
 using ZES.Infrastructure.Retroactive;
 using ZES.Interfaces;
 using ZES.Interfaces.Causality;
@@ -45,6 +46,25 @@ namespace ZES.Tests
         }
 
         [Fact]
+        public async void CanProcessRetroactiveCommand()
+        {
+            var container = CreateContainer();
+            var bus = container.GetInstance<IBus>();
+            var timeline = container.GetInstance<ITimeline>();
+            var graph = container.GetInstance<IQGraph>();
+            
+            var timestamp = timeline.Now;
+            var lastTime = timestamp + (60 * 1000);
+            var midTime = (timestamp + lastTime) / 2;
+
+            await await bus.CommandAsync(new CreateRoot("Root"));
+            await await bus.CommandAsync(new RetroactiveCommand<UpdateRoot>(new UpdateRoot("Root"), lastTime));
+
+            await await bus.CommandAsync(new RetroactiveCommand<UpdateRoot>(new UpdateRoot("Root"), midTime));
+            graph.Serialise(nameof(CanProcessRetroactiveCommand));
+        }
+
+        [Fact]
         public async void CanInsertIntoStream()
         {
             var container = CreateContainer();
@@ -61,7 +81,7 @@ namespace ZES.Tests
             var timestamp = timeline.Now;
             var lastTime = timestamp + (60 * 1000);
 
-            await await bus.CommandAsync(new UpdateRoot("Root", lastTime));
+            await await bus.CommandAsync(new RetroactiveCommand<UpdateRoot>(new UpdateRoot("Root"), lastTime));
             await bus.Equal(new RootInfoQuery("Root"), r => r.UpdatedAt, lastTime);
 
             await manager.Branch("test", timestamp);
@@ -75,6 +95,8 @@ namespace ZES.Tests
             await retroactive.InsertIntoStream(stream, 1, new[] { e });
 
             await bus.Equal(new RootInfoQuery("Root"), r => r.UpdatedAt, lastTime);
+
+            await bus.Equal(new HistoricalQuery<RootInfoQuery, RootInfo>(new RootInfoQuery("Root"), e.Timestamp), r => r.UpdatedAt, e.Timestamp);
             graph.Serialise(nameof(CanInsertIntoStream));
         }
         
@@ -123,6 +145,7 @@ namespace ZES.Tests
             graph.Serialise(nameof(CanInsertIntoStreamMultipleBranch));
             
             await bus.Equal(new RootInfoQuery("Root"), r => r.UpdatedAt, lastTime);
+            await bus.Equal(new HistoricalQuery<RootInfoQuery, RootInfo>(new RootInfoQuery("Root"), e.Timestamp), r => r.UpdatedAt, e.Timestamp);
         }
     }
 }

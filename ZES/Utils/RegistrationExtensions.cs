@@ -128,7 +128,18 @@ namespace ZES.Utils
             {
                 var iHandler = typeof(ICommandHandler<>).MakeGenericType(command);
                 var handler = assembly.GetTypesFromInterface(iHandler).SingleOrDefault();
-                c.Register(iHandler, handler, Lifestyle.Singleton);
+                if (handler == null)
+                    return;
+
+                var rootType = handler.GetInterfaces().SingleOrDefault(i => i.GetGenericArguments().Length > 1)?.GetGenericArguments()[1];
+                var iRetroactiveCommand = typeof(RetroactiveCommand<>).MakeGenericType(command);
+                var iRetroactiveCommandHandler = typeof(ICommandHandler<>).MakeGenericType(iRetroactiveCommand);
+
+                var retroactiveCommandHandler =
+                    typeof(RetroactiveCommandHandler<,>).MakeGenericType(command, rootType);
+
+                c.RegisterConditional(iHandler, handler, Lifestyle.Singleton, x => !x.Handled);
+                c.RegisterConditional(iRetroactiveCommandHandler, retroactiveCommandHandler, Lifestyle.Singleton, x => !x.Handled);
             }
 
             var mutations = assembly.GetTypesFromInterface(typeof(IGraphQlMutation));

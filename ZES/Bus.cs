@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Concurrent;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Threading.Tasks.Dataflow;
@@ -19,6 +20,9 @@ namespace ZES
         private readonly CommandDispatcher _commandDispatcher;
         private readonly ILog _log;
 
+        private readonly ConcurrentQueue<Tracked<ICommand>> _queuedCommands = new ConcurrentQueue<Tracked<ICommand>>();
+        private bool _paused;
+
         /// <summary>
         /// Initializes a new instance of the <see cref="Bus"/> class.
         /// </summary>
@@ -37,7 +41,11 @@ namespace ZES
         public async Task<Task> CommandAsync(ICommand command)
         {
             var tracked = new Tracked<ICommand>(command);
-            await _commandDispatcher.SendAsync(tracked);
+            if (_paused)
+                _queuedCommands.Enqueue(tracked);
+            else
+                await _commandDispatcher.SendAsync(tracked);
+
             return tracked.Task;
         }
 
@@ -52,7 +60,24 @@ namespace ZES
 
             return default(TResult);            
         }
-        
+
+        /// <inheritdoc />
+        public Task Pause()
+        {
+            _paused = true;
+            return Task.CompletedTask;
+        }
+
+        /// <inheritdoc />
+        public async Task Unpause()
+        {
+            if (!_paused)
+                return;
+
+            while (_queuedCommands.TryDequeue(out var tracked))
+                await _commandDispatcher.SendAsync(tracked);
+        }
+
         private object GetInstance(Type type)
         {
             try

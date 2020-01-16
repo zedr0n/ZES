@@ -22,9 +22,16 @@ namespace ZES.Infrastructure.Domain
         {
             _repository = repository;
         }
+
+        /// <inheritdoc />
+        public async Task<bool> IsRetroactive(TCommand iCommand)
+        {
+            var root = await _repository.Find<TRoot>(iCommand.Target);
+            return iCommand.Timestamp < root.Timestamp;
+        }
         
         /// <inheritdoc />
-        public async Task Handle(TCommand iCommand)
+        public virtual async Task Handle(TCommand iCommand)
         {
             var root = await _repository.Find<TRoot>(iCommand.Target);
             if (iCommand.Timestamp < root.Timestamp)
@@ -37,6 +44,7 @@ namespace ZES.Infrastructure.Domain
                 throw new ArgumentNullException(); 
             
             Act(root, iCommand);
+            root.TimestampEvents(iCommand.Timestamp);
             if (iCommand.GetType().GetCustomAttribute<IdempotentAttribute>() != null)
                 root.MakeIdempotent();
             

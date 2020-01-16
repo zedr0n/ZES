@@ -1,3 +1,4 @@
+using System;
 using System.Threading.Tasks;
 using ZES.Interfaces.Domain;
 
@@ -25,7 +26,13 @@ namespace ZES.Infrastructure.Domain
             var root = Create(iCommand);
             await _repository.Save(root, iCommand.MessageId);
         }
-        
+
+        /// <inheritdoc />
+        public Task<bool> IsRetroactive(TCommand iCommand)
+        {
+            throw new InvalidOperationException("Create commands cannot be applied retroactively");
+        }
+
         /// <inheritdoc />
         public async Task Handle(ICommand command)
         {

@@ -45,6 +45,16 @@ namespace ZES.Infrastructure.Domain
         }
 
         /// <inheritdoc />
+        public void TimestampEvents(long timestamp)
+        {
+            lock (_changes)
+            {
+                foreach (var c in _changes)
+                    c.Timestamp = timestamp;
+            }
+        }
+
+        /// <inheritdoc />
         public void MakeIdempotent()
         {
             lock (_changes)

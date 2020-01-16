@@ -46,5 +46,11 @@ namespace ZES.Interfaces
         /// Make current changes idempotent
         /// </summary>
         void MakeIdempotent();
+
+        /// <summary>
+        /// Timestamp the uncommitted events
+        /// </summary>
+        /// <param name="timestamp">Unix timestamp</param>
+        void TimestampEvents(long timestamp);
     }
 }

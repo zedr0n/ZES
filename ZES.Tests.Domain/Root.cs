@@ -27,12 +27,9 @@ namespace ZES.Tests.Domain
         
         public long UpdatedAt { get; private set; }
 
-        public void Update(long timestamp = default(long))
+        public void Update()
         {
-            var e = new RootUpdated(Id);
-            if (timestamp != default(long))
-                e.Timestamp = timestamp;
-            When(e);
+            When(new RootUpdated(Id));
         }
 
         private void ApplyEvent(RootUpdated e)

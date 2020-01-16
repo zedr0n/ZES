@@ -73,6 +73,7 @@ namespace ZES.Infrastructure.Branching
             foreach (var s in streams)
             {
                 await _eventStore.DeleteStream(s);
+                _log.Info($"Deleted stream {s.Key}");
                 _graph.DeleteStream(s.Key);
             }
             

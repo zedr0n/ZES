@@ -8,6 +8,6 @@ namespace ZES.Tests.Domain.Commands
         public UpdateRootHandler(IEsRepository<IAggregate> repository)
             : base(repository) { }
 
-        protected override void Act(Root root, UpdateRoot command) => root.Update(command.Timestamp); 
+        protected override void Act(Root root, UpdateRoot command) => root.Update(); 
     }
 }

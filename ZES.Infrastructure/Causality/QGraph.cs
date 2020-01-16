@@ -275,10 +275,10 @@ namespace ZES.Infrastructure.Causality
             var vertex = new CommandVertex(metadata.MessageId, metadata.AncestorId, metadata.MessageType, metadata.Timestamp);
             _graph.AddVertex(vertex);
 
-            var dependents = _graph.Vertices.OfType<EventVertex>().Where(v => v.AncestorId == m.MessageId);
+            var dependents = _graph.Vertices.OfType<CausalityVertex>().Where(v => v.AncestorId == m.MessageId);
             foreach (var d in dependents)
             {
-                if (!_graph.Edges.OfType<CommandEdge>().Any( e => e.Source?.MessageId == m.MessageId && e.Target.MessageId == d.MessageId ))
+                if (!_graph.Edges.OfType<CommandEdge>().Any(e => e.Source?.MessageId == m.MessageId && e.Target.MessageId == d.MessageId))
                     _graph.AddEdge(new CommandEdge(vertex, d));
             }
 

@@ -41,10 +41,13 @@ namespace ZES.Infrastructure.Retroactive
         /// <inheritdoc />
         public async Task InsertIntoStream(IStream stream, int version, IEnumerable<IEvent> events)
         {
+            var origVersion = version;
+            var currentBranch = _manager.ActiveBranch;
             var laterEvents = await _eventStore.ReadStream<IEvent>(stream, version).ToList();
             
             var time = _graph.GetTimestamp(stream.Key, version);
-            var branch = await _manager.Branch($"{stream.Timeline}-{stream.Id}-{version}", time - 1);
+            var tempStreamId = $"{stream.Timeline}-{stream.Id}-{version}";
+            var branch = await _manager.Branch(tempStreamId, time - 1);
 
             var newStream = _streamLocator.FindBranched(stream, branch.Id);
             if (newStream == null)
@@ -68,12 +71,20 @@ namespace ZES.Infrastructure.Retroactive
 
             newStream = _streamLocator.Find(newStream);
             await _eventStore.AppendToStream(newStream, laterEvents);
+
+            await _manager.Branch(currentBranch);
+            await TrimStream(stream, origVersion - 1);
+            _graph.Serialise("trim");
+
+            await _manager.Merge(tempStreamId);
+            await _manager.DeleteBranch(tempStreamId);
         }
 
         /// <inheritdoc />
         public async Task TrimStream(IStream stream, int version)
         {
             await _eventStore.TrimStream(stream, version);
+            _graph.TrimStream(stream.Key, version);
             _messageQueue.Alert(new OnTimelineChange());
         }
     }

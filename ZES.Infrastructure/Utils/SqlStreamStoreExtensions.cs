@@ -31,12 +31,18 @@ namespace ZES.Infrastructure.Utils
             if (stream == null)
                 return new Stream(key);
 
+            var count = await streamStore.DeletedCount(key);
+            stream.AddDeleted(count);
+
             var parent = stream.Parent;
             while (parent != null && parent.Version > ExpectedVersion.EmptyStream)
             {
                 var parentMetadata = await streamStore.GetStreamMetadata(parent.Key);
                 if (parentMetadata == null)
                     return null;
+
+                count = await streamStore.DeletedCount(parent.Key);
+                parent.AddDeleted(count);
 
                 var grandParent = serializer.DecodeStreamMetadata(parentMetadata.MetadataJson)?.Parent; 
                 
@@ -46,7 +52,7 @@ namespace ZES.Infrastructure.Utils
 
             return stream;
         }
-
+        
         public static async Task<int> LastPosition(this IStreamStore streamStore, string key)
         {
             var page = await streamStore.ReadStreamBackwards(key, StreamVersion.End, 1);
@@ -57,6 +63,19 @@ namespace ZES.Infrastructure.Utils
                 return page.Messages.Single().StreamVersion;
             
             return ExpectedVersion.EmptyStream;
+        }
+
+        private static async Task<int> DeletedCount(this IStreamStore streamStore, string key)
+        {
+            var deleted = 0;
+            var page = await streamStore.ReadStreamForwards("$deleted", 0, Configuration.BatchSize);
+            while (page.Messages.Length > 0)
+            {
+                deleted += page.Messages.Count(m => m.StreamId == key);
+                page = await page.ReadNext();
+            }
+
+            return deleted;
         }
     }
 }

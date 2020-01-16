@@ -27,6 +27,17 @@ namespace ZES.Interfaces.Causality
         /// <returns>Event timestamp</returns>
         long GetTimestamp(string key, int version);
 
+        /// <summary>
+        /// Remove stream from graph
+        /// </summary>
+        /// <param name="key">Stream key</param>
         void DeleteStream(string key);
+
+        /// <summary>
+        /// Trim stream after version
+        /// </summary>
+        /// <param name="key">Stream key</param>
+        /// <param name="version">Last version to keep</param>
+        void TrimStream(string key, int version);
     }
 }

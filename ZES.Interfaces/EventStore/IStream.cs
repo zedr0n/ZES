@@ -105,6 +105,12 @@ namespace ZES.Interfaces.EventStore
         /// <param name="count">Event count</param>
         /// <returns>Number of events</returns>
         int Count(int start, int count = -1);
+
+        /// <summary>
+        /// Register the deletion of an event
+        /// </summary>
+        /// <param name="count">Number of deleted events</param>
+        void AddDeleted(int count);
     }
     
     /// <summary>

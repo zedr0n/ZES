@@ -44,6 +44,7 @@ namespace ZES.Infrastructure.Branching
         /// <param name="messageQueue">Message queue</param>
         /// <param name="eventStore">Event store</param>
         /// <param name="streamLocator">Stream locator</param>
+        /// <param name="graph">Graph</param>
         public BranchManager(
             ILog log, 
             ITimeline activeTimeline,
@@ -74,6 +75,7 @@ namespace ZES.Infrastructure.Branching
                 await _eventStore.DeleteStream(s);
                 _graph.DeleteStream(s.Key);
             }
+            
             _messageQueue.Alert(new InvalidateProjections());
         }
 
@@ -114,7 +116,7 @@ namespace ZES.Infrastructure.Branching
         }
 
         /// <inheritdoc />
-        public async Task Merge(string branchId, bool force)
+        public async Task Merge(string branchId)
         {
             if (!_branches.TryGetValue(branchId, out var branch))
             {
@@ -134,7 +136,7 @@ namespace ZES.Infrastructure.Branching
                 return;
             }*/
             
-            var mergeFlow = new MergeFlow(_activeTimeline, _eventStore, _streamLocator, force);
+            var mergeFlow = new MergeFlow(_activeTimeline, _eventStore, _streamLocator);
 
             _eventStore.ListStreams(branchId).Subscribe(mergeFlow.InputBlock.AsObserver());
             
@@ -184,20 +186,15 @@ namespace ZES.Infrastructure.Branching
         private class MergeFlow : Dataflow<IStream>
         {
             private readonly ActionBlock<IStream> _inputBlock;
-            private readonly bool _force;
             private int _numberOfEvents;
             private int _numberOfStreams;
             
-            public MergeFlow(ITimeline currentBranch, IEventStore<IAggregate> eventStore, IStreamLocator<IAggregate> streamLocator, bool force) 
+            public MergeFlow(ITimeline currentBranch, IEventStore<IAggregate> eventStore, IStreamLocator<IAggregate> streamLocator) 
                 : base(DataflowOptions.Default)
             {
-                _force = force;
                 _inputBlock = new ActionBlock<IStream>(
                     async s =>
                     {
-                        // if (currentBranch != null && s.Parent != null && s.Parent.Timeline != currentBranch.Id && s.Parent.Version > ExpectedVersion.EmptyStream)
-                        //    return;
-
                         var version = ExpectedVersion.EmptyStream;
                         var parentStream = s.Branch(currentBranch?.Id, ExpectedVersion.EmptyStream);
                         var parent = s.Parent;
@@ -214,15 +211,8 @@ namespace ZES.Infrastructure.Branching
                                     .ReadStream<IEvent>(s, parent.Version + 1, version - parent.Version).Select(e => e.MessageId).ToList();
                                 if (theseEvents.Zip(thoseEvents, (e1, e2) => (e1, e2)).Any(x => x.Item1 != x.Item2))
                                 {
-                                    if (!_force)
-                                    {
-                                        throw new InvalidOperationException(
-                                            $"{currentBranch?.Id} timeline has moved on in the meantime, aborting...( {version} > {parent.Version} )");
-                                    }
-                                    else
-                                    {
-                                        
-                                    }
+                                    throw new InvalidOperationException(
+                                        $"{currentBranch?.Id} timeline has moved on in the meantime, aborting...( {version} > {parent.Version} )");
                                 }
 
                                 return;
@@ -230,6 +220,9 @@ namespace ZES.Infrastructure.Branching
 
                             if (s.Version == version)
                                 return;
+                            
+                            if (parentStream.Timeline == currentBranch?.Id)
+                                break;
 
                             parent = parent.Parent;
                         }

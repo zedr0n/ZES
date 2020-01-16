@@ -157,8 +157,11 @@ namespace ZES.Infrastructure
             var events = await ReadStream<IEvent>(stream, version + 1).ToList();
             foreach (var e in events.Reverse())
                 await _streamStore.DeleteMessage(stream.Key, e.MessageId);
+            
+            _log.Info($"Deleted {events.Count} {(events.Count > 1 ? "events" : "event")} from {stream.Key}");
 
             stream.Version = version;
+            stream.AddDeleted(events.Count);
             var meta = await _streamStore.GetStreamMetadata(stream.Key);
             await _streamStore.SetStreamMetadata(stream.Key, meta.MetadataStreamVersion, metadataJson: _serializer.EncodeStreamMetadata(stream));
             _messageQueue.Alert(new InvalidateProjections());

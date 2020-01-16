@@ -2,6 +2,9 @@ using System;
 
 namespace ZES.Infrastructure.Utils
 {
+    /// <summary>
+    /// Date extensions
+    /// </summary>
     public static class DateExtensions
     {
         /// <summary>

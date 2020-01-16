@@ -51,6 +51,40 @@ namespace ZES.Tests
             var bus = container.GetInstance<IBus>();
             var timeline = container.GetInstance<ITimeline>();
             var manager = container.GetInstance<IBranchManager>();
+            var streamLocator = container.GetInstance<IStreamLocator<IAggregate>>();
+            var eventStore = container.GetInstance<IEventStore<IAggregate>>();
+            var retroactive = container.GetInstance<IRetroactive>();
+            var graph = container.GetInstance<IQGraph>();
+
+            await await bus.CommandAsync(new CreateRoot("Root"));
+            
+            var timestamp = timeline.Now;
+            var lastTime = timestamp + (60 * 1000);
+
+            await await bus.CommandAsync(new UpdateRoot("Root", lastTime));
+            await bus.Equal(new RootInfoQuery("Root"), r => r.UpdatedAt, lastTime);
+
+            await manager.Branch("test", timestamp);
+            await await bus.CommandAsync(new UpdateRoot("Root"));
+            var stream = streamLocator.Find<Root>("Root", timeline.Id);
+
+            var e = await eventStore.ReadStream<IEvent>(stream, 0).LastAsync();
+
+            manager.Reset();
+            stream = streamLocator.Find<Root>("Root", timeline.Id);
+            await retroactive.InsertIntoStream(stream, 1, new[] { e });
+
+            await bus.Equal(new RootInfoQuery("Root"), r => r.UpdatedAt, lastTime);
+            graph.Serialise(nameof(CanInsertIntoStream));
+        }
+        
+        [Fact]
+        public async void CanInsertIntoStreamMultipleBranch()
+        {
+            var container = CreateContainer();
+            var bus = container.GetInstance<IBus>();
+            var timeline = container.GetInstance<ITimeline>();
+            var manager = container.GetInstance<IBranchManager>();
             var eventStore = container.GetInstance<IEventStore<IAggregate>>();
             var streamLocator = container.GetInstance<IStreamLocator<IAggregate>>();
             var retroactive = container.GetInstance<IRetroactive>();
@@ -75,20 +109,18 @@ namespace ZES.Tests
             await manager.Branch("test0");
             stream = streamLocator.Find<Root>("Root", branch.Id);
             await retroactive.InsertIntoStream(stream, 1, new[] { e });
-
-            await manager.Branch("test0");
-            await manager.Merge("test0-Root-1");
             
-            manager.Reset();
-            await manager.Merge("test0-Root-1");
+            graph.Serialise(nameof(CanInsertIntoStreamMultipleBranch) + "-test0");
 
-            graph.Serialise(nameof(CanInsertIntoStream) + "-full");
+            manager.Reset();
+            await manager.Merge("test0");
+
+            graph.Serialise(nameof(CanInsertIntoStreamMultipleBranch) + "-full");
 
             await manager.DeleteBranch("test");
             await manager.DeleteBranch("test0");
-            await manager.DeleteBranch("test0-Root-1");
             
-            graph.Serialise(nameof(CanInsertIntoStream));
+            graph.Serialise(nameof(CanInsertIntoStreamMultipleBranch));
             
             await bus.Equal(new RootInfoQuery("Root"), r => r.UpdatedAt, lastTime);
         }

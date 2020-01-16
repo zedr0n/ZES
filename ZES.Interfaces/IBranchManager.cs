@@ -28,9 +28,8 @@ namespace ZES.Interfaces
         /// Merges the timeline into master
         /// </summary>
         /// <param name="branchId">Branch to merge</param>
-        /// <param name="force">Force the merge removing the future events</param>
         /// <returns>Master timeline</returns>
-        Task Merge(string branchId, bool force = false);
+        Task Merge(string branchId);
 
         /// <summary>
         /// Reset the timeline
@@ -38,6 +37,11 @@ namespace ZES.Interfaces
         /// <returns>Main timeline</returns>
         ITimeline Reset();
 
+        /// <summary>
+        /// Remove branch completely
+        /// </summary>
+        /// <param name="branchId">Branch id</param>
+        /// <returns>Task completes when branch is deleted</returns>
         Task DeleteBranch(string branchId);
     }
 }

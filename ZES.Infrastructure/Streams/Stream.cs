@@ -13,6 +13,7 @@ namespace ZES.Infrastructure.Streams
         private readonly string _type;
         private readonly List<IStream> _ancestors = new List<IStream>();
         private int _version;
+        private int _deleted;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="Stream"/> class.
@@ -133,11 +134,18 @@ namespace ZES.Infrastructure.Streams
             
             return end - start + 1;
         }
-        
+
+        /// <inheritdoc />
+        public void AddDeleted(int count)
+        {
+            _deleted += count;
+        }
+
         /// <inheritdoc />
         public int AppendPosition()
         {
             var version = Version;
+            version += _deleted;
             if (Parent == null || Parent?.Version <= ExpectedVersion.NoStream) 
                 return version;
             

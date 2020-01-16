@@ -8,7 +8,11 @@ namespace ZES.Tests.Domain.Commands
     public class UpdateRoot : Command   
     {
         public UpdateRoot() { }
-        public UpdateRoot(string target) 
-            : base(target) { }
+
+        public UpdateRoot(string target, long timestamp = default(long))
+            : base(target)
+        {
+            Timestamp = timestamp;
+        }
     }
 }

@@ -74,8 +74,8 @@ namespace ZES.Infrastructure.Retroactive
 
             await _manager.Branch(currentBranch);
             await TrimStream(stream, origVersion - 1);
-            _graph.Serialise("trim");
-
+            
+            // _graph.Serialise("trim");
             await _manager.Merge(tempStreamId);
             await _manager.DeleteBranch(tempStreamId);
         }

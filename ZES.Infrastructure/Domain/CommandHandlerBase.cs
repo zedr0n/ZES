@@ -31,7 +31,7 @@ namespace ZES.Infrastructure.Domain
         }
         
         /// <inheritdoc />
-        public virtual async Task Handle(TCommand command)
+        public async Task Handle(TCommand command)
         {
             var root = await _repository.Find<TRoot>(command.Target);
             if (command.Timestamp < root.Timestamp)

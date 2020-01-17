@@ -16,12 +16,12 @@ namespace ZES.Interfaces
         Guid MessageId { get; }
 
         /// <summary>
-        /// Gets or sets gets id of a message in a causality relationship with this message
+        /// Gets id of a message in a causality relationship with this message
         /// </summary>
         /// <value>
         /// Id of a message in a causality relationship with this message
         /// </value>
-        Guid AncestorId { get; set; }
+        Guid AncestorId { get; }
 
         /// <summary>
         /// Gets or sets a value indicating whether gets a value indicating whether the message is idempotent

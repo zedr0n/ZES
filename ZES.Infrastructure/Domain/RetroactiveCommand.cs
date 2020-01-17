@@ -4,7 +4,7 @@ namespace ZES.Infrastructure.Domain
 {
     /// <inheritdoc />
     public class RetroactiveCommand<TCommand> : Command
-        where TCommand : class, ICommand
+        where TCommand : Command
     {
         /// <summary>
         /// Initializes a new instance of the <see cref="RetroactiveCommand{TCommand}"/> class.

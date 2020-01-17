@@ -10,7 +10,7 @@ namespace ZES.Infrastructure.Domain
 {
     /// <inheritdoc />
     public class RetroactiveCommandHandler<TCommand, TRoot> : ICommandHandler<RetroactiveCommand<TCommand>>
-        where TCommand : class, ICommand 
+        where TCommand : Command 
         where TRoot : IAggregate
     {
         private readonly ICommandHandler<TCommand> _handler;
@@ -49,6 +49,7 @@ namespace ZES.Infrastructure.Domain
         public async Task Handle(RetroactiveCommand<TCommand> iCommand)
         {
             iCommand.Command.Timestamp = iCommand.Timestamp;
+            iCommand.Command.ForceTimestamp();
             if (!await _handler.IsRetroactive(iCommand.Command))
             {
                 await _handler.Handle(iCommand.Command);

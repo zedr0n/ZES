@@ -10,7 +10,7 @@ namespace ZES.Infrastructure.Domain
     /// <inheritdoc />
     public abstract class CommandHandlerBase<TCommand, TRoot> : ICommandHandler<TCommand, TRoot> 
         where TRoot : class, IAggregate, new()
-        where TCommand : ICommand
+        where TCommand : Command
     {
         private readonly IEsRepository<IAggregate> _repository;
 
@@ -31,24 +31,27 @@ namespace ZES.Infrastructure.Domain
         }
         
         /// <inheritdoc />
-        public virtual async Task Handle(TCommand iCommand)
+        public virtual async Task Handle(TCommand command)
         {
-            var root = await _repository.Find<TRoot>(iCommand.Target);
-            if (iCommand.Timestamp < root.Timestamp)
+            var root = await _repository.Find<TRoot>(command.Target);
+            if (command.Timestamp < root.Timestamp)
             {
                 throw new InvalidOperationException(
-                    $"{typeof(TCommand).Name} command ({iCommand.Timestamp.ToDateString()}) updating the past of the aggregate {typeof(TRoot).Name}:{iCommand.Target} ({root.Timestamp.ToDateString()}) ");
+                    $"{typeof(TCommand).Name} command ({command.Timestamp.ToDateString()}) updating the past of the aggregate {typeof(TRoot).Name}:{command.Target} ({root.Timestamp.ToDateString()}) ");
             }
 
             if (root == null)
                 throw new ArgumentNullException(); 
             
-            Act(root, iCommand);
-            root.TimestampEvents(iCommand.Timestamp);
-            if (iCommand.GetType().GetCustomAttribute<IdempotentAttribute>() != null)
+            Act(root, command);
+            
+            if (command.UseTimestamp)
+                root.TimestampEvents(command.Timestamp);
+            
+            if (command.GetType().GetCustomAttribute<IdempotentAttribute>() != null)
                 root.MakeIdempotent();
             
-            await _repository.Save(root, iCommand.MessageId);
+            await _repository.Save(root, command.MessageId);
         }
         
         /// <inheritdoc />

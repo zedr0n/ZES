@@ -20,6 +20,11 @@ namespace ZES.Interfaces.Domain
         /// Aggregate root type
         /// </value>
         string RootType { get; }
+        
+        /// <summary>
+        /// Gets a value indicating whether to use timestamp for aggregate events
+        /// </summary>
+        bool UseTimestamp { get; }
     }
 
     /// <inheritdoc />

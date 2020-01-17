@@ -32,5 +32,16 @@ namespace ZES.Infrastructure.Domain
 
         /// <inheritdoc />
         public string RootType { get; set; } = "commands";
+
+        /// <inheritdoc />
+        public bool UseTimestamp { get; private set; } = false;
+
+        /// <summary>
+        /// Force timestamp on aggregate events
+        /// </summary>
+        public void ForceTimestamp()
+        {
+            UseTimestamp = true;
+        }
     }
 }

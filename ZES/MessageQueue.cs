@@ -55,7 +55,8 @@ namespace ZES
         {
             Interlocked.Decrement(ref _uncompletedMessages);
             _log.Trace($"Uncompleted messages : {_uncompletedMessages}, removing {message.GetType().Name}");
-            _uncompletedMessagesSubject.OnNext(_uncompletedMessages);
+            lock (_uncompletedMessagesSubject)
+                _uncompletedMessagesSubject.OnNext(_uncompletedMessages);
         }
 
         /// <inheritdoc />
@@ -63,7 +64,8 @@ namespace ZES
         {
             Interlocked.Increment(ref _uncompletedMessages);
             _log.Trace($"Uncompleted messages : {_uncompletedMessages}, adding {message.GetType().Name}");
-            _uncompletedMessagesSubject.OnNext(_uncompletedMessages);
+            lock (_uncompletedMessagesSubject)
+                _uncompletedMessagesSubject.OnNext(_uncompletedMessages);
         }
     }
 }

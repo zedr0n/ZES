@@ -25,6 +25,9 @@ namespace ZES.Interfaces.Pipes
         /// </value>
         IObservable<IAlert> Alerts { get; }
 
+        /// <summary>
+        /// Gets the number of currently uncompleted messages
+        /// </summary>
         IObservable<int> UncompletedMessages { get; }
 
         /// <summary>
@@ -39,7 +42,16 @@ namespace ZES.Interfaces.Pipes
         /// <param name="alert">Alert instance</param>
         void Alert(IAlert alert);
 
-        Task CompleteMessage(IMessage message);
+        /// <summary>
+        /// Mark the message as completed
+        /// </summary>
+        /// <param name="message">Message</param>
+        void CompleteMessage(IMessage message);
+        
+        /// <summary>
+        /// Mark the message as uncompleted
+        /// </summary>
+        /// <param name="message">Message</param>
         void UncompleteMessage(IMessage message);
     }
 }

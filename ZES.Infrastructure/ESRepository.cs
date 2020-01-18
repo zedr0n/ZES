@@ -28,6 +28,7 @@ namespace ZES.Infrastructure
         /// <param name="streams">Stream locator</param>
         /// <param name="timeline">Active timeline tracker</param>
         /// <param name="bus">Message bus</param>
+        /// <param name="messageQueue">Message queue</param>
         public EsRepository(IEventStore<I> eventStore, IStreamLocator<I> streams, ITimeline timeline, IBus bus, IMessageQueue messageQueue)
         {
             _eventStore = eventStore;

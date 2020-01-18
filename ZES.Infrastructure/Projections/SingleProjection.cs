@@ -121,6 +121,8 @@ namespace ZES.Infrastructure.Projections
                 StatusSubject.OnNext(Failed);
                 Log?.Errors.Add(e);
                 CancellationSource.Cancel();
+                StatusSubject.OnNext(Sleeping);
+                await Rebuild();
             }
         }
 

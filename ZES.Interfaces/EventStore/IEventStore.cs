@@ -48,8 +48,8 @@ namespace ZES.Interfaces.EventStore
         /// Append events to stream
         /// </summary>
         /// <param name="stream">Target stream</param>
-        /// <param name="publish"></param>
         /// <param name="events">Events to append</param>
+        /// <param name="publish">Publish the events to the message queue</param>
         /// <returns>Task representing the append operation</returns>
         Task AppendToStream(IStream stream, IEnumerable<IEvent> events = null, bool publish = true);
 

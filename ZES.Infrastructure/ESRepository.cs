@@ -19,6 +19,7 @@ namespace ZES.Infrastructure
         private readonly IStreamLocator<I> _streams;
         private readonly ITimeline _timeline;
         private readonly IBus _bus;
+        private readonly IMessageQueue _messageQueue;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="EsRepository{I}"/> class.
@@ -27,12 +28,13 @@ namespace ZES.Infrastructure
         /// <param name="streams">Stream locator</param>
         /// <param name="timeline">Active timeline tracker</param>
         /// <param name="bus">Message bus</param>
-        public EsRepository(IEventStore<I> eventStore, IStreamLocator<I> streams, ITimeline timeline, IBus bus)
+        public EsRepository(IEventStore<I> eventStore, IStreamLocator<I> streams, ITimeline timeline, IBus bus, IMessageQueue messageQueue)
         {
             _eventStore = eventStore;
             _streams = streams;
             _timeline = timeline;
             _bus = bus;
+            _messageQueue = messageQueue;
         }
 
         /// <inheritdoc />
@@ -68,7 +70,10 @@ namespace ZES.Infrastructure
                 {
                     if (ancestorId != null)
                         command.AncestorId = ancestorId.Value;
-                    await _bus.CommandAsync(command);
+
+                    var task = await _bus.CommandAsync(command);
+                    _messageQueue.UncompleteMessage(command);
+                    task.ContinueWith(t => _messageQueue.CompleteMessage(command));
                 }
             }
         }

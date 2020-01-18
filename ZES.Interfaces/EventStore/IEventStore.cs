@@ -43,14 +43,15 @@ namespace ZES.Interfaces.EventStore
         /// <returns>Cold observable of read events</returns>
         IObservable<T> ReadStream<T>(IStream stream, int start, int count = -1)
             where T : IEventMetadata;
-        
+
         /// <summary>
         /// Append events to stream
         /// </summary>
         /// <param name="stream">Target stream</param>
+        /// <param name="publish"></param>
         /// <param name="events">Events to append</param>
         /// <returns>Task representing the append operation</returns>
-        Task AppendToStream(IStream stream, IEnumerable<IEvent> events = null);
+        Task AppendToStream(IStream stream, IEnumerable<IEvent> events = null, bool publish = true);
 
         /// <summary>
         /// Delete the stream

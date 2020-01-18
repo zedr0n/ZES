@@ -45,7 +45,13 @@ namespace ZES.Infrastructure.Sagas
                 .WithOptions(new DataflowOptionsEx { RecommendedParallelismIfMultiThreaded = Configuration.ThreadsPerInstance })
                 .Bind(); 
 
-            _messageQueue.Messages.Select(e => new Tracked<IEvent>(e)).Subscribe(dispatcher.InputBlock.AsObserver(), _source.Token);
+            _messageQueue.Messages.Select(e =>
+            {
+                _messageQueue.UncompleteMessage(e);
+                var tracked = new Tracked<IEvent>(e);
+                tracked.Task.ContinueWith(t => _messageQueue.CompleteMessage(e));
+                return tracked;
+            }).Subscribe(dispatcher.InputBlock.AsObserver(), _source.Token);
             dispatcher.CompletionTask.ContinueWith(t => _source.Cancel());
         }
 

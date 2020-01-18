@@ -28,10 +28,7 @@ namespace ZES.Infrastructure.Domain
         }
 
         /// <inheritdoc />
-        public Task<bool> IsRetroactive(TCommand iCommand)
-        {
-            throw new InvalidOperationException("Create commands cannot be applied retroactively");
-        }
+        public async Task<bool> IsRetroactive(TCommand iCommand) => false;
 
         /// <inheritdoc />
         public async Task Handle(ICommand command)

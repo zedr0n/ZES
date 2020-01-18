@@ -50,17 +50,22 @@ namespace ZES.Infrastructure.Domain
         {
             iCommand.Command.Timestamp = iCommand.Timestamp;
             iCommand.Command.ForceTimestamp();
+
+            var activeBranch = _manager.ActiveBranch;
+            var time = iCommand.Timestamp;
+            var branch = $"{typeof(TCommand).Name}-{time}"; 
+
             if (!await _handler.IsRetroactive(iCommand.Command))
             {
+                await _manager.Branch(branch, time);
                 await _handler.Handle(iCommand.Command);
+                await _manager.Branch(activeBranch);
+                await _manager.Merge(branch);
+                await _manager.DeleteBranch(branch);
                 return;
             } 
             
             await _bus.Pause();
-            var activeBranch = _manager.ActiveBranch;
-            
-            var time = iCommand.Timestamp;
-            var branch = $"{typeof(TCommand).Name}-{time}"; 
             await _manager.Branch(branch, time - 1);
             
             var stream = _streamLocator.Find<TRoot>(iCommand.Target, branch);

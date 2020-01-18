@@ -1,7 +1,9 @@
 using System;
+using System.Collections.Generic;
 using System.Reactive.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using SimpleInjector;
 using Xunit;
 using Xunit.Abstractions;
 using ZES.Infrastructure.Domain;
@@ -14,6 +16,7 @@ using ZES.Interfaces.Pipes;
 using ZES.Tests.Domain;
 using ZES.Tests.Domain.Commands;
 using ZES.Tests.Domain.Queries;
+using ZES.Utils;
 
 namespace ZES.Tests
 {
@@ -148,6 +151,28 @@ namespace ZES.Tests
             
             await bus.Equal(new RootInfoQuery("Root"), r => r.UpdatedAt, lastTime);
             await bus.Equal(new HistoricalQuery<RootInfoQuery, RootInfo>(new RootInfoQuery("Root"), e.Timestamp), r => r.UpdatedAt, e.Timestamp);
+        }
+
+        [Fact]
+        public async void CanRetroactivelyApplySaga()
+        {
+            var container = CreateContainer(new List<Action<Container>> { Config.RegisterSagas });
+            var bus = container.GetInstance<IBus>();
+            var timeline = container.GetInstance<ITimeline>();
+            var graph = container.GetInstance<IQGraph>();
+            
+            var timestamp = timeline.Now;
+            var lastTime = timestamp + (60 * 1000);
+            var midTime = (timestamp + lastTime) / 2;
+ 
+            await await bus.CommandAsync(new CreateRoot("Root"));
+            await bus.IsTrue(new RootInfoQuery("RootCopy"), info => info.CreatedAt < midTime);
+
+            await await bus.CommandAsync(new RetroactiveCommand<CreateRoot>(new CreateRoot("LastRoot"), lastTime));
+            await bus.Equal(new RootInfoQuery("LastRootCopy"), r => r.CreatedAt, lastTime);
+
+            await await bus.CommandAsync(new RetroactiveCommand<CreateRoot>(new CreateRoot("MidRoot"), midTime));
+            await bus.Equal(new RootInfoQuery("MidRootCopy"), r => r.CreatedAt, midTime);
         }
     }
 }

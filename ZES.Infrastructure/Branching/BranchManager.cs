@@ -89,6 +89,8 @@ namespace ZES.Infrastructure.Branching
                 return _activeTimeline;
             }
 
+            await _messageQueue.UncompletedMessages.Timeout(Configuration.Timeout).FirstAsync(s => s == 0);
+
             var newBranch = !_branches.ContainsKey(branchId); // && branchId != Master;
             
             var timeline = _branches.GetOrAdd(branchId, b => Timeline.New(branchId, time));
@@ -236,7 +238,7 @@ namespace ZES.Infrastructure.Branching
 
                         Interlocked.Add(ref _numberOfEvents, events.Count);
                         
-                        await eventStore.AppendToStream(parentStream, events);
+                        await eventStore.AppendToStream(parentStream, events, false);
                 }, new ExecutionDataflowBlockOptions { MaxDegreeOfParallelism = Configuration.ThreadsPerInstance });
 
                 RegisterChild(_inputBlock);

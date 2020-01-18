@@ -34,7 +34,7 @@ namespace ZES
             _log = log;
             _commandDispatcher = new CommandDispatcher(
                 HandleCommand, 
-                new DataflowOptions { RecommendedParallelismIfMultiThreaded = 1 });
+                new DataflowOptions { RecommendedParallelismIfMultiThreaded = 8 });
         }
 
         /// <inheritdoc />

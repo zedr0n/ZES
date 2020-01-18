@@ -115,7 +115,7 @@ namespace ZES.Infrastructure
         }
 
         /// <inheritdoc />
-        public async Task AppendToStream(IStream stream, IEnumerable<IEvent> enumerable = null)
+        public async Task AppendToStream(IStream stream, IEnumerable<IEvent> enumerable = null, bool publish = true)
         {
             var events = enumerable as IList<IEvent> ?? enumerable?.ToList();
 
@@ -140,8 +140,9 @@ namespace ZES.Infrastructure
                 
                 _streams.OnNext(stream); 
             }
-
-            PublishEvents(events);
+            
+            if (publish)
+                PublishEvents(events);
             await UpdateGraph(events);
         }
 

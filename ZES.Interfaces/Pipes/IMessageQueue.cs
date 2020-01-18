@@ -1,4 +1,5 @@
 using System;
+using System.Threading.Tasks;
 
 namespace ZES.Interfaces.Pipes
 {
@@ -23,7 +24,9 @@ namespace ZES.Interfaces.Pipes
         /// The hot observable representing the alerts in the system
         /// </value>
         IObservable<IAlert> Alerts { get; }
-        
+
+        IObservable<int> UncompletedMessages { get; }
+
         /// <summary>
         /// Submit the event to the message queue
         /// </summary>
@@ -35,5 +38,8 @@ namespace ZES.Interfaces.Pipes
         /// </summary>
         /// <param name="alert">Alert instance</param>
         void Alert(IAlert alert);
+
+        Task CompleteMessage(IMessage message);
+        void UncompleteMessage(IMessage message);
     }
 }

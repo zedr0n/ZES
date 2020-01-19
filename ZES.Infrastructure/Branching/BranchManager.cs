@@ -14,6 +14,7 @@ using ZES.Interfaces.Causality;
 using ZES.Interfaces.Domain;
 using ZES.Interfaces.EventStore;
 using ZES.Interfaces.Pipes;
+using ZES.Interfaces.Sagas;
 
 namespace ZES.Infrastructure.Branching
 {
@@ -33,7 +34,9 @@ namespace ZES.Infrastructure.Branching
         private readonly Timeline _activeTimeline;
         private readonly IMessageQueue _messageQueue;
         private readonly IEventStore<IAggregate> _eventStore;
+        private readonly IEventStore<ISaga> _sagaStore;
         private readonly IStreamLocator<IAggregate> _streamLocator;
+        private readonly IStreamLocator<ISaga> _sagaLocator;
         private readonly IQGraph _graph;
 
         /// <summary>
@@ -43,14 +46,18 @@ namespace ZES.Infrastructure.Branching
         /// <param name="activeTimeline">Root timeline</param>
         /// <param name="messageQueue">Message queue</param>
         /// <param name="eventStore">Event store</param>
+        /// <param name="sagaStore">Saga store</param>
         /// <param name="streamLocator">Stream locator</param>
+        /// <param name="sagaLocator">Saga locator</param>
         /// <param name="graph">Graph</param>
         public BranchManager(
             ILog log, 
             ITimeline activeTimeline,
             IMessageQueue messageQueue, 
             IEventStore<IAggregate> eventStore,
+            IEventStore<ISaga> sagaStore,
             IStreamLocator<IAggregate> streamLocator,
+            IStreamLocator<ISaga> sagaLocator,
             IQGraph graph)
         {
             _log = log;
@@ -59,6 +66,8 @@ namespace ZES.Infrastructure.Branching
             _eventStore = eventStore;
             _streamLocator = streamLocator;
             _graph = graph;
+            _sagaLocator = sagaLocator;
+            _sagaStore = sagaStore;
 
             _branches.TryAdd(Master, Timeline.New(Master));
         }
@@ -102,7 +111,10 @@ namespace ZES.Infrastructure.Branching
             
             // copy the events
             if (newBranch)
-                await Clone(branchId, time ?? DateTimeOffset.UtcNow.ToUnixTimeMilliseconds());
+            {
+                await Clone<IAggregate>(branchId, time ?? DateTimeOffset.UtcNow.ToUnixTimeMilliseconds());
+                await Clone<ISaga>(branchId, time ?? DateTimeOffset.UtcNow.ToUnixTimeMilliseconds());
+            }
 
             // update current timeline
             _activeTimeline.Set(timeline);
@@ -138,8 +150,11 @@ namespace ZES.Infrastructure.Branching
                 _log.Warn($"Trying to merge non-live branch {branchId}", this);
                 return;
             }*/
+
+            var aggrResult = await MergeStore<IAggregate>(branchId);
+            var sagaResult = await MergeStore<ISaga>(branchId);
             
-            var mergeFlow = new MergeFlow(_activeTimeline, _eventStore, _streamLocator);
+            /*var mergeFlow = new MergeFlow(_activeTimeline, _eventStore, _streamLocator);
 
             _eventStore.ListStreams(branchId).Subscribe(mergeFlow.InputBlock.AsObserver());
             
@@ -154,26 +169,70 @@ namespace ZES.Infrastructure.Branching
             catch (Exception e)
             {
                 _log.Errors.Add(e);
-            }
+            }*/
             
             // rebuild all projections
             _messageQueue.Alert(new Alerts.InvalidateProjections());
         }
-
+        
         /// <inheritdoc />
         public ITimeline Reset()
         {
             Branch(Master).Wait();
             return _activeTimeline;
         }
+        
+        private async Task<MergeFlow<T>.MergeResult> MergeStore<T>(string branchId)
+            where T : IEventSourced
+        {
+            var store = GetStore<T>();
+            var locator = GetLocator<T>();
+            var mergeFlow = new MergeFlow<T>(_activeTimeline, store, locator);
+
+            _eventStore.ListStreams(branchId).Subscribe(mergeFlow.InputBlock.AsObserver());
+            
+            try
+            {
+                await mergeFlow.CompletionTask;
+                mergeFlow.Complete();
+
+                var mergeResult = mergeFlow.Result;
+                _log.Info($"Merged {mergeResult.NumberOfStreams} streams, {mergeResult.NumberOfEvents} events from {branchId} into {_activeTimeline.Id} [{typeof(T).Name}]");
+                return mergeResult;
+            }
+            catch (Exception e)
+            {
+                _log.Errors.Add(e);
+            }
+
+            return null;
+        }
+
+        private IEventStore<T> GetStore<T>()
+            where T : IEventSourced
+        {
+            if (_eventStore is IEventStore<T> store)
+                return store;
+            return _sagaStore as IEventStore<T>;
+        }
+
+        private IStreamLocator<T> GetLocator<T>()
+            where T : IEventSourced
+        {
+            if (_streamLocator is IStreamLocator<T> locator)
+                return locator;
+            return _sagaLocator as IStreamLocator<T>;
+        }
 
         // full clone of event store
         // can become really expensive
         // TODO: use links to event ids?
-        private async Task Clone(string timeline, long time)
+        private async Task Clone<T>(string timeline, long time)
+            where T : IEventSourced
         {
-            var cloneFlow = new CloneFlow(timeline, time, _eventStore);
-            _eventStore.ListStreams(_activeTimeline.Id)
+            var store = GetStore<T>();
+            var cloneFlow = new CloneFlow<T>(timeline, time, store);
+            store.ListStreams(_activeTimeline.Id)
                 .Subscribe(cloneFlow.InputBlock.AsObserver());
 
             try
@@ -186,13 +245,14 @@ namespace ZES.Infrastructure.Branching
             }
         }
 
-        private class MergeFlow : Dataflow<IStream>
+        private class MergeFlow<T> : Dataflow<IStream>
+            where T : IEventSourced
         {
             private readonly ActionBlock<IStream> _inputBlock;
             private int _numberOfEvents;
             private int _numberOfStreams;
             
-            public MergeFlow(ITimeline currentBranch, IEventStore<IAggregate> eventStore, IStreamLocator<IAggregate> streamLocator) 
+            public MergeFlow(ITimeline currentBranch, IEventStore<T> eventStore, IStreamLocator<T> streamLocator) 
                 : base(DataflowOptions.Default)
             {
                 _inputBlock = new ActionBlock<IStream>(
@@ -262,11 +322,12 @@ namespace ZES.Infrastructure.Branching
             }
         }
 
-        private class CloneFlow : Dataflow<IStream>
+        private class CloneFlow<T> : Dataflow<IStream>
+            where T : IEventSourced
         {
             private readonly ActionBlock<IStream> _inputBlock;
 
-            public CloneFlow(string timeline, long time, IEventStore<IAggregate> eventStore) 
+            public CloneFlow(string timeline, long time, IEventStore<T> eventStore) 
                 : base(DataflowOptions.Default)
             {
                 _inputBlock = new ActionBlock<IStream>(

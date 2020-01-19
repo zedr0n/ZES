@@ -9,10 +9,13 @@ using ZES.Infrastructure.Domain;
 using ZES.Interfaces;
 using ZES.Interfaces.Causality;
 using ZES.Interfaces.Domain;
+using ZES.Interfaces.EventStore;
 using ZES.Interfaces.Pipes;
+using ZES.Interfaces.Sagas;
 using ZES.Tests.Domain;
 using ZES.Tests.Domain.Commands;
 using ZES.Tests.Domain.Queries;
+using ZES.Tests.Domain.Sagas;
 using static ZES.Interfaces.FastForwardResult;
 using static ZES.Utils.ObservableExtensions;
 
@@ -28,7 +31,7 @@ namespace ZES.Tests
         [Fact]
         public async void CanMergeTimeline()
         {
-            var container = CreateContainer();
+            var container = CreateContainer(new List<Action<Container>>() { Config.RegisterSagas });
             var bus = container.GetInstance<IBus>();
             var time = container.GetInstance<IBranchManager>();
             
@@ -51,10 +54,10 @@ namespace ZES.Tests
             await time.Merge("test");
 
             await bus.IsTrue(infoQuery, r => r.CreatedAt < r.UpdatedAt);
-            await bus.IsTrue(new StatsQuery(), s => s.NumberOfRoots == 2);
+            await bus.Equal(new StatsQuery(), s => s.NumberOfRoots, 4);
 
             await time.Merge("test");
-            await bus.IsTrue(new StatsQuery(), s => s.NumberOfRoots == 2);
+            await bus.Equal(new StatsQuery(), s => s.NumberOfRoots, 4);
 
             var graph = container.GetInstance<IQGraph>();
             graph.Serialise(nameof(CanMergeTimeline));
@@ -88,10 +91,11 @@ namespace ZES.Tests
         [Fact]
         public async void CanCreateClone()
         {
-            var container = CreateContainer();
+            var container = CreateContainer(new List<Action<Container>>() { Config.RegisterSagas });
             var bus = container.GetInstance<IBus>();
             var repository = container.GetInstance<IEsRepository<IAggregate>>();
             var manager = container.GetInstance<IBranchManager>();
+            var sagaLocator = container.GetInstance<IStreamLocator<ISaga>>();
             
             var command = new CreateRoot("Root");
             await await bus.CommandAsync(command);
@@ -117,6 +121,8 @@ namespace ZES.Tests
 
             await await bus.CommandAsync(new CreateRoot("TestRoot"));
             await bus.IsTrue(new RootInfoQuery("TestRoot"), r => r.CreatedAt > 0);
+            
+            Assert.NotNull(sagaLocator.Find<TestSaga>("Root"));
 
             manager.Reset();
             await bus.IsTrue(new RootInfoQuery("Root"), r => r.CreatedAt != r.UpdatedAt);

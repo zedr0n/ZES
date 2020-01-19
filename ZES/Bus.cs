@@ -28,12 +28,14 @@ namespace ZES
         /// </summary>
         /// <param name="container"><see cref="SimpleInjector"/> container</param>
         /// <param name="log">Application log</param>
-        public Bus(Container container, ILog log)
+        /// <param name="timeline">Timeline</param>
+        public Bus(Container container, ILog log, ITimeline timeline)
         {
             _container = container;
             _log = log;
             _commandDispatcher = new CommandDispatcher(
                 HandleCommand, 
+                timeline, 
                 new DataflowOptions { RecommendedParallelismIfMultiThreaded = 8 });
         }
 
@@ -106,8 +108,8 @@ namespace ZES
         {
             private readonly Func<ICommand, Task> _handler;
 
-            public CommandDispatcher(Func<ICommand, Task> handler, DataflowOptions options) 
-                : base(c => c.Value.Target, options, CancellationToken.None)
+            public CommandDispatcher(Func<ICommand, Task> handler, ITimeline timeline, DataflowOptions options) 
+                : base(c => $"{timeline.Id}:{c.Value.Target}", options, CancellationToken.None)
             {
                 _handler = handler;
             }

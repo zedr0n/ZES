@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
@@ -51,7 +52,7 @@ namespace ZES.Infrastructure.Retroactive
 
             var newStream = _streamLocator.FindBranched(stream, branch.Id);
             if (newStream == null)
-                return;
+                throw new InvalidOperationException($"Stream {branch.Id}:{stream.Key} not found!");
 
             var enumerable = events.ToList();
             foreach (var e in enumerable)

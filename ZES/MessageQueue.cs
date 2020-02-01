@@ -2,6 +2,7 @@ using System;
 using System.Collections.Concurrent;
 using System.Reactive.Linq;
 using System.Reactive.Subjects;
+using System.Threading.Tasks;
 using ZES.Interfaces;
 using ZES.Interfaces.Pipes;
 
@@ -14,8 +15,7 @@ namespace ZES
         private readonly ITimeline _timeline;
         private readonly Subject<IEvent> _messages = new Subject<IEvent>();
         private readonly Subject<IAlert> _alerts = new Subject<IAlert>();
-        private readonly BehaviorSubject<int> _uncompletedMessagesSubject = new BehaviorSubject<int>(0);
-        private readonly ConcurrentDictionary<string, int> _uncompletedMessages = new ConcurrentDictionary<string, int>();
+        private readonly UncompletedMessagesHolder _messagesHolder; 
 
         /// <summary>
         /// Initializes a new instance of the <see cref="MessageQueue"/> class.
@@ -26,10 +26,11 @@ namespace ZES
         {
             _log = log;
             _timeline = timeline;
+            _messagesHolder = new UncompletedMessagesHolder();
         }
 
         /// <inheritdoc />
-        public IObservable<int> UncompletedMessages => _uncompletedMessagesSubject.AsObservable(); 
+        public IObservable<int> UncompletedMessages => _messagesHolder.UncompletedMessages(_timeline.Id); 
 
         /// <inheritdoc />
         public IObservable<IEvent> Messages => _messages.AsObservable();
@@ -52,26 +53,34 @@ namespace ZES
         }
 
         /// <inheritdoc />
-        public void CompleteMessage(IMessage message)
+        public async Task CompleteMessage(IMessage message)
         {
-            // Interlocked.Decrement(ref _uncompletedMessages);
-            var count = _uncompletedMessages.GetOrAdd(_timeline.Id, 0);
-            if (!_uncompletedMessages.TryUpdate(_timeline.Id, count - 1, count))
-               throw new InvalidOperationException("Concurrent update failed!");
-            _log.Trace($"Uncompleted messages : {count - 1}, removed {_timeline.Id}:{message.GetType().Name}");
-            lock (_uncompletedMessagesSubject)
-                _uncompletedMessagesSubject.OnNext(count - 1);
+            await await _messagesHolder.UpdateState(b =>
+            {
+                if (!b.Count.TryGetValue(_timeline.Id, out var count))
+                    throw new InvalidOperationException("Message completed before being produced");
+                count--;
+                b.Count[_timeline.Id] = count;
+                _log.Trace($"Uncompleted messages : {count}, removed {_timeline.Id}:{message.GetType().Name}");
+
+                return b;
+            });
         }
 
         /// <inheritdoc />
-        public void UncompleteMessage(IMessage message)
+        public async Task UncompleteMessage(IMessage message)
         {
-            var count = _uncompletedMessages.GetOrAdd(_timeline.Id, 0);
-            if (!_uncompletedMessages.TryUpdate(_timeline.Id, count + 1, count))
-                throw new InvalidOperationException("Concurrent update failed!");
-            _log.Trace($"Uncompleted messages : {count + 1}, added {_timeline.Id}:{message.GetType().Name}");
-            lock (_uncompletedMessagesSubject)
-                _uncompletedMessagesSubject.OnNext(count + 1);
+            await await _messagesHolder.UpdateState(b =>
+            {
+                if (!b.Count.TryGetValue(_timeline.Id, out var count))
+                    count = 0;
+                    
+                count++;
+                b.Count[_timeline.Id] = count;
+                _log.Trace($"Uncompleted messages : {count}, added {_timeline.Id}:{message.GetType().Name}");
+
+                return b;
+            });
         }
     }
 }

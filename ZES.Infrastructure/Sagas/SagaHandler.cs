@@ -47,7 +47,7 @@ namespace ZES.Infrastructure.Sagas
 
             _messageQueue.Messages.Select(e =>
             {
-                _messageQueue.UncompleteMessage(e);
+                _messageQueue.UncompleteMessage(e).Wait();
                 var tracked = new Tracked<IEvent>(e);
                 tracked.Task.ContinueWith(t => _messageQueue.CompleteMessage(e));
                 return tracked;

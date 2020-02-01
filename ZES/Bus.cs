@@ -29,7 +29,7 @@ namespace ZES
         /// <param name="container"><see cref="SimpleInjector"/> container</param>
         /// <param name="log">Application log</param>
         /// <param name="timeline">Timeline</param>
-        public Bus(Container container, ILog log, ITimeline timeline)
+        public Bus(Container container, ILog log, ITimeline timeline, IMessageQueue messageQueue)
         {
             _container = container;
             _log = log;

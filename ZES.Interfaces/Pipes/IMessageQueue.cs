@@ -46,12 +46,12 @@ namespace ZES.Interfaces.Pipes
         /// Mark the message as completed
         /// </summary>
         /// <param name="message">Message</param>
-        void CompleteMessage(IMessage message);
+        Task CompleteMessage(IMessage message);
         
         /// <summary>
         /// Mark the message as uncompleted
         /// </summary>
         /// <param name="message">Message</param>
-        void UncompleteMessage(IMessage message);
+        Task UncompleteMessage(IMessage message);
     }
 }

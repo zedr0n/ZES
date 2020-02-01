@@ -72,9 +72,9 @@ namespace ZES.Infrastructure
                     if (ancestorId != null)
                         command.AncestorId = ancestorId.Value;
 
+                    await _messageQueue.UncompleteMessage(command);
                     var task = await _bus.CommandAsync(command);
-                    _messageQueue.UncompleteMessage(command);
-                    task.ContinueWith(t => _messageQueue.CompleteMessage(command));
+                    task.ContinueWith(async t => await _messageQueue.CompleteMessage(command));
                 }
             }
         }

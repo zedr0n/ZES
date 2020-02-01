@@ -3,6 +3,7 @@ using System.Threading.Tasks;
 using ZES.Interfaces;
 using ZES.Interfaces.Causality;
 using ZES.Interfaces.Domain;
+using ZES.Interfaces.Pipes;
 
 namespace ZES.Infrastructure.Domain
 {
@@ -19,6 +20,7 @@ namespace ZES.Infrastructure.Domain
         private readonly IErrorLog _errorLog;
         private readonly ITimeline _timeline;
         private readonly IGraph _graph;
+        private readonly IMessageQueue _messageQueue;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="CommandHandler{T}"/> class.
@@ -29,7 +31,7 @@ namespace ZES.Infrastructure.Domain
         /// <param name="commandLog">Command log</param>
         /// <param name="errorLog">Error log</param>
         /// <param name="graph">Graph instance</param>
-        public CommandHandler(ICommandHandler<T> handler, ILog log, ITimeline timeline, ICommandLog commandLog, IErrorLog errorLog, IGraph graph)
+        public CommandHandler(ICommandHandler<T> handler, ILog log, ITimeline timeline, ICommandLog commandLog, IErrorLog errorLog, IGraph graph, IMessageQueue messageQueue)
         {
             _handler = handler;
             _log = log;
@@ -37,6 +39,7 @@ namespace ZES.Infrastructure.Domain
             _commandLog = commandLog;
             _errorLog = errorLog;
             _graph = graph;
+            _messageQueue = messageQueue;
         }
 
         /// <inheritdoc />

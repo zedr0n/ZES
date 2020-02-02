@@ -55,7 +55,7 @@ namespace ZES.Infrastructure.Utils
         {
             var delay = Task.Delay(Configuration.Timeout, token);
             await Task.WhenAny(task, delay);
-            if (delay.IsCompleted)
+            if (delay.IsCompleted && !token.IsCancellationRequested)
                 throw new TimeoutException();
         }
 

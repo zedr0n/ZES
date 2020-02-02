@@ -122,7 +122,6 @@ namespace ZES.Infrastructure.Dataflow
             }
             catch (Exception e)
             {
-                Log?.Error($"{input} timed out", this);
                 Log?.Errors.Add(e);
             }
 

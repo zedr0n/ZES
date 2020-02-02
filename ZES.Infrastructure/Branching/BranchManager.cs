@@ -197,7 +197,8 @@ namespace ZES.Infrastructure.Branching
                 mergeFlow.Complete();
 
                 var mergeResult = mergeFlow.Result;
-                _log.Info($"Merged {mergeResult.NumberOfStreams} streams, {mergeResult.NumberOfEvents} events from {branchId} into {_activeTimeline.Id} [{typeof(T).Name}]");
+                if (mergeResult.NumberOfStreams > 0)
+                    _log.Info($"Merged {mergeResult.NumberOfStreams} streams, {mergeResult.NumberOfEvents} events from {branchId} into {_activeTimeline.Id} [{typeof(T).Name}]");
                 return mergeResult;
             }
             catch (Exception e)
@@ -238,6 +239,8 @@ namespace ZES.Infrastructure.Branching
             try
             {
                 await cloneFlow.CompletionTask;
+                if (cloneFlow.NumberOfStreams > 0)
+                    _log.Info($"{cloneFlow.NumberOfStreams} {typeof(T).Name} streams cloned to {timeline}");
             }
             catch (Exception e)
             {
@@ -326,6 +329,7 @@ namespace ZES.Infrastructure.Branching
             where T : IEventSourced
         {
             private readonly ActionBlock<IStream> _inputBlock;
+            public int NumberOfStreams;
 
             public CloneFlow(string timeline, long time, IEventStore<T> eventStore) 
                 : base(DataflowOptions.Default)
@@ -341,6 +345,7 @@ namespace ZES.Infrastructure.Branching
 
                     var clone = s.Branch(timeline, metadata.Version);
                     await eventStore.AppendToStream(clone);
+                    Interlocked.Increment(ref NumberOfStreams);
                 }, new ExecutionDataflowBlockOptions { MaxDegreeOfParallelism = Configuration.ThreadsPerInstance });
 
                 RegisterChild(_inputBlock);

@@ -114,7 +114,7 @@ namespace ZES.Infrastructure.Projections
                 await rebuildDispatcher.CompletionTask.Timeout();
                 await liveDispatcher.Start();
                 StatusSubject.OnNext(Listening);
-                Log?.Trace($"Rebuild finished!", this);
+                Log?.Debug($"Rebuild finished!", this);
             }
             catch (Exception e)
             {
@@ -170,12 +170,12 @@ namespace ZES.Infrastructure.Projections
             public async Task Start()
             {
                 var count = _buffer.BufferedCount;
-                _log.Trace($"{count} streams in buffer", this);
+                _log.Debug($"{count} streams in buffer", this);
                 
                 _token.Register(() =>
                 {
                     _buffer.LinkTo(DataflowBlock.NullTarget<Tracked<IStream>>().ToDataflow());
-                    _log.Trace("Cancelling live dispatcher...");
+                    _log.Debug("Cancelling live dispatcher...");
                 });
 
                 if (count > 0)

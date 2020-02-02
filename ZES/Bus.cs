@@ -17,7 +17,7 @@ namespace ZES
     public class Bus : IBus
     {
         private readonly Container _container;
-        private readonly CommandDispatcher _commandDispatcher;
+        private readonly BranchCommandDispatcher _commandDispatcher;
         private readonly ILog _log;
 
         private readonly ConcurrentQueue<Tracked<ICommand>> _queuedCommands = new ConcurrentQueue<Tracked<ICommand>>();
@@ -29,12 +29,13 @@ namespace ZES
         /// <param name="container"><see cref="SimpleInjector"/> container</param>
         /// <param name="log">Application log</param>
         /// <param name="timeline">Timeline</param>
-        public Bus(Container container, ILog log, ITimeline timeline, IMessageQueue messageQueue)
+        public Bus(Container container, ILog log, ITimeline timeline)
         {
             _container = container;
             _log = log;
-            _commandDispatcher = new CommandDispatcher(
+            _commandDispatcher = new BranchCommandDispatcher(
                 HandleCommand, 
+                _log,
                 timeline, 
                 new DataflowOptions { RecommendedParallelismIfMultiThreaded = 8 });
         }
@@ -102,6 +103,25 @@ namespace ZES
             var handler = (ICommandHandler)GetInstance(handlerType);
             if (handler != null)
                 await handler.Handle(command).ConfigureAwait(false);
+        }
+
+        public class BranchCommandDispatcher : ParallelDataDispatcher<string, Tracked<ICommand>>
+        {
+            private readonly Func<ICommand, Task> _handler;
+            private readonly ITimeline _timeline;
+
+            public BranchCommandDispatcher(Func<ICommand, Task> handler, ILog log, ITimeline timeline, DataflowOptions options) 
+                : base(c => timeline.Id, options, CancellationToken.None)
+            {
+                _handler = handler;
+                _timeline = timeline;
+                Log = log;
+            }
+
+            protected override Dataflow<Tracked<ICommand>> CreateChildFlow(string dispatchKey)
+            {
+                return new CommandDispatcher(_handler, _timeline, new DataflowOptions { RecommendedParallelismIfMultiThreaded = 1 }); 
+            }
         }
 
         private class CommandDispatcher : ParallelDataDispatcher<string, Tracked<ICommand>>

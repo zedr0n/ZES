@@ -90,7 +90,7 @@ namespace ZES.Infrastructure.Dataflow
         /// <inheritdoc />
         public override ITargetBlock<TIn> InputBlock => _dispatcherBlock;
 
-        internal ILog Log { get; set; }
+        protected ILog Log { get; set; }
 
         /// <summary>Create the child flow on-the-fly by the dispatch key</summary>
         /// <param name="dispatchKey">The unique key to create and identify the child flow</param>

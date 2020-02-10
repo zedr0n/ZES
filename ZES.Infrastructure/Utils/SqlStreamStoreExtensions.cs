@@ -65,13 +65,19 @@ namespace ZES.Infrastructure.Utils
             return ExpectedVersion.EmptyStream;
         }
 
-        private static async Task<int> DeletedCount(this IStreamStore streamStore, string key)
+        public static async Task<int> DeletedCount(this IStreamStore streamStore, string key)
         {
             var deleted = 0;
             var page = await streamStore.ReadStreamForwards("$deleted", 0, Configuration.BatchSize);
             while (page.Messages.Length > 0)
             {
-                deleted += page.Messages.Count(m => m.StreamId == key);
+                foreach (var m in page.Messages)
+                {
+                    var json = await m.GetJsonData();
+                    if (json.Contains(key))
+                        deleted++;
+                }
+                
                 page = await page.ReadNext();
             }
 

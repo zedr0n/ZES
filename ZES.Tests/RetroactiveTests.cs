@@ -64,9 +64,8 @@ namespace ZES.Tests
             await await bus.CommandAsync(new RetroactiveCommand<UpdateRoot>(new UpdateRoot("Root"), lastTime));
 
             var task = await bus.CommandAsync(new RetroactiveCommand<UpdateRoot>(new UpdateRoot("Root"), midTime));
-            await await bus.CommandAsync(new CreateRecord("Record"));
             await task;
-            graph.Serialise(nameof(CanProcessRetroactiveCommand));
+            await graph.Serialise(nameof(CanProcessRetroactiveCommand));
         }
 
         [Fact]
@@ -105,7 +104,7 @@ namespace ZES.Tests
             await bus.Equal(new RootInfoQuery("Root"), r => r.UpdatedAt, lastTime);
 
             await bus.Equal(new HistoricalQuery<RootInfoQuery, RootInfo>(new RootInfoQuery("Root"), e.Timestamp), r => r.UpdatedAt, e.Timestamp);
-            graph.Serialise(nameof(CanInsertIntoStream));
+            await graph.Serialise(nameof(CanInsertIntoStream));
         }
         
         [Fact]
@@ -140,17 +139,17 @@ namespace ZES.Tests
             stream = streamLocator.Find<Root>("Root", branch.Id);
             await retroactive.InsertIntoStream(stream, 1, new[] { e });
             
-            graph.Serialise(nameof(CanInsertIntoStreamMultipleBranch) + "-test0");
+            await graph.Serialise(nameof(CanInsertIntoStreamMultipleBranch) + "-test0");
 
             manager.Reset();
             await manager.Merge("test0");
 
-            graph.Serialise(nameof(CanInsertIntoStreamMultipleBranch) + "-full");
+            await graph.Serialise(nameof(CanInsertIntoStreamMultipleBranch) + "-full");
 
             await manager.DeleteBranch("test");
             await manager.DeleteBranch("test0");
             
-            graph.Serialise(nameof(CanInsertIntoStreamMultipleBranch));
+            await graph.Serialise(nameof(CanInsertIntoStreamMultipleBranch));
             
             await bus.Equal(new RootInfoQuery("Root"), r => r.UpdatedAt, lastTime);
             await bus.Equal(new HistoricalQuery<RootInfoQuery, RootInfo>(new RootInfoQuery("Root"), e.Timestamp), r => r.UpdatedAt, e.Timestamp);

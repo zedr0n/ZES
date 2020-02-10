@@ -88,7 +88,7 @@ namespace ZES.Infrastructure.Retroactive
         public async Task TrimStream(IStream stream, int version)
         {
             await _eventStore.TrimStream(stream, version);
-            _graph.TrimStream(stream.Key, version);
+            await _graph.TrimStream(stream.Key, version);
             _messageQueue.Alert(new OnTimelineChange());
         }
     }

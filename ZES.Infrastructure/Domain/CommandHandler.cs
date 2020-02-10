@@ -31,6 +31,7 @@ namespace ZES.Infrastructure.Domain
         /// <param name="commandLog">Command log</param>
         /// <param name="errorLog">Error log</param>
         /// <param name="graph">Graph instance</param>
+        /// <param name="messageQueue">Message queue</param>
         public CommandHandler(ICommandHandler<T> handler, ILog log, ITimeline timeline, ICommandLog commandLog, IErrorLog errorLog, IGraph graph, IMessageQueue messageQueue)
         {
             _handler = handler;

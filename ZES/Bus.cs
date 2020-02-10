@@ -118,6 +118,7 @@ namespace ZES
                 Log = log;
             }
 
+            /// <inheritdoc />
             protected override Dataflow<Tracked<ICommand>> CreateChildFlow(string dispatchKey)
             {
                 return new CommandDispatcher(_handler, _timeline, new DataflowOptions { RecommendedParallelismIfMultiThreaded = 1 }); 

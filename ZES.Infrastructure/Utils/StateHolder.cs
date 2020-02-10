@@ -11,13 +11,9 @@ namespace ZES.Infrastructure.Utils
     where THeldState : struct
     where THeldStateBuilder : struct, IHeldStateBuilder<THeldState, THeldStateBuilder>
   {
-    private delegate void TransactionFunc(BehaviorSubject<THeldState> heldStateSubject);
-
-    private readonly BehaviorSubject<THeldState> _currentStateSubject = new BehaviorSubject<THeldState>(new THeldStateBuilder().DefaultState());
+    private readonly BehaviorSubject<THeldState> _currentStateSubject = new BehaviorSubject<THeldState>(default(THeldStateBuilder).DefaultState());
     private readonly ActionBlock<TransactionFunc> _transactionBuffer;
-
-    public THeldState LatestState => _currentStateSubject.Value;
-    public IObservable<THeldState> CurrentState { get; private set; }
+    
     public StateHolder()
     {
       _transactionBuffer = new ActionBlock<TransactionFunc>(
@@ -29,6 +25,11 @@ namespace ZES.Infrastructure.Utils
         }, new ExecutionDataflowBlockOptions { MaxDegreeOfParallelism = 1 });
       CurrentState = _currentStateSubject.DistinctUntilChanged();
     }
+    
+    private delegate void TransactionFunc(BehaviorSubject<THeldState> heldStateSubject);
+
+    public THeldState LatestState => _currentStateSubject.Value;
+    public IObservable<THeldState> CurrentState { get; private set; }
 
     public async Task<Task> UpdateState(Func<THeldStateBuilder, THeldStateBuilder> updateBlock)
     {

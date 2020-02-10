@@ -28,6 +28,7 @@ namespace ZES.Infrastructure.Streams
         {
             _eventStore = eventStore;
             _log = log;
+            
             // messageQueue.Alerts.OfType<OnTimelineChange>().Subscribe(e => Restart());
             messageQueue.Alerts.OfType<PullCompleted>().Subscribe(e => Restart());
             Restart();

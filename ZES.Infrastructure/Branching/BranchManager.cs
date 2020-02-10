@@ -83,7 +83,7 @@ namespace ZES.Infrastructure.Branching
             {
                 await _eventStore.DeleteStream(s);
                 _log.Info($"Deleted stream {s.Key}");
-                _graph.DeleteStream(s.Key);
+                await _graph.DeleteStream(s.Key);
             }
             
             _messageQueue.Alert(new InvalidateProjections());
@@ -189,7 +189,7 @@ namespace ZES.Infrastructure.Branching
             var locator = GetLocator<T>();
             var mergeFlow = new MergeFlow<T>(_activeTimeline, store, locator);
 
-            _eventStore.ListStreams(branchId).Subscribe(mergeFlow.InputBlock.AsObserver());
+            store.ListStreams(branchId).Subscribe(mergeFlow.InputBlock.AsObserver());
             
             try
             {
@@ -328,8 +328,8 @@ namespace ZES.Infrastructure.Branching
         private class CloneFlow<T> : Dataflow<IStream>
             where T : IEventSourced
         {
-            private readonly ActionBlock<IStream> _inputBlock;
             public int NumberOfStreams;
+            private readonly ActionBlock<IStream> _inputBlock;
 
             public CloneFlow(string timeline, long time, IEventStore<T> eventStore) 
                 : base(DataflowOptions.Default)

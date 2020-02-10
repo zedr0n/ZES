@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Reactive.Linq;
+using System.Reactive.Subjects;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Xml.Serialization;
@@ -27,6 +29,8 @@ namespace ZES.Infrastructure.Causality
         private readonly BidirectionalGraph<ICVertex, QEdge<ICVertex>> _graph
             = new BidirectionalGraph<ICVertex, QEdge<ICVertex>>();
 
+        private readonly BehaviorSubject<long> _position = new BehaviorSubject<long>(-1);
+
         /// <summary>
         /// Initializes a new instance of the <see cref="QGraph"/> class.
         /// </summary>
@@ -36,11 +40,13 @@ namespace ZES.Infrastructure.Causality
         {
             _store = store;
             _serializer = serializer;
-            store.SubscribeToAll(Position.Start - 1, MessageReceived);
+            Task.Run(() => store.SubscribeToAll(Position.Start - 1, MessageReceived));
         }
         
         private interface ICVertex
         {
+            [XmlIgnore]
+            string Id { get; }
             [XmlAttribute("Label")]
             string Label { get; }
             [XmlAttribute("Kind")]
@@ -49,6 +55,13 @@ namespace ZES.Infrastructure.Causality
             string MerkleHash { get; }
             [XmlAttribute("Timestamp")]
             string Timestamp { get; }
+        }
+
+        /// <inheritdoc />
+        public async Task Wait()
+        {
+            var position = await _store.ReadHeadPosition();
+            await _position.Timeout(Configuration.Timeout).FirstAsync(p => p == position);
         }
 
         /// <inheritdoc/>
@@ -61,8 +74,9 @@ namespace ZES.Infrastructure.Causality
         }
 
         /// <inheritdoc />
-        public void Serialise(string filename = "streams")
+        public async Task Serialise(string filename = "streams")
         {
+            await Wait();
             _graph.SerializeToGraphML<ICVertex, QEdge<ICVertex>, BidirectionalGraph<ICVertex,  QEdge<ICVertex>>>(filename + ".graphml");
         }
 
@@ -84,8 +98,9 @@ namespace ZES.Infrastructure.Causality
         }
 
         /// <inheritdoc />
-        public void DeleteStream(string key)
+        public async Task DeleteStream(string key)
         {
+            await Wait();
             var vertex = _graph.Vertices.OfType<StreamVertex>().SingleOrDefault(v => v.Key == key);
             if (vertex == null)
                 return;
@@ -104,8 +119,9 @@ namespace ZES.Infrastructure.Causality
         }
 
         /// <inheritdoc />
-        public void TrimStream(string key, int version)
+        public async Task TrimStream(string key, int version)
         {
+            await Wait();
             var streamVertex = _graph.Vertices.OfType<StreamVertex>().SingleOrDefault(v => v.Key == key);
             if (streamVertex == null)
                 return;
@@ -144,7 +160,7 @@ namespace ZES.Infrastructure.Causality
 
         private async Task<StreamVertex> AddStream(string key)
         {
-            if (key.Contains("Command") || key.StartsWith("$"))
+            if (key.Contains("Command") || key.StartsWith("$") || key.Contains("Saga"))
                 return null;
             
             var vertex = _graph.Vertices.OfType<StreamVertex>().SingleOrDefault(v => v.Key == key);
@@ -169,11 +185,13 @@ namespace ZES.Infrastructure.Causality
                     _graph.AddVertex(source);
                 }
 
-                if (source.Key != vertex.Key)
+                // LinkStream(source, vertex);
+                // AddEdge(new StreamEdge(source, vertex));
+                /* if (source.Key != vertex.Key)
                 {
-                    var edge = new ParentEdge(source, vertex);
+                    var edge = new StreamEdge(source, vertex);
                     _graph.AddEdge(edge);
-                }
+                }*/
             }
 
             return vertex;
@@ -199,6 +217,33 @@ namespace ZES.Infrastructure.Causality
             }
         }
 
+        private bool AddEdge<TEdge>(TEdge edge)
+            where TEdge : QEdge<ICVertex>
+        {
+            if (edge.Source == null || edge.Target == null)
+                return false;
+            
+            if (_graph.Edges.OfType<TEdge>().Any(e => e.Same(edge)))
+                return false;
+
+            if (edge.Source.Id == edge.Target.Id)
+                return false;
+
+            _graph.AddEdge(edge);
+            return true;
+        }
+
+        private bool LinkStream(StreamVertex source, ICVertex target) => AddEdge(new StreamEdge(source, target));
+        private bool LinkStream(EventVertex source, EventVertex target) => AddEdge(new StreamEdge(source, target));
+
+        private bool LinkCause(CausalityVertex source, CausalityVertex target)
+        {
+            if (source?.Kind != GraphKind.Command)
+                return AddEdge(new CausalityEdge(source, target));
+
+            return AddEdge(new CommandEdge(source, target));
+        }
+
         private async Task AddEvent(StreamMessage m)
         {
             if (m.StreamId.Contains("Saga"))
@@ -212,56 +257,50 @@ namespace ZES.Infrastructure.Causality
 
             var previousInStream = _graph.Vertices.OfType<EventVertex>().SingleOrDefault(s =>
                 s.StreamKey == m.StreamId && s.Version == metadata.Version - 1);
-            /*if (previousInStream == null)
-            {
-                var parentStreamVertex = _graph.InEdges(streamVertex).OfType<StreamEdge>().SingleOrDefault()?.Source;
-                if (parentStreamVertex != null)
-                {
-                    var previousStreamDependents = new List<ICVertex>();
-                    GetDependents<StreamEdge>(parentStreamVertex, previousStreamDependents);
-                    previousInStream = previousStreamDependents.OfType<EventVertex>()
-                        .SingleOrDefault(p => p.Version == m.StreamVersion);
-                }
-            }*/
             
-            if (previousInStream != null && !metadata.Idempotent)
-                _graph.AddEdge(new CausalityEdge(previousInStream, vertex));
-            if (m.StreamVersion > 0 && previousInStream != null)
-                _graph.AddEdge(new StreamEdge(previousInStream, vertex));
+            if (!metadata.Idempotent)
+                LinkCause(previousInStream, vertex);
+            if (m.StreamVersion - await _store.DeletedCount(m.StreamId) > 0)
+                LinkStream(previousInStream, vertex);
             else
-                _graph.AddEdge(new StreamEdge(streamVertex, vertex));
+                LinkStream(streamVertex, vertex);
 
             /*var childStreams = _graph.OutEdges(streamVertex).OfType<StreamEdge>()
                 .Select(e => e.Target).OfType<StreamVertex>();
             foreach (var child in childStreams.Where(c => c.ParentVersion == metadata.Version))
                 _graph.AddEdge(new StreamEdge(vertex, child));*/
 
-            if (metadata.AncestorId != Guid.Empty)
+            /*if (metadata.AncestorId != Guid.Empty)
             {
                 var ancestor = _graph.Vertices.OfType<EventVertex>().SingleOrDefault(s => s.MessageId == metadata.AncestorId);
                 if (ancestor != null && !_graph.Edges.OfType<CausalityEdge>().Any(e => 
                         e.Source.MessageId == metadata.AncestorId && e.Target.MessageId == m.MessageId))
                     _graph.AddEdge(new CausalityEdge(ancestor, vertex)); 
-            }
+
+            }*/
             
             var dependents = _graph.Vertices.OfType<EventVertex>().Where(s => s.AncestorId == m.MessageId);
             foreach (var d in dependents)
             {
-                if (!_graph.Edges.OfType<CausalityEdge>().Any(e => e.Source.MessageId == m.MessageId && e.Target.MessageId == d.MessageId))
-                    _graph.AddEdge(new CausalityEdge(vertex, d));
+                /*if (!_graph.Edges.OfType<CausalityEdge>().Any(e => e.Source.MessageId == m.MessageId && e.Target.MessageId == d.MessageId))
+                    _graph.AddEdge(new CausalityEdge(vertex, d));*/
+
+                LinkCause(vertex, d);
             }
 
             var ancestors = _graph.Vertices.OfType<CausalityVertex>().Where(s => s.MessageId == metadata.AncestorId);
             foreach (var a in ancestors)
             {
-                if (!_graph.Edges.OfType<CausalityEdge>().Any(e =>
+                /*if (!_graph.Edges.OfType<CausalityEdge>().Any(e =>
                     e.Source.MessageId == metadata.AncestorId && e.Target.MessageId == metadata.MessageId))
                 {
                     if (a.Kind == GraphKind.Command)
                         _graph.AddEdge(new CommandEdge(a, vertex));
                     else
                         _graph.AddEdge(new CausalityEdge(a, vertex));
-                }
+                }*/
+
+                LinkCause(a, vertex);
             }
 
             vertex.MerkleHash = CalculateHash(vertex, await m.GetJsonData());
@@ -272,21 +311,24 @@ namespace ZES.Infrastructure.Causality
         {
             var metadata = _serializer.DecodeMetadata(m.JsonMetadata);
 
-            var vertex = new CommandVertex(metadata.MessageId, metadata.AncestorId, metadata.MessageType, metadata.Timestamp);
+            var vertex = new CommandVertex(metadata.MessageId, metadata.AncestorId, metadata.MessageType, m.StreamId, metadata.Timestamp);
             _graph.AddVertex(vertex);
 
             var dependents = _graph.Vertices.OfType<CausalityVertex>().Where(v => v.AncestorId == m.MessageId);
             foreach (var d in dependents)
             {
-                if (!_graph.Edges.OfType<CommandEdge>().Any(e => e.Source?.MessageId == m.MessageId && e.Target.MessageId == d.MessageId))
-                    _graph.AddEdge(new CommandEdge(vertex, d));
+                /*if (!_graph.Edges.OfType<CommandEdge>().Any(e => e.Source?.MessageId == m.MessageId && e.Target.MessageId == d.MessageId))
+                    _graph.AddEdge(new CommandEdge(vertex, d));*/
+
+                LinkCause(vertex, d);
             }
 
             var ancestors = _graph.Vertices.OfType<CausalityVertex>().Where(v => v.MessageId == metadata.AncestorId);
             foreach (var a in ancestors)
             {
-                if (!_graph.Edges.OfType<CausalityEdge>().Any(e => e.Source?.MessageId == a.MessageId && e.Target?.MessageId == m.MessageId))
-                    _graph.AddEdge(new CausalityEdge(a, vertex));
+                /*if (!_graph.Edges.OfType<CausalityEdge>().Any(e => e.Source?.MessageId == a.MessageId && e.Target?.MessageId == m.MessageId))
+                    _graph.AddEdge(new CausalityEdge(a, vertex));*/
+                LinkCause(a, vertex);
             }
 
             vertex.MerkleHash = CalculateHash(vertex, await m.GetJsonData());
@@ -297,13 +339,15 @@ namespace ZES.Infrastructure.Causality
             StreamMessage streamMessage,
             CancellationToken cancellationToken)
         {
-            if (streamMessage.StreamId.Contains("metadata") || streamMessage.StreamId.Contains("$"))
-                return;
+            if (!streamMessage.StreamId.Contains("metadata") && !streamMessage.StreamId.Contains("$"))
+            {
+                if (streamMessage.StreamId.Contains("Command"))
+                    await AddCommand(streamMessage);
+                else
+                    await AddEvent(streamMessage);
+            }
             
-            if (streamMessage.StreamId.Contains("Command"))
-                await AddCommand(streamMessage);
-            else
-                await AddEvent(streamMessage);
+            _position.OnNext(streamMessage.Position);
         }
 
         private string CalculateHash(ICVertex vertex, string jsonData)
@@ -377,7 +421,8 @@ namespace ZES.Infrastructure.Causality
         }
 
         [Serializable]
-        private class QEdge<TVertex> : IEdge<TVertex>
+        private abstract class QEdge<TVertex> : IEdge<TVertex>
+            where TVertex : ICVertex 
         {
             private SEdge<TVertex> _edge;
 
@@ -390,18 +435,16 @@ namespace ZES.Infrastructure.Causality
             public TVertex Target => _edge.Target;
             [XmlAttribute("Kind")]
             public virtual string Kind { get; }
-        }
-
-        private class ParentEdge : QEdge<ICVertex>
-        {
-            public ParentEdge(ICVertex source, ICVertex target) 
-                : base(source, target)
+            
+            public bool Same(IEdge<TVertex> other)
             {
-            }
+                if (other == null)
+                    return false;
 
-            public override string Kind => GraphKind.Parent;
+                return Source.Id == other.Source.Id && Target.Id == other.Target.Id;
+            }
         }
-        
+
         private class StreamEdge : QEdge<ICVertex>
         {
             public StreamEdge(ICVertex source, ICVertex target)
@@ -420,7 +463,6 @@ namespace ZES.Infrastructure.Causality
             }
             
             public new CommandVertex Source => base.Source as CommandVertex;
-            public new EventVertex Target => base.Target as EventVertex;
 
             public override string Kind => GraphKind.Command;
         }
@@ -454,6 +496,7 @@ namespace ZES.Infrastructure.Causality
             public string Timestamp => DateTime.Now.ToUniversalTime()
                 .ToString("yyyy'-'MM'-'dd'T'HH':'mm':'ss'.'fff'Z'");
 
+            public string Id => Key;
             public string Label => Key; 
             public string Kind => GraphKind.Stream;
             public string Key { get; }
@@ -464,17 +507,20 @@ namespace ZES.Infrastructure.Causality
         [DebuggerDisplay("{Label}")]
         private abstract class CausalityVertex : ICVertex
         {
-            public CausalityVertex(Guid messageId, Guid ancestorId, long timestamp)
+            public CausalityVertex(Guid messageId, Guid ancestorId, long timestamp, string streamKey)
             {
                 MessageId = messageId;
                 AncestorId = ancestorId;
                 Timestamp = DateTimeOffset.FromUnixTimeMilliseconds(timestamp).DateTime.ToUniversalTime()
                     .ToString("yyyy'-'MM'-'dd'T'HH':'mm':'ss'.'fff'Z'");
+                StreamKey = streamKey;
             }
                 
             public Guid MessageId { get; }
             public Guid AncestorId { get; }
             public string MerkleHash { get; set; }
+            public string StreamKey { get; }
+            public string Id => $"{StreamKey}:{MessageId.ToString()}";
             public abstract string Label { get; }
             public virtual string Kind => GraphKind.Causality;
             public string Timestamp { get; }
@@ -485,14 +531,12 @@ namespace ZES.Infrastructure.Causality
         private class EventVertex : CausalityVertex 
         {
             public EventVertex(Guid messageId, Guid ancestorId, string eventType, string streamKey, int version, long timestamp)
-                : base(messageId, ancestorId, timestamp)
+                : base(messageId, ancestorId, timestamp, streamKey)
             {
                 EventType = eventType;
-                StreamKey = streamKey;
                 Version = version;
             }
 
-            public string StreamKey { get; }
             public int Version { get; }
             public string EventType { get; }
             public override string Label => $"{EventType}@{Version}";
@@ -503,8 +547,8 @@ namespace ZES.Infrastructure.Causality
         [DebuggerDisplay("{Label}")]
         private class CommandVertex : CausalityVertex
         {
-            public CommandVertex(Guid messageId, Guid ancestorId, string commandType, long timestamp)
-                : base(messageId, ancestorId, timestamp)
+            public CommandVertex(Guid messageId, Guid ancestorId, string commandType, string streamKey, long timestamp)
+                : base(messageId, ancestorId, timestamp, streamKey)
             {
                 CommandType = commandType;
             }

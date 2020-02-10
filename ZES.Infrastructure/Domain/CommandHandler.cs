@@ -1,9 +1,7 @@
 using System;
 using System.Threading.Tasks;
 using ZES.Interfaces;
-using ZES.Interfaces.Causality;
 using ZES.Interfaces.Domain;
-using ZES.Interfaces.Pipes;
 
 namespace ZES.Infrastructure.Domain
 {
@@ -19,8 +17,6 @@ namespace ZES.Infrastructure.Domain
         private readonly ILog _log;
         private readonly IErrorLog _errorLog;
         private readonly ITimeline _timeline;
-        private readonly IGraph _graph;
-        private readonly IMessageQueue _messageQueue;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="CommandHandler{T}"/> class.
@@ -30,17 +26,13 @@ namespace ZES.Infrastructure.Domain
         /// <param name="timeline">Active timeline</param>
         /// <param name="commandLog">Command log</param>
         /// <param name="errorLog">Error log</param>
-        /// <param name="graph">Graph instance</param>
-        /// <param name="messageQueue">Message queue</param>
-        public CommandHandler(ICommandHandler<T> handler, ILog log, ITimeline timeline, ICommandLog commandLog, IErrorLog errorLog, IGraph graph, IMessageQueue messageQueue)
+        public CommandHandler(ICommandHandler<T> handler, ILog log, ITimeline timeline, ICommandLog commandLog, IErrorLog errorLog)
         {
             _handler = handler;
             _log = log;
             _timeline = timeline;
             _commandLog = commandLog;
             _errorLog = errorLog;
-            _graph = graph;
-            _messageQueue = messageQueue;
         }
 
         /// <inheritdoc />
@@ -69,7 +61,8 @@ namespace ZES.Infrastructure.Domain
             {
                 await _handler.Handle(iCommand);
                 await _commandLog.AppendCommand(iCommand);
-                await _graph.AddCommand(iCommand);
+                
+                // await _graph.AddCommand(iCommand);
             }
             catch (Exception e)
             {

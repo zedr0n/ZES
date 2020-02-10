@@ -121,7 +121,7 @@ namespace ZES.Tests
             await await bus.CommandAsync(updateCommand);
 
             await bus.IsTrue(new RootInfoQuery("UpdateRoot.Root"), r => r.UpdatedAt > r.CreatedAt);
-            var graph = container.GetInstance<IQGraph>();
+            var graph = container.GetInstance<IGraph>();
             await graph.Serialise(nameof(CanUpdateRoot));
         }
 
@@ -223,7 +223,7 @@ namespace ZES.Tests
             await bus.IsTrue(new RootInfoQuery("RootCopy"), r => r.CreatedAt > 0);
             await bus.IsTrue(new RootInfoQuery("RootCopy"), r => r.UpdatedAt == r.CreatedAt);
 
-            var graph = container.GetInstance<IQGraph>();
+            var graph = container.GetInstance<IGraph>();
             await graph.Serialise();
         }
 

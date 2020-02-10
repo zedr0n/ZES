@@ -11,7 +11,6 @@ using ZES.Infrastructure.Domain;
 using ZES.Infrastructure.Serialization;
 using ZES.Infrastructure.Utils;
 using ZES.Interfaces;
-using ZES.Interfaces.Causality;
 using ZES.Interfaces.Domain;
 using ZES.Interfaces.EventStore;
 using ZES.Interfaces.Pipes;
@@ -29,7 +28,6 @@ namespace ZES.Infrastructure
         private readonly Subject<IStream> _streams = new Subject<IStream>();
         private readonly IMessageQueue _messageQueue;
         private readonly ILog _log;
-        private readonly IGraph _graph;
 
         private readonly bool _isDomainStore;
 
@@ -40,14 +38,12 @@ namespace ZES.Infrastructure
         /// <param name="serializer">Event serializer</param>
         /// <param name="messageQueue">Message queue</param>
         /// <param name="log">Application log</param>
-        /// <param name="graph">Graph instance</param>
-        public SqlEventStore(IStreamStore streamStore, ISerializer<IEvent> serializer, IMessageQueue messageQueue, ILog log, IGraph graph)
+        public SqlEventStore(IStreamStore streamStore, ISerializer<IEvent> serializer, IMessageQueue messageQueue, ILog log)
         {
             _streamStore = streamStore;
             _serializer = serializer;
             _messageQueue = messageQueue;
             _log = log;
-            _graph = graph;
             _isDomainStore = typeof(I) == typeof(IAggregate);
         }
 
@@ -136,14 +132,14 @@ namespace ZES.Infrastructure
                     stream.Key,
                     metadataJson: _serializer.EncodeStreamMetadata(stream)); // JExtensions.JStreamMetadata(stream));
 
-                await _graph.AddStreamMetadata(stream);
-                
+                // await _graph.AddStreamMetadata(stream);
                 _streams.OnNext(stream); 
             }
             
             if (publish)
                 PublishEvents(events);
-            await UpdateGraph(events);
+                    
+            // await UpdateGraph(events);
         }
 
         /// <inheritdoc />
@@ -168,15 +164,6 @@ namespace ZES.Infrastructure
             _messageQueue.Alert(new InvalidateProjections());
         }
 
-        private async Task UpdateGraph(IEnumerable<IEvent> events)
-        {
-            if (events == null)
-                return;
-
-            foreach (var e in events)
-                await _graph.AddEvent(e);
-        }
-        
         private async Task ReadSingleStream<T>(IObserver<T> observer, IStream stream, int start, int count)
         {
             var position = stream.ReadPosition(start);

@@ -37,7 +37,7 @@ namespace ZES.Infrastructure.Branching
         private readonly IEventStore<ISaga> _sagaStore;
         private readonly IStreamLocator<IAggregate> _streamLocator;
         private readonly IStreamLocator<ISaga> _sagaLocator;
-        private readonly IQGraph _graph;
+        private readonly IGraph _graph;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="BranchManager"/> class.
@@ -58,7 +58,7 @@ namespace ZES.Infrastructure.Branching
             IEventStore<ISaga> sagaStore,
             IStreamLocator<IAggregate> streamLocator,
             IStreamLocator<ISaga> sagaLocator,
-            IQGraph graph)
+            IGraph graph)
         {
             _log = log;
             _activeTimeline = activeTimeline as Timeline;

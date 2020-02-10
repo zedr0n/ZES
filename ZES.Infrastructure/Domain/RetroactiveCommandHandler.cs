@@ -65,7 +65,6 @@ namespace ZES.Infrastructure.Domain
                 return;
             } 
             
-            await _bus.Pause();
             await _manager.Branch(branch, time - 1);
             
             var stream = _streamLocator.Find<TRoot>(iCommand.Target, branch);
@@ -79,7 +78,6 @@ namespace ZES.Infrastructure.Domain
             await _retroactive.InsertIntoStream(stream, prevVersion + 1, e);
 
             await _manager.DeleteBranch(branch);
-            await _bus.Unpause();
         }
 
         /// <inheritdoc />

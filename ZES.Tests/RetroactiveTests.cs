@@ -28,6 +28,23 @@ namespace ZES.Tests
         }
 
         [Fact]
+        public async void CanCreateGraph()
+        {
+            var container = CreateContainer();
+            var bus = container.GetInstance<IBus>();
+            var graph = container.GetInstance<IGraph>();
+            var manager = container.GetInstance<IBranchManager>();
+
+            var command = new CreateRoot("Root");
+            await await bus.CommandAsync(command);
+            await manager.Branch("test"); 
+
+            await await bus.CommandAsync(new UpdateRoot("Root"));
+
+            await graph.Populate();
+        }
+
+        [Fact]
         public async void CanTrimStream()
         {
             var container = CreateContainer();
@@ -54,7 +71,7 @@ namespace ZES.Tests
             var container = CreateContainer();
             var bus = container.GetInstance<IBus>();
             var timeline = container.GetInstance<ITimeline>();
-            var graph = container.GetInstance<IQGraph>();
+            var graph = container.GetInstance<IGraph>();
             
             var timestamp = timeline.Now;
             var lastTime = timestamp + (60 * 1000);
@@ -78,7 +95,7 @@ namespace ZES.Tests
             var streamLocator = container.GetInstance<IStreamLocator<IAggregate>>();
             var eventStore = container.GetInstance<IEventStore<IAggregate>>();
             var retroactive = container.GetInstance<IRetroactive>();
-            var graph = container.GetInstance<IQGraph>();
+            var graph = container.GetInstance<IGraph>();
 
             await await bus.CommandAsync(new CreateRoot("Root"));
             
@@ -117,7 +134,7 @@ namespace ZES.Tests
             var eventStore = container.GetInstance<IEventStore<IAggregate>>();
             var streamLocator = container.GetInstance<IStreamLocator<IAggregate>>();
             var retroactive = container.GetInstance<IRetroactive>();
-            var graph = container.GetInstance<IQGraph>();
+            var graph = container.GetInstance<IGraph>();
 
             await await bus.CommandAsync(new CreateRoot("Root"));
             var timestamp = timeline.Now;
@@ -161,7 +178,7 @@ namespace ZES.Tests
             var container = CreateContainer(new List<Action<Container>> { Config.RegisterSagas });
             var bus = container.GetInstance<IBus>();
             var timeline = container.GetInstance<ITimeline>();
-            var graph = container.GetInstance<IQGraph>();
+            var graph = container.GetInstance<IGraph>();
             
             var timestamp = timeline.Now;
             var lastTime = timestamp + (60 * 1000);

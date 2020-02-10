@@ -21,7 +21,7 @@ namespace ZES.GraphQL
     {
         private readonly IBus _bus;
         private readonly ILog _log;
-        private readonly IQGraph _graph;
+        private readonly IGraph _graph;
         private readonly IBranchManager _manager;
         private readonly IEnumerable<IGraphQlMutation> _mutations;
         private readonly IEnumerable<IGraphQlQuery> _queries;
@@ -37,7 +37,7 @@ namespace ZES.GraphQL
         /// <param name="queries">GraphQL queries</param>
         /// <param name="services">Asp.Net services collection</param>
         /// <param name="graph">QGraph</param>
-        public SchemaProvider(IBus bus, ILog log, IBranchManager manager, IEnumerable<IGraphQlMutation> mutations, IEnumerable<IGraphQlQuery> queries, IServiceCollection services, IQGraph graph)
+        public SchemaProvider(IBus bus, ILog log, IBranchManager manager, IEnumerable<IGraphQlMutation> mutations, IEnumerable<IGraphQlQuery> queries, IServiceCollection services, IGraph graph)
         {
             _bus = bus;
             _log = log;
@@ -87,7 +87,7 @@ namespace ZES.GraphQL
             _services.AddSingleton(typeof(ILog), _log);
             _services.AddSingleton(typeof(IBus), _bus);
             _services.AddSingleton(typeof(IBranchManager), _manager);
-            _services.AddSingleton(typeof(IQGraph), _graph);
+            _services.AddSingleton(typeof(IGraph), _graph);
 
             _services.AddInMemorySubscriptionProvider();
             

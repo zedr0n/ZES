@@ -59,7 +59,7 @@ namespace ZES.Tests
             await time.Merge("test");
             await bus.Equal(new StatsQuery(), s => s.NumberOfRoots, 4);
 
-            var graph = container.GetInstance<IQGraph>();
+            var graph = container.GetInstance<IGraph>();
             await graph.Serialise(nameof(CanMergeTimeline));
         }
 
@@ -132,7 +132,7 @@ namespace ZES.Tests
             await bus.IsTrue(new RootInfoQuery("TestRoot"), r => r.CreatedAt > 0);
             await bus.IsTrue(new RootInfoQuery("Root"), r => r.CreatedAt > 0 && r.CreatedAt == r.UpdatedAt);
 
-            var graph = container.GetInstance<IQGraph>();
+            var graph = container.GetInstance<IGraph>();
             await graph.Serialise();
         }
 
@@ -170,7 +170,7 @@ namespace ZES.Tests
             await timeTraveller.Merge("test");
             await bus.IsTrue(new StatsQuery(), s => s.NumberOfRoots == 3);
 
-            var graph = container.GetInstance<IQGraph>();
+            var graph = container.GetInstance<IGraph>();
             await graph.Populate();
             await graph.Serialise();
         }

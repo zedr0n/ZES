@@ -1,45 +1,52 @@
 using System.Threading.Tasks;
-using ZES.Interfaces.Domain;
-using ZES.Interfaces.EventStore;
 
 namespace ZES.Interfaces.Causality
 {
     /// <summary>
-    /// Update interface for graph
+    /// Graph representation of the stream store
     /// </summary>
     public interface IGraph
     {
         /// <summary>
-        /// Create graph schema
+        /// Wait for graph to be ready
         /// </summary>
-        void Initialize();
+        /// <returns>Completes when subscription for the graph catches up to store</returns>
+        Task Wait();
+        
+        /// <summary>
+        /// Repopulate the graph 
+        /// </summary>
+        /// <returns>Task representing the asynchronous population of the graph</returns>
+        Task Populate();
 
         /// <summary>
-        /// Pause all graph operations for <paramref name="ms"/>
+        /// Serialise the graph to GraphML
         /// </summary>
-        /// <param name="ms">Number of milliseconds to pause for</param>
-        /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
-        Task Pause(int ms);
+        /// <param name="filename">GraphML output filename</param>
+        /// <returns>Completes when subscription catches up with store and serialisation is done</returns>
+        Task Serialise(string filename = "streams.graphml");
 
         /// <summary>
-        /// Add new event node 
+        /// Get timestamp of event in stream
         /// </summary>
-        /// <param name="e">Event instance</param>
-        /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
-        Task AddEvent(IEvent e);
+        /// <param name="key">Stream key</param>
+        /// <param name="version">Event version</param>
+        /// <returns>Event timestamp</returns>
+        long GetTimestamp(string key, int version);
 
         /// <summary>
-        /// Add new command node
+        /// Remove stream from graph
         /// </summary>
-        /// <param name="command">Command</param>
-        /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
-        Task AddCommand(ICommand command);
+        /// <param name="key">Stream key</param>
+        /// <returns>Completes when the stream is deleted</returns>
+        Task DeleteStream(string key);
 
         /// <summary>
-        /// Add stream metadata node
+        /// Trim stream after version
         /// </summary>
-        /// <param name="stream">Stream info</param>
-        /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
-        Task AddStreamMetadata(IStream stream);
+        /// <param name="key">Stream key</param>
+        /// <param name="version">Last version to keep</param>
+        /// <returns>Completes when the stream is trimmed</returns>
+        Task TrimStream(string key, int version);
     }
 }

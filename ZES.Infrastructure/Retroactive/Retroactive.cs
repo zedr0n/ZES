@@ -18,7 +18,7 @@ namespace ZES.Infrastructure.Retroactive
     {
         private readonly IEventStore<IAggregate> _eventStore;
         private readonly IBranchManager _manager;
-        private readonly IQGraph _graph;
+        private readonly IGraph _graph;
         private readonly IStreamLocator<IAggregate> _streamLocator;
         private readonly IMessageQueue _messageQueue;
 
@@ -30,7 +30,7 @@ namespace ZES.Infrastructure.Retroactive
         /// <param name="manager">Branch manager</param>
         /// <param name="streamLocator">Stream locator</param>
         /// <param name="messageQueue">Message queue</param>
-        public Retroactive(IEventStore<IAggregate> eventStore, IQGraph graph, IBranchManager manager, IStreamLocator<IAggregate> streamLocator, IMessageQueue messageQueue)
+        public Retroactive(IEventStore<IAggregate> eventStore, IGraph graph, IBranchManager manager, IStreamLocator<IAggregate> streamLocator, IMessageQueue messageQueue)
         {
             _eventStore = eventStore;
             _graph = graph;

@@ -21,7 +21,7 @@ using ZES.Interfaces.Serialization;
 namespace ZES.Infrastructure.Causality
 {
     /// <inheritdoc />
-    public class QGraph : IQGraph
+    public class Graph : IGraph
     {
         private readonly IStreamStore _store;
         private readonly ISerializer<IEvent> _serializer;
@@ -32,11 +32,11 @@ namespace ZES.Infrastructure.Causality
         private readonly BehaviorSubject<long> _position = new BehaviorSubject<long>(-1);
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="QGraph"/> class.
+        /// Initializes a new instance of the <see cref="Graph"/> class.
         /// </summary>
         /// <param name="store">Stream store</param>
         /// <param name="serializer">Metadata serializer</param>
-        public QGraph(IStreamStore store, ISerializer<IEvent> serializer)
+        public Graph(IStreamStore store, ISerializer<IEvent> serializer)
         {
             _store = store;
             _serializer = serializer;

@@ -10,7 +10,7 @@ namespace ZES.GraphQL
     public class BaseMutations : GraphQlMutation
     {
         private readonly IBranchManager _manager;
-        private readonly IQGraph _graph;
+        private readonly IGraph _graph;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="BaseMutations"/> class.
@@ -19,7 +19,7 @@ namespace ZES.GraphQL
         /// <param name="log">Log service</param>
         /// <param name="manager">Branch manager</param>
         /// <param name="graph">Graph</param>
-        public BaseMutations(IBus bus, ILog log, IBranchManager manager, IQGraph graph) 
+        public BaseMutations(IBus bus, ILog log, IBranchManager manager, IGraph graph) 
             : base(bus, log)
         {
             _manager = manager;

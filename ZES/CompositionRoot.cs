@@ -53,7 +53,7 @@ namespace ZES
                      c.Consumer.ImplementationType.GetGenericArguments().Contains(typeof(IAggregate)) ||
                      c.Consumer.ImplementationType.GetInterfaces().Contains(typeof(IBranchManager)) || 
                      c.Consumer.ImplementationType == typeof(CommandLog) ||
-                     c.Consumer.ImplementationType == typeof(QGraph))
+                     c.Consumer.ImplementationType == typeof(Graph))
                 ;
 
             /* container.RegisterConditional(
@@ -89,18 +89,7 @@ namespace ZES
 
             container.Register(typeof(IStreamLocator<>), typeof(StreamLocator<>), Lifestyle.Singleton);    
             container.Register(typeof(IEsRepository<>), typeof(EsRepository<>), Lifestyle.Singleton);
-            if (Configuration.GraphEnabled())
-            {
-                container.Register<IGraph, VGraph>(Lifestyle.Singleton);
-                container.Register<IReadGraph, VReadGraph>(Lifestyle.Singleton);
-            }
-            else
-            {
-                container.Register<IGraph, NullGraph>(Lifestyle.Singleton);
-                container.Register<IReadGraph, NullReadGraph>(Lifestyle.Singleton);
-            }
-            
-            container.Register<IQGraph, QGraph>(Lifestyle.Singleton);
+            container.Register<IGraph, Graph>(Lifestyle.Singleton);
             
             container.RegisterDecorator(
                 typeof(ICommandHandler<>),

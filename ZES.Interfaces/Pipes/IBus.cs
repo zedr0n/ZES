@@ -24,17 +24,5 @@ namespace ZES.Interfaces.Pipes
         /// <typeparam name="TResult">Query result type</typeparam>
         /// <returns>Task representing the asynchronous query processing</returns>
         Task<TResult> QueryAsync<TResult>(IQuery<TResult> query);
-
-        /// <summary>
-        /// Pause the command bus queueing the commands
-        /// </summary>
-        /// <returns>Returns immediately after pausing</returns>
-        Task Pause();
-        
-        /// <summary>
-        /// Unpause the command bus dispatching all the queued commands 
-        /// </summary>
-        /// <returns>Task completes when all the queued commands are dispatched</returns>
-        Task Unpause();
     }
 }

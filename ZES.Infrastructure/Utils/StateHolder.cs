@@ -7,14 +7,22 @@ using System.Threading.Tasks.Dataflow;
 
 namespace ZES.Infrastructure.Utils
 {
+  /// <summary>
+  /// Async state holder
+  /// </summary>
+  /// <typeparam name="THeldState">Held state type</typeparam>
+  /// <typeparam name="THeldStateBuilder">Held state builder</typeparam>
   public abstract class StateHolder<THeldState, THeldStateBuilder> 
     where THeldState : struct
     where THeldStateBuilder : struct, IHeldStateBuilder<THeldState, THeldStateBuilder>
   {
     private readonly BehaviorSubject<THeldState> _currentStateSubject = new BehaviorSubject<THeldState>(default(THeldStateBuilder).DefaultState());
     private readonly ActionBlock<TransactionFunc> _transactionBuffer;
-    
-    public StateHolder()
+
+    /// <summary>
+    /// Initializes a new instance of the <see cref="StateHolder{THeldState, THeldStateBuilder}"/> class.
+    /// </summary>
+    protected StateHolder()
     {
       _transactionBuffer = new ActionBlock<TransactionFunc>(
         transaction =>
@@ -28,9 +36,16 @@ namespace ZES.Infrastructure.Utils
     
     private delegate void TransactionFunc(BehaviorSubject<THeldState> heldStateSubject);
 
-    public THeldState LatestState => _currentStateSubject.Value;
-    public IObservable<THeldState> CurrentState { get; private set; }
+    /// <summary>
+    /// Gets observable for current value of the state
+    /// </summary>
+    public IObservable<THeldState> CurrentState { get; }
 
+    /// <summary>
+    /// Asynchronously update the state
+    /// </summary>
+    /// <param name="updateBlock">Builder update block</param>
+    /// <returns>Returns the task representing the update of the state</returns>
     public async Task<Task> UpdateState(Func<THeldStateBuilder, THeldStateBuilder> updateBlock)
     {
       var taskCompletionSource = new TaskCompletionSource<Unit>();
@@ -64,7 +79,12 @@ namespace ZES.Infrastructure.Utils
       return taskCompletionSource.Task;
     }
 
-    // Use this in xStateHolder class to make observable projections of elements in the state.
+    /// <summary>
+    /// Project the sub-values of the state 
+    /// </summary>
+    /// <param name="block">Sub-value projection</param>
+    /// <typeparam name="T">Sub-value type</typeparam>
+    /// <returns>Observable representing the sub-value</returns>
     public IObservable<T> Project<T>(Func<THeldState, T> block)
     {
       return CurrentState.Select(block).DistinctUntilChanged();

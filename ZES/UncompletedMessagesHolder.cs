@@ -4,8 +4,14 @@ using ZES.Infrastructure.Utils;
 
 namespace ZES
 {
-    public class UncompletedMessagesHolder : StateHolder<UncompletedMessages, UncompletedMessagesBuilder>
+    /// <inheritdoc />
+    public class UncompletedMessagesHolder : StateHolder<UncompletedMessagesHolder.State, UncompletedMessagesHolder.Builder>
     {
+        /// <summary>
+        /// Counter of uncompleted messages
+        /// </summary>
+        /// <param name="timeline">Timeline id</param>
+        /// <returns>Observable representing the counter state</returns>
         public IObservable<int> UncompletedMessages(string timeline)
         {
             return Project(x =>
@@ -15,35 +21,52 @@ namespace ZES
                 return 0;
             });
         }
-    }
 
-    public struct UncompletedMessages
-    {
-        public ConcurrentDictionary<string, int> Count;
-
-        public UncompletedMessages(ConcurrentDictionary<string, int> count)
+        /// <summary>
+        /// Held state
+        /// </summary>
+        public struct State
         {
-           Count = new ConcurrentDictionary<string, int>(count); 
-        }
-    }
-
-    public struct UncompletedMessagesBuilder : IHeldStateBuilder<UncompletedMessages, UncompletedMessagesBuilder>
-    {
-        public ConcurrentDictionary<string, int> Count { get; private set; }
-        
-        public void InitializeFrom(UncompletedMessages state)
-        {
-            Count = new ConcurrentDictionary<string, int>(state.Count);
-        }
-
-        public UncompletedMessages Build()
-        {
-           return new UncompletedMessages(Count); 
+            /// <summary>
+            /// Initializes a new instance of the <see cref="State"/> struct.
+            /// </summary>
+            /// <param name="count">Count dictionary</param>
+            public State(ConcurrentDictionary<string, int> count)
+            {
+                Count = new ConcurrentDictionary<string, int>(count); 
+            }
+            
+            /// <summary>
+            /// Gets current count per branch 
+            /// </summary>
+            public ConcurrentDictionary<string, int> Count { get; }
         }
 
-        public UncompletedMessages DefaultState()
+        /// <inheritdoc />
+        public struct Builder : IHeldStateBuilder<State, Builder>
         {
-            return new UncompletedMessages(new ConcurrentDictionary<string, int>());
+            /// <summary>
+            /// Gets or sets [branch, number of uncompleted messages]
+            /// </summary>
+            public ConcurrentDictionary<string, int> Count { get; set; }
+
+            /// <inheritdoc />
+            public void InitializeFrom(State state)
+            {
+                Count = new ConcurrentDictionary<string, int>(state.Count);
+            }
+
+            /// <inheritdoc />
+            public State Build()
+            {
+                return new State(Count); 
+            }
+
+            /// <inheritdoc />
+            public State DefaultState()
+            {
+                return new State(new ConcurrentDictionary<string, int>());
+            }
         }
     }
 }

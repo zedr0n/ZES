@@ -105,7 +105,10 @@ namespace ZES
                 await handler.Handle(command).ConfigureAwait(false);
         }
 
-        public class BranchCommandDispatcher : ParallelDataDispatcher<string, Tracked<ICommand>>
+        /// <summary>
+        /// Command dispatcher parallel by branch
+        /// </summary>
+        private class BranchCommandDispatcher : ParallelDataDispatcher<string, Tracked<ICommand>>
         {
             private readonly Func<ICommand, Task> _handler;
             private readonly ITimeline _timeline;

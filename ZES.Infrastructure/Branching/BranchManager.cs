@@ -86,6 +86,7 @@ namespace ZES.Infrastructure.Branching
                 await _graph.DeleteStream(s.Key);
             }
             
+            _messageQueue.Alert(new BranchDeleted(branchId));
             _messageQueue.Alert(new InvalidateProjections());
         }
 

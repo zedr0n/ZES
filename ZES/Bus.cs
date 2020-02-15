@@ -1,11 +1,13 @@
 using System;
 using System.Collections.Concurrent;
+using System.Reactive.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Threading.Tasks.Dataflow;
 using Gridsum.DataflowEx;
 using SimpleInjector;
 using ZES.Infrastructure;
+using ZES.Infrastructure.Alerts;
 using ZES.Infrastructure.Dataflow;
 using ZES.Interfaces;
 using ZES.Interfaces.Domain;
@@ -27,12 +29,15 @@ namespace ZES
         /// <param name="container"><see cref="SimpleInjector"/> container</param>
         /// <param name="log">Application log</param>
         /// <param name="timeline">Timeline</param>
-        public Bus(Container container, ILog log, ITimeline timeline)
+        /// <param name="messageQueue">Message queue</param>
+        public Bus(Container container, ILog log, ITimeline timeline, IMessageQueue messageQueue)
         {
             _container = container;
             _log = log;
             _timeline = timeline;
-       }
+
+            messageQueue.Alerts.OfType<BranchDeleted>().Subscribe(e => DeleteDispatcher(e.BranchId));
+        }
         
         /// <inheritdoc />
         public async Task<Task> CommandAsync(ICommand command)
@@ -56,6 +61,11 @@ namespace ZES
             return default(TResult);            
         }
         
+        private void DeleteDispatcher(string timeline)
+        {
+            _dispatchers.TryRemove(timeline, out var dispatcher);
+        }
+
         private CommandDispatcher CreateDispatcher(string timeline) => new CommandDispatcher(
             HandleCommand, 
             timeline, 

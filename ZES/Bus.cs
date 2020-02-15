@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Concurrent;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Threading.Tasks.Dataflow;
@@ -16,8 +17,9 @@ namespace ZES
     public class Bus : IBus
     {
         private readonly Container _container;
-        private readonly BranchCommandDispatcher _commandDispatcher;
+        private readonly ConcurrentDictionary<string, CommandDispatcher> _dispatchers = new ConcurrentDictionary<string, CommandDispatcher>();
         private readonly ILog _log;
+        private readonly ITimeline _timeline;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="Bus"/> class.
@@ -29,18 +31,15 @@ namespace ZES
         {
             _container = container;
             _log = log;
-            _commandDispatcher = new BranchCommandDispatcher(
-                HandleCommand, 
-                _log,
-                timeline, 
-                new DataflowOptions { RecommendedParallelismIfMultiThreaded = 8 });
-        }
-
+            _timeline = timeline;
+       }
+        
         /// <inheritdoc />
         public async Task<Task> CommandAsync(ICommand command)
         {
             var tracked = new Tracked<ICommand>(command);
-            await _commandDispatcher.SendAsync(tracked);
+            var dispatcher = _dispatchers.GetOrAdd(_timeline.Id, CreateDispatcher);
+            await dispatcher.SendAsync(tracked);
 
             return tracked.Task;
         }
@@ -56,6 +55,11 @@ namespace ZES
 
             return default(TResult);            
         }
+        
+        private CommandDispatcher CreateDispatcher(string timeline) => new CommandDispatcher(
+            HandleCommand, 
+            timeline, 
+            new DataflowOptions { RecommendedParallelismIfMultiThreaded = 1 }); 
 
         private object GetInstance(Type type)
         {
@@ -81,35 +85,12 @@ namespace ZES
                 await handler.Handle(command).ConfigureAwait(false);
         }
 
-        /// <summary>
-        /// Command dispatcher parallel by branch
-        /// </summary>
-        private class BranchCommandDispatcher : ParallelDataDispatcher<string, Tracked<ICommand>>
-        {
-            private readonly Func<ICommand, Task> _handler;
-            private readonly ITimeline _timeline;
-
-            public BranchCommandDispatcher(Func<ICommand, Task> handler, ILog log, ITimeline timeline, DataflowOptions options) 
-                : base(c => timeline.Id, options, CancellationToken.None)
-            {
-                _handler = handler;
-                _timeline = timeline;
-                Log = log;
-            }
-
-            /// <inheritdoc />
-            protected override Dataflow<Tracked<ICommand>> CreateChildFlow(string dispatchKey)
-            {
-                return new CommandDispatcher(_handler, _timeline, new DataflowOptions { RecommendedParallelismIfMultiThreaded = 1 }); 
-            }
-        }
-
         private class CommandDispatcher : ParallelDataDispatcher<string, Tracked<ICommand>>
         {
             private readonly Func<ICommand, Task> _handler;
 
-            public CommandDispatcher(Func<ICommand, Task> handler, ITimeline timeline, DataflowOptions options) 
-                : base(c => $"{timeline.Id}:{c.Value.Target}", options, CancellationToken.None)
+            public CommandDispatcher(Func<ICommand, Task> handler, string timeline, DataflowOptions options) 
+                : base(c => $"{timeline}:{c.Value.Target}", options, CancellationToken.None)
             {
                 _handler = handler;
             }

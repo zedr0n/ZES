@@ -18,8 +18,7 @@ namespace ZES.Infrastructure.Domain
         private readonly IRetroactive _retroactive;
         private readonly IStreamLocator<IAggregate> _streamLocator;
         private readonly IEventStore<IAggregate> _eventStore;
-        private readonly IBus _bus;
-        
+
         /// <summary>
         /// Initializes a new instance of the <see cref="RetroactiveCommandHandler{TCommand, TRoot}"/> class.
         /// </summary>
@@ -41,7 +40,6 @@ namespace ZES.Infrastructure.Domain
             _manager = manager;
             _retroactive = retroactive;
             _eventStore = eventStore;
-            _bus = bus;
             _streamLocator = streamLocator;
         }
 

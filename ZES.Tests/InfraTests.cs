@@ -222,6 +222,8 @@ namespace ZES.Tests
             await bus.CommandAsync(command);
             await bus.CommandAsync(new UpdateRoot("Root"));
 
+            await bus.IsTrue(new RootInfoQuery("RootCopy"), r => r.UpdatedAt >= r.CreatedAt);
+            
             await bus.IsTrue(new RootInfoQuery("RootCopy"), r => r.CreatedAt > 0);
             await bus.IsTrue(new RootInfoQuery("RootCopy"), r => r.UpdatedAt == r.CreatedAt);
 

@@ -178,7 +178,6 @@ namespace ZES.Tests
             var container = CreateContainer(new List<Action<Container>> { Config.RegisterSagas });
             var bus = container.GetInstance<IBus>();
             var timeline = container.GetInstance<ITimeline>();
-            var graph = container.GetInstance<IGraph>();
             
             var timestamp = timeline.Now;
             var lastTime = timestamp + (60 * 1000);

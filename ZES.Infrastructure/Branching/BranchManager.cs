@@ -286,7 +286,7 @@ namespace ZES.Infrastructure.Branching
                                 if (theseEvents.Zip(thoseEvents, (e1, e2) => (e1, e2)).Any(x => x.Item1 != x.Item2))
                                 {
                                     throw new InvalidOperationException(
-                                        $"{currentBranch?.Id} timeline has moved on in the meantime, aborting...( {version} > {parent.Version} )");
+                                        $"{currentBranch?.Id} timeline has moved on in the meantime, aborting...( {parentStream.Key} : {version} > {parent.Version} )");
                                 }
 
                                 return;

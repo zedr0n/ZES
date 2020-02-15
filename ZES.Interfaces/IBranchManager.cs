@@ -1,3 +1,4 @@
+using System;
 using System.Threading.Tasks;
 
 namespace ZES.Interfaces
@@ -15,7 +16,12 @@ namespace ZES.Interfaces
         /// Active branch id
         /// </value>
         string ActiveBranch { get; }
-        
+
+        /// <summary>
+        /// Gets observable which completes when there all activity has been completed
+        /// </summary>
+        IObservable<int> Ready { get; }
+
         /// <summary>
         /// Branch the current timeline at a certain point in the past
         /// </summary>

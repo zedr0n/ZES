@@ -73,6 +73,10 @@ namespace ZES.Infrastructure.Branching
         }
 
         /// <inheritdoc />
+        public IObservable<int> Ready =>
+            _messageQueue.UncompletedMessages.Timeout(Configuration.Timeout).FirstAsync(s => s == 0);
+
+        /// <inheritdoc />
         public string ActiveBranch => _activeTimeline.Id;
 
         /// <inheritdoc />

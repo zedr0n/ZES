@@ -51,7 +51,9 @@ namespace ZES.Infrastructure.Domain
 
             var activeBranch = _manager.ActiveBranch;
             var time = iCommand.Timestamp;
-            var branch = $"{typeof(TCommand).Name}-{time}"; 
+            var branch = $"{typeof(TCommand).Name}-{time}";
+
+            await _manager.Ready;
 
             if (!await _handler.IsRetroactive(iCommand.Command))
             {

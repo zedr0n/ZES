@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using HotChocolate.Subscriptions;
 using Microsoft.Extensions.DependencyInjection;
 using SimpleInjector;
 using SimpleInjector.Lifestyles;
@@ -24,6 +25,7 @@ namespace ZES.GraphQL
             var container = new Container();
             container.Options.DefaultLifestyle = Lifestyle.Singleton;
 
+            services.AddInMemorySubscriptionProvider();
             UseGraphQl(services, container, new[] { config });
         }
 
@@ -37,6 +39,7 @@ namespace ZES.GraphQL
             var container = new Container();
             container.Options.DefaultLifestyle = Lifestyle.Singleton;
 
+            services.AddInMemorySubscriptionProvider();
             UseGraphQl(services, container, configs);
         }
 

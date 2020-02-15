@@ -328,7 +328,8 @@ namespace ZES.Infrastructure.Branching
         private class CloneFlow<T> : Dataflow<IStream>
             where T : IEventSourced
         {
-            public int NumberOfStreams;
+            private int _numberOfStreams;
+            public int NumberOfStreams => _numberOfStreams;
             private readonly ActionBlock<IStream> _inputBlock;
 
             public CloneFlow(string timeline, long time, IEventStore<T> eventStore) 
@@ -345,7 +346,7 @@ namespace ZES.Infrastructure.Branching
 
                     var clone = s.Branch(timeline, metadata.Version);
                     await eventStore.AppendToStream(clone);
-                    Interlocked.Increment(ref NumberOfStreams);
+                    Interlocked.Increment(ref _numberOfStreams);
                 }, new ExecutionDataflowBlockOptions { MaxDegreeOfParallelism = Configuration.ThreadsPerInstance });
 
                 RegisterChild(_inputBlock);

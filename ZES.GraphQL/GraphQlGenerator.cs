@@ -1,3 +1,4 @@
+using System;
 using System.Linq;
 using System.Reflection;
 using Antlr4.StringTemplate;
@@ -43,9 +44,6 @@ namespace ZES.GraphQL
         /// <returns>Complete mutation</returns>
         public string Query<TResult>(IQuery<TResult> query)
         {
-            var st = new Template(MultiQuery.Template);
-            st.Add(MultiQuery.NameField, query.GetType().Name.ToLowerFirst());
-
             var constructor = query.GetType().GetConstructors().SingleOrDefault(c => c.GetParameters().Length > 0);
             var allParams = string.Empty;
             if (constructor != null)
@@ -54,6 +52,11 @@ namespace ZES.GraphQL
             
                 allParams = string.Join(",", paramsProps.Select(p => $"{p.Name.ToLowerFirst()} : {BackQuote(p)}{p.GetValue(query)}{BackQuote(p)}"));
             }
+
+            var hasParams = allParams != string.Empty;
+
+            var st = new Template(hasParams ? MultiQuery.Template : MultiQuery.TemplateSt);
+            st.Add(MultiQuery.NameField, query.GetType().Name.ToLowerFirst());
 
             var resultProps = typeof(TResult).GetProperties(BindingFlags.DeclaredOnly | BindingFlags.Public |
                                                       BindingFlags.Instance);
@@ -88,6 +91,8 @@ namespace ZES.GraphQL
             public static string ResultsField { get; } = "results";
             public static string Template => 
                 $@"{{ <{NameField}>Ex( query : {{ <{ParamsField}> }} ) {{ <{ResultsField}> }} }}";
+            public static string TemplateSt =>
+                $@"{{ <{NameField}> {{ <{ResultsField}> }} }}";
         }
         
         /*private static class SingleCommand

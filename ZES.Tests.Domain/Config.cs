@@ -50,7 +50,6 @@ namespace ZES.Tests.Domain
             public RootInfo RootInfoQuery(string id) => Resolve(new RootInfoQuery(id));
             public RootInfo RootInfoQueryEx(RootInfoQuery query) => Resolve(query);
             public Stats StatsQuery() => Resolve(new StatsQuery());
-            public Stats StatsQueryEx(StatsQuery query) => Resolve(query);
             public LastRecord LastRecordQuery(string id) => Resolve(new LastRecordQuery(id));
         }
         

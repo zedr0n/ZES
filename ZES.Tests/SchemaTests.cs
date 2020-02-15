@@ -1,5 +1,6 @@
 using System.Linq;
 using System.Threading;
+using System.Threading.Tasks;
 using HotChocolate.Execution;
 using Xunit;
 using Xunit.Abstractions;
@@ -45,14 +46,20 @@ namespace ZES.Tests
             var message = "Ping!";
             log.Info(message);
             
-            IReadOnlyQueryResult eventResult;
-            using (var cts = new CancellationTokenSource(2000))
-                eventResult = await responseStream.ReadAsync(cts.Token);
+            using (var cts = new CancellationTokenSource(100))
+            {
+                await foreach (var dict in responseStream.WithCancellation(cts.Token))
+                {
+                    var v = dict.Data.SingleOrDefault().Value;
+                    Assert.Null(v);
+                    break;
+                }
+            }
 
-            dynamic dict = eventResult?.Data.SingleOrDefault().Value;
+            // dynamic dict = eventResult?.Data.SingleOrDefault().Value;
 
             // subscription stitching is not working yet
-            Assert.Null(dict);
+            // Assert.Null(dict);
         }
 
         [Fact]
@@ -114,7 +121,7 @@ namespace ZES.Tests
             
             var statsResult = executor.Execute(query) as IReadOnlyQueryResult;
             
-            dynamic statsDict = statsResult?.Data["statsQueryEx"];
+            dynamic statsDict = statsResult?.Data["statsQuery"];
             log.Info(statsDict);
             Assert.NotNull(statsDict);
             Assert.Equal(1, statsDict["numberOfRoots"]); 

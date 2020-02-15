@@ -116,11 +116,13 @@ namespace ZES.Tests
             
             var command = new CreateRoot("UpdateRoot.Root"); 
             await await bus.CommandAsync(command);
+
+            var createdAt = (await bus.QueryUntil(new RootInfoQuery("UpdateRoot.Root"), r => r.CreatedAt > 0)).CreatedAt;
             
             var updateCommand = new UpdateRoot("UpdateRoot.Root");
             await await bus.CommandAsync(updateCommand);
 
-            await bus.IsTrue(new RootInfoQuery("UpdateRoot.Root"), r => r.UpdatedAt > r.CreatedAt);
+            await bus.IsTrue(new RootInfoQuery("UpdateRoot.Root"), r => r.UpdatedAt > createdAt);
             var graph = container.GetInstance<IGraph>();
             await graph.Serialise(nameof(CanUpdateRoot));
         }

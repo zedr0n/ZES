@@ -7,7 +7,10 @@
 
   <ItemGroup>
     <PackageReference Include="HotChocolate.AspNetCore">
-      <Version>0.8.2</Version>
+      <Version>10.3.5</Version>
+    </PackageReference>
+    <PackageReference Include="HotChocolate.AspNetCore.Subscriptions">
+      <Version>10.3.5</Version>
     </PackageReference>
     <PackageReference Include="Microsoft.AspNetCore.App" />
     <PackageReference Include="SimpleInjector.Integration.AspNetCore">

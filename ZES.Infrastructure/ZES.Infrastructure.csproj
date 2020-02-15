@@ -17,7 +17,6 @@
       <PackageReference Include="Stateless" Version="3.0.0" />
       <PackageReference Include="System.Reactive" Version="4.1.2" />
       <PackageReference Include="System.Threading.Tasks.Dataflow" Version="4.9.0" />
-      <PackageReference Include="VelocityGraph" Version="8.4.0" />
     </ItemGroup>
 
     <ItemGroup>

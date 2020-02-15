@@ -1,4 +1,5 @@
 ﻿using HotChocolate.AspNetCore;
+using HotChocolate.AspNetCore.Subscriptions;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.DependencyInjection;
@@ -13,6 +14,7 @@ namespace ZES.GraphQL.AspNetCore
         public void ConfigureServices(IServiceCollection services)
         {
             services.AddCors();
+            services.AddGraphQLSubscriptions();
             services.UseGraphQl(typeof(Config));
         }
 
@@ -29,7 +31,8 @@ namespace ZES.GraphQL.AspNetCore
                     .AllowAnyOrigin()
                     .AllowAnyHeader()
                     .AllowAnyMethod());
-            app.UseGraphQL();
+            app.UseWebSockets()
+                .UseGraphQL();
         }
     }
 }

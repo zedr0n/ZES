@@ -55,5 +55,12 @@ namespace ZES.Interfaces.Pipes
         /// <param name="message">Message</param>
         /// <returns>Completes when counter is updated</returns>
         Task UncompleteMessage(IMessage message);
+
+        /// <summary>
+        /// Uncompleted messages on specific branch
+        /// </summary>
+        /// <param name="branchId">Branch id</param>
+        /// <returns>Number of currently uncompleted messages on branch</returns>
+        IObservable<int> UncompletedMessagesOnBranch(string branchId);
     }
 }

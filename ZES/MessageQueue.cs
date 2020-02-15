@@ -30,13 +30,17 @@ namespace ZES
         }
 
         /// <inheritdoc />
-        public IObservable<int> UncompletedMessages => _messagesHolder.UncompletedMessages(_timeline.Id); 
+        public IObservable<int> UncompletedMessages => _messagesHolder.UncompletedMessages(_timeline.Id);
 
         /// <inheritdoc />
         public IObservable<IEvent> Messages => _messages.AsObservable();
 
         /// <inheritdoc />
         public IObservable<IAlert> Alerts => _alerts.AsObservable();
+        
+        /// <inheritdoc />
+        public IObservable<int> UncompletedMessagesOnBranch(string branchId) =>
+            _messagesHolder.UncompletedMessages(branchId);
 
         /// <inheritdoc />
         public void Alert(IAlert alert)

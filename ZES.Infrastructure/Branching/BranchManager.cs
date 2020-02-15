@@ -78,6 +78,9 @@ namespace ZES.Infrastructure.Branching
         /// <inheritdoc />
         public async Task DeleteBranch(string branchId)
         {
+            await _messageQueue.UncompletedMessagesOnBranch(branchId).Timeout(Configuration.Timeout)
+                .FirstAsync(s => s == 0); 
+            
             var streams = await _eventStore.ListStreams(branchId).ToList();
             foreach (var s in streams)
             {

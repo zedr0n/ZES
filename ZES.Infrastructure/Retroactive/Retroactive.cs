@@ -49,9 +49,13 @@ namespace ZES.Infrastructure.Retroactive
             var time = _graph.GetTimestamp(stream.Key, version);
             if (time == default(long))
                 throw new InvalidOperationException($"Version {version} not found in {stream.Key}");
+
+            // if there are later events we do not want to include it
+            if (laterEvents.Count > 0)
+                time--;
             
             var tempStreamId = $"{stream.Timeline}-{stream.Id}-{version}";
-            var branch = await _manager.Branch(tempStreamId, time - 1);
+            var branch = await _manager.Branch(tempStreamId, time);
 
             var newStream = _streamLocator.FindBranched(stream, branch.Id);
             if (newStream == null)

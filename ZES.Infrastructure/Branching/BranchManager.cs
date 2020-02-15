@@ -92,7 +92,8 @@ namespace ZES.Infrastructure.Branching
                 _log.Info($"Deleted stream {s.Key}");
                 await _graph.DeleteStream(s.Key);
             }
-            
+
+            _branches.TryRemove(branchId, out var branch);
             _messageQueue.Alert(new BranchDeleted(branchId));
             _messageQueue.Alert(new InvalidateProjections());
         }
@@ -107,13 +108,12 @@ namespace ZES.Infrastructure.Branching
             }
 
             await _messageQueue.UncompletedMessages.Timeout(Configuration.Timeout).FirstAsync(s => s == 0);
-
             var newBranch = !_branches.ContainsKey(branchId); // && branchId != Master;
             
             var timeline = _branches.GetOrAdd(branchId, b => Timeline.New(branchId, time));
             if (time != null && timeline.Now != time.Value)
             {
-                _log.Errors.Add(new InvalidOperationException($"Branch ${branchId} already exists!"));
+                _log.Errors.Add(new InvalidOperationException($"Branch {branchId} already exists!"));
                 return null;
             }
             

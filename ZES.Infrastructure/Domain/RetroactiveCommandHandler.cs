@@ -1,6 +1,7 @@
 using System;
 using System.Reactive.Linq;
 using System.Threading.Tasks;
+using SqlStreamStore.Streams;
 using ZES.Interfaces;
 using ZES.Interfaces.Domain;
 using ZES.Interfaces.EventStore;
@@ -53,29 +54,25 @@ namespace ZES.Infrastructure.Domain
             var time = iCommand.Timestamp;
             var branch = $"{typeof(TCommand).Name}-{time}";
 
-            await _manager.Ready;
-
-            if (!await _handler.IsRetroactive(iCommand.Command))
-            {
-                await _manager.Branch(branch, time);
-                await _handler.Handle(iCommand.Command);
-                await _manager.Branch(activeBranch);
-                await _manager.Merge(branch);
-                await _manager.DeleteBranch(branch);
-                return;
-            } 
-            
-            await _manager.Branch(branch, time - 1);
+            await _manager.Branch(branch, time);
             
             var stream = _streamLocator.Find<TRoot>(iCommand.Target, branch);
-            var prevVersion = stream.Version;
+            var prevVersion = stream?.Version ?? ExpectedVersion.EmptyStream;
+            
             await _handler.Handle(iCommand.Command);
-            stream = _streamLocator.Find<TRoot>(iCommand.Target, branch);
-            var e = await _eventStore.ReadStream<IEvent>(stream, prevVersion + 1, stream.Version - prevVersion + 1).ToList();
-
             await _manager.Branch(activeBranch);
-            stream = _streamLocator.Find<TRoot>(iCommand.Target, activeBranch);
-            await _retroactive.InsertIntoStream(stream, prevVersion + 1, e);
+            if (prevVersion > ExpectedVersion.EmptyStream)
+            {
+                stream = _streamLocator.Find<TRoot>(iCommand.Target, branch);
+                var e = await _eventStore.ReadStream<IEvent>(stream, prevVersion + 1, stream.Version - prevVersion + 1).ToList();
+
+                stream = _streamLocator.Find<TRoot>(iCommand.Target, activeBranch);
+                await _retroactive.InsertIntoStream(stream, prevVersion + 1, e);
+            }
+            else
+            {
+                await _manager.Merge(branch);
+            }
 
             await _manager.DeleteBranch(branch);
         }

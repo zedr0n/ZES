@@ -178,6 +178,7 @@ namespace ZES.Tests
             var container = CreateContainer(new List<Action<Container>> { Config.RegisterSagas });
             var bus = container.GetInstance<IBus>();
             var timeline = container.GetInstance<ITimeline>();
+            var log = container.GetInstance<ILog>();
             
             var timestamp = timeline.Now;
             var lastTime = timestamp + (60 * 1000);
@@ -192,6 +193,11 @@ namespace ZES.Tests
             await await bus.CommandAsync(new RetroactiveCommand<CreateRoot>(new CreateRoot("LastRoot"), lastTime));
             await bus.Equal(new RootInfoQuery("LastRootCopy"), r => r.CreatedAt, lastTime);
 
+            await await bus.CommandAsync(
+                new RetroactiveCommand<UpdateRoot>(new UpdateRoot("LastRoot"), lastTime + 1000));
+            
+            await bus.Equal(new HistoricalQuery<RootInfoQuery, RootInfo>(new RootInfoQuery("LastRoot"), lastTime + 1000), r => r.UpdatedAt, lastTime + 1000);
+            
             await await bus.CommandAsync(new RetroactiveCommand<CreateRoot>(new CreateRoot("MidRoot"), midTime));
             await bus.Equal(new RootInfoQuery("MidRootCopy"), r => r.CreatedAt, midTime);
         }

@@ -320,12 +320,7 @@ namespace ZES.Infrastructure.Branching
                             parent = parent.Parent;
                         }
 
-                        var stream = parent;
-                        
-                        // this is a new stream just on the branch
-                        if (parent == null)
-                            stream = s.Branch(s.Timeline, version);
-                        
+                        var stream = parent ?? s.Branch(s.Timeline, version);
                         streams.TryAdd(stream, s.Version - version);
                     }, new ExecutionDataflowBlockOptions { MaxDegreeOfParallelism = Configuration.ThreadsPerInstance });
 

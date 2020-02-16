@@ -44,7 +44,7 @@ namespace ZES.Infrastructure.Projections
         /// <inheritdoc />
         public async Task Init(long timestamp)
         {
-            Log.Trace(string.Empty, this);
+            Log.Debug(string.Empty, this);
             _timestamp = timestamp;
             await Start();
         }

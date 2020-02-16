@@ -109,6 +109,9 @@ namespace ZES.Infrastructure.Streams
         /// <inheritdoc />
         public int Count(int start, int count = -1)
         {
+            if (count == 0)
+                return 0;
+            
             var end = int.MaxValue;
             if (count > 0 && count < int.MaxValue)
                 end = start + count - 1;

@@ -16,7 +16,7 @@ namespace ZES.Infrastructure
         where I : IEventSourced
     {
         private readonly IEventStore<I> _eventStore;
-        private readonly IStreamLocator<I> _streams;
+        private readonly IStreamLocator _streams;
         private readonly ITimeline _timeline;
         private readonly IBus _bus;
         private readonly IMessageQueue _messageQueue;
@@ -29,7 +29,7 @@ namespace ZES.Infrastructure
         /// <param name="timeline">Active timeline tracker</param>
         /// <param name="bus">Message bus</param>
         /// <param name="messageQueue">Message queue</param>
-        public EsRepository(IEventStore<I> eventStore, IStreamLocator<I> streams, ITimeline timeline, IBus bus, IMessageQueue messageQueue)
+        public EsRepository(IEventStore<I> eventStore, IStreamLocator streams, ITimeline timeline, IBus bus, IMessageQueue messageQueue)
         {
             _eventStore = eventStore;
             _streams = streams;

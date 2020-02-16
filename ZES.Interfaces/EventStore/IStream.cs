@@ -116,9 +116,7 @@ namespace ZES.Interfaces.EventStore
     /// <summary>
     /// Stream details cache
     /// </summary>
-    /// <typeparam name="I">Event sourced type( can be aggregate or saga )</typeparam>
-    public interface IStreamLocator<in I>
-        where I : IEventSourced
+    public interface IStreamLocator
     {
         /// <summary>
         /// Get the stream with the given id
@@ -128,7 +126,7 @@ namespace ZES.Interfaces.EventStore
         /// <param name="timeline">timeline id</param>
         /// <returns>Stream with given id</returns>
         IStream Find<T>(string id, string timeline = "master")
-            where T : I;
+            where T : IEventSourced;
         
         /// <summary>
         /// Extract and cache the stream details for event sourced instance
@@ -136,7 +134,7 @@ namespace ZES.Interfaces.EventStore
         /// <param name="es">saga or aggregate</param>
         /// <param name="timeline">timeline id</param>
         /// <returns>Stream corresponding to the aggregate root</returns>
-        IStream GetOrAdd(I es, string timeline = "master");
+        IStream GetOrAdd(IEventSourced es, string timeline = "master");
         
         /// <summary>
         /// Extract and cache the stream details for the target stream

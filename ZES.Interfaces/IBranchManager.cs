@@ -1,5 +1,7 @@
 using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
+using ZES.Interfaces.EventStore;
 
 namespace ZES.Interfaces
 {
@@ -49,5 +51,12 @@ namespace ZES.Interfaces
         /// <param name="branchId">Branch id</param>
         /// <returns>Task completes when branch is deleted</returns>
         Task DeleteBranch(string branchId);
+
+        /// <summary>
+        /// Get changes from branch <see cref="branchId"/> to current branch
+        /// </summary>
+        /// <param name="branchId">Branch with changes</param>
+        /// <returns>Set of changes</returns>
+        Task<Dictionary<IStream, int>> GetChanges(string branchId);
     }
 }

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.Linq;
 using System.Reactive.Linq;
 using System.Threading;
@@ -35,8 +36,7 @@ namespace ZES.Infrastructure.Branching
         private readonly IMessageQueue _messageQueue;
         private readonly IEventStore<IAggregate> _eventStore;
         private readonly IEventStore<ISaga> _sagaStore;
-        private readonly IStreamLocator<IAggregate> _streamLocator;
-        private readonly IStreamLocator<ISaga> _sagaLocator;
+        private readonly IStreamLocator _streamLocator;
         private readonly IGraph _graph;
 
         /// <summary>
@@ -48,7 +48,6 @@ namespace ZES.Infrastructure.Branching
         /// <param name="eventStore">Event store</param>
         /// <param name="sagaStore">Saga store</param>
         /// <param name="streamLocator">Stream locator</param>
-        /// <param name="sagaLocator">Saga locator</param>
         /// <param name="graph">Graph</param>
         public BranchManager(
             ILog log, 
@@ -56,8 +55,7 @@ namespace ZES.Infrastructure.Branching
             IMessageQueue messageQueue, 
             IEventStore<IAggregate> eventStore,
             IEventStore<ISaga> sagaStore,
-            IStreamLocator<IAggregate> streamLocator,
-            IStreamLocator<ISaga> sagaLocator,
+            IStreamLocator streamLocator,
             IGraph graph)
         {
             _log = log;
@@ -66,7 +64,6 @@ namespace ZES.Infrastructure.Branching
             _eventStore = eventStore;
             _streamLocator = streamLocator;
             _graph = graph;
-            _sagaLocator = sagaLocator;
             _sagaStore = sagaStore;
 
             _branches.TryAdd(Master, Timeline.New(Master));
@@ -139,6 +136,28 @@ namespace ZES.Infrastructure.Branching
         }
 
         /// <inheritdoc />
+        public async Task<Dictionary<IStream, int>> GetChanges(string branchId)
+        {
+            var changes = new ConcurrentDictionary<IStream, int>();
+            if (!_branches.TryGetValue(branchId, out var branch))
+            {
+                _log.Warn($"Branch {branchId} does not exist", this);
+                return new Dictionary<IStream, int>(changes);
+            }
+
+            if (_activeTimeline.Id == branchId)
+            {
+                _log.Warn($"Cannot merge branch into itself", this);
+                return new Dictionary<IStream, int>(changes);
+            }
+
+            await StoreChanges<IAggregate>(branchId, changes);
+            await StoreChanges<ISaga>(branchId, changes);
+
+            return new Dictionary<IStream, int>(changes);
+        }
+        
+        /// <inheritdoc />
         public async Task Merge(string branchId)
         {
             if (!_branches.TryGetValue(branchId, out var branch))
@@ -189,13 +208,31 @@ namespace ZES.Infrastructure.Branching
             Branch(Master).Wait();
             return _activeTimeline;
         }
+
+        private async Task StoreChanges<T>(string branchId, ConcurrentDictionary<IStream, int> changes)
+            where T : IEventSourced
+        {
+            var store = GetStore<T>();
+            var flow = new ChangesFlow<T>(_activeTimeline, changes);
+
+            store.ListStreams(branchId).Subscribe(flow.InputBlock.AsObserver());
+
+            try
+            {
+                await flow.CompletionTask;
+                return;
+            }
+            catch (Exception e)
+            {
+                _log.Errors.Add(e);
+            }
+        }
         
         private async Task<MergeFlow<T>.MergeResult> MergeStore<T>(string branchId)
             where T : IEventSourced
         {
             var store = GetStore<T>();
-            var locator = GetLocator<T>();
-            var mergeFlow = new MergeFlow<T>(_activeTimeline, store, locator);
+            var mergeFlow = new MergeFlow<T>(_activeTimeline, store, _streamLocator);
 
             store.ListStreams(branchId).Subscribe(mergeFlow.InputBlock.AsObserver());
             
@@ -225,14 +262,6 @@ namespace ZES.Infrastructure.Branching
             return _sagaStore as IEventStore<T>;
         }
 
-        private IStreamLocator<T> GetLocator<T>()
-            where T : IEventSourced
-        {
-            if (_streamLocator is IStreamLocator<T> locator)
-                return locator;
-            return _sagaLocator as IStreamLocator<T>;
-        }
-
         // full clone of event store
         // can become really expensive
         // TODO: use links to event ids?
@@ -256,6 +285,42 @@ namespace ZES.Infrastructure.Branching
             }
         }
 
+        private class ChangesFlow<T> : Dataflow<IStream>
+            where T : IEventSourced
+        {
+            private readonly ActionBlock<IStream> _inputBlock;
+            
+            public ChangesFlow(ITimeline currentBranch, ConcurrentDictionary<IStream, int> streams) 
+                : base(DataflowOptions.Default)
+            {
+                _inputBlock = new ActionBlock<IStream>(
+                    s =>
+                    {
+                        var version = ExpectedVersion.EmptyStream;
+                        var parent = s.Parent;
+                        while (parent != null && parent.Version > ExpectedVersion.EmptyStream)
+                        {
+                            version = parent.Version;
+
+                            if (s.Version == version)
+                                return;
+                            
+                            if (parent.Timeline == currentBranch?.Id)
+                                break;
+
+                            parent = parent.Parent;
+                        }
+
+                        var stream = parent ?? s;
+                        streams.TryAdd(stream, s.Version - version);
+                    }, new ExecutionDataflowBlockOptions { MaxDegreeOfParallelism = Configuration.ThreadsPerInstance });
+
+                RegisterChild(_inputBlock);
+            }
+
+            public override ITargetBlock<IStream> InputBlock => _inputBlock;
+        }
+        
         private class MergeFlow<T> : Dataflow<IStream>
             where T : IEventSourced
         {
@@ -263,7 +328,7 @@ namespace ZES.Infrastructure.Branching
             private int _numberOfEvents;
             private int _numberOfStreams;
             
-            public MergeFlow(ITimeline currentBranch, IEventStore<T> eventStore, IStreamLocator<T> streamLocator) 
+            public MergeFlow(ITimeline currentBranch, IEventStore<T> eventStore, IStreamLocator streamLocator) 
                 : base(DataflowOptions.Default)
             {
                 _inputBlock = new ActionBlock<IStream>(
@@ -336,29 +401,30 @@ namespace ZES.Infrastructure.Branching
         private class CloneFlow<T> : Dataflow<IStream>
             where T : IEventSourced
         {
-            private int _numberOfStreams;
-            public int NumberOfStreams => _numberOfStreams;
             private readonly ActionBlock<IStream> _inputBlock;
-
+            private int _numberOfStreams;
+            
             public CloneFlow(string timeline, long time, IEventStore<T> eventStore) 
                 : base(DataflowOptions.Default)
             {
                 _inputBlock = new ActionBlock<IStream>(
                     async s =>
-                {
-                    var metadata = await eventStore.ReadStream<IEventMetadata>(s, 0)
-                        .LastOrDefaultAsync(e => e.Timestamp <= time);
+                    {
+                        var metadata = await eventStore.ReadStream<IEventMetadata>(s, 0)
+                            .LastOrDefaultAsync(e => e.Timestamp <= time);
 
-                    if (metadata == null)
-                        return;
+                        if (metadata == null)
+                            return;
 
-                    var clone = s.Branch(timeline, metadata.Version);
-                    await eventStore.AppendToStream(clone);
-                    Interlocked.Increment(ref _numberOfStreams);
-                }, new ExecutionDataflowBlockOptions { MaxDegreeOfParallelism = Configuration.ThreadsPerInstance });
+                        var clone = s.Branch(timeline, metadata.Version);
+                        await eventStore.AppendToStream(clone);
+                        Interlocked.Increment(ref _numberOfStreams);
+                    }, new ExecutionDataflowBlockOptions { MaxDegreeOfParallelism = Configuration.ThreadsPerInstance });
 
                 RegisterChild(_inputBlock);
             }
+
+            public int NumberOfStreams => _numberOfStreams;
 
             public override ITargetBlock<IStream> InputBlock => _inputBlock;
         }

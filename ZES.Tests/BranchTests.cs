@@ -95,7 +95,7 @@ namespace ZES.Tests
             var bus = container.GetInstance<IBus>();
             var repository = container.GetInstance<IEsRepository<IAggregate>>();
             var manager = container.GetInstance<IBranchManager>();
-            var sagaLocator = container.GetInstance<IStreamLocator<ISaga>>();
+            var locator = container.GetInstance<IStreamLocator>();
             
             var command = new CreateRoot("Root");
             await await bus.CommandAsync(command);
@@ -122,7 +122,7 @@ namespace ZES.Tests
             await await bus.CommandAsync(new CreateRoot("TestRoot"));
             await bus.IsTrue(new RootInfoQuery("TestRoot"), r => r.CreatedAt > 0);
             
-            Assert.NotNull(sagaLocator.Find<TestSaga>("Root"));
+            Assert.NotNull(locator.Find<TestSaga>("Root"));
 
             manager.Reset();
             await bus.IsTrue(new RootInfoQuery("Root"), r => r.CreatedAt != r.UpdatedAt);

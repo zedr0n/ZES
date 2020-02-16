@@ -1,4 +1,6 @@
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Reactive.Linq;
 using System.Threading.Tasks;
 using SqlStreamStore.Streams;
@@ -17,7 +19,7 @@ namespace ZES.Infrastructure.Domain
         private readonly ICommandHandler<TCommand> _handler;
         private readonly IBranchManager _manager;
         private readonly IRetroactive _retroactive;
-        private readonly IStreamLocator<IAggregate> _streamLocator;
+        private readonly IStreamLocator _streamLocator;
         private readonly IEventStore<IAggregate> _eventStore;
 
         /// <summary>
@@ -27,15 +29,13 @@ namespace ZES.Infrastructure.Domain
         /// <param name="manager">Branch manager</param>
         /// <param name="retroactive">Retroactive functional</param>
         /// <param name="eventStore">Event store</param>
-        /// <param name="bus">Command bus</param>
         /// <param name="streamLocator">Stream locator service</param>
         public RetroactiveCommandHandler(
             ICommandHandler<TCommand> handler, 
             IBranchManager manager, 
             IRetroactive retroactive,
             IEventStore<IAggregate> eventStore,
-            IBus bus,
-            IStreamLocator<IAggregate> streamLocator) 
+            IStreamLocator streamLocator) 
         {
             _handler = handler;
             _manager = manager;
@@ -55,25 +55,18 @@ namespace ZES.Infrastructure.Domain
             var branch = $"{typeof(TCommand).Name}-{time}";
 
             await _manager.Branch(branch, time);
-            
-            var stream = _streamLocator.Find<TRoot>(iCommand.Target, branch);
-            var prevVersion = stream?.Version ?? ExpectedVersion.EmptyStream;
-            
             await _handler.Handle(iCommand.Command);
             await _manager.Branch(activeBranch);
-            if (prevVersion > ExpectedVersion.EmptyStream)
+            
+            var changes = await _manager.GetChanges(branch);
+            foreach (var c in changes)
             {
-                stream = _streamLocator.Find<TRoot>(iCommand.Target, branch);
-                var e = await _eventStore.ReadStream<IEvent>(stream, prevVersion + 1, stream.Version - prevVersion + 1).ToList();
+                var stream = _streamLocator.FindBranched(c.Key, branch);
+                var e = await _eventStore.ReadStream<IEvent>(stream, stream.Version - c.Value + 1, c.Value).ToList();
 
-                stream = _streamLocator.Find<TRoot>(iCommand.Target, activeBranch);
-                await _retroactive.InsertIntoStream(stream, prevVersion + 1, e);
+                await _retroactive.InsertIntoStream(c.Key, c.Key.Version + 1, e);
             }
-            else
-            {
-                await _manager.Merge(branch);
-            }
-
+            
             await _manager.DeleteBranch(branch);
         }
 

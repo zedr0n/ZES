@@ -7,32 +7,8 @@ namespace ZES.Interfaces.EventStore
     /// <summary>
     /// Stream store facade
     /// </summary>
-    /// <typeparam name="I">Event sourced type</typeparam>
-    public interface IEventStore<I>
-        where I : IEventSourced
+    public interface IEventStore
     {
-        /// <summary>
-        /// Gets stream details channel 
-        /// </summary>
-        /// <value>
-        /// Hot observable representing the current streams 
-        /// </value>
-        IObservable<IStream> Streams { get; }
-
-        /// <summary>
-        /// Asynchronously evaluates the size of the event store
-        /// </summary>
-        /// <remarks>Can be used to check if the graph is synced to store</remarks>
-        /// <returns>Event store size</returns>
-        Task<long> Size();
-
-        /// <summary>
-        /// Gets the current streams in the store 
-        /// </summary>
-        /// <param name="branch">Branch to filter by</param>
-        /// <returns>Stream observable</returns>
-        IObservable<IStream> ListStreams(string branch = null);
-        
         /// <summary>
         /// Read specified number of events from the stream forward from starting version 
         /// </summary>
@@ -67,5 +43,35 @@ namespace ZES.Interfaces.EventStore
         /// <param name="version">Last version to keep</param>
         /// <returns>Task completes when the stream is trimmed</returns>
         Task TrimStream(IStream stream, int version);
+    }
+    
+    /// <summary>
+    /// Stream store facade
+    /// </summary>
+    /// <typeparam name="I">Event sourced type</typeparam>
+    public interface IEventStore<I> : IEventStore
+        where I : IEventSourced
+    {
+        /// <summary>
+        /// Gets stream details channel 
+        /// </summary>
+        /// <value>
+        /// Hot observable representing the current streams 
+        /// </value>
+        IObservable<IStream> Streams { get; }
+
+        /// <summary>
+        /// Asynchronously evaluates the size of the event store
+        /// </summary>
+        /// <remarks>Can be used to check if the graph is synced to store</remarks>
+        /// <returns>Event store size</returns>
+        Task<long> Size();
+
+        /// <summary>
+        /// Gets the current streams in the store 
+        /// </summary>
+        /// <param name="branch">Branch to filter by</param>
+        /// <returns>Stream observable</returns>
+        IObservable<IStream> ListStreams(string branch = null);
     }
 }

@@ -4,31 +4,39 @@ using System.Reactive.Linq;
 using SqlStreamStore.Streams;
 using ZES.Infrastructure.Alerts;
 using ZES.Interfaces;
+using ZES.Interfaces.Domain;
 using ZES.Interfaces.EventStore;
 using ZES.Interfaces.Pipes;
+using ZES.Interfaces.Sagas;
 
 namespace ZES.Infrastructure.Streams
 {
     /// <inheritdoc />
-    public class StreamLocator<I> : IStreamLocator<I>
-        where I : IEventSourced
+    public class StreamLocator : IStreamLocator
     {
         private readonly ConcurrentDictionary<string, IStream> _streams = new ConcurrentDictionary<string, IStream>();
-        private readonly IEventStore<I> _eventStore;
+        private readonly IEventStore<IAggregate> _eventStore;
+        private readonly IEventStore<ISaga> _sagaStore;
         private readonly ILog _log;
         private IDisposable _subscription;
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="StreamLocator{I}"/> class.
+        /// Initializes a new instance of the <see cref="StreamLocator"/> class.
         /// </summary>
         /// <param name="eventStore">Event store</param>
+        /// <param name="sagaStore">Saga store</param>
         /// <param name="messageQueue">Message queue</param>
         /// <param name="log">Application log</param>
-        public StreamLocator(IEventStore<I> eventStore, IMessageQueue messageQueue, ILog log)
+        public StreamLocator(
+            IEventStore<IAggregate> eventStore,
+            IEventStore<ISaga> sagaStore,
+            IMessageQueue messageQueue,
+            ILog log)
         {
             _eventStore = eventStore;
             _log = log;
-            
+            _sagaStore = sagaStore;
+
             // messageQueue.Alerts.OfType<OnTimelineChange>().Subscribe(e => Restart());
             messageQueue.Alerts.OfType<PullCompleted>().Subscribe(e => Restart());
             Restart();
@@ -36,7 +44,7 @@ namespace ZES.Infrastructure.Streams
 
         /// <inheritdoc />
         public IStream Find<T>(string id, string timeline = "master")
-            where T : I
+            where T : IEventSourced
         {
             var aStream = new Stream(id, typeof(T).Name, ExpectedVersion.NoStream, timeline);
             return _streams.TryGetValue(aStream.Key, out var stream) ? stream : default(IStream); 
@@ -56,7 +64,7 @@ namespace ZES.Infrastructure.Streams
         }
 
         /// <inheritdoc />
-        public IStream GetOrAdd(I es, string timeline = "master")
+        public IStream GetOrAdd(IEventSourced es, string timeline = "master")
         {
             if (es == null)
                 return default(IStream);
@@ -80,7 +88,11 @@ namespace ZES.Infrastructure.Streams
         {
             // _log.Trace(string.Empty, this);
             _subscription?.Dispose();
-            _subscription = _eventStore.ListStreams().Concat(_eventStore.Streams).Subscribe(stream => GetOrAdd(stream));            
+            _subscription = _eventStore.ListStreams()
+                .Concat(_sagaStore.ListStreams())
+                .Concat(_eventStore.Streams)
+                .Concat(_sagaStore.Streams)
+                .Subscribe(stream => GetOrAdd(stream));
         }
     }
 }

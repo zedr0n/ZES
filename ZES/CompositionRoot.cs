@@ -87,7 +87,7 @@ namespace ZES
 
             container.Register<IErrorLog, ErrorLog>(Lifestyle.Singleton);
 
-            container.Register(typeof(IStreamLocator<>), typeof(StreamLocator<>), Lifestyle.Singleton);    
+            container.Register(typeof(IStreamLocator), typeof(StreamLocator), Lifestyle.Singleton);    
             container.Register(typeof(IEsRepository<>), typeof(EsRepository<>), Lifestyle.Singleton);
             container.Register<IGraph, Graph>(Lifestyle.Singleton);
             

@@ -49,7 +49,7 @@ namespace ZES.Tests
         {
             var container = CreateContainer();
             var bus = container.GetInstance<IBus>();
-            var streamLocator = container.GetInstance<IStreamLocator<IAggregate>>();
+            var streamLocator = container.GetInstance<IStreamLocator>();
             var retroactive = container.GetInstance<IRetroactive>();
 
             await await bus.CommandAsync(new CreateRoot("Root"));
@@ -92,7 +92,7 @@ namespace ZES.Tests
             var bus = container.GetInstance<IBus>();
             var timeline = container.GetInstance<ITimeline>();
             var manager = container.GetInstance<IBranchManager>();
-            var streamLocator = container.GetInstance<IStreamLocator<IAggregate>>();
+            var streamLocator = container.GetInstance<IStreamLocator>();
             var eventStore = container.GetInstance<IEventStore<IAggregate>>();
             var retroactive = container.GetInstance<IRetroactive>();
             var graph = container.GetInstance<IGraph>();
@@ -132,7 +132,7 @@ namespace ZES.Tests
             var timeline = container.GetInstance<ITimeline>();
             var manager = container.GetInstance<IBranchManager>();
             var eventStore = container.GetInstance<IEventStore<IAggregate>>();
-            var streamLocator = container.GetInstance<IStreamLocator<IAggregate>>();
+            var streamLocator = container.GetInstance<IStreamLocator>();
             var retroactive = container.GetInstance<IRetroactive>();
             var graph = container.GetInstance<IGraph>();
 

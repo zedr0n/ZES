@@ -78,6 +78,12 @@ namespace ZES.Infrastructure.Streams
         {
             if (stream.Key.StartsWith("$$"))
                 return null;
+
+            if (stream.Version == ExpectedVersion.NoStream)
+            {
+                _streams.TryRemove(stream.Key, out var _);
+                return null;
+            }
             
             var cStream = _streams.GetOrAdd(stream.Key, stream);
             cStream.Version = stream.Version;

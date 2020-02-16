@@ -80,19 +80,28 @@ namespace ZES.Infrastructure.Branching
         public async Task DeleteBranch(string branchId)
         {
             await _messageQueue.UncompletedMessagesOnBranch(branchId).Timeout(Configuration.Timeout)
-                .FirstAsync(s => s == 0); 
+                .FirstAsync(s => s == 0);
+
+            await DeleteBranch<IAggregate>(branchId);
+            await DeleteBranch<ISaga>(branchId);
             
-            var streams = await _eventStore.ListStreams(branchId).ToList();
+            _branches.TryRemove(branchId, out var branch);
+            _messageQueue.Alert(new BranchDeleted(branchId));
+            _messageQueue.Alert(new InvalidateProjections());
+        }
+
+        private async Task DeleteBranch<T>(string branchId)
+            where T : IEventSourced
+        {
+            var store = GetStore<T>();
+            
+            var streams = await store.ListStreams(branchId).ToList();
             foreach (var s in streams)
             {
                 await _eventStore.DeleteStream(s);
                 _log.Info($"Deleted stream {s.Key}");
                 await _graph.DeleteStream(s.Key);
             }
-
-            _branches.TryRemove(branchId, out var branch);
-            _messageQueue.Alert(new BranchDeleted(branchId));
-            _messageQueue.Alert(new InvalidateProjections());
         }
 
         /// <inheritdoc />

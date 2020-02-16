@@ -146,6 +146,7 @@ namespace ZES.Infrastructure
         public async Task DeleteStream(IStream stream)
         {
             await _streamStore.DeleteStream(stream.Key);
+            _streams.OnNext(stream.Branch(stream.Timeline, ExpectedVersion.NoStream));
         }
 
         /// <inheritdoc />

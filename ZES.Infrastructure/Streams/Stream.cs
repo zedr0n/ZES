@@ -159,6 +159,9 @@ namespace ZES.Infrastructure.Streams
         /// <inheritdoc />
         public IStream Branch(string timeline, int version)
         {
+            if (Timeline == timeline)
+                return new Stream(Key, version, Parent);
+            
             var stream = new Stream(Key, version, new Stream(Key, version))
             {
                 Timeline = timeline

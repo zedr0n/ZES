@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reactive.Linq;
 using System.Threading.Tasks;
+using SqlStreamStore.Streams;
 using ZES.Infrastructure.Alerts;
 using ZES.Interfaces;
 using ZES.Interfaces.Causality;
@@ -56,7 +57,7 @@ namespace ZES.Infrastructure.Retroactive
             if (liveStream != null)
                 laterEvents = await store.ReadStream<IEvent>(liveStream, version).ToList();
             else
-                stream = stream.Branch(currentBranch, version - 1);
+                stream = stream.Branch(currentBranch, ExpectedVersion.EmptyStream);
 
             if (laterEvents.Count == 0)
             {

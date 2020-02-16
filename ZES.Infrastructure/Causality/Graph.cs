@@ -61,7 +61,14 @@ namespace ZES.Infrastructure.Causality
         public async Task Wait()
         {
             var position = await _store.ReadHeadPosition();
-            await _position.Timeout(Configuration.Timeout).FirstAsync(p => p == position);
+            try
+            {
+                await _position.Timeout(Configuration.Timeout).FirstAsync(p => p == position);
+            }
+            catch
+            {
+                await Populate();
+            }
         }
 
         /// <inheritdoc/>

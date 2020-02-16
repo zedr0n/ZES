@@ -81,7 +81,7 @@ namespace ZES.Infrastructure.Streams
 
             if (stream.Version == ExpectedVersion.NoStream)
             {
-                _streams.TryRemove(stream.Key, out var _);
+                _streams.TryRemove(stream.Key, out _);
                 return null;
             }
             

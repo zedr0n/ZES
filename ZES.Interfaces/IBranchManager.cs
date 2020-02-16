@@ -53,7 +53,7 @@ namespace ZES.Interfaces
         Task DeleteBranch(string branchId);
 
         /// <summary>
-        /// Get changes from branch <see cref="branchId"/> to current branch
+        /// Get changes from branch <paramref name="branchId"/> to current branch
         /// </summary>
         /// <param name="branchId">Branch with changes</param>
         /// <returns>Set of changes</returns>

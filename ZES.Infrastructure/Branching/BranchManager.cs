@@ -90,20 +90,6 @@ namespace ZES.Infrastructure.Branching
             _messageQueue.Alert(new InvalidateProjections());
         }
 
-        private async Task DeleteBranch<T>(string branchId)
-            where T : IEventSourced
-        {
-            var store = GetStore<T>();
-            
-            var streams = await store.ListStreams(branchId).ToList();
-            foreach (var s in streams)
-            {
-                await _eventStore.DeleteStream(s);
-                _log.Info($"Deleted stream {s.Key}");
-                await _graph.DeleteStream(s.Key);
-            }
-        }
-
         /// <inheritdoc />
         public async Task<ITimeline> Branch(string branchId, long? time = null)
         {
@@ -216,6 +202,20 @@ namespace ZES.Infrastructure.Branching
         {
             Branch(Master).Wait();
             return _activeTimeline;
+        }
+        
+        private async Task DeleteBranch<T>(string branchId)
+            where T : IEventSourced
+        {
+            var store = GetStore<T>();
+            
+            var streams = await store.ListStreams(branchId).ToList();
+            foreach (var s in streams)
+            {
+                await _eventStore.DeleteStream(s);
+                _log.Info($"Deleted stream {s.Key}");
+                await _graph.DeleteStream(s.Key);
+            }
         }
 
         private async Task StoreChanges<T>(string branchId, ConcurrentDictionary<IStream, int> changes)

@@ -186,6 +186,9 @@ namespace ZES.Tests
             await await bus.CommandAsync(new CreateRoot("Root"));
             await bus.IsTrue(new RootInfoQuery("RootCopy"), info => info.CreatedAt < midTime);
 
+            await await bus.CommandAsync(new RetroactiveCommand<UpdateRoot>(new UpdateRoot("Root"), lastTime));
+            await bus.Equal(new HistoricalQuery<RootInfoQuery, RootInfo>(new RootInfoQuery("Root"), lastTime), r => r.UpdatedAt, lastTime);
+            
             await await bus.CommandAsync(new RetroactiveCommand<CreateRoot>(new CreateRoot("LastRoot"), lastTime));
             await bus.Equal(new RootInfoQuery("LastRootCopy"), r => r.CreatedAt, lastTime);
 

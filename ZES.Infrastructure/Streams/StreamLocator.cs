@@ -91,7 +91,7 @@ namespace ZES.Infrastructure.Streams
             _subscription = _eventStore.ListStreams()
                 .Concat(_sagaStore.ListStreams())
                 .Concat(_eventStore.Streams)
-                .Concat(_sagaStore.Streams)
+                .Merge(_sagaStore.Streams)
                 .Subscribe(stream => GetOrAdd(stream));
         }
     }

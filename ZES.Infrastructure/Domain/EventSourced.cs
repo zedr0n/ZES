@@ -63,7 +63,7 @@ namespace ZES.Infrastructure.Domain
                     c.Timestamp = timestamp;
             }
         }
-
+        
         /// <summary>
         /// Base event handler
         /// <para>* Applies the event to the event sourced instance 
@@ -97,6 +97,31 @@ namespace ZES.Infrastructure.Domain
         }
 
         /// <summary>
+        /// Apply the event to the instance
+        /// </summary>
+        /// <param name="e">Event</param>
+        /// <param name="computeHash">True to compute the event hashes</param>
+        protected virtual void ApplyEvent(IEvent e, bool computeHash = false)
+        {
+            if (e == null)
+                return;
+            
+            Version++;
+
+            if (computeHash)
+            {
+                _computeHash = true;
+                _hash = string.Empty;
+            }
+            
+            if (_handlers.TryGetValue(e.GetType(), out var handler))
+                handler(e);
+
+            if (computeHash && e.Hash == _hash)
+                LastValidVersion++;
+        }
+
+        /// <summary>
         /// Update the hash with object
         /// </summary>
         /// <param name="value">Object to hash</param>
@@ -125,26 +150,6 @@ namespace ZES.Infrastructure.Domain
         {
             lock (_changes)
                 _changes.Clear();
-        }
-
-        private void ApplyEvent(IEvent e, bool computeHash = false)
-        {
-            if (e == null)
-                return;
-            
-            Version++;
-
-            if (computeHash)
-            {
-                _computeHash = true;
-                _hash = string.Empty;
-            }
-            
-            if (_handlers.TryGetValue(e.GetType(), out var handler))
-                handler(e);
-
-            if (computeHash && e.Hash == _hash)
-                LastValidVersion++;
         }
     }
 }

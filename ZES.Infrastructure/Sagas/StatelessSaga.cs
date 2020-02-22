@@ -33,9 +33,9 @@ namespace ZES.Infrastructure.Sagas
         }
 
         /// <inheritdoc />
-        public override void When(IEvent e)
+        protected override void ApplyEvent(IEvent e, bool computeHash = false)
         {
-            base.When(e);
+            base.ApplyEvent(e, computeHash);
             if (_triggers.TryGetValue(e.GetType(), out var trigger) && trigger != null)
                 StateMachine.Fire(trigger);
         }

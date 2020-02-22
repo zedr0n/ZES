@@ -47,9 +47,6 @@ namespace ZES.Infrastructure.Domain
             if (command.UseTimestamp)
                 root.TimestampEvents(command.Timestamp);
             
-            if (command.GetType().GetCustomAttribute<IdempotentAttribute>() != null)
-                root.MakeIdempotent();
-            
             await _repository.Save(root, command.MessageId);
         }
         

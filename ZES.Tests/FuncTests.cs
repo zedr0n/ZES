@@ -20,16 +20,6 @@ namespace ZES.Tests
         }
 
         [Fact]
-        public void CanImplyIdempotency()
-        {
-            var createRoot = new CreateRoot("Root");
-            Assert.False(createRoot.Idempotent);
-            
-            var recordRoot = new AddRecord("Root", 0);
-            Assert.True(recordRoot.Idempotent);
-        }
-
-        [Fact]
         public void EmptyStream()
         {
             var stream = new Stream(_id, _type, ExpectedVersion.EmptyStream, _timeline);

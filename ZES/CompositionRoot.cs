@@ -44,6 +44,8 @@ namespace ZES
                 new UtcNowConvention()
             });
             container.Register<IBus, Bus>(Lifestyle.Singleton);
+            container.Register<IEsRegistry, EsRegistry>(Lifestyle.Singleton);
+            
             var store = GetStore(container);
             
             container.RegisterConditional(
@@ -55,7 +57,7 @@ namespace ZES
                      c.Consumer.ImplementationType == typeof(CommandLog) ||
                      c.Consumer.ImplementationType == typeof(Graph))
                 ;
-
+            
             /* container.RegisterConditional(
                 typeof(IStreamStore),
                 GetStore(container),

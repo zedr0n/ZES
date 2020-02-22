@@ -20,5 +20,10 @@ namespace ZES.Interfaces
         /// Event version in appropriate stream
         /// </value>
         int Version { get; set; }
+
+        /// <summary>
+        /// Gets or sets the event hash
+        /// </summary>
+        string Hash { get; set; }
     }
 }

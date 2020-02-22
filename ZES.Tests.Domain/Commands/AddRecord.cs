@@ -3,7 +3,6 @@ using ZES.Infrastructure.Domain;
 
 namespace ZES.Tests.Domain.Commands
 {
-    [Idempotent]
     public class AddRecord : Command   
     {
         public AddRecord() { }

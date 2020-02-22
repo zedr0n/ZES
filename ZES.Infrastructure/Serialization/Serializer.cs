@@ -207,14 +207,15 @@ namespace ZES.Infrastructure.Serialization
         {
             var e = message as IEvent;
             var version = e?.Version ?? 0;
+            var hash = e?.Hash ?? string.Empty;
 #if USE_EXPLICIT
             var meta = new JObject(
                 new JProperty(nameof(IEventMetadata.MessageId), message.MessageId),
                 new JProperty(nameof(IEventMetadata.AncestorId), message.AncestorId),
-                new JProperty(nameof(IEventMetadata.Idempotent), message.Idempotent),
                 new JProperty(nameof(IEventMetadata.Timestamp), message.Timestamp),
                 new JProperty(nameof(IEventMetadata.Version), version),
-                new JProperty(nameof(IEventMetadata.MessageType), message.GetType().Name));
+                new JProperty(nameof(IEventMetadata.MessageType), message.GetType().Name),
+                new JProperty(nameof(IEventMetadata.Hash), hash));
 
             return meta.ToString();
 #else
@@ -254,11 +255,11 @@ namespace ZES.Infrastructure.Serialization
             
             var isValid = true;
             isValid &= jarray.TryGetValue(nameof(IEventMetadata.AncestorId), out var jAncestorId);
-            isValid &= jarray.TryGetValue(nameof(IEventMetadata.Idempotent), out var jIdempotent);
             isValid &= jarray.TryGetValue(nameof(IEventMetadata.Timestamp), out var jTimestamp);
             isValid &= jarray.TryGetValue(nameof(IEventMetadata.Version), out var jVersion);
             isValid &= jarray.TryGetValue(nameof(IEventMetadata.MessageId), out var jMessageId);
             isValid &= jarray.TryGetValue(nameof(IEventMetadata.MessageType), out var jEventType);
+            isValid &= jarray.TryGetValue(nameof(IEventMetadata.Hash), out var jHash);
 
             if (!isValid)
                 return null;
@@ -266,10 +267,10 @@ namespace ZES.Infrastructure.Serialization
             {
                 MessageId = (Guid)jMessageId,
                 AncestorId = (Guid)jAncestorId,
-                Idempotent = (bool)jIdempotent,
                 Timestamp = (long)jTimestamp,
                 Version = (int)jVersion,
-                MessageType = (string)jEventType
+                MessageType = (string)jEventType,
+                Hash = (string)jHash
             };
 #else
 #if USE_UTF8

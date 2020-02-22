@@ -6,8 +6,30 @@ namespace ZES.Interfaces.Domain
     /// <summary>
     /// Event-sourced repository
     /// </summary>
+    public interface IEsRepository
+    {
+        /// <summary>
+        /// Check if the root is valid 
+        /// </summary>
+        /// <param name="type">Event sourced type</param>
+        /// <param name="id">Event sourced guid</param>
+        /// <returns>True if valid, otherwise false</returns>
+        Task<bool> IsValid(string type, string id);
+        
+        /// <summary>
+        /// Gets last valid version of the event sourced instance 
+        /// </summary>
+        /// <param name="type">Event sourced type</param>
+        /// <param name="id">Event sourced guid</param>
+        /// <returns>True if valid, otherwise false</returns>
+        Task<int> LastValidVersion(string type, string id);
+    }
+    
+    /// <summary>
+    /// Event-sourced repository
+    /// </summary>
     /// <typeparam name="I">Event-sourced instance type</typeparam>
-    public interface IEsRepository<in I>
+    public interface IEsRepository<in I> : IEsRepository
         where I : IEventSourced
     {
         /// <summary>
@@ -37,5 +59,24 @@ namespace ZES.Interfaces.Domain
         /// <returns>Aggregate/saga or null if no events found</returns>
         Task<T> Find<T>(string id)
             where T : class, I, new();
+        
+        /// <summary>
+        /// Check if the root is valid 
+        /// </summary>
+        /// <param name="id">Event sourced guid</param>
+        /// <typeparam name="T">Event sourced type</typeparam>
+        /// <returns>True if valid, otherwise false</returns>
+        Task<bool> IsValid<T>(string id)
+            where T : class, I, new();
+
+        /// <summary>
+        /// Gets last valid version of the event sourced instance 
+        /// </summary>
+        /// <param name="id">Event sourced guid</param>
+        /// <typeparam name="T">Event source type</typeparam>
+        /// <returns>True if valid, otherwise false</returns>
+        Task<int> LastValidVersion<T>(string id)
+            where T : class, I, new();
+
     }
 }

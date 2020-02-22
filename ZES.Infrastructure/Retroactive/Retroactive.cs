@@ -25,6 +25,9 @@ namespace ZES.Infrastructure.Retroactive
         private readonly IStreamLocator _streamLocator;
         private readonly IMessageQueue _messageQueue;
 
+        private readonly IEsRepository<IAggregate> _repository;
+        private readonly IEsRepository<ISaga> _sagaRepository;
+
         /// <summary>
         /// Initializes a new instance of the <see cref="Retroactive"/> class.
         /// </summary>
@@ -34,7 +37,9 @@ namespace ZES.Infrastructure.Retroactive
         /// <param name="streamLocator">Stream locator</param>
         /// <param name="messageQueue">Message queue</param>
         /// <param name="sagaStore">Saga store</param>
-        public Retroactive(IEventStore<IAggregate> eventStore, IGraph graph, IBranchManager manager, IStreamLocator streamLocator, IMessageQueue messageQueue, IEventStore<ISaga> sagaStore)
+        /// <param name="repository">Aggregate repository</param>
+        /// <param name="sagaRepository">Saga repository</param>
+        public Retroactive(IEventStore<IAggregate> eventStore, IGraph graph, IBranchManager manager, IStreamLocator streamLocator, IMessageQueue messageQueue, IEventStore<ISaga> sagaStore, IEsRepository<IAggregate> repository, IEsRepository<ISaga> sagaRepository)
         {
             _eventStore = eventStore;
             _graph = graph;
@@ -42,6 +47,8 @@ namespace ZES.Infrastructure.Retroactive
             _streamLocator = streamLocator;
             _messageQueue = messageQueue;
             _sagaStore = sagaStore;
+            _repository = repository;
+            _sagaRepository = sagaRepository;
         }
 
         /// <inheritdoc />
@@ -97,6 +104,13 @@ namespace ZES.Infrastructure.Retroactive
 
             newStream = _streamLocator.Find(newStream);
             await store.AppendToStream(newStream, laterEvents, false);
+            
+            // check if the stream is valid
+            var repository = GetRepository(newStream);
+            var lastValidVersion = await repository.LastValidVersion(newStream.Type, newStream.Id); 
+            
+            if ( lastValidVersion < newStream.Version)
+                throw new InvalidOperationException($"Inserting the events will make stream {stream.Key} invalid at version {lastValidVersion + 1}, aborting...");
 
             await _manager.Branch(currentBranch);
             await TrimStream(liveStream, origVersion - 1);
@@ -136,6 +150,13 @@ namespace ZES.Infrastructure.Retroactive
             if (stream.IsSaga)
                 return _sagaStore;
             return _eventStore;
+        }
+
+        private IEsRepository GetRepository(IStream stream)
+        {
+            if (stream.IsSaga)
+                return _sagaRepository;
+            return _repository;
         }
     }
 }

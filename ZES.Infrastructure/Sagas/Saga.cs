@@ -34,9 +34,9 @@ namespace ZES.Infrastructure.Sagas
         }
         
         /// <inheritdoc />
-        public override void LoadFrom<T>(IEnumerable<IEvent> pastEvents)
+        public override void LoadFrom<T>(IEnumerable<IEvent> pastEvents, bool computeHash = false)
         {
-            base.LoadFrom<T>(pastEvents);
+            base.LoadFrom<T>(pastEvents, computeHash);
             ClearUncommittedCommands();
         }
 

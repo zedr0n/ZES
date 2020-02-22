@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using SqlStreamStore.Streams;
 using ZES.Interfaces;
 
 namespace ZES.Infrastructure.Domain
@@ -11,6 +12,15 @@ namespace ZES.Infrastructure.Domain
         private readonly List<IEvent> _changes = new List<IEvent>();
         private readonly Dictionary<Type, Action<IEvent>> _handlers = new Dictionary<Type, Action<IEvent>>();
 
+        private string _hash;
+        private bool _computeHash;
+
+        /// <inheritdoc />
+        public bool IsValid => LastValidVersion >= Version;
+
+        /// <inheritdoc />
+        public int LastValidVersion { get; private set; } = ExpectedVersion.EmptyStream;
+        
         /// <inheritdoc />
         public string Id { get; protected set; }
 
@@ -54,16 +64,6 @@ namespace ZES.Infrastructure.Domain
             }
         }
 
-        /// <inheritdoc />
-        public void MakeIdempotent()
-        {
-            lock (_changes)
-            {
-                foreach (var c in _changes)
-                    c.Idempotent = true;
-            }
-        }
-
         /// <summary>
         /// Base event handler
         /// <para>* Applies the event to the event sourced instance 
@@ -75,25 +75,38 @@ namespace ZES.Infrastructure.Domain
         {
             lock (_changes)
             {
-                ApplyEvent(e);
+                ApplyEvent(e, true);
+                e.Hash = _hash;
                 
-                Version++;
                 ((Event)e).Version = Version;
                 _changes.Add(e);
             }
         }
 
         /// <inheritdoc />
-        public virtual void LoadFrom<T>(IEnumerable<IEvent> pastEvents)
+        public virtual void LoadFrom<T>(IEnumerable<IEvent> pastEvents, bool computeHash = false)
             where T : class, IEventSourced
         {
             var enumerable = pastEvents.ToList();
             foreach (var e in enumerable)
-                When(e);
+                ApplyEvent(e, computeHash);
 
             Timestamp = enumerable.Max(e => e.Timestamp);
 
             ClearUncommittedEvents();
+        }
+
+        /// <summary>
+        /// Update the hash with object
+        /// </summary>
+        /// <param name="value">Object to hash</param>
+        protected void Hash(object value)
+        {
+            if (!_computeHash)
+                return;
+            
+            var objectHash = Hashing.Sha256(value);
+            _hash = Hashing.Sha256(_hash + objectHash);
         }
 
         /// <summary>
@@ -114,13 +127,24 @@ namespace ZES.Infrastructure.Domain
                 _changes.Clear();
         }
 
-        private void ApplyEvent(IEvent e)
+        private void ApplyEvent(IEvent e, bool computeHash = false)
         {
             if (e == null)
                 return;
+            
+            Version++;
 
+            if (computeHash)
+            {
+                _computeHash = true;
+                _hash = string.Empty;
+            }
+            
             if (_handlers.TryGetValue(e.GetType(), out var handler))
                 handler(e);
+
+            if (computeHash && e.Hash == _hash)
+                LastValidVersion++;
         }
     }
 }

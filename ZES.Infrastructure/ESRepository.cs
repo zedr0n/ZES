@@ -1,7 +1,9 @@
 using System;
 using System.Linq;
 using System.Reactive.Linq;
+using System.Reflection;
 using System.Threading.Tasks;
+using SqlStreamStore.Streams;
 using ZES.Infrastructure.Domain;
 using ZES.Interfaces;
 using ZES.Interfaces.Domain;
@@ -20,6 +22,7 @@ namespace ZES.Infrastructure
         private readonly ITimeline _timeline;
         private readonly IBus _bus;
         private readonly IMessageQueue _messageQueue;
+        private readonly IEsRegistry _registry;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="EsRepository{I}"/> class.
@@ -29,13 +32,15 @@ namespace ZES.Infrastructure
         /// <param name="timeline">Active timeline tracker</param>
         /// <param name="bus">Message bus</param>
         /// <param name="messageQueue">Message queue</param>
-        public EsRepository(IEventStore<I> eventStore, IStreamLocator streams, ITimeline timeline, IBus bus, IMessageQueue messageQueue)
+        /// <param name="registry">Event sourced registry</param>
+        public EsRepository(IEventStore<I> eventStore, IStreamLocator streams, ITimeline timeline, IBus bus, IMessageQueue messageQueue, IEsRegistry registry)
         {
             _eventStore = eventStore;
             _streams = streams;
             _timeline = timeline;
             _bus = bus;
             _messageQueue = messageQueue;
+            _registry = registry;
         }
 
         /// <inheritdoc />
@@ -96,10 +101,76 @@ namespace ZES.Infrastructure
                 return null;
 
             var events = await _eventStore.ReadStream<IEvent>(stream, 0).ToList();
-            var aggregate = EventSourced.Create<T>(id);
-            aggregate.LoadFrom<T>(events);
+            var es = EventSourced.Create<T>(id);
+            es.LoadFrom<T>(events);
 
-            return aggregate;
+            return es;
+        }
+
+        /// <inheritdoc />
+        public async Task<bool> IsValid<T>(string id)
+            where T : class, I, new()
+        {
+            var stream = _streams.Find<T>(id, _timeline.Id);
+            if (stream == null)
+                return true;
+
+            var events = await _eventStore.ReadStream<IEvent>(stream, 0).ToList();
+            var es = EventSourced.Create<T>(id);
+            es.LoadFrom<T>(events, true);
+
+            return es.IsValid;
+        }
+
+        /// <inheritdoc />
+        public async Task<int> LastValidVersion<T>(string id) 
+            where T : class, I, new()
+        {
+            var stream = _streams.Find<T>(id, _timeline.Id);
+            if (stream == null)
+                return ExpectedVersion.NoStream;
+            
+            var events = await _eventStore.ReadStream<IEvent>(stream, 0).ToList();
+            var es = EventSourced.Create<T>(id);
+            es.LoadFrom<T>(events, true);
+
+            return es.LastValidVersion;
+        }
+
+        /// <inheritdoc />
+        public async Task<bool> IsValid(string type, string id)
+        {
+            var t = _registry.GetType(type);
+            var m = GetType().GetMethods(BindingFlags.Instance | BindingFlags.Public)
+                .SingleOrDefault(x => x.IsGenericMethod && x.Name == nameof(IsValid))
+                ?.MakeGenericMethod(t);
+
+            if (m != null)
+            {
+                var task = (Task<bool>)m.Invoke(this, new object[] { id });
+                await task;
+                return task.Result;
+            }
+
+            return true;
+        }
+
+        /// <inheritdoc />
+        public async Task<int> LastValidVersion(string type, string id)
+        {
+            var t = _registry.GetType(type);
+            var m = GetType().GetMethods(BindingFlags.Instance | BindingFlags.Public)
+                .SingleOrDefault(x => x.IsGenericMethod && x.Name == nameof(LastValidVersion))
+                ?.MakeGenericMethod(t);
+
+            if (m != null)
+            {
+                var task = (Task<int>)m.Invoke(this, new object[] { id });
+                await task;
+                return task.Result;
+            }
+
+            throw new NotImplementedException();
         }
     }
 }

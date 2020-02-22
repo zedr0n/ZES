@@ -19,6 +19,7 @@ namespace ZES.Tests
             {
                 c =>
                 {
+                    Config.RegisterAggregates(c);
                     Config.RegisterCommands(c);
                     Config.RegisterQueries(c);
                     Config.RegisterProjections(c);

@@ -6,6 +6,7 @@ using SimpleInjector;
 using ZES.Infrastructure.Domain;
 using ZES.Infrastructure.Projections;
 using ZES.Infrastructure.Sagas;
+using ZES.Interfaces;
 using ZES.Interfaces.Domain;
 using ZES.Interfaces.GraphQL;
 using ZES.Interfaces.Sagas;
@@ -27,7 +28,28 @@ namespace ZES.Utils
             c.RegisterCommands(assembly);
             c.RegisterQueries(assembly);
             c.RegisterProjections(assembly);
+            c.RegisterAggregates(assembly);
             c.RegisterSagas(assembly);
+        }
+
+        /// <summary>
+        /// Registers aggregates with <see cref="SimpleInjector"/> container
+        /// </summary>
+        /// <param name="c"><see cref="SimpleInjector"/> container</param>
+        /// <param name="assembly">Assembly containing the domain to register</param>
+        public static void RegisterAggregates(this Container c, Assembly assembly)
+        {
+            var aggregates = assembly.GetTypesFromInterface(typeof(IAggregate)).Where(t => !t.IsAbstract);
+            foreach (var a in aggregates)
+            {
+                var m = typeof(EventSourced).GetMethod(nameof(EventSourced.Create), BindingFlags.Static | BindingFlags.Public)
+                    ?.MakeGenericMethod(a);
+                if (m != null)
+                {
+                    var reg = Lifestyle.Singleton.CreateRegistration(typeof(IEventSourced), () => m.Invoke(null, new object[] { string.Empty }), c);
+                    c.Collection.Append(typeof(IEventSourced), reg);
+                }
+            }
         }
 
         /// <summary>
@@ -40,9 +62,17 @@ namespace ZES.Utils
             var sagas = assembly.GetTypesFromInterface(typeof(ISaga)).Where(t => !t.IsAbstract);
             foreach (var s in sagas)
             {
-                var iSaga = typeof(ISagaHandler<>).MakeGenericType(s);
+                var m = typeof(EventSourced).GetMethod(nameof(EventSourced.Create), BindingFlags.Static | BindingFlags.Public)
+                    ?.MakeGenericMethod(s);
+                if (m != null)
+                {
+                    var reg = Lifestyle.Singleton.CreateRegistration(typeof(IEventSourced), () => m.Invoke(null, new object[] { string.Empty }), c);
+                    c.Collection.Append(typeof(IEventSourced), reg);
+                }
+                
+                var iHandler = typeof(ISagaHandler<>).MakeGenericType(s);
                 var handler = typeof(SagaHandler<>).MakeGenericType(s);
-                c.Register(iSaga, handler, Lifestyle.Singleton);
+                c.Register(iHandler, handler, Lifestyle.Singleton);
 
                 var dispatcherType = typeof(SagaHandler<>.SagaDispatcher.Builder).MakeGenericType(s);
                 var flowType = typeof(SagaHandler<>.SagaDispatcher.SagaFlow.Builder).MakeGenericType(s);

@@ -92,13 +92,13 @@ namespace ZES.Infrastructure.Causality
         {
             var stream = _graph.Vertices.OfType<StreamVertex>().SingleOrDefault(v => v.Key == key);
             if (stream == null)
-                return default(long);
+                return default;
 
             var events = new List<ICVertex>();
             GetDependents<StreamEdge>(stream, events);
             var e = events.OfType<EventVertex>().LastOrDefault(v => v.Version <= version);
             if (e == null)
-                return default(long);
+                return default;
 
             DateTimeOffset.TryParse(e.Timestamp, out var timestamp);
             return timestamp.ToUnixTimeMilliseconds();
@@ -167,7 +167,7 @@ namespace ZES.Infrastructure.Causality
 
         private async Task<StreamVertex> AddStream(string key)
         {
-            if (key.Contains("Command") || key.StartsWith("$") || key.Contains("Saga"))
+            if (key.Contains("Command") || key.StartsWith("$")) // || key.Contains("Saga"))
                 return null;
             
             var vertex = _graph.Vertices.OfType<StreamVertex>().SingleOrDefault(v => v.Key == key);
@@ -253,8 +253,8 @@ namespace ZES.Infrastructure.Causality
 
         private async Task AddEvent(StreamMessage m)
         {
-            if (m.StreamId.Contains("Saga"))
-                return;
+            // if (m.StreamId.Contains("Saga"))
+            //    return;
             
             var metadata = _serializer.DecodeMetadata(m.JsonMetadata);
 
@@ -265,52 +265,21 @@ namespace ZES.Infrastructure.Causality
             var previousInStream = _graph.Vertices.OfType<EventVertex>().SingleOrDefault(s =>
                 s.StreamKey == m.StreamId && s.Version == metadata.Version - 1);
             
-            if (!metadata.Idempotent)
-                LinkCause(previousInStream, vertex);
+            LinkCause(previousInStream, vertex);
             if (m.StreamVersion - await _store.DeletedCount(m.StreamId) > 0)
                 LinkStream(previousInStream, vertex);
             else
                 LinkStream(streamVertex, vertex);
 
-            /*var childStreams = _graph.OutEdges(streamVertex).OfType<StreamEdge>()
-                .Select(e => e.Target).OfType<StreamVertex>();
-            foreach (var child in childStreams.Where(c => c.ParentVersion == metadata.Version))
-                _graph.AddEdge(new StreamEdge(vertex, child));*/
-
-            /*if (metadata.AncestorId != Guid.Empty)
-            {
-                var ancestor = _graph.Vertices.OfType<EventVertex>().SingleOrDefault(s => s.MessageId == metadata.AncestorId);
-                if (ancestor != null && !_graph.Edges.OfType<CausalityEdge>().Any(e => 
-                        e.Source.MessageId == metadata.AncestorId && e.Target.MessageId == m.MessageId))
-                    _graph.AddEdge(new CausalityEdge(ancestor, vertex)); 
-
-            }*/
-            
             var dependents = _graph.Vertices.OfType<EventVertex>().Where(s => s.AncestorId == m.MessageId);
             foreach (var d in dependents)
-            {
-                /*if (!_graph.Edges.OfType<CausalityEdge>().Any(e => e.Source.MessageId == m.MessageId && e.Target.MessageId == d.MessageId))
-                    _graph.AddEdge(new CausalityEdge(vertex, d));*/
-
                 LinkCause(vertex, d);
-            }
 
             var ancestors = _graph.Vertices.OfType<CausalityVertex>().Where(s => s.MessageId == metadata.AncestorId);
             foreach (var a in ancestors)
-            {
-                /*if (!_graph.Edges.OfType<CausalityEdge>().Any(e =>
-                    e.Source.MessageId == metadata.AncestorId && e.Target.MessageId == metadata.MessageId))
-                {
-                    if (a.Kind == GraphKind.Command)
-                        _graph.AddEdge(new CommandEdge(a, vertex));
-                    else
-                        _graph.AddEdge(new CausalityEdge(a, vertex));
-                }*/
-
                 LinkCause(a, vertex);
-            }
 
-            vertex.MerkleHash = CalculateHash(vertex, await m.GetJsonData());
+            vertex.MerkleHash = metadata.Hash;
             streamVertex.MerkleHash = CalculateStreamHash(streamVertex);
         }
         
@@ -323,22 +292,11 @@ namespace ZES.Infrastructure.Causality
 
             var dependents = _graph.Vertices.OfType<CausalityVertex>().Where(v => v.AncestorId == m.MessageId);
             foreach (var d in dependents)
-            {
-                /*if (!_graph.Edges.OfType<CommandEdge>().Any(e => e.Source?.MessageId == m.MessageId && e.Target.MessageId == d.MessageId))
-                    _graph.AddEdge(new CommandEdge(vertex, d));*/
-
                 LinkCause(vertex, d);
-            }
 
             var ancestors = _graph.Vertices.OfType<CausalityVertex>().Where(v => v.MessageId == metadata.AncestorId);
             foreach (var a in ancestors)
-            {
-                /*if (!_graph.Edges.OfType<CausalityEdge>().Any(e => e.Source?.MessageId == a.MessageId && e.Target?.MessageId == m.MessageId))
-                    _graph.AddEdge(new CausalityEdge(a, vertex));*/
                 LinkCause(a, vertex);
-            }
-
-            vertex.MerkleHash = CalculateHash(vertex, await m.GetJsonData());
         }
         
         private async Task MessageReceived(
@@ -424,7 +382,6 @@ namespace ZES.Infrastructure.Causality
             public static string Command => "Command";
             public static string Stream => "Stream";
             public static string Event => "Event";
-            public static string Parent => "Parent";
         }
 
         [Serializable]
@@ -535,18 +492,23 @@ namespace ZES.Infrastructure.Causality
 
         [Serializable]
         [DebuggerDisplay("{Label}")]
-        private class EventVertex : CausalityVertex 
+        private class EventVertex : CausalityVertex
         {
+            private string _prefix = string.Empty;
             public EventVertex(Guid messageId, Guid ancestorId, string eventType, string streamKey, int version, long timestamp)
                 : base(messageId, ancestorId, timestamp, streamKey)
             {
+                SagaEvent = streamKey.Contains("Saga");
+                if (SagaEvent)
+                    _prefix = "Saga:";
                 EventType = eventType;
                 Version = version;
             }
 
             public int Version { get; }
             public string EventType { get; }
-            public override string Label => $"{EventType}@{Version}";
+            public bool SagaEvent { get; }
+            public override string Label => $"{_prefix}{EventType}@{Version}";
             public override string Kind => GraphKind.Event;
         }
 

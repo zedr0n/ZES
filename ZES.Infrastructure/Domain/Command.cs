@@ -14,7 +14,6 @@ namespace ZES.Infrastructure.Domain
         protected Command()
         {
             MessageId = Guid.NewGuid();
-            Idempotent = GetType().GetCustomAttribute(typeof(IdempotentAttribute)) != null;
         }
 
         /// <summary>

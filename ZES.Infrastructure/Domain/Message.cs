@@ -15,9 +15,6 @@ namespace ZES.Infrastructure.Domain
         public Guid AncestorId { get; set; }
 
         /// <inheritdoc />
-        public bool Idempotent { get; set; }
-
-        /// <inheritdoc />
         public long Timestamp { get; set; }
     }
 }

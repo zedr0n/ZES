@@ -10,5 +10,8 @@ namespace ZES.Infrastructure.Domain
 
         /// <inheritdoc />
         public int Version { get; set; }
+
+        /// <inheritdoc />
+        public string Hash { get; set; }
     }
 }

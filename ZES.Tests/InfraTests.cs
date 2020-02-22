@@ -113,6 +113,7 @@ namespace ZES.Tests
         {
             var container = CreateContainer();
             var bus = container.GetInstance<IBus>();
+            var repo = container.GetInstance<IEsRepository<IAggregate>>();
             
             var command = new CreateRoot("UpdateRoot.Root"); 
             await await bus.CommandAsync(command);
@@ -123,6 +124,9 @@ namespace ZES.Tests
             await await bus.CommandAsync(updateCommand);
 
             await bus.IsTrue(new RootInfoQuery("UpdateRoot.Root"), r => r.UpdatedAt > createdAt);
+
+            var root = await repo.Find<Root>("UpdateRoot.Root");
+            
             var graph = container.GetInstance<IGraph>();
             await graph.Serialise(nameof(CanUpdateRoot));
         }

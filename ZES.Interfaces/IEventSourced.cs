@@ -14,6 +14,21 @@ namespace ZES.Interfaces
         /// Unique string identifier
         /// </value>
         string Id { get; }
+        
+        /// <summary>
+        /// Gets a value indicating whether the aggregate is valid ( hash agrees with events )
+        /// </summary>
+        bool IsValid { get; }
+        
+        /// <summary>
+        /// Gets last valid version
+        /// </summary>
+        int LastValidVersion { get; }
+
+        /// <summary>
+        /// Gets the latest update timestamp 
+        /// </summary>
+        long Timestamp { get; }
 
         /// <summary>
         /// Gets event sourced version ( for optimistic concurrency )
@@ -22,11 +37,6 @@ namespace ZES.Interfaces
         /// Event sourced version 
         /// </value>
         int Version { get; }
-
-        /// <summary>
-        /// Gets the latest update timestamp 
-        /// </summary>
-        long Timestamp { get; }
 
         /// <summary>
         /// Gets events not yet committed 
@@ -38,14 +48,10 @@ namespace ZES.Interfaces
         /// Hydrate the event sourced instance from event sequence
         /// </summary>
         /// <param name="pastEvents">Past event sequence</param>
+        /// <param name="computeHash">Compute the events hash</param>
         /// <typeparam name="T">Event sourced type</typeparam>
-        void LoadFrom<T>(IEnumerable<IEvent> pastEvents)
+        void LoadFrom<T>(IEnumerable<IEvent> pastEvents, bool computeHash = false)
             where T : class, IEventSourced;
-
-        /// <summary>
-        /// Make current changes idempotent
-        /// </summary>
-        void MakeIdempotent();
 
         /// <summary>
         /// Timestamp the uncommitted events

@@ -227,11 +227,14 @@ namespace ZES.Infrastructure.Projections
                 var s = trackedStream.Value;
                 var version = _versions.GetOrAdd(s.Key, ExpectedVersion.EmptyStream);
 
+                if (s.Version == ExpectedVersion.NoStream)
+                    return;
+                
                 if (s.Version <= ExpectedVersion.EmptyStream)
                     s.Version = 0;
 
                 if (version > s.Version) 
-                    _log?.Warn($"Stream update is version {s.Version}, behind projection version {version}", GetDetailedName());
+                    _log?.Warn($"Stream {s.Key} update is version {s.Version}, behind projection version {version}", GetDetailedName());
 
                 if (version < s.Version)
                 {

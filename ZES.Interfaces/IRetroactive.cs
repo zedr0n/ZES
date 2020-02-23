@@ -10,6 +10,15 @@ namespace ZES.Interfaces
     public interface IRetroactive
     {
         /// <summary>
+        /// Do validation for stream events insertion
+        /// </summary>
+        /// <param name="stream">Stream descriptor</param>
+        /// <param name="version">Version to insert at</param>
+        /// <param name="events">Events to insert</param>
+        /// <returns>True if can insert in valid way</returns>
+        Task<bool> CanInsertIntoStream(IStream stream, int version, IEnumerable<IEvent> events);
+
+        /// <summary>
         /// Insert events into stream at version
         /// </summary>
         /// <param name="stream">Stream descriptor</param>

@@ -95,7 +95,7 @@ namespace ZES.Infrastructure.Branching
         {
             if (_activeTimeline.Id == branchId)
             {
-                _log.Info($"Already on branch {branchId}");
+                _log.Trace($"Already on branch {branchId}");
                 return _activeTimeline;
             }
 
@@ -119,7 +119,7 @@ namespace ZES.Infrastructure.Branching
             // update current timeline
             _activeTimeline.Set(timeline);
             
-            _log.Info($"Switched to {branchId} branch");
+            _log.Trace($"Switched to {branchId} branch");
 
             // refresh the stream locator
             _messageQueue.Alert(new Alerts.OnTimelineChange());
@@ -213,7 +213,8 @@ namespace ZES.Infrastructure.Branching
             foreach (var s in streams)
             {
                 await _eventStore.DeleteStream(s);
-                _log.Info($"Deleted stream {s.Key}");
+                if (s.Version != s.Parent?.Version)
+                    _log.Trace($"Deleted stream {s.Key}");
                 await _graph.DeleteStream(s.Key);
             }
         }
@@ -252,7 +253,7 @@ namespace ZES.Infrastructure.Branching
 
                 var mergeResult = mergeFlow.Result;
                 if (mergeResult.NumberOfStreams > 0)
-                    _log.Info($"Merged {mergeResult.NumberOfStreams} streams, {mergeResult.NumberOfEvents} events from {branchId} into {_activeTimeline.Id} [{typeof(T).Name}]");
+                    _log.Trace($"Merged {mergeResult.NumberOfStreams} streams, {mergeResult.NumberOfEvents} events from {branchId} into {_activeTimeline.Id} [{typeof(T).Name}]");
                 return mergeResult;
             }
             catch (Exception e)
@@ -286,7 +287,7 @@ namespace ZES.Infrastructure.Branching
             {
                 await cloneFlow.CompletionTask;
                 if (cloneFlow.NumberOfStreams > 0)
-                    _log.Info($"{cloneFlow.NumberOfStreams} {typeof(T).Name} streams cloned to {timeline}");
+                    _log.Trace($"{cloneFlow.NumberOfStreams} {typeof(T).Name} streams cloned to {timeline}");
             }
             catch (Exception e)
             {

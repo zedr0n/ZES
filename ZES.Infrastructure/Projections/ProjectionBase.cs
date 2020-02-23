@@ -34,7 +34,7 @@ namespace ZES.Infrastructure.Projections
             _start = new Lazy<Task>(() => Task.Run(Start));
 
             StatusSubject.Where(s => s != Sleeping)
-                .Subscribe(s => Log?.Info($"{GetType().GetFriendlyName()} : {s.ToString()}"));
+                .Subscribe(s => Log?.Debug($"{GetType().GetFriendlyName()} : {s.ToString()}"));
         }
 
         /// <inheritdoc />

@@ -81,6 +81,10 @@ namespace ZES.Infrastructure.Retroactive
             await Delete(stream, version, true);
 
         /// <inheritdoc />
+        public async Task<bool> CanInsertIntoStream(IStream stream, int version, IEnumerable<IEvent> events) =>
+            await Insert(stream, version, events, false);
+
+        /// <inheritdoc />
         public async Task<bool> TryInsertIntoStream(IStream stream, int version, IEnumerable<IEvent> events) =>
             await Insert(stream, version, events, true);
 

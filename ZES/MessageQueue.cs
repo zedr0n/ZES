@@ -65,7 +65,7 @@ namespace ZES
                     throw new InvalidOperationException("Message completed before being produced");
                 count--;
                 b.Count[_timeline.Id] = count;
-                _log.Trace($"Uncompleted messages : {count}, removed {_timeline.Id}:{message.GetType().Name}");
+                _log.Debug($"Uncompleted messages : {count}, removed {_timeline.Id}:{message.GetType().Name}");
 
                 return b;
             });
@@ -81,7 +81,7 @@ namespace ZES
                     
                 count++;
                 b.Count[_timeline.Id] = count;
-                _log.Trace($"Uncompleted messages : {count}, added {_timeline.Id}:{message.GetType().Name}");
+                _log.Debug($"Uncompleted messages : {count}, added {_timeline.Id}:{message.GetType().Name}");
 
                 return b;
             });

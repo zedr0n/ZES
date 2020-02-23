@@ -159,7 +159,7 @@ namespace ZES.Infrastructure
             foreach (var e in events.Reverse())
                 await _streamStore.DeleteMessage(stream.Key, e.MessageId);
             
-            _log.Info($"Deleted {events.Count} {(events.Count > 1 ? "events" : "event")} from {stream.Key}");
+            _log.Trace($"Deleted {events.Count} {(events.Count > 1 ? "events" : "event")} from {stream.Key}");
 
             stream.Version = version;
             stream.AddDeleted(events.Count);

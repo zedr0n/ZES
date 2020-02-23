@@ -39,6 +39,7 @@ namespace ZES.Tests.Domain.Queries
             private readonly ConcurrentDictionary<string, long> _createdAt = new ConcurrentDictionary<string, long>();
             private readonly ConcurrentDictionary<string, long> _updatedAt = new ConcurrentDictionary<string, long>();
 
+            public int NumberOfUpdates { get; private set; }
             public long CreatedAt(string id) => _createdAt.TryGetValue(id, out var createdAt) ? createdAt : default(long);
             public long UpdatedAt(string id) => _updatedAt.TryGetValue(id, out var updatedAt) ? updatedAt : default(long);
 
@@ -51,6 +52,7 @@ namespace ZES.Tests.Domain.Queries
             public void SetUpdatedAt(string id, long timestamp)
             {
                 _updatedAt[id] = timestamp;
+                NumberOfUpdates++;
             }
         }
     }

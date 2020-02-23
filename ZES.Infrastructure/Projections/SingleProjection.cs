@@ -228,8 +228,11 @@ namespace ZES.Infrastructure.Projections
                 var version = _versions.GetOrAdd(s.Key, ExpectedVersion.EmptyStream);
 
                 if (s.Version == ExpectedVersion.NoStream)
+                {
+                    trackedStream.Complete();
                     return;
-                
+                }
+
                 if (s.Version <= ExpectedVersion.EmptyStream)
                     s.Version = 0;
 

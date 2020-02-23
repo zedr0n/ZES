@@ -11,6 +11,6 @@ namespace ZES.Tests.Domain.Queries
         }
 
         protected override RootInfo Handle(IProjection<RootInfoProjection.Results> projection, RootInfoQuery query) =>
-            new RootInfo(query.Id, projection.State.CreatedAt(query.Id), projection.State.UpdatedAt(query.Id));
+            new RootInfo(query.Id, projection.State.CreatedAt(query.Id), projection.State.UpdatedAt(query.Id), projection.State.NumberOfUpdates);
     }
 }

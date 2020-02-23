@@ -86,6 +86,37 @@ namespace ZES.Tests
         }
 
         [Fact]
+        public async void CanDeleteFromStream()
+        {
+            var container = CreateContainer();
+            var bus = container.GetInstance<IBus>();
+            var retroactive = container.GetInstance<IRetroactive>();
+            var locator = container.GetInstance<IStreamLocator>();
+
+            await await bus.CommandAsync(new CreateRoot("Root"));
+            await await bus.CommandAsync(new UpdateRoot("Root"));
+            await await bus.CommandAsync(new UpdateRoot("Root"));
+
+            await bus.Equal(new RootInfoQuery("Root"), r => r.NumberOfUpdates, 2);
+            
+            var stream = locator.Find<Root>("Root");
+            var canDelete = await retroactive.TryDelete(stream, 3);
+            Assert.False(canDelete);
+            
+            canDelete = await retroactive.TryDelete(stream, 1);
+            
+            Assert.True(canDelete);
+            await bus.Equal(new RootInfoQuery("Root"), r => r.NumberOfUpdates, 1);
+
+            canDelete = await retroactive.TryDelete(stream, 1);
+            Assert.True(canDelete);
+            await bus.Equal(new RootInfoQuery("Root"), r => r.NumberOfUpdates, 0);
+
+            canDelete = await retroactive.CanDelete(stream, 0);
+            Assert.False(canDelete);
+        }
+
+        [Fact]
         public async void CanInsertIntoStream()
         {
             var container = CreateContainer();
@@ -116,11 +147,11 @@ namespace ZES.Tests
             var time = graph.GetTimestamp(stream.Key, 1);
             Assert.Equal(lastTime, time);
 
-            await retroactive.InsertIntoStream(stream, 1, new[] { e });
+            await retroactive.TryInsertIntoStream(stream, 1, new[] { e });
 
             await bus.Equal(new RootInfoQuery("Root"), r => r.UpdatedAt, lastTime);
-
             await bus.Equal(new HistoricalQuery<RootInfoQuery, RootInfo>(new RootInfoQuery("Root"), e.Timestamp), r => r.UpdatedAt, e.Timestamp);
+            
             await graph.Serialise(nameof(CanInsertIntoStream));
         }
         
@@ -154,7 +185,7 @@ namespace ZES.Tests
             manager.Reset();
             await manager.Branch("test0");
             stream = streamLocator.Find<Root>("Root", branch.Id);
-            await retroactive.InsertIntoStream(stream, 1, new[] { e });
+            await retroactive.TryInsertIntoStream(stream, 1, new[] { e });
             
             await graph.Serialise(nameof(CanInsertIntoStreamMultipleBranch) + "-test0");
 

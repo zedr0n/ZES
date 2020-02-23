@@ -64,7 +64,7 @@ namespace ZES.Infrastructure.Domain
                 var stream = _streamLocator.FindBranched(c.Key, branch);
                 var e = await _eventStore.ReadStream<IEvent>(stream, stream.Version - c.Value + 1, c.Value).ToList();
 
-                await _retroactive.InsertIntoStream(c.Key, c.Key.Version + 1, e);
+                await _retroactive.TryInsertIntoStream(c.Key, c.Key.Version + 1, e);
             }
             
             await _manager.DeleteBranch(branch);

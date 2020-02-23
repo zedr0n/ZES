@@ -4,7 +4,6 @@ using ZES.Interfaces.Domain;
 
 namespace ZES.Tests.Domain.Commands
 {
-    // [Idempotent]
     public class UpdateRoot : Command   
     {
         public UpdateRoot() { }

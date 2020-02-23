@@ -72,6 +72,11 @@ namespace ZES.Interfaces.EventStore
         string Type { get; }
 
         /// <summary>
+        /// Gets the number of deleted messages in stream
+        /// </summary>
+        int DeletedCount { get; }
+
+        /// <summary>
         /// Copies the stream
         /// </summary>
         /// <returns>Stream copy</returns>

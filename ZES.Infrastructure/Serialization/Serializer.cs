@@ -53,7 +53,6 @@ namespace ZES.Infrastructure.Serialization
             JSON.Serialize(new EventMetadata
             {
                 AncestorId = Guid.NewGuid(),
-                Idempotent = false,
                 MessageId = Guid.NewGuid(),
                 Timestamp = 0,
                 Version = 0
@@ -222,7 +221,6 @@ namespace ZES.Infrastructure.Serialization
             var meta = new EventMetadata
             {
                 AncestorId = message.AncestorId,
-                Idempotent = message.Idempotent,
                 MessageId = message.MessageId,
                 Timestamp = message.Timestamp,
                 Version = version

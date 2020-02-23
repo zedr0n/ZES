@@ -117,7 +117,7 @@ namespace ZES.Infrastructure
             var result = await _streamStore.AppendToStream(stream.Key, stream.AppendPosition(), streamMessages);
             LogEvents(streamMessages);
 
-            var version = result.CurrentVersion;
+            var version = result.CurrentVersion - stream.DeletedCount;
             
             if (stream.Parent != null)
                 version += stream.Parent.Version + 1;
@@ -126,8 +126,13 @@ namespace ZES.Infrastructure
             {
                 stream.Version = version;
 
+                var metaVersion = (await _streamStore.GetStreamMetadata(stream.Key)).MetadataStreamVersion;
+                if (metaVersion == ExpectedVersion.EmptyStream)
+                    metaVersion = ExpectedVersion.NoStream;
+                
                 await _streamStore.SetStreamMetadata(
                     stream.Key,
+                    metaVersion, 
                     metadataJson: _serializer.EncodeStreamMetadata(stream)); // JExtensions.JStreamMetadata(stream));
 
                 // await _graph.AddStreamMetadata(stream);

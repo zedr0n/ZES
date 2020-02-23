@@ -225,13 +225,14 @@ namespace ZES.Infrastructure.Projections
             private async Task Process(Tracked<IStream> trackedStream)
             {
                 var s = trackedStream.Value;
-                var version = _versions.GetOrAdd(s.Key, ExpectedVersion.EmptyStream);
-
+                
                 if (s.Version == ExpectedVersion.NoStream)
                 {
                     trackedStream.Complete();
                     return;
                 }
+
+                var version = _versions.GetOrAdd(s.Key, ExpectedVersion.EmptyStream);
 
                 if (s.Version <= ExpectedVersion.EmptyStream)
                     s.Version = 0;

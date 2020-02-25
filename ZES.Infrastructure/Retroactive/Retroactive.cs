@@ -74,9 +74,11 @@ namespace ZES.Infrastructure.Retroactive
             _messageQueue.Alert(new OnTimelineChange());
         }
 
+        /// <inheritdoc />
         public async Task<bool> CanDelete(IStream stream, int version) =>
             await Delete(stream, version, false);
 
+        /// <inheritdoc />
         public async Task<bool> TryDelete(IStream stream, int version) =>
             await Delete(stream, version, true);
 

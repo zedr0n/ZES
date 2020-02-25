@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.IO;
 using System.Linq;
 using System.Reactive.Linq;
 using System.Reactive.Subjects;
@@ -213,7 +212,7 @@ namespace ZES.Infrastructure.Causality
                 foreach (var m in eventsPage.Messages.Where(m => !m.StreamId.StartsWith("$")))
                 {
                     if (m.StreamId.Contains("Command"))
-                        await AddCommand(m);
+                        AddCommand(m);
                     else
                         await AddEvent(m);
                 }
@@ -283,7 +282,7 @@ namespace ZES.Infrastructure.Causality
             streamVertex.MerkleHash = CalculateStreamHash(streamVertex);
         }
         
-        private async Task AddCommand(StreamMessage m)
+        private void AddCommand(StreamMessage m)
         {
             var metadata = _serializer.DecodeMetadata(m.JsonMetadata);
 
@@ -307,21 +306,12 @@ namespace ZES.Infrastructure.Causality
             if (!streamMessage.StreamId.Contains("metadata") && !streamMessage.StreamId.Contains("$"))
             {
                 if (streamMessage.StreamId.Contains("Command"))
-                    await AddCommand(streamMessage);
+                    AddCommand(streamMessage);
                 else
                     await AddEvent(streamMessage);
             }
             
             _position.OnNext(streamMessage.Position);
-        }
-
-        private string CalculateHash(ICVertex vertex, string jsonData)
-        {
-            var causes = new List<ICVertex>();
-            GetCauses<CausalityEdge>(vertex, causes);
-
-            var aggr = jsonData + causes.OfType<CausalityVertex>().Select(v => v.MerkleHash).Aggregate(string.Empty, (c, n) => c + n);
-            return Hashing.Sha256(aggr);
         }
 
         private string CalculateStreamHash(StreamVertex vertex)

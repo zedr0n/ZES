@@ -161,12 +161,11 @@ namespace ZES.Utils
                 if (handler == null)
                     return;
 
-                var rootType = handler.GetInterfaces().SingleOrDefault(i => i.GetGenericArguments().Length > 1)?.GetGenericArguments()[1];
                 var iRetroactiveCommand = typeof(RetroactiveCommand<>).MakeGenericType(command);
                 var iRetroactiveCommandHandler = typeof(ICommandHandler<>).MakeGenericType(iRetroactiveCommand);
 
                 var retroactiveCommandHandler =
-                    typeof(RetroactiveCommandHandler<,>).MakeGenericType(command, rootType);
+                    typeof(RetroactiveCommandHandler<>).MakeGenericType(command);
 
                 c.RegisterConditional(iHandler, handler, Lifestyle.Singleton, x => !x.Handled);
                 c.RegisterConditional(iRetroactiveCommandHandler, retroactiveCommandHandler, Lifestyle.Singleton, x => !x.Handled);

@@ -12,9 +12,8 @@ using ZES.Interfaces.Pipes;
 namespace ZES.Infrastructure.Domain
 {
     /// <inheritdoc />
-    public class RetroactiveCommandHandler<TCommand, TRoot> : ICommandHandler<RetroactiveCommand<TCommand>>
+    public class RetroactiveCommandHandler<TCommand> : ICommandHandler<RetroactiveCommand<TCommand>>
         where TCommand : Command 
-        where TRoot : IAggregate
     {
         private readonly ICommandHandler<TCommand> _handler;
         private readonly IBranchManager _manager;
@@ -23,7 +22,7 @@ namespace ZES.Infrastructure.Domain
         private readonly IEventStore<IAggregate> _eventStore;
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="RetroactiveCommandHandler{TCommand, TRoot}"/> class.
+        /// Initializes a new instance of the <see cref="RetroactiveCommandHandler{TCommand}"/> class.
         /// </summary>
         /// <param name="handler">Underlying command handler</param>
         /// <param name="manager">Branch manager</param>

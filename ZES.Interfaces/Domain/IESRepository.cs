@@ -77,6 +77,5 @@ namespace ZES.Interfaces.Domain
         /// <returns>True if valid, otherwise false</returns>
         Task<int> LastValidVersion<T>(string id)
             where T : class, I, new();
-
     }
 }

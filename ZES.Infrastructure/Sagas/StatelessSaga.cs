@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 using Stateless;
 using ZES.Interfaces;
 
@@ -12,7 +11,6 @@ namespace ZES.Infrastructure.Sagas
     /// <typeparam name="TTrigger">Trigger types</typeparam>
     public abstract class StatelessSaga<TState, TTrigger> : Saga
     {
-        private readonly Dictionary<Type, TTrigger> _triggers = new Dictionary<Type, TTrigger>();
         private StateMachine<TState, TTrigger> _stateMachine;
 
         /// <summary>
@@ -32,14 +30,6 @@ namespace ZES.Infrastructure.Sagas
             set => _stateMachine = value;
         }
 
-        /// <inheritdoc />
-        protected override void ApplyEvent(IEvent e, bool computeHash = false)
-        {
-            base.ApplyEvent(e, computeHash);
-            if (_triggers.TryGetValue(e.GetType(), out var trigger) && trigger != null)
-                StateMachine.Fire(trigger);
-        }
-
         /// <summary>
         /// Associate the event with the specified trigger, saga id resolver
         /// and handle using the provided action
@@ -52,8 +42,14 @@ namespace ZES.Infrastructure.Sagas
         protected void Register<TEvent>(Func<TEvent, string> sagaId, TTrigger t, Action<TEvent> action = null)
             where TEvent : class, IEvent
         {
-            _triggers[typeof(TEvent)] = t;
-            base.Register(sagaId, action);
+            void Handler(TEvent e)
+            {
+                action?.Invoke(e);
+                if (t != null)
+                    StateMachine.Fire(t);
+            }
+            
+            base.Register(sagaId, Handler);
         }
 
         /// <summary>

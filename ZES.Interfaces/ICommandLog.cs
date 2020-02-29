@@ -18,10 +18,10 @@ namespace ZES.Interfaces
         Task AppendCommand(ICommand command);
 
         /// <summary>
-        /// Get the commands corresponding to the stream
+        /// Get the command originating the event
         /// </summary>
-        /// <param name="stream">Stream info</param>
-        /// <returns>Command observable</returns>
-        IObservable<ICommand> GetCommands(IStream stream);
+        /// <param name="e">Event resulting from the command</param>
+        /// <returns>Command instance if present</returns>
+        Task<ICommand> GetCommand(IEvent e);
     }
 }

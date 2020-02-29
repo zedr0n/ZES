@@ -11,16 +11,13 @@ namespace ZES.Interfaces.Domain
         /// <value>
         /// Aggregate target id
         /// </value>
-        string Target { get;  }
+        string Target { get; }
 
         /// <summary>
-        /// Gets aggregate root type
+        /// Gets resulting event type 
         /// </summary>
-        /// <value>
-        /// Aggregate root type
-        /// </value>
-        string RootType { get; }
-        
+        string EventType { get; }
+
         /// <summary>
         /// Gets a value indicating whether to use timestamp for aggregate events
         /// </summary>

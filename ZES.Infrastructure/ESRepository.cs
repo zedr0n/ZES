@@ -44,7 +44,7 @@ namespace ZES.Infrastructure
         }
 
         /// <inheritdoc />
-        public async Task Save<T>(T es, Guid? ancestorId = null)
+        public async Task Save<T>(T es)
             where T : class, I
         {
             if (es == null)
@@ -63,9 +63,6 @@ namespace ZES.Infrastructure
                 if (e.Timestamp == default(long))
                     e.Timestamp = _timeline.Now;
                 e.Stream = stream.Key;
-                if (ancestorId == null) 
-                    continue;
-                e.AncestorId = ancestorId.Value;
             }
 
             await _eventStore.AppendToStream(stream, events);
@@ -74,9 +71,6 @@ namespace ZES.Infrastructure
                 var commands = saga.GetUncommittedCommands();
                 foreach (var command in commands.Cast<Command>())
                 {
-                    if (ancestorId != null)
-                        command.AncestorId = ancestorId.Value;
-
                     await _messageQueue.UncompleteMessage(command);
                     var task = await _bus.CommandAsync(command);
                     task.ContinueWith(async t => await _messageQueue.CompleteMessage(command));

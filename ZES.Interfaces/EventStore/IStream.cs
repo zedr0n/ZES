@@ -124,6 +124,13 @@ namespace ZES.Interfaces.EventStore
     public interface IStreamLocator
     {
         /// <summary>
+        /// Get the stream with the given key
+        /// </summary>
+        /// <param name="key">Stream key</param>
+        /// <returns>Stream with given id</returns>
+        IStream Find(string key);
+
+        /// <summary>
         /// Get the stream with the given id
         /// </summary>
         /// <typeparam name="T">Underlying stream type</typeparam>

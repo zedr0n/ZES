@@ -1,3 +1,5 @@
+using System;
+
 namespace ZES.Interfaces
 {
     /// <summary>
@@ -12,6 +14,11 @@ namespace ZES.Interfaces
         /// Event type
         /// </value>
         string EventType { get; }
+        
+        /// <summary>
+        /// Gets originating command id
+        /// </summary>
+        Guid CommandId { get; }
 
         /// <summary>
         /// Gets or sets gets originating stream key

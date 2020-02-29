@@ -3,6 +3,7 @@ using System.Reactive.Linq;
 using System.Threading.Tasks;
 using SqlStreamStore;
 using SqlStreamStore.Streams;
+using ZES.Infrastructure.Streams;
 using ZES.Interfaces;
 using ZES.Interfaces.Domain;
 using ZES.Interfaces.EventStore;
@@ -34,19 +35,36 @@ namespace ZES.Infrastructure.Domain
         }
 
         /// <inheritdoc />
-        public IObservable<ICommand> GetCommands(IStream stream)
+        public async Task<ICommand> GetCommand(IEvent e)
+        {
+            var stream = new Stream(Key(e.EventType), ExpectedVersion.Any); 
+            var obs = GetCommands(stream);
+
+            var command = await obs.FirstOrDefaultAsync(c => e.CommandId == c.MessageId).Timeout(Configuration.Timeout);
+            return command;
+        }
+
+        /// <inheritdoc />
+        public async Task AppendCommand(ICommand command)
+        {
+            var message = Encode(command);
+            _log.Debug(message.JsonData);
+            
+            await _streamStore.AppendToStream(Key(command.EventType), ExpectedVersion.Any, message);
+        }
+        
+        private IObservable<ICommand> GetCommands(IStream stream)
         {
             var observable = Observable.Create(async (IObserver<ICommand> observer) =>
             {
-                var page = await _streamStore.ReadStreamForwards($"{stream.Timeline}:Command:{stream.Type}", ExpectedVersion.EmptyStream + 1, Configuration.BatchSize);
+                var page = await _streamStore.ReadStreamForwards(stream.Key, ExpectedVersion.EmptyStream + 1, Configuration.BatchSize);
                 while (page.Messages.Length > 0)
                 {
                     foreach (var m in page.Messages)
                     {
                         var data = await m.GetJsonData();
                         var command = _serializer.Deserialize(data);
-                        if (command.Target == stream.Id)
-                            observer.OnNext(command);
+                        observer.OnNext(command);
                     }
                     
                     page = await page.ReadNext();
@@ -57,15 +75,11 @@ namespace ZES.Infrastructure.Domain
             return observable;
         }
 
-        /// <inheritdoc />
-        public async Task AppendCommand(ICommand command)
+        private string Key(string eventType)
         {
-            var message = Encode(command);
-            _log.Debug(message.JsonData);
-            
-            await _streamStore.AppendToStream($"{_timeline.Id}:Command:{command.RootType}", ExpectedVersion.Any, message);
+            return $"{_timeline.Id}:Command:{eventType}";
         }
-
+        
         private NewStreamMessage Encode(ICommand command) =>
             new NewStreamMessage(command.MessageId, command.GetType().Name, _serializer.Serialize(command), _serializer.EncodeMetadata(command));
     }

@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reactive.Linq;
@@ -6,7 +7,6 @@ using System.Threading.Tasks;
 using SqlStreamStore.Streams;
 using ZES.Interfaces;
 using ZES.Interfaces.Domain;
-using ZES.Interfaces.EventStore;
 using ZES.Interfaces.Pipes;
 
 namespace ZES.Infrastructure.Domain
@@ -15,32 +15,19 @@ namespace ZES.Infrastructure.Domain
     public class RetroactiveCommandHandler<TCommand> : ICommandHandler<RetroactiveCommand<TCommand>>
         where TCommand : Command 
     {
-        private readonly ICommandHandler<TCommand> _handler;
-        private readonly IBranchManager _manager;
         private readonly IRetroactive _retroactive;
-        private readonly IStreamLocator _streamLocator;
-        private readonly IEventStore<IAggregate> _eventStore;
+        private readonly ICommandLog _commandLog;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="RetroactiveCommandHandler{TCommand}"/> class.
         /// </summary>
-        /// <param name="handler">Underlying command handler</param>
-        /// <param name="manager">Branch manager</param>
         /// <param name="retroactive">Retroactive functional</param>
-        /// <param name="eventStore">Event store</param>
-        /// <param name="streamLocator">Stream locator service</param>
-        public RetroactiveCommandHandler(
-            ICommandHandler<TCommand> handler, 
-            IBranchManager manager, 
-            IRetroactive retroactive,
-            IEventStore<IAggregate> eventStore,
-            IStreamLocator streamLocator) 
+        /// <param name="commandLog">Command log</param>
+        public RetroactiveCommandHandler(IRetroactive retroactive,
+            ICommandLog commandLog) 
         {
-            _handler = handler;
-            _manager = manager;
             _retroactive = retroactive;
-            _eventStore = eventStore;
-            _streamLocator = streamLocator;
+            _commandLog = commandLog;
         }
 
         /// <inheritdoc />
@@ -48,37 +35,33 @@ namespace ZES.Infrastructure.Domain
         {
             iCommand.Command.Timestamp = iCommand.Timestamp;
             iCommand.Command.ForceTimestamp();
-
-            var activeBranch = _manager.ActiveBranch;
             var time = iCommand.Timestamp;
-            var branch = $"{typeof(TCommand).Name}-{time}";
 
-            await _manager.Branch(branch, time);
-            await _handler.Handle(iCommand.Command);
-            await _manager.Branch(activeBranch);
-            
-            var changes = await _manager.GetChanges(branch);
-            var canInsert = true;
+            var changes = await _retroactive.GetChanges(iCommand.Command, time);
+
+            var invalidEvents = new List<IEvent>();
             foreach (var c in changes)
             {
-                var stream = _streamLocator.FindBranched(c.Key, branch);
-                var e = await _eventStore.ReadStream<IEvent>(stream, stream.Version - c.Value + 1, c.Value).ToList();
-
-                canInsert &= await _retroactive.CanInsertIntoStream(c.Key, c.Key.Version + 1, e);
+                var events = c.Value;
+                var invalidEvent = await _retroactive.CanInsertIntoStream(c.Key, c.Key.Version + 1, events);
+                if (invalidEvent != null)
+                    invalidEvents.Add(invalidEvent);
             }
 
-            if (canInsert)
+            var commands = await RollbackEvents(invalidEvents);
+        
+            if (invalidEvents.Count > 0)    
+                changes = await _retroactive.GetChanges(iCommand.Command, time);
+            
+            foreach (var c in changes)
             {
-                foreach (var c in changes)
-                {
-                    var stream = _streamLocator.FindBranched(c.Key, branch);
-                    var e = await _eventStore.ReadStream<IEvent>(stream, stream.Version - c.Value + 1, c.Value).ToList();
-
-                    await _retroactive.TryInsertIntoStream(c.Key, c.Key.Version + 1, e);
-                }
+                var events = c.Value;
+                await _retroactive.TryInsertIntoStream(c.Key, c.Key.Version + 1, events);
+                await _commandLog.AppendCommand(iCommand.Command);
             }
-                
-            await _manager.DeleteBranch(branch);
+
+            foreach (var c in commands)
+                await _retroactive.ReplayCommand(c);
         }
 
         /// <inheritdoc />
@@ -91,6 +74,23 @@ namespace ZES.Infrastructure.Domain
         public async Task Handle(ICommand command)
         {
             await Handle((RetroactiveCommand<TCommand>)command);
+        }
+
+        private async Task<IEnumerable<ICommand>> RollbackEvents(IEnumerable<IEvent> invalidEvents)
+        {
+            var commands = new List<ICommand>(); 
+            foreach (var e in invalidEvents)
+            {
+                var c = await _commandLog.GetCommand(e);
+                commands.Add(c);
+            }
+
+            var allCommands = commands.Distinct(new Command.Comparer()).ToList();
+
+            foreach (var c in allCommands)
+                await _retroactive.RollbackCommand(c);
+
+            return allCommands;
         }
     }
 }

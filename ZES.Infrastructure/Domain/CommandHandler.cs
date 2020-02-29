@@ -53,8 +53,6 @@ namespace ZES.Infrastructure.Domain
             {
                 if (command.Timestamp == default(long))
                     command.Timestamp = _timeline.Now;
-
-                command.RootType = _handler.RootType();
             }
 
             try

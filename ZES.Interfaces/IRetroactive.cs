@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using ZES.Interfaces.Domain;
 using ZES.Interfaces.EventStore;
 
 namespace ZES.Interfaces
@@ -15,8 +16,8 @@ namespace ZES.Interfaces
         /// <param name="stream">Stream descriptor</param>
         /// <param name="version">Version to insert at</param>
         /// <param name="events">Events to insert</param>
-        /// <returns>True if can insert in valid way</returns>
-        Task<bool> CanInsertIntoStream(IStream stream, int version, IEnumerable<IEvent> events);
+        /// <returns>First invalid event if any</returns>
+        Task<IEvent> CanInsertIntoStream(IStream stream, int version, IEnumerable<IEvent> events);
 
         /// <summary>
         /// Insert events into stream at version
@@ -35,7 +36,31 @@ namespace ZES.Interfaces
         /// <returns>Task completes when the stream is trimmed</returns>
         Task TrimStream(IStream stream, int version);
 
-        Task<bool> CanDelete(IStream stream, int version);
+        /// <summary>
+        /// Do validation for event deletion
+        /// </summary>
+        /// <param name="stream">Stream descriptor</param>
+        /// <param name="version">Event version to delete</param>
+        /// <returns>First invalid event if any</returns>
+        Task<IEvent> CanDelete(IStream stream, int version);
+        
+        /// <summary>
+        /// Delete event from the stream
+        /// </summary>
+        /// <param name="stream">Stream descriptor</param>
+        /// <param name="version">Event version to delete</param>
+        /// <returns>True if deletion is valid</returns>
         Task<bool> TryDelete(IStream stream, int version);
+
+        /// <summary>
+        /// Get changes caused by the command
+        /// </summary>
+        /// <param name="command">Command to process</param>
+        /// <param name="time">Time command  is applied</param>
+        /// <returns>List of events by stream</returns>
+        Task<Dictionary<IStream, IEnumerable<IEvent>>> GetChanges(ICommand command, long time);
+
+        Task<bool> RollbackCommand(ICommand c);
+        Task<bool> ReplayCommand(ICommand c);
     }
 }

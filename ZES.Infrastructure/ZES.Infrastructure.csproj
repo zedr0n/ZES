@@ -42,9 +42,6 @@
       <Compile Update="Domain\CommandLog.cs">
         <DependentUpon>Command.cs</DependentUpon>
       </Compile>
-      <Compile Update="Domain\HandlerExtensions.cs">
-        <DependentUpon>CommandHandler.cs</DependentUpon>
-      </Compile>
       <Compile Update="Domain\QueryHandlerBaseEx.cs">
         <DependentUpon>QueryHandlerBase.cs</DependentUpon>
       </Compile>

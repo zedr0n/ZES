@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using System.Threading.Tasks;
 using ZES.Interfaces.Domain;
 
@@ -21,10 +22,21 @@ namespace ZES.Infrastructure.Domain
         }
         
         /// <inheritdoc />
-        public async Task Handle(TCommand iCommand)
+        public async Task Handle(TCommand command)
         {
-            var root = Create(iCommand);
-            await _repository.Save(root, iCommand.MessageId);
+            var root = Create(command);
+            
+            var events = root.GetUncommittedEvents().OfType<Event>().ToList(); 
+            var eventType = events.Select(e => e.EventType).SingleOrDefault();
+            if (eventType == null)
+                throw new InvalidOperationException("More than one event type produced by a command");
+            foreach (var e in events)
+            {
+                e.CommandId = command.MessageId;
+                e.AncestorId = command.MessageId;
+            }
+            
+            await _repository.Save(root);
         }
 
         /// <inheritdoc />

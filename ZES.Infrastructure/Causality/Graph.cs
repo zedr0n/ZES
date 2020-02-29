@@ -252,8 +252,8 @@ namespace ZES.Infrastructure.Causality
 
         private async Task AddEvent(StreamMessage m)
         {
-            // if (m.StreamId.Contains("Saga"))
-            //    return;
+            /* if (m.StreamId.Contains("Saga"))
+                return;*/
             
             var metadata = _serializer.DecodeMetadata(m.JsonMetadata);
 

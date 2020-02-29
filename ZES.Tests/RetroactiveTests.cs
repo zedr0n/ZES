@@ -112,7 +112,7 @@ namespace ZES.Tests
             Assert.True(canDelete);
             await bus.Equal(new RootInfoQuery("Root"), r => r.NumberOfUpdates, 0);
 
-            canDelete = await retroactive.CanDelete(stream, 0);
+            canDelete = await retroactive.CanDelete(stream, 0) == null;
             Assert.False(canDelete);
         }
 

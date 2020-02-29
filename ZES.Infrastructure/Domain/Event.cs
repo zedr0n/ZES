@@ -9,7 +9,7 @@ namespace ZES.Infrastructure.Domain
         /// <summary>
         /// Initializes a new instance of the <see cref="Event"/> class.
         /// </summary>
-        protected Event()
+        public Event()
         {
             MessageType = GetType().Name;
             MessageId = Guid.NewGuid();
@@ -17,6 +17,9 @@ namespace ZES.Infrastructure.Domain
 
         /// <inheritdoc />
         public string EventType => MessageType;
+
+        /// <inheritdoc />
+        public Guid CommandId { get; set; }
 
         /// <inheritdoc />
         public string Stream { get; set; }
@@ -29,6 +32,7 @@ namespace ZES.Infrastructure.Domain
         {
             var copy = MemberwiseClone() as Event;
             copy.MessageId = Guid.NewGuid();
+            copy.AncestorId = MessageId;
             return copy;
         }
     }

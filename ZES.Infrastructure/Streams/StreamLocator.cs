@@ -43,6 +43,12 @@ namespace ZES.Infrastructure.Streams
         }
 
         /// <inheritdoc />
+        public IStream Find(string key)
+        {
+            return _streams.ContainsKey(key) ? _streams[key] : null;
+        }
+
+        /// <inheritdoc />
         public IStream Find<T>(string id, string timeline = "master")
             where T : IEventSourced
         {

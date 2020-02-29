@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
 using ZES.Infrastructure.Attributes;
@@ -46,8 +47,20 @@ namespace ZES.Infrastructure.Domain
             
             if (command.UseTimestamp)
                 root.TimestampEvents(command.Timestamp);
+
+            var events = root.GetUncommittedEvents().OfType<Event>().ToList(); 
+            var eventType = events.Select(e => e.EventType).SingleOrDefault();
+            if (eventType == null)
+                throw new InvalidOperationException("More than one event type produced by a command");
+            foreach (var e in events)
+            {
+                e.CommandId = command.MessageId;
+                e.AncestorId = command.MessageId;
+            }
+
+            command.EventType = eventType;
             
-            await _repository.Save(root, command.MessageId);
+            await _repository.Save(root);
         }
         
         /// <inheritdoc />

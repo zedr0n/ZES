@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using System.Reactive.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -151,7 +152,12 @@ namespace ZES.Infrastructure.Sagas
                         var saveEvent = ((Event)e).Copy(); 
                         
                         saga.When(saveEvent);
-                        await _repository.Save(saga, e.MessageId);
+                        
+                        var commands = saga.GetUncommittedCommands().OfType<Command>();
+                        foreach (var c in commands)
+                            c.AncestorId = e.MessageId;
+                        
+                        await _repository.Save(saga);
                     }
                     catch (Exception exception)
                     {

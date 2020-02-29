@@ -83,6 +83,7 @@ namespace ZES
             container.Register<ITimeline, Timeline>(Lifestyle.Singleton);
             container.Register<IMessageQueue, MessageQueue>(Lifestyle.Singleton);
             container.Register<ICommandLog, CommandLog>(Lifestyle.Singleton);
+            container.Register<ICommandRegistry, CommandRegistry>(Lifestyle.Singleton);
 
             container.Register<ILog, Logging.NLog>(Lifestyle.Singleton);
             container.Register(typeof(ILogger), () => LogManager.GetLogger(typeof(Logging.NLog).Name), Lifestyle.Singleton); 

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Reactive.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -112,7 +113,7 @@ namespace ZES.Tests
             Assert.True(canDelete);
             await bus.Equal(new RootInfoQuery("Root"), r => r.NumberOfUpdates, 0);
 
-            canDelete = await retroactive.CanDelete(stream, 0) == null;
+            canDelete = await retroactive.TryDelete(stream, 0);
             Assert.False(canDelete);
         }
 

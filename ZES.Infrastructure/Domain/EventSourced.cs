@@ -10,16 +10,17 @@ namespace ZES.Infrastructure.Domain
     public abstract class EventSourced : IEventSourced
     {
         private readonly List<IEvent> _changes = new List<IEvent>();
+        private readonly List<IEvent> _invalidEvents = new List<IEvent>();
         private readonly Dictionary<Type, Action<IEvent>> _handlers = new Dictionary<Type, Action<IEvent>>();
 
         private string _hash;
         private bool _computeHash;
 
         /// <inheritdoc />
-        public bool IsValid => LastValidVersion >= Version;
+        public bool IsValid => _invalidEvents.Count == 0;
 
         /// <inheritdoc />
-        public int LastValidVersion { get; private set; } = ExpectedVersion.EmptyStream;
+        public int LastValidVersion => _invalidEvents.Min(e => e.Version) - 1; 
         
         /// <inheritdoc />
         public string Id { get; protected set; }
@@ -55,6 +56,13 @@ namespace ZES.Infrastructure.Domain
         }
 
         /// <inheritdoc />
+        public IEnumerable<IEvent> GetInvalidEvents()
+        {
+            lock (_invalidEvents)
+                return _invalidEvents.ToArray();
+        }
+
+        /// <inheritdoc />
         public void TimestampEvents(long timestamp)
         {
             lock (_changes)
@@ -87,6 +95,8 @@ namespace ZES.Infrastructure.Domain
         public virtual void LoadFrom<T>(IEnumerable<IEvent> pastEvents, bool computeHash = false)
             where T : class, IEventSourced
         {
+            _invalidEvents.Clear();
+            
             var enumerable = pastEvents.ToList();
             foreach (var e in enumerable)
                 ApplyEvent(e, computeHash);
@@ -95,13 +105,38 @@ namespace ZES.Infrastructure.Domain
 
             ClearUncommittedEvents();
         }
+        
+        /// <summary>
+        /// Update the hash with object
+        /// </summary>
+        /// <param name="value">Object to hash</param>
+        protected void Hash(object value)
+        {
+            if (!_computeHash)
+                return;
+            
+            var objectHash = Hashing.Sha256(value);
+            _hash = Hashing.Sha256(_hash + objectHash);
+        }
+        
+        /// <summary>
+        /// Register the action to apply event to the instance
+        /// </summary>
+        /// <param name="handler">Event handler</param>
+        /// <typeparam name="TEvent">Event type</typeparam>
+        protected void Register<TEvent>(Action<TEvent> handler)
+            where TEvent : class, IEvent
+        {
+            if (handler != null)
+                _handlers.Add(typeof(TEvent), e => handler(e as TEvent));
+        }
 
         /// <summary>
         /// Apply the event to the instance
         /// </summary>
         /// <param name="e">Event</param>
         /// <param name="computeHash">True to compute the event hashes</param>
-        protected virtual void ApplyEvent(IEvent e, bool computeHash = false)
+        private void ApplyEvent(IEvent e, bool computeHash = false)
         {
             if (e == null)
                 return;
@@ -117,33 +152,11 @@ namespace ZES.Infrastructure.Domain
             if (_handlers.TryGetValue(e.GetType(), out var handler))
                 handler(e);
 
-            if (computeHash && e.Hash == _hash)
-                LastValidVersion++;
-        }
-
-        /// <summary>
-        /// Update the hash with object
-        /// </summary>
-        /// <param name="value">Object to hash</param>
-        protected void Hash(object value)
-        {
-            if (!_computeHash)
+            if (!computeHash)
                 return;
             
-            var objectHash = Hashing.Sha256(value);
-            _hash = Hashing.Sha256(_hash + objectHash);
-        }
-
-        /// <summary>
-        /// Register the action to apply event to the instance
-        /// </summary>
-        /// <param name="handler">Event handler</param>
-        /// <typeparam name="TEvent">Event type</typeparam>
-        protected void Register<TEvent>(Action<TEvent> handler)
-            where TEvent : class, IEvent
-        {
-            if (handler != null)
-                _handlers.Add(typeof(TEvent), e => handler(e as TEvent));
+            if (e.Hash != _hash)
+                _invalidEvents.Add(e);
         }
 
         private void ClearUncommittedEvents()

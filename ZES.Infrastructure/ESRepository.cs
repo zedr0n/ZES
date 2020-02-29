@@ -1,4 +1,6 @@
 using System;
+using System.Collections;
+using System.Collections.Generic;
 using System.Linq;
 using System.Reactive.Linq;
 using System.Reflection;
@@ -129,6 +131,39 @@ namespace ZES.Infrastructure
             es.LoadFrom<T>(events, true);
 
             return es.LastValidVersion;
+        }
+        
+        /// <inheritdoc />
+        public async Task<IEnumerable<IEvent>> FindInvalidEvents<T>(string id) 
+            where T : class, I, new()
+        {
+            var stream = _streams.Find<T>(id, _timeline.Id);
+            if (stream == null)
+                return null;
+            
+            var events = await _eventStore.ReadStream<IEvent>(stream, 0).ToList();
+            var es = EventSourced.Create<T>(id);
+            es.LoadFrom<T>(events, true);
+
+            return es.GetInvalidEvents();
+        }
+
+        /// <inheritdoc />
+        public async Task<IEnumerable<IEvent>> FindInvalidEvents(string type, string id)
+        {
+            var t = _registry.GetType(type);
+            var m = GetType().GetMethods(BindingFlags.Instance | BindingFlags.Public)
+                .SingleOrDefault(x => x.IsGenericMethod && x.Name == nameof(FindInvalidEvents))
+                ?.MakeGenericMethod(t);
+
+            if (m != null)
+            {
+                var task = (Task<IEnumerable<IEvent>>)m.Invoke(this, new object[] { id });
+                await task;
+                return task.Result;
+            }
+
+            return null;
         }
 
         /// <inheritdoc />

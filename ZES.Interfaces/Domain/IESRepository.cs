@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 
 namespace ZES.Interfaces.Domain
@@ -23,6 +24,14 @@ namespace ZES.Interfaces.Domain
         /// <param name="id">Event sourced guid</param>
         /// <returns>True if valid, otherwise false</returns>
         Task<int> LastValidVersion(string type, string id);
+        
+        /// <summary>
+        /// Gets invalid events in the event sourced instance
+        /// </summary>
+        /// <param name="type">Event sourced type</param>
+        /// <param name="id">Event soured guid</param>
+        /// <returns>List of invalid events</returns>
+        Task<IEnumerable<IEvent>> FindInvalidEvents(string type, string id);
     }
     
     /// <summary>
@@ -75,6 +84,15 @@ namespace ZES.Interfaces.Domain
         /// <typeparam name="T">Event source type</typeparam>
         /// <returns>True if valid, otherwise false</returns>
         Task<int> LastValidVersion<T>(string id)
+            where T : class, I, new();
+
+        /// <summary>
+        /// Gets invalid events in the event sourced instance
+        /// </summary>
+        /// <param name="id">Event soured guid</param>
+        /// <typeparam name="T">Event sourced type</typeparam>
+        /// <returns>List of invalid events</returns>
+        Task<IEnumerable<IEvent>> FindInvalidEvents<T>(string id) 
             where T : class, I, new();
     }
 }

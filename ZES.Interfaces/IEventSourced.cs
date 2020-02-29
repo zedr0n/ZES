@@ -43,6 +43,12 @@ namespace ZES.Interfaces
         /// </summary>
         /// <returns>Sequence of events</returns>
         IEnumerable<IEvent> GetUncommittedEvents();
+        
+        /// <summary>
+        /// Gets invalid events 
+        /// </summary>
+        /// <returns>Sequence of invalid events</returns>
+        IEnumerable<IEvent> GetInvalidEvents();
 
         /// <summary>
         /// Hydrate the event sourced instance from event sequence

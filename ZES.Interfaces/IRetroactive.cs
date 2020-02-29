@@ -1,3 +1,4 @@
+using System.Collections;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using ZES.Interfaces.Domain;
@@ -16,8 +17,8 @@ namespace ZES.Interfaces
         /// <param name="stream">Stream descriptor</param>
         /// <param name="version">Version to insert at</param>
         /// <param name="events">Events to insert</param>
-        /// <returns>First invalid event if any</returns>
-        Task<IEvent> CanInsertIntoStream(IStream stream, int version, IEnumerable<IEvent> events);
+        /// <returns>List of invalid events, null if none</returns>
+        Task<IEnumerable<IEvent>> ValidateInsert(IStream stream, int version, IEnumerable<IEvent> events);
 
         /// <summary>
         /// Insert events into stream at version
@@ -41,8 +42,8 @@ namespace ZES.Interfaces
         /// </summary>
         /// <param name="stream">Stream descriptor</param>
         /// <param name="version">Event version to delete</param>
-        /// <returns>First invalid event if any</returns>
-        Task<IEvent> CanDelete(IStream stream, int version);
+        /// <returns>Invalid events if any</returns>
+        Task<IEnumerable<IEvent>> ValidateDelete(IStream stream, int version);
         
         /// <summary>
         /// Delete event from the stream
@@ -60,7 +61,7 @@ namespace ZES.Interfaces
         /// <returns>List of events by stream</returns>
         Task<Dictionary<IStream, IEnumerable<IEvent>>> GetChanges(ICommand command, long time);
 
-        Task<bool> RollbackCommand(ICommand c);
         Task<bool> ReplayCommand(ICommand c);
+        Task<bool> RollbackCommands(IEnumerable<ICommand> commands);
     }
 }

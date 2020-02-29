@@ -23,8 +23,7 @@ namespace ZES.Infrastructure.Domain
         /// </summary>
         /// <param name="retroactive">Retroactive functional</param>
         /// <param name="commandLog">Command log</param>
-        public RetroactiveCommandHandler(IRetroactive retroactive,
-            ICommandLog commandLog) 
+        public RetroactiveCommandHandler(IRetroactive retroactive, ICommandLog commandLog) 
         {
             _retroactive = retroactive;
             _commandLog = commandLog;
@@ -43,9 +42,9 @@ namespace ZES.Infrastructure.Domain
             foreach (var c in changes)
             {
                 var events = c.Value;
-                var invalidEvent = await _retroactive.CanInsertIntoStream(c.Key, c.Key.Version + 1, events);
+                var invalidEvent = await _retroactive.ValidateInsert(c.Key, c.Key.Version + 1, events);
                 if (invalidEvent != null)
-                    invalidEvents.Add(invalidEvent);
+                    invalidEvents.AddRange(invalidEvent);
             }
 
             var commands = await RollbackEvents(invalidEvents);
@@ -78,19 +77,22 @@ namespace ZES.Infrastructure.Domain
 
         private async Task<IEnumerable<ICommand>> RollbackEvents(IEnumerable<IEvent> invalidEvents)
         {
-            var commands = new List<ICommand>(); 
+            var commands = new Dictionary<string, List<ICommand>>();
             foreach (var e in invalidEvents)
             {
                 var c = await _commandLog.GetCommand(e);
-                commands.Add(c);
+                
+                if (!commands.ContainsKey(e.Stream))
+                    commands[e.Stream] = new List<ICommand>();
+                
+                if (commands[e.Stream].All(x => x.MessageId != c.MessageId))
+                    commands[e.Stream].Add(c);
             }
 
-            var allCommands = commands.Distinct(new Command.Comparer()).ToList();
+            foreach (var s in commands.Keys)
+                await _retroactive.RollbackCommands(commands[s]);
 
-            foreach (var c in allCommands)
-                await _retroactive.RollbackCommand(c);
-
-            return allCommands;
+            return commands.Values.SelectMany(v => v).OrderBy(v => v.Timestamp);
         }
     }
 }

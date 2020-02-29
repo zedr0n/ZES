@@ -80,56 +80,44 @@ namespace ZES.Infrastructure.Retroactive
         }
 
         /// <inheritdoc />
-        public async Task<IEvent> CanDelete(IStream stream, int version) =>
+        public async Task<IEnumerable<IEvent>> ValidateDelete(IStream stream, int version) =>
             await Delete(stream, version, false);
 
         /// <inheritdoc />
         public async Task<bool> TryDelete(IStream stream, int version) =>
-            await Delete(stream, version, true) == null;
+            !(await Delete(stream, version, true)).Any();
 
         /// <inheritdoc />
-        public async Task<IEvent> CanInsertIntoStream(IStream stream, int version, IEnumerable<IEvent> events) =>
+        public async Task<IEnumerable<IEvent>> ValidateInsert(IStream stream, int version, IEnumerable<IEvent> events) =>
             await Insert(stream, version, events, false);
 
         /// <inheritdoc />
         public async Task<bool> TryInsertIntoStream(IStream stream, int version, IEnumerable<IEvent> events) =>
-            await Insert(stream, version, events, true) == null;
-
-        public async Task<bool> RollbackCommand(ICommand c)
-        {
-            var time = c.Timestamp - 1;
-            var changes = await GetChanges(c, time, false);
-            var canDelete = true;
-            foreach (var change in changes)
-            {
-                foreach (var e in change.Value)
-                    canDelete &= await CanDelete(change.Key, e.Version) == null;
-            }
-
-            if (!canDelete)
-                return false;
-                
-            foreach (var change in changes)
-            {
-                foreach (var e in change.Value)
-                    await TryDelete(change.Key, e.Version);
-            }
-
-            return true;
-        }
-        
-        public async Task<bool> ReplayCommand(ICommand c)
-        {
-            await GetChanges(c, c.Timestamp, true);
-            return true;
-        }
-
+            !(await Insert(stream, version, events, true)).Any();
 
         /// <inheritdoc />
-        public async Task<Dictionary<IStream, IEnumerable<IEvent>>> GetChanges(ICommand command, long time) =>
-            await GetChanges(command, time, false);
- 
-        private async Task<Dictionary<IStream, IEnumerable<IEvent>>> GetChanges(ICommand command, long time, bool doMerge)
+        public async Task<bool> RollbackCommands(IEnumerable<ICommand> commands)
+        {
+            var valid = true;
+            var sortedCommands = commands.OrderBy(c => c.Timestamp);
+            foreach (var c in sortedCommands.Reverse())
+                valid &= await RollbackCommand(c);
+
+            return valid;
+        }
+
+        /// <inheritdoc />
+        public async Task<bool> ReplayCommand(ICommand c)
+        {
+            var type = typeof(RetroactiveCommand<>).MakeGenericType(c.GetType());
+            var command = (ICommand)Activator.CreateInstance(type, c, c.Timestamp);
+            var handler = _commandRegistry.GetHandler(command);
+            await handler.Handle(command);
+            return true;
+        }
+
+        /// <inheritdoc />
+        public async Task<Dictionary<IStream, IEnumerable<IEvent>>> GetChanges(ICommand command, long time)
         {
             var activeBranch = _manager.ActiveBranch;
             var branch = $"{command.GetType().Name}-{time}";
@@ -155,14 +143,34 @@ namespace ZES.Infrastructure.Retroactive
                 dict[c.Key] = e;
             }
 
-            if (doMerge)
-                await _manager.Merge(branch);
-            
             await _manager.DeleteBranch(branch);
             return dict;
         }
+        
+        private async Task<bool> RollbackCommand(ICommand c)
+        {
+            var time = c.Timestamp - 1;
+            var changes = await GetChanges(c, time);
+            var canDelete = true;
+            foreach (var change in changes)
+            {
+                foreach (var e in change.Value)
+                    canDelete &= await ValidateDelete(change.Key, e.Version) == null;
+            }
 
-        private async Task<IEvent> Append(IStream stream, int version, IEnumerable<IEvent> events)
+            if (!canDelete)
+                return false;
+                
+            foreach (var change in changes)
+            {
+                foreach (var e in change.Value)
+                    await TryDelete(change.Key, e.Version);
+            }
+
+            return true;
+        }
+
+        private async Task<IEnumerable<IEvent>> Append(IStream stream, int version, IEnumerable<IEvent> events)
         {
             if (stream.Version != version - 1)
                 throw new InvalidOperationException($"Version {version} is not consistent with stream version {stream.Version}");
@@ -182,26 +190,26 @@ namespace ZES.Infrastructure.Retroactive
             await store.AppendToStream(stream, enumerable, false);
             
             // check if the resulting stream is valid
-            return await FirstInvalidEvent(stream);
+            return await GetInvalidEvents(stream);
         }
 
-        private async Task<IEvent> Delete(IStream stream, int version, bool doDelete)
+        private async Task<IEnumerable<IEvent>> Delete(IStream stream, int version, bool doDelete)
         {
             if (version == 0)
-                return new Event();
+                return new List<IEvent> { new Event() };
             
             var store = GetStore(stream);
             var currentBranch = _manager.ActiveBranch;
             var liveStream = _streamLocator.FindBranched(stream, currentBranch);
  
             if (liveStream == null || liveStream.Version < version)
-                return new Event();
+                return new List<IEvent> { new Event() };
 
             if (liveStream.Version == version)
             {
                 if (doDelete)
                     await TrimStream(liveStream, version - 1);
-                return null;
+                return new List<IEvent>();
             }
             
             var laterEvents = await store.ReadStream<IEvent>(liveStream, version + 1).ToList();
@@ -214,10 +222,10 @@ namespace ZES.Infrastructure.Retroactive
             if (newStream == null)
                 throw new InvalidOperationException($"Stream {tempStreamId}:{stream.Type}:{stream.Id} not found!");
 
-            var invalidEvent = await Append(newStream, version, laterEvents);
+            var invalidEvents = (await Append(newStream, version, laterEvents)).ToList();
             
             await _manager.Branch(currentBranch);
-            if (doDelete && invalidEvent == null)
+            if (doDelete && !invalidEvents.Any())
             {
                 await TrimStream(liveStream, version - 1);
                 await _manager.Merge(tempStreamId);
@@ -225,10 +233,10 @@ namespace ZES.Infrastructure.Retroactive
 
             await _manager.DeleteBranch(tempStreamId);
 
-            return invalidEvent;
+            return invalidEvents;
         }
 
-        private async Task<IEvent> Insert(IStream stream, int version, IEnumerable<IEvent> events, bool doInsert)
+        private async Task<IEnumerable<IEvent>> Insert(IStream stream, int version, IEnumerable<IEvent> events, bool doInsert)
         {
             var store = GetStore(stream);
             var origVersion = version;
@@ -266,29 +274,25 @@ namespace ZES.Infrastructure.Retroactive
             if (newStream == null)
                 throw new InvalidOperationException($"Stream {tempStreamId}:{stream.Type}:{stream.Id} not found!");
 
-            var invalidEvent = await Append(newStream, version, enumerable.Concat(laterEvents));
+            var invalidEvents = (await Append(newStream, version, enumerable.Concat(laterEvents))).ToList();
             
             await _manager.Branch(currentBranch);
-            if (doInsert && invalidEvent == null)
+            if (doInsert && !invalidEvents.Any())
             {
                 await TrimStream(liveStream, origVersion - 1);
                 await _manager.Merge(tempStreamId);
             }
             
             await _manager.DeleteBranch(tempStreamId);
-            return invalidEvent;
+            return invalidEvents;
         }
 
-        private async Task<IEvent> FirstInvalidEvent(IStream stream)
+        private async Task<IEnumerable<IEvent>> GetInvalidEvents(IStream stream)
         {
-            var store = GetStore(stream);
             var repository = GetRepository(stream);
-            var lastValidVersion = await repository.LastValidVersion(stream.Type, stream.Id);
+            var invalidEvents = await repository.FindInvalidEvents(stream.Type, stream.Id);
 
-            if (lastValidVersion < stream.Version)
-                return await store.ReadStream<IEvent>(stream, lastValidVersion + 1, 1);
-            
-            return null;
+            return invalidEvents;
         }
         
         private async Task<bool> IsValid(IStream stream)

@@ -155,7 +155,7 @@ namespace ZES.Infrastructure.Retroactive
             foreach (var change in changes)
             {
                 foreach (var e in change.Value)
-                    canDelete &= await ValidateDelete(change.Key, e.Version) == null;
+                    canDelete &= !(await ValidateDelete(change.Key, e.Version)).Any();
             }
 
             if (!canDelete)

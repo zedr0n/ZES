@@ -5,6 +5,7 @@ using ZES.Interfaces.Domain;
 
 namespace ZES
 {
+    /// <inheritdoc />
     public class CommandRegistry : ICommandRegistry
     {
         private readonly ILog _log;

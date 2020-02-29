@@ -61,7 +61,18 @@ namespace ZES.Interfaces
         /// <returns>List of events by stream</returns>
         Task<Dictionary<IStream, IEnumerable<IEvent>>> GetChanges(ICommand command, long time);
 
+        /// <summary>
+        /// Replay the command retroactively
+        /// </summary>
+        /// <param name="c">Command to replay</param>
+        /// <returns>True if replay is successful</returns>
         Task<bool> ReplayCommand(ICommand c);
+        
+        /// <summary>
+        /// Rollback the commands removing the resulting events
+        /// </summary>
+        /// <param name="commands">Commands to rollback</param>
+        /// <returns>True if rollback is successful</returns>
         Task<bool> RollbackCommands(IEnumerable<ICommand> commands);
     }
 }

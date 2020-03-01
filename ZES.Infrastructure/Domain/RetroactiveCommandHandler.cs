@@ -61,6 +61,8 @@ namespace ZES.Infrastructure.Domain
 
             foreach (var c in commands)
                 await _retroactive.ReplayCommand(c);
+
+            iCommand.EventType = iCommand.Command.EventType;
         }
 
         /// <inheritdoc />

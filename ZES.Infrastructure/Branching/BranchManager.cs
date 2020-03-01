@@ -36,6 +36,7 @@ namespace ZES.Infrastructure.Branching
         private readonly IMessageQueue _messageQueue;
         private readonly IEventStore<IAggregate> _eventStore;
         private readonly IEventStore<ISaga> _sagaStore;
+        private readonly ICommandLog _commandLog;
         private readonly IStreamLocator _streamLocator;
         private readonly IGraph _graph;
 
@@ -49,6 +50,7 @@ namespace ZES.Infrastructure.Branching
         /// <param name="sagaStore">Saga store</param>
         /// <param name="streamLocator">Stream locator</param>
         /// <param name="graph">Graph</param>
+        /// <param name="commandLog">Command log</param>
         public BranchManager(
             ILog log, 
             ITimeline activeTimeline,
@@ -56,7 +58,8 @@ namespace ZES.Infrastructure.Branching
             IEventStore<IAggregate> eventStore,
             IEventStore<ISaga> sagaStore,
             IStreamLocator streamLocator,
-            IGraph graph)
+            IGraph graph,
+            ICommandLog commandLog)
         {
             _log = log;
             _activeTimeline = activeTimeline as Timeline;
@@ -64,6 +67,7 @@ namespace ZES.Infrastructure.Branching
             _eventStore = eventStore;
             _streamLocator = streamLocator;
             _graph = graph;
+            _commandLog = commandLog;
             _sagaStore = sagaStore;
 
             _branches.TryAdd(Master, Timeline.New(Master));
@@ -84,6 +88,7 @@ namespace ZES.Infrastructure.Branching
 
             await DeleteBranch<IAggregate>(branchId);
             await DeleteBranch<ISaga>(branchId);
+            await DeleteCommands(branchId);
             
             _branches.TryRemove(branchId, out var branch);
             _messageQueue.Alert(new BranchDeleted(branchId));
@@ -203,6 +208,11 @@ namespace ZES.Infrastructure.Branching
             Branch(Master).Wait();
             return _activeTimeline;
         }
+
+        private async Task DeleteCommands(string branchId)
+        {
+            await _commandLog.DeleteBranch(branchId);
+        }
         
         private async Task DeleteBranch<T>(string branchId)
             where T : IEventSourced
@@ -214,7 +224,7 @@ namespace ZES.Infrastructure.Branching
             {
                 await _eventStore.DeleteStream(s);
                 if (s.Version != s.Parent?.Version)
-                    _log.Trace($"Deleted stream {s.Key}");
+                    _log.Trace($"Deleted {typeof(T).Name} stream {s.Key}");
                 await _graph.DeleteStream(s.Key);
             }
         }

@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using System.Reactive.Linq;
 using System.Threading.Tasks;
 using SqlStreamStore;
@@ -52,6 +53,25 @@ namespace ZES.Infrastructure.Domain
             
             await _streamStore.AppendToStream(Key(command.EventType), ExpectedVersion.Any, message);
         }
+
+        /// <inheritdoc />
+        public async Task DeleteBranch(string branchId)
+        {
+            var page = await _streamStore.ListStreams(Configuration.BatchSize);
+            while (page.StreamIds.Length > 0)
+            {
+                foreach (var s in page.StreamIds)
+                {
+                    if (!s.StartsWith(branchId) || !s.Contains("Command"))
+                        continue;
+
+                    await _streamStore.DeleteStream(s);
+                    _log.Trace($"Deleted {nameof(ICommand)} stream {s}");
+                }
+                
+                page = await page.Next();
+            }
+        }
         
         private IObservable<ICommand> GetCommands(IStream stream)
         {
@@ -77,6 +97,8 @@ namespace ZES.Infrastructure.Domain
 
         private string Key(string eventType)
         {
+            if (string.IsNullOrEmpty(eventType))
+                throw new InvalidOperationException("Event type not known for commmand");
             return $"{_timeline.Id}:Command:{eventType}";
         }
         

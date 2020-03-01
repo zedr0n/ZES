@@ -8,7 +8,7 @@ namespace ZES.Infrastructure.Domain
     /// <inheritdoc />
     public abstract class CreateCommandHandlerBase<TCommand, TRoot> : ICommandHandler<TCommand, TRoot> 
         where TRoot : class, IAggregate, new()
-        where TCommand : ICreateCommand
+        where TCommand : Command, ICreateCommand
     {
         private readonly IEsRepository<IAggregate> _repository;
 
@@ -30,6 +30,8 @@ namespace ZES.Infrastructure.Domain
             var eventType = events.Select(e => e.EventType).SingleOrDefault();
             if (eventType == null)
                 throw new InvalidOperationException("More than one event type produced by a command");
+            command.EventType = eventType;
+            
             foreach (var e in events)
             {
                 e.CommandId = command.MessageId;

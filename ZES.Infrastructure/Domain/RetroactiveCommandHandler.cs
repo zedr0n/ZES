@@ -1,14 +1,9 @@
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
-using System.Reactive.Linq;
 using System.Threading.Tasks;
-using SqlStreamStore.Streams;
 using ZES.Interfaces;
 using ZES.Interfaces.Domain;
-using ZES.Interfaces.EventStore;
-using ZES.Interfaces.Pipes;
 
 namespace ZES.Infrastructure.Domain
 {
@@ -30,35 +25,6 @@ namespace ZES.Infrastructure.Domain
             _commandLog = commandLog;
         }
 
-        private async Task<List<IEvent>> Validate(ICommand command, long time)
-        {
-            var invalidEvents = new List<IEvent>();
-            var changes = await _retroactive.GetChanges(command, time);
-
-            foreach (var c in changes)
-            {
-                var events = c.Value;
-                var invalidEvent = await _retroactive.ValidateInsert(c.Key, c.Key.Version + 1, events);
-                invalidEvents.AddRange(invalidEvent);
-            }
-
-            return invalidEvents;
-        }
-        
-        private async Task<bool> TryInsert(ICommand command, long time)
-        {
-            var changes = await _retroactive.GetChanges(command, time);
-
-            var canInsert = true;
-            foreach (var c in changes)
-            {
-                var events = c.Value;
-                canInsert &= await _retroactive.TryInsertIntoStream(c.Key, c.Key.Version + 1, events);
-            }
-
-            return canInsert;
-        }
-        
         /// <inheritdoc />
         public async Task Handle(RetroactiveCommand<TCommand> iCommand)
         {
@@ -66,18 +32,17 @@ namespace ZES.Infrastructure.Domain
             iCommand.Command.ForceTimestamp();
             var time = iCommand.Timestamp;
 
-            var invalidEvents = await Validate(iCommand.Command, time);
+            var changes = await _retroactive.GetChanges(iCommand.Command, time);
+            var invalidEvents = (await _retroactive.ValidateInsert(changes, time)).ToList(); 
 
             var commands = new List<ICommand>();
             if (invalidEvents.Count > 0)
             {
                 commands.AddRange(await RollbackEvents(invalidEvents));
-                invalidEvents = await Validate(iCommand.Command, time);
-                if (invalidEvents.Count > 0)
-                    throw new InvalidOperationException("Rolling back events failed");
+                changes = await _retroactive.GetChanges(iCommand.Command, time); 
             }
 
-            var canInsert = await TryInsert(iCommand.Command, time);
+            var canInsert = await _retroactive.TryInsertIntoStream(changes, time); 
             if (!canInsert)
                 throw new InvalidOperationException("Retroactive command application failed");
                 

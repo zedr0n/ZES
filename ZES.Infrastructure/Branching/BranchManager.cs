@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
@@ -96,7 +97,7 @@ namespace ZES.Infrastructure.Branching
         }
 
         /// <inheritdoc />
-        public async Task<ITimeline> Branch(string branchId, long? time = null)
+        public async Task<ITimeline> Branch(string branchId, long? time = null, IEnumerable<string> keys = null)
         {
             if (_activeTimeline.Id == branchId)
             {
@@ -117,8 +118,8 @@ namespace ZES.Infrastructure.Branching
             // copy the events
             if (newBranch)
             {
-                await Clone<IAggregate>(branchId, time ?? DateTimeOffset.UtcNow.ToUnixTimeMilliseconds());
-                await Clone<ISaga>(branchId, time ?? DateTimeOffset.UtcNow.ToUnixTimeMilliseconds());
+                await Clone<IAggregate>(branchId, time ?? DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(), keys);
+                await Clone<ISaga>(branchId, time ?? DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(), keys);
             }
 
             // update current timeline
@@ -285,12 +286,13 @@ namespace ZES.Infrastructure.Branching
         // full clone of event store
         // can become really expensive
         // TODO: use links to event ids?
-        private async Task Clone<T>(string timeline, long time)
+        private async Task Clone<T>(string timeline, long time, IEnumerable<string> keys = null)
             where T : IEventSourced
         {
             var store = GetStore<T>();
             var cloneFlow = new CloneFlow<T>(timeline, time, store);
             store.ListStreams(_activeTimeline.Id)
+                .Where(s => keys == null || keys.Contains(s.Key))
                 .Subscribe(cloneFlow.InputBlock.AsObserver());
 
             try
@@ -304,7 +306,7 @@ namespace ZES.Infrastructure.Branching
                 _log.Errors.Add(e);
             }
         }
-
+        
         private class ChangesFlow<T> : Dataflow<IStream>
             where T : IEventSourced
         {

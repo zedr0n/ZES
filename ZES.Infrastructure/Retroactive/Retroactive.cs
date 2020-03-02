@@ -172,9 +172,6 @@ namespace ZES.Infrastructure.Retroactive
 
         private async Task<IEnumerable<IEvent>> Append(IStream stream, int version, IEnumerable<IEvent> events)
         {
-            if (stream.Version != version - 1)
-                throw new InvalidOperationException($"Version {version} is not consistent with stream version {stream.Version}");
-            
             var enumerable = events.ToList();
             if (enumerable.Count == 0)
                 return enumerable;

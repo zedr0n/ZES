@@ -30,30 +30,24 @@ namespace ZES.Infrastructure.Domain
             _commandLog = commandLog;
         }
 
-        /// <inheritdoc />
-        public async Task Handle(RetroactiveCommand<TCommand> iCommand)
+        private async Task<List<IEvent>> Validate(ICommand command, long time)
         {
-            iCommand.Command.Timestamp = iCommand.Timestamp;
-            iCommand.Command.ForceTimestamp();
-            var time = iCommand.Timestamp;
+            var invalidEvents = new List<IEvent>();
+            var changes = await _retroactive.GetChanges(command, time);
 
-            var invalidEvents = new List<IEvent> { new Event() };
-            var commands = new List<ICommand>();
-            var changes = new Dictionary<IStream, IEnumerable<IEvent>>(); 
-            while (invalidEvents.Count > 0)
+            foreach (var c in changes)
             {
-                invalidEvents.Clear();
-                changes = await _retroactive.GetChanges(iCommand.Command, time);
-
-                foreach (var c in changes)
-                {
-                    var events = c.Value;
-                    var invalidEvent = await _retroactive.ValidateInsert(c.Key, c.Key.Version + 1, events);
-                    invalidEvents.AddRange(invalidEvent);
-                }
-
-                commands.AddRange(await RollbackEvents(invalidEvents));
+                var events = c.Value;
+                var invalidEvent = await _retroactive.ValidateInsert(c.Key, c.Key.Version + 1, events);
+                invalidEvents.AddRange(invalidEvent);
             }
+
+            return invalidEvents;
+        }
+        
+        private async Task<bool> TryInsert(ICommand command, long time)
+        {
+            var changes = await _retroactive.GetChanges(command, time);
 
             var canInsert = true;
             foreach (var c in changes)
@@ -61,7 +55,29 @@ namespace ZES.Infrastructure.Domain
                 var events = c.Value;
                 canInsert &= await _retroactive.TryInsertIntoStream(c.Key, c.Key.Version + 1, events);
             }
-            
+
+            return canInsert;
+        }
+        
+        /// <inheritdoc />
+        public async Task Handle(RetroactiveCommand<TCommand> iCommand)
+        {
+            iCommand.Command.Timestamp = iCommand.Timestamp;
+            iCommand.Command.ForceTimestamp();
+            var time = iCommand.Timestamp;
+
+            var invalidEvents = await Validate(iCommand.Command, time);
+
+            var commands = new List<ICommand>();
+            if (invalidEvents.Count > 0)
+            {
+                commands.AddRange(await RollbackEvents(invalidEvents));
+                invalidEvents = await Validate(iCommand.Command, time);
+                if (invalidEvents.Count > 0)
+                    throw new InvalidOperationException("Rolling back events failed");
+            }
+
+            var canInsert = await TryInsert(iCommand.Command, time);
             if (!canInsert)
                 throw new InvalidOperationException("Retroactive command application failed");
                 

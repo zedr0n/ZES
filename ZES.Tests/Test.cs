@@ -8,6 +8,8 @@ using SimpleInjector;
 using Xunit.Abstractions;
 using ZES.GraphQL;
 using ZES.Infrastructure;
+using ZES.Infrastructure.Causality;
+using ZES.Interfaces.Causality;
 using ZES.Tests.Utils;
 
 namespace ZES.Tests
@@ -67,6 +69,7 @@ namespace ZES.Tests
 
                 container.Options.AllowOverridingRegistrations = true;
                 container.Register(typeof(ILogger), () => _logger, Lifestyle.Singleton);
+                container.Register<IGraph, Graph>(Lifestyle.Singleton);
                 container.Options.AllowOverridingRegistrations = false;
                 
                 if (registrations == null)

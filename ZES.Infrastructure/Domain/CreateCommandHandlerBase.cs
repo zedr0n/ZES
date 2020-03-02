@@ -42,9 +42,6 @@ namespace ZES.Infrastructure.Domain
         }
 
         /// <inheritdoc />
-        public Task<bool> IsRetroactive(TCommand iCommand) => Task.FromResult(false);
-
-        /// <inheritdoc />
         public async Task Handle(ICommand command)
         {
             await Handle((TCommand)command);

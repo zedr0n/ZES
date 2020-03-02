@@ -177,7 +177,7 @@ namespace ZES.Infrastructure.Retroactive
             
             var enumerable = events.ToList();
             if (enumerable.Count == 0)
-                return null;
+                return enumerable;
             
             foreach (var e in enumerable)
             {
@@ -257,7 +257,7 @@ namespace ZES.Infrastructure.Retroactive
 
                 if (stream.Version != version - 1)
                     throw new InvalidOperationException("Stream version is inconsistent");
-                return null;
+                return new List<IEvent>();
             }
 
             var enumerable = events.ToList();

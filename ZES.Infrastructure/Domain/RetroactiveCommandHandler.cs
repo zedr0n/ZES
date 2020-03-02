@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using SqlStreamStore.Streams;
 using ZES.Interfaces;
 using ZES.Interfaces.Domain;
+using ZES.Interfaces.EventStore;
 using ZES.Interfaces.Pipes;
 
 namespace ZES.Infrastructure.Domain
@@ -36,39 +37,39 @@ namespace ZES.Infrastructure.Domain
             iCommand.Command.ForceTimestamp();
             var time = iCommand.Timestamp;
 
-            var changes = await _retroactive.GetChanges(iCommand.Command, time);
-
-            var invalidEvents = new List<IEvent>();
-            foreach (var c in changes)
+            var invalidEvents = new List<IEvent> { new Event() };
+            var commands = new List<ICommand>();
+            var changes = new Dictionary<IStream, IEnumerable<IEvent>>(); 
+            while (invalidEvents.Count > 0)
             {
-                var events = c.Value;
-                var invalidEvent = await _retroactive.ValidateInsert(c.Key, c.Key.Version + 1, events);
-                if (invalidEvent != null)
-                    invalidEvents.AddRange(invalidEvent);
-            }
-
-            var commands = await RollbackEvents(invalidEvents);
-        
-            if (invalidEvents.Count > 0)    
+                invalidEvents.Clear();
                 changes = await _retroactive.GetChanges(iCommand.Command, time);
-            
+
+                foreach (var c in changes)
+                {
+                    var events = c.Value;
+                    var invalidEvent = await _retroactive.ValidateInsert(c.Key, c.Key.Version + 1, events);
+                    invalidEvents.AddRange(invalidEvent);
+                }
+
+                commands.AddRange(await RollbackEvents(invalidEvents));
+            }
+
+            var canInsert = true;
             foreach (var c in changes)
             {
                 var events = c.Value;
-                await _retroactive.TryInsertIntoStream(c.Key, c.Key.Version + 1, events);
-                await _commandLog.AppendCommand(iCommand.Command);
+                canInsert &= await _retroactive.TryInsertIntoStream(c.Key, c.Key.Version + 1, events);
             }
-
+            
+            if (!canInsert)
+                throw new InvalidOperationException("Retroactive command application failed");
+                
             foreach (var c in commands)
                 await _retroactive.ReplayCommand(c);
-
+        
+            await _commandLog.AppendCommand(iCommand.Command);
             iCommand.EventType = iCommand.Command.EventType;
-        }
-
-        /// <inheritdoc />
-        public Task<bool> IsRetroactive(RetroactiveCommand<TCommand> iCommand)
-        {
-            throw new InvalidOperationException("Retroactive commands cannot be nested");
         }
 
         /// <inheritdoc />
@@ -92,7 +93,10 @@ namespace ZES.Infrastructure.Domain
             }
 
             foreach (var s in commands.Keys)
-                await _retroactive.RollbackCommands(commands[s]);
+            {
+                if (!await _retroactive.RollbackCommands(commands[s]))
+                    throw new InvalidOperationException($"Cannot rollback command {commands[s].GetType().Namespace}");
+            }
 
             return commands.Values.SelectMany(v => v).OrderBy(v => v.Timestamp);
         }

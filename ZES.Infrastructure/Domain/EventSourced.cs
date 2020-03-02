@@ -79,7 +79,7 @@ namespace ZES.Infrastructure.Domain
         /// </para></para>
         /// </summary>
         /// <param name="e">Generated event</param>
-        public virtual void When(IEvent e)
+        public void When(IEvent e)
         {
             lock (_changes)
             {

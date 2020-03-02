@@ -10,7 +10,7 @@ namespace ZES.Infrastructure.Domain
     /// </summary>
     /// <typeparam name="T">Command type</typeparam>
     public class CommandHandler<T> : ICommandHandler<T>
-        where T : ICommand
+        where T : Command
     {
         private readonly ICommandHandler<T> _handler;
         private readonly ICommandLog _commandLog;
@@ -45,30 +45,21 @@ namespace ZES.Infrastructure.Domain
         /// <summary>
         /// Wrap the handler and redirect all exception to <see cref="IErrorLog"/>
         /// </summary>
-        public async Task Handle(T iCommand)
+        public async Task Handle(T command)
         {
-            _log.Trace($"{_handler.GetType().Name}.Handle({iCommand.GetType().Name})");
-            var command = iCommand as Command;
-            if (command != null)
-            {
-                if (command.Timestamp == default(long))
-                    command.Timestamp = _timeline.Now;
-            }
+            _log.Trace($"{_handler.GetType().Name}.Handle({command.GetType().Name})");
+            if (command.Timestamp == default(long))
+                command.Timestamp = _timeline.Now;
 
             try
             {
-                await _handler.Handle(iCommand);
-                await _commandLog.AppendCommand(iCommand);
-                
-                // await _graph.AddCommand(iCommand);
+                await _handler.Handle(command);
+                await _commandLog.AppendCommand(command);
             }
             catch (Exception e)
             {
                 _errorLog.Add(e);
             }
         }
-
-        /// <inheritdoc />
-        public async Task<bool> IsRetroactive(T iCommand) => await _handler.IsRetroactive(iCommand);
     }
 }

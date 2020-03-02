@@ -25,12 +25,6 @@ namespace ZES.Infrastructure.Domain
         }
 
         /// <inheritdoc />
-        public Task<bool> IsRetroactive(TCommand iCommand)
-        {
-            return Task.FromResult(true);
-        }
-        
-        /// <inheritdoc />
         public async Task Handle(TCommand command)
         {
             var root = await _repository.Find<TRoot>(command.Target);

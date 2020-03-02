@@ -28,13 +28,6 @@ namespace ZES.Interfaces.Domain
         /// <param name="iCommand">Command to handle</param>
         /// <returns>Task representing the asynchronous processing of the command</returns>
         Task Handle(TCommand iCommand);
-
-        /// <summary>
-        /// Check if command needs retroactive functionality
-        /// </summary>
-        /// <param name="iCommand">Command to handle</param>
-        /// <returns>True if command affects aggregate past</returns>
-        Task<bool> IsRetroactive(TCommand iCommand);
     }
 
     /// <inheritdoc />

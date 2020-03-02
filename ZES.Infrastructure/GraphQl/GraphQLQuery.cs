@@ -5,7 +5,7 @@ using ZES.Interfaces.Pipes;
 namespace ZES.Infrastructure.GraphQl
 {
     /// <summary>
-    /// Base graphQL query
+    /// GraphQL query
     /// </summary>
     public class GraphQlQuery : IGraphQlQuery
     {

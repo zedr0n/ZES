@@ -172,5 +172,10 @@ namespace ZES.Interfaces.EventStore
         /// <param name="timeline">Branch id</param>
         /// <returns>Stream descriptor in the the specified timeline</returns>
         IStream FindBranched(IStream stream, string timeline);
+
+        IEnumerable<IStream> ListStreams(string branchId);
+
+        IEnumerable<IStream> ListStreams<T>(string branchId)
+            where T : IEventSourced;
     }
 }

@@ -40,7 +40,7 @@ namespace ZES.Infrastructure
         /// <value>
         /// The batch size for stream store
         /// </value>
-        public static int BatchSize => 100;
+        public static int BatchSize => 1000;
         
         /// <summary>
         /// Gets default number of threads per service 

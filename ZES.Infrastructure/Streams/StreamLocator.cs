@@ -1,5 +1,7 @@
 using System;
 using System.Collections.Concurrent;
+using System.Collections.Generic;
+using System.Linq;
 using System.Reactive.Linq;
 using SqlStreamStore.Streams;
 using ZES.Infrastructure.Alerts;
@@ -46,6 +48,20 @@ namespace ZES.Infrastructure.Streams
         public IStream Find(string key)
         {
             return _streams.ContainsKey(key) ? _streams[key] : null;
+        }
+
+        public IEnumerable<IStream> ListStreams(string branchId)
+        {
+            return _streams.Where(s => s.Key.StartsWith(branchId)).Select(s => s.Value);
+        }
+        
+        public IEnumerable<IStream> ListStreams<T>(string branchId)
+            where T : IEventSourced
+        {
+            if (typeof(T).Name == nameof(ISaga))
+                return _streams.Where(s => s.Key.StartsWith(branchId) && s.Value.IsSaga).Select(s => s.Value);
+            else
+                return _streams.Where(s => s.Key.StartsWith(branchId) && !s.Value.IsSaga).Select(s => s.Value);
         }
 
         /// <inheritdoc />

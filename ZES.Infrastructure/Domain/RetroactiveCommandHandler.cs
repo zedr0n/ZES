@@ -13,16 +13,18 @@ namespace ZES.Infrastructure.Domain
     {
         private readonly IRetroactive _retroactive;
         private readonly ICommandLog _commandLog;
+        private readonly ILog _log;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="RetroactiveCommandHandler{TCommand}"/> class.
         /// </summary>
         /// <param name="retroactive">Retroactive functional</param>
         /// <param name="commandLog">Command log</param>
-        public RetroactiveCommandHandler(IRetroactive retroactive, ICommandLog commandLog) 
+        public RetroactiveCommandHandler(IRetroactive retroactive, ICommandLog commandLog, ILog log) 
         {
             _retroactive = retroactive;
             _commandLog = commandLog;
+            _log = log;
         }
 
         /// <inheritdoc />
@@ -33,22 +35,18 @@ namespace ZES.Infrastructure.Domain
             var time = iCommand.Timestamp;
 
             var changes = await _retroactive.GetChanges(iCommand.Command, time);
-            var invalidEvents = (await _retroactive.ValidateInsert(changes, time)).ToList(); 
+            var invalidEvents = await _retroactive.TryInsert(changes, time); 
 
-            var commands = new List<ICommand>();
             if (invalidEvents.Count > 0)
             {
-                commands.AddRange(await RollbackEvents(invalidEvents));
-                changes = await _retroactive.GetChanges(iCommand.Command, time); 
-            }
-
-            var canInsert = await _retroactive.TryInsertIntoStream(changes, time); 
-            if (!canInsert)
-                throw new InvalidOperationException("Retroactive command application failed");
+                var commands = await RollbackEvents(invalidEvents);
+                changes = await _retroactive.GetChanges(iCommand.Command, time);
+                await _retroactive.TryInsert(changes, time);
                 
-            foreach (var c in commands)
-                await _retroactive.ReplayCommand(c);
-        
+                foreach (var c in commands)
+                    await _retroactive.ReplayCommand(c);
+            }
+                
             await _commandLog.AppendCommand(iCommand.Command);
             iCommand.EventType = iCommand.Command.EventType;
         }
@@ -64,6 +62,7 @@ namespace ZES.Infrastructure.Domain
             var commands = new Dictionary<string, List<ICommand>>();
             foreach (var e in invalidEvents)
             {
+                _log.Warn($"Invalid event found in stream {e.Stream} : {e.EventType}@{e.Version}", this);
                 var c = await _commandLog.GetCommand(e);
                 
                 if (!commands.ContainsKey(e.Stream))

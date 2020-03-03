@@ -75,20 +75,6 @@ namespace ZES.Interfaces
         /// <returns>True if rollback is successful</returns>
         Task<bool> RollbackCommands(IEnumerable<ICommand> commands);
 
-        /// <summary>
-        /// Validate changes for inserting event
-        /// </summary>
-        /// <param name="changes">Changes to apply</param>
-        /// <param name="time">Time to apply</param>
-        /// <returns>List of invalid events if any</returns>
-        Task<IEnumerable<IEvent>> ValidateInsert(Dictionary<IStream, IEnumerable<IEvent>> changes, long time);
-        
-        /// <summary>
-        /// Apply changes  
-        /// </summary>
-        /// <param name="changes">Changes to apply</param>
-        /// <param name="time">Time to apply</param>
-        /// <returns>True if successfully applied</returns>
-        Task<bool> TryInsertIntoStream(Dictionary<IStream, IEnumerable<IEvent>> changes, long time);
+        Task<List<IEvent>> TryInsert(Dictionary<IStream, IEnumerable<IEvent>> changes, long time);
     }
 }

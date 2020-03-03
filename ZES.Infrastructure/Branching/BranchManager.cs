@@ -152,8 +152,9 @@ namespace ZES.Infrastructure.Branching
                 return new Dictionary<IStream, int>(changes);
             }
 
-            await StoreChanges<IAggregate>(branchId, changes);
-            await StoreChanges<ISaga>(branchId, changes);
+            await StoreChanges(branchId, changes);
+            // await StoreChanges<IAggregate>(branchId, changes);
+            // await StoreChanges<ISaga>(branchId, changes);
 
             return new Dictionary<IStream, int>(changes);
         }
@@ -220,7 +221,8 @@ namespace ZES.Infrastructure.Branching
         {
             var store = GetStore<T>();
             
-            var streams = await store.ListStreams(branchId).ToList();
+            // var streams = await store.ListStreams(branchId).ToList();
+            var streams = _streamLocator.ListStreams<T>(branchId).ToList();
             foreach (var s in streams)
             {
                 await _eventStore.DeleteStream(s);
@@ -230,11 +232,27 @@ namespace ZES.Infrastructure.Branching
             }
         }
 
+        private async Task StoreChanges(string branchId, ConcurrentDictionary<IStream, int> changes)
+        {
+            var flow = new ChangesFlow(_activeTimeline, changes);
+            _streamLocator.ListStreams(branchId).Subscribe(flow.InputBlock.AsObserver());
+
+            try
+            {
+                await flow.CompletionTask;
+            }
+            catch (Exception e)
+            {
+                _log.Errors.Add(e);
+            }
+ 
+        }
+
         private async Task StoreChanges<T>(string branchId, ConcurrentDictionary<IStream, int> changes)
             where T : IEventSourced
         {
             var store = GetStore<T>();
-            var flow = new ChangesFlow<T>(_activeTimeline, changes);
+            var flow = new ChangesFlow(_activeTimeline, changes);
 
             store.ListStreams(branchId).Subscribe(flow.InputBlock.AsObserver());
 
@@ -255,7 +273,8 @@ namespace ZES.Infrastructure.Branching
             var store = GetStore<T>();
             var mergeFlow = new MergeFlow<T>(_activeTimeline, store, _streamLocator);
 
-            store.ListStreams(branchId).Subscribe(mergeFlow.InputBlock.AsObserver());
+            // store.ListStreams(branchId).Subscribe(mergeFlow.InputBlock.AsObserver());
+            _streamLocator.ListStreams<T>(branchId).Subscribe(mergeFlow.InputBlock.AsObserver());
             
             try
             {
@@ -291,7 +310,8 @@ namespace ZES.Infrastructure.Branching
         {
             var store = GetStore<T>();
             var cloneFlow = new CloneFlow<T>(timeline, time, store);
-            store.ListStreams(_activeTimeline.Id)
+            // store.ListStreams(_activeTimeline.Id)
+            _streamLocator.ListStreams<T>(_activeTimeline.Id)
                 .Where(s => keys == null || keys.Contains(s.Key))
                 .Subscribe(cloneFlow.InputBlock.AsObserver());
 
@@ -307,8 +327,7 @@ namespace ZES.Infrastructure.Branching
             }
         }
         
-        private class ChangesFlow<T> : Dataflow<IStream>
-            where T : IEventSourced
+        private class ChangesFlow : Dataflow<IStream>
         {
             private readonly ActionBlock<IStream> _inputBlock;
             

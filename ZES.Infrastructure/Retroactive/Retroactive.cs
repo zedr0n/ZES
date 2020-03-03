@@ -73,7 +73,7 @@ namespace ZES.Infrastructure.Retroactive
         /// <inheritdoc />
         public async Task TrimStream(IStream stream, int version)
         {
-            if (version <= ExpectedVersion.EmptyStream)
+            if (version <= ExpectedVersion.EmptyStream || version >= stream.Version)
                 return;
             
             var store = GetStore(stream);
@@ -95,16 +95,8 @@ namespace ZES.Infrastructure.Retroactive
             await Insert(stream, version, events, false);
 
         /// <inheritdoc />
-        public async Task<IEnumerable<IEvent>> ValidateInsert(Dictionary<IStream, IEnumerable<IEvent>> changes, long time) =>
-            await Insert(changes, time, false);
-
-        /// <inheritdoc />
         public async Task<bool> TryInsertIntoStream(IStream stream, int version, IEnumerable<IEvent> events) =>
             !(await Insert(stream, version, events, true)).Any();
-
-        /// <inheritdoc />
-        public async Task<bool> TryInsertIntoStream(Dictionary<IStream, IEnumerable<IEvent>> changes, long time) =>
-            !(await Insert(changes, time, true)).Any();
 
         /// <inheritdoc />
         public async Task<bool> RollbackCommands(IEnumerable<ICommand> commands)
@@ -143,8 +135,10 @@ namespace ZES.Infrastructure.Retroactive
             await _manager.Branch(activeBranch);
             
             var dict = new Dictionary<IStream, IEnumerable<IEvent>>();
-            
+
+            var sw = Stopwatch.StartNew();
             var changes = await _manager.GetChanges(branch);
+            _log.Trace($"{nameof(GetChanges)} took {sw.ElapsedMilliseconds}ms");
 
             foreach (var c in changes)
             {
@@ -244,34 +238,8 @@ namespace ZES.Infrastructure.Retroactive
             return invalidEvents;
         }
 
-        private async Task<List<IEvent>> ValidateInsert(string baseBranch, string branch, Dictionary<IStream, IEnumerable<IEvent>> changes)
-        {
-            var invalidEvents = new List<IEvent>();
-            foreach (var c in changes)
-            {
-                var stream = c.Key;
-                var events = c.Value;
-                var version = c.Key.Version + 1;
-                
-                var store = GetStore(stream);
-                var liveStream = _streamLocator.FindBranched(stream, baseBranch);
-
-                IList<IEvent> laterEvents = new List<IEvent>();
-
-                if (liveStream != null)
-                    laterEvents = await store.ReadStream<IEvent>(liveStream, version).ToList();
-
-                var enumerable = events.ToList();
-
-                var newStream = _streamLocator.FindBranched(stream, branch) ?? stream.Branch(branch, ExpectedVersion.EmptyStream);
-                var invalidStreamEvents = (await Append(newStream, version, enumerable.Concat(laterEvents))).ToList();
-                invalidEvents.AddRange(invalidStreamEvents);
-            }
-
-            return invalidEvents;
-        }
-        
-        private async Task<IEnumerable<IEvent>> Insert(Dictionary<IStream, IEnumerable<IEvent>> changes, long time, bool doInsert)
+        /// <inheritdoc />
+        public async Task<List<IEvent>> TryInsert(Dictionary<IStream, IEnumerable<IEvent>> changes, long time)
         {
             var currentBranch = _manager.ActiveBranch;
             var tempStreamId = $"{currentBranch}-{time}";
@@ -301,7 +269,7 @@ namespace ZES.Infrastructure.Retroactive
             }
             
             await _manager.Branch(currentBranch);
-            if (doInsert && !invalidEvents.Any())
+            if (!invalidEvents.Any())
             {
                 foreach (var k in changes.Keys)
                 {

@@ -159,13 +159,6 @@ namespace ZES.Tests
         }
 
         [Fact]
-        public async void CanReplayLogFromFile()
-        {
-            var result = await Replay("../../../Ad-hoc/CanReplayLog.json");
-            Assert.True(result.Result);
-        }
-
-        [Fact]
         public async void CanBranch()
         {
             var container = CreateContainer();

@@ -67,7 +67,12 @@ namespace ZES.Tests
             lock (_lock)
                 player.UseGraphQl(Configs, _logger);
             
-            return await player.Replay(logFile);
+            var result = await player.Replay(logFile);
+            
+            if (!result.Result)
+                _logger?.Error(result.Output);
+
+            return result;
         }
 
         protected virtual Container CreateContainer(List<Action<Container>> registrations = null) 

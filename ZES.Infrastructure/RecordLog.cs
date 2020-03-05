@@ -15,14 +15,17 @@ namespace ZES.Infrastructure
         private readonly ITimeline _timeline;
         private readonly Lazy<string> _logFile;
         private readonly Lazy<Scenario> _scenario;
+        private readonly ILog _log;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="RecordLog"/> class.
         /// </summary>
         /// <param name="timeline">Timeline</param>
-        public RecordLog(ITimeline timeline)
+        /// <param name="log">Application log</param>
+        public RecordLog(ITimeline timeline, ILog log)
         {
             _timeline = timeline;
+            _log = log;
 
             _logFile = new Lazy<string>(() => $"ZES_{_timeline.Now.ToDateString("yyyyMMddHHmmss")}.json");
             _scenario = new Lazy<Scenario>();
@@ -53,12 +56,28 @@ namespace ZES.Infrastructure
         /// <inheritdoc />
         public bool Validate(IScenario scenario, ReplayResult result = null)
         {
-            var otherJson = JsonConvert.SerializeObject(scenario.Results, Formatting.Indented);
-            var thisJson = JsonConvert.SerializeObject(_scenario.Value.Results, Formatting.Indented);
+            // var otherJson = JsonConvert.SerializeObject(scenario.Results, Formatting.Indented);
+            // var thisJson = JsonConvert.SerializeObject(_scenario.Value.Results, Formatting.Indented);
             if (result != null)
                 result.Output = JsonConvert.SerializeObject(scenario.Results.Select(r => r.Result));
 
-            return thisJson == otherJson;
+            var thisResults = _scenario.Value.Results.ToList();
+            var otherResults = scenario.Results.ToList();
+            if (thisResults.Count != otherResults.Count)
+            {
+                _log.Warn($"Output has {thisResults.Count} results, expected {otherResults.Count}");
+                return false;
+            }
+
+            foreach (var r in thisResults.Where(r => !otherResults.Any(o => o.Equal(r))))
+            {
+                _log.Warn($"Result not matching for {r.GraphQl} query, expected {r.Result}");
+                if (otherResults.Count == 1)
+                    _log.Warn($"Received {otherResults[0].Result}");
+                return false;
+            }
+
+            return true;
         }
 
         /// <inheritdoc />
@@ -150,6 +169,12 @@ namespace ZES.Infrastructure
 
                 /// <inheritdoc />
                 public string Result { get; }
+
+                /// <inheritdoc />
+                public bool Equal(IScenarioResult other)
+                {
+                    return Result == other.Result;
+                }
             }
         }
     }

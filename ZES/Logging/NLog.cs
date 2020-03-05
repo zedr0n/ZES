@@ -142,7 +142,7 @@ namespace ZES.Logging
         }
         
         /// <inheritdoc />
-        public void Warn(object message, object instance)
+        public void Warn(object message, object instance = null)
         {
             var type = instance is string ? instance : instance?.GetType().GetFriendlyName();
             _logger.Warn("{dtype} {msg}", type ?? string.Empty, message);

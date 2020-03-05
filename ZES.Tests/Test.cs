@@ -68,10 +68,6 @@ namespace ZES.Tests
                 player.UseGraphQl(Configs, _logger);
             
             var result = await player.Replay(logFile);
-            
-            if (!result.Result)
-                _logger?.Error(result.Output);
-
             return result;
         }
 

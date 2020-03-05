@@ -48,5 +48,12 @@ namespace ZES.Interfaces
         /// Gets the result of the GraphQL query
         /// </summary>
         string Result { get; }
+
+        /// <summary>
+        /// Check if the results are the same
+        /// </summary>
+        /// <param name="other">Other scenario results</param>
+        /// <returns>True if result is the same</returns>
+        bool Equal(IScenarioResult other);
     }
 }

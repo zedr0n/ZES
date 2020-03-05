@@ -80,6 +80,6 @@ namespace ZES.Interfaces
         /// </summary>
         /// <param name="message">Log message</param>
         /// <param name="instance">Object originating the error</param>
-        void Warn(object message, object instance);
+        void Warn(object message, object instance = null);
     }
 }

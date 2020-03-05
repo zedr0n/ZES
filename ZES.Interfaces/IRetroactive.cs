@@ -46,6 +46,14 @@ namespace ZES.Interfaces
         Task<IEnumerable<IEvent>> ValidateDelete(IStream stream, int version);
         
         /// <summary>
+        /// Insert the events into the stream 
+        /// </summary>
+        /// <param name="changes">All events to insert by stream</param>
+        /// <param name="time">Time to insert at</param>
+        /// <returns>List of invalid events if any</returns>
+        Task<List<IEvent>> TryInsert(Dictionary<IStream, IEnumerable<IEvent>> changes, long time);
+        
+        /// <summary>
         /// Delete event from the stream
         /// </summary>
         /// <param name="stream">Stream descriptor</param>
@@ -74,7 +82,5 @@ namespace ZES.Interfaces
         /// <param name="commands">Commands to rollback</param>
         /// <returns>True if rollback is successful</returns>
         Task<bool> RollbackCommands(IEnumerable<ICommand> commands);
-
-        Task<List<IEvent>> TryInsert(Dictionary<IStream, IEnumerable<IEvent>> changes, long time);
     }
 }

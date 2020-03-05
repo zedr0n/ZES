@@ -1,0 +1,14 @@
+{
+  "Requests": [
+    {
+      "GraphQl": "mutation { createRootEx( command : { target : \"Root\" } ) }",
+      "Timestamp": 1583371186235
+    }
+  ],
+  "Results": [
+    {
+      "GraphQl": "{ statsQuery { numberOfRoots } }",
+      "Result": "{\n  \"data\": {\n    \"statsQuery\": {\n      \"numberOfRoots\": 2\n    }\n  }\n}"
+    }
+  ]
+}

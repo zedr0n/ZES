@@ -1,0 +1,18 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <OutputType>Exe</OutputType>
+        <TargetFramework>netcoreapp3.1</TargetFramework>
+        <CodeAnalysisRuleSet>..\Analysis.ruleset</CodeAnalysisRuleSet>
+        <IsPackable>true</IsPackable>
+        <Version>1.0.0</Version>
+        <GenerateDocumentationFile>true</GenerateDocumentationFile>
+        <LangVersion>latest</LangVersion>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\ZES.GraphQL\ZES.GraphQL.csproj" />
+      <ProjectReference Include="..\ZES.Tests.Domain\ZES.Tests.Domain.csproj" />
+    </ItemGroup>
+
+</Project>

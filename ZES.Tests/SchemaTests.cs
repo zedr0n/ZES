@@ -1,12 +1,15 @@
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using HotChocolate;
 using HotChocolate.Execution;
 using Xunit;
 using Xunit.Abstractions;
 using ZES.GraphQL;
 using ZES.Interfaces;
 using ZES.Interfaces.Pipes;
+using ZES.Replay;
+using ZES.Tests.Domain;
 using ZES.Tests.Domain.Commands;
 using ZES.Tests.Domain.Queries;
 using static ZES.Tests.Domain.Config;
@@ -31,7 +34,7 @@ namespace ZES.Tests
             log.Info(schema.ToString());
         }
 
-        [Fact]
+        /*[Fact]
         public async void CanSubscribe()
         {
             var container = CreateContainer();
@@ -60,7 +63,7 @@ namespace ZES.Tests
 
             // subscription stitching is not working yet
             // Assert.Null(dict);
-        }
+        }*/
 
         [Fact]
         public async void CanExecuteQuery()
@@ -124,7 +127,42 @@ namespace ZES.Tests
             dynamic statsDict = statsResult?.Data["statsQuery"];
             log.Info(statsDict);
             Assert.NotNull(statsDict);
-            Assert.Equal(1, statsDict["numberOfRoots"]); 
+            Assert.Equal(1, statsDict["numberOfRoots"]);
+        }
+
+        [Fact]
+        public async void CanReplayLog()
+        {
+            var container = CreateContainer();
+            var schemaProvider = container.GetInstance<ISchemaProvider>();
+            var generator = container.GetInstance<IGraphQlGenerator>();
+            
+            var executor = schemaProvider.Build();
+
+            var command = generator.Mutation(new CreateRoot("Root"));
+            executor.Execute(command);
+            
+            var query = generator.Query(new StatsQuery());
+            executor.Execute(query); 
+ 
+            var recordLog = container.GetInstance<IRecordLog>();
+            var logFile = $"{nameof(CanReplayLog)}.json";
+            await recordLog.Flush(logFile);
+
+            var container2 = CreateContainer();
+            schemaProvider = container2.GetInstance<ISchemaProvider>();
+            recordLog = container2.GetInstance<IRecordLog>();
+            var scenario = await recordLog.Load(logFile);
+            await schemaProvider.Replay(scenario);
+
+            Assert.True(recordLog.Validate(scenario));
+        }
+
+        [Fact]
+        public async void CanReplayLogFromFile()
+        {
+            var result = await Replay("../../../Ad-hoc/CanReplayLog.json");
+            Assert.True(result.Result);
         }
 
         [Fact]

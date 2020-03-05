@@ -93,7 +93,8 @@ namespace ZES.Infrastructure.Branching
             
             _branches.TryRemove(branchId, out var branch);
             _messageQueue.Alert(new BranchDeleted(branchId));
-            _messageQueue.Alert(new InvalidateProjections());
+            
+            // _messageQueue.Alert(new InvalidateProjections());
         }
 
         /// <inheritdoc />
@@ -127,11 +128,8 @@ namespace ZES.Infrastructure.Branching
             
             _log.Trace($"Switched to {branchId} branch");
 
-            // refresh the stream locator
-            _messageQueue.Alert(new Alerts.OnTimelineChange());
-            
-            // rebuild all projections
-            _messageQueue.Alert(new Alerts.InvalidateProjections());
+            /* rebuild all projections
+             _messageQueue.Alert(new Alerts.InvalidateProjections());*/
                 
             return _activeTimeline;
         }
@@ -153,8 +151,8 @@ namespace ZES.Infrastructure.Branching
             }
 
             await StoreChanges(branchId, changes);
-            // await StoreChanges<IAggregate>(branchId, changes);
-            // await StoreChanges<ISaga>(branchId, changes);
+            /* await StoreChanges<IAggregate>(branchId, changes);
+               await StoreChanges<ISaga>(branchId, changes); */
 
             return new Dictionary<IStream, int>(changes);
         }
@@ -201,13 +199,14 @@ namespace ZES.Infrastructure.Branching
             }*/
             
             // rebuild all projections
-            _messageQueue.Alert(new Alerts.InvalidateProjections());
+            // _messageQueue.Alert(new Alerts.InvalidateProjections());
         }
         
         /// <inheritdoc />
         public ITimeline Reset()
         {
             Branch(Master).Wait();
+            _messageQueue.Alert(new InvalidateProjections());
             return _activeTimeline;
         }
 
@@ -245,7 +244,6 @@ namespace ZES.Infrastructure.Branching
             {
                 _log.Errors.Add(e);
             }
- 
         }
 
         private async Task StoreChanges<T>(string branchId, ConcurrentDictionary<IStream, int> changes)
@@ -310,6 +308,7 @@ namespace ZES.Infrastructure.Branching
         {
             var store = GetStore<T>();
             var cloneFlow = new CloneFlow<T>(timeline, time, store);
+            
             // store.ListStreams(_activeTimeline.Id)
             _streamLocator.ListStreams<T>(_activeTimeline.Id)
                 .Where(s => keys == null || keys.Contains(s.Key))

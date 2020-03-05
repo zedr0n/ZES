@@ -20,6 +20,7 @@ namespace ZES.Infrastructure.Domain
         /// </summary>
         /// <param name="retroactive">Retroactive functional</param>
         /// <param name="commandLog">Command log</param>
+        /// <param name="log">Application log</param>
         public RetroactiveCommandHandler(IRetroactive retroactive, ICommandLog commandLog, ILog log) 
         {
             _retroactive = retroactive;

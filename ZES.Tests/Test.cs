@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
+using HotChocolate.Execution.Instrumentation;
 using Microsoft.Extensions.DependencyInjection;
 using NLog;
 using NLog.Targets;
@@ -9,15 +11,17 @@ using Xunit.Abstractions;
 using ZES.GraphQL;
 using ZES.Infrastructure;
 using ZES.Infrastructure.Causality;
+using ZES.Interfaces;
 using ZES.Interfaces.Causality;
+using ZES.Replay;
 using ZES.Tests.Utils;
 
 namespace ZES.Tests
 {
-    public class Test : IDisposable
+    public abstract class Test : IDisposable
     {
-        private readonly object _lock = new object();
         private readonly ILogger _logger;
+        private readonly object _lock = new object();
 
         protected Test(ITestOutputHelper outputHelper)
         { 
@@ -47,6 +51,8 @@ namespace ZES.Tests
             _logger = outputHelper.GetNLogLogger();
         }
         
+        protected virtual IEnumerable<Type> Configs { get; } = null;
+
         public void Dispose()
         {
             lock (_lock)
@@ -55,6 +61,15 @@ namespace ZES.Tests
             }
         }
         
+        protected async Task<ReplayResult> Replay(string logFile)
+        {
+            var player = new Replayer();
+            lock (_lock)
+                player.UseGraphQl(Configs, _logger);
+            
+            return await player.Replay(logFile);
+        }
+
         protected virtual Container CreateContainer(List<Action<Container>> registrations = null) 
         {
             lock (_lock)
@@ -66,6 +81,7 @@ namespace ZES.Tests
                 container.Register<IGraphQlGenerator, GraphQlGenerator>(Lifestyle.Singleton);
                 container.Register<IServiceCollection>(() => new ServiceCollection(), Lifestyle.Singleton);
                 container.Register<ISchemaProvider, SchemaProvider>(Lifestyle.Singleton);
+                container.Register<IDiagnosticObserver, DiagnosticObserver>(Lifestyle.Singleton);
 
                 container.Options.AllowOverridingRegistrations = true;
                 container.Register(typeof(ILogger), () => _logger, Lifestyle.Singleton);

@@ -4,6 +4,7 @@ using System.Diagnostics;
 using SimpleInjector;
 using Xunit;
 using Xunit.Abstractions;
+using ZES.Infrastructure.Alerts;
 using ZES.Infrastructure.Branching;
 using ZES.Infrastructure.Domain;
 using ZES.Interfaces;
@@ -69,6 +70,7 @@ namespace ZES.Tests
             var container = CreateContainer();
             var bus = container.GetInstance<IBus>();
             var manager = container.GetInstance<IBranchManager>();
+            var queue = container.GetInstance<IMessageQueue>();
 
             await await bus.CommandAsync(new CreateRecord("Root"));
             await await bus.CommandAsync(new AddRecord("Root", 1));
@@ -76,12 +78,15 @@ namespace ZES.Tests
 
             var then = ((DateTimeOffset)new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc)).ToUnixTimeMilliseconds(); 
             await manager.Branch("Branch", then);
+            queue.Alert(new InvalidateProjections());
             await bus.IsTrue(new LastRecordQuery("Root"), r => (int)r.Value == -1);
             
             await await bus.CommandAsync(new CreateRecord("InitialRoot"));
             await await bus.CommandAsync(new AddRecord("InitialRoot", 10));
+
+            manager.Reset();
             
-            await manager.Branch(BranchManager.Master);
+            // await manager.Branch(BranchManager.Master);
             await manager.Merge("Branch");
             
             await bus.IsTrue(new LastRecordQuery("Root"), r => (int)r.Value == 1);
@@ -96,6 +101,7 @@ namespace ZES.Tests
             var repository = container.GetInstance<IEsRepository<IAggregate>>();
             var manager = container.GetInstance<IBranchManager>();
             var locator = container.GetInstance<IStreamLocator>();
+            var queue = container.GetInstance<IMessageQueue>();
             
             var command = new CreateRoot("Root");
             await await bus.CommandAsync(command);
@@ -129,6 +135,7 @@ namespace ZES.Tests
             await bus.IsTrue(new RootInfoQuery("TestRoot"), r => r.CreatedAt == r.UpdatedAt);
 
             await manager.Branch("test");
+            queue.Alert(new InvalidateProjections());
             await bus.IsTrue(new RootInfoQuery("TestRoot"), r => r.CreatedAt > 0);
             await bus.IsTrue(new RootInfoQuery("Root"), r => r.CreatedAt > 0 && r.CreatedAt == r.UpdatedAt);
 
@@ -141,7 +148,8 @@ namespace ZES.Tests
         {
             var container = CreateContainer();
             var bus = container.GetInstance<IBus>();
-            var timeTraveller = container.GetInstance<IBranchManager>(); 
+            var timeTraveller = container.GetInstance<IBranchManager>();
+            var queue = container.GetInstance<IMessageQueue>();
             
             var command = new CreateRoot("Root");
             await await bus.CommandAsync(command);
@@ -154,11 +162,13 @@ namespace ZES.Tests
             await await bus.CommandAsync(new CreateRoot("testRoot"));
 
             await timeTraveller.Branch("grandTest");
+            queue.Alert(new InvalidateProjections());
 
             await await bus.CommandAsync(new CreateRoot("testRoot2"));
             await bus.IsTrue(new StatsQuery(), s => s.NumberOfRoots == 3);
             
             await timeTraveller.Branch("test");
+            queue.Alert(new InvalidateProjections());
             await bus.IsTrue(new StatsQuery(), s => s.NumberOfRoots == 2);
 
             await timeTraveller.Merge("grandTest");
@@ -180,7 +190,8 @@ namespace ZES.Tests
         {
             var container = CreateContainer();
             var bus = container.GetInstance<IBus>();
-            var timeTraveller = container.GetInstance<IBranchManager>(); 
+            var timeTraveller = container.GetInstance<IBranchManager>();
+            var queue = container.GetInstance<IMessageQueue>();
             
             var command = new CreateRoot("Root");
             await await bus.CommandAsync(command);
@@ -201,6 +212,7 @@ namespace ZES.Tests
             await bus.IsTrue(new StatsQuery(), s => s.NumberOfRoots == 3);
 
             await timeTraveller.Branch("test");
+            queue.Alert(new InvalidateProjections());
             await bus.IsTrue(new StatsQuery(), s => s.NumberOfRoots == 2);
 
             await timeTraveller.Merge("grandTest");

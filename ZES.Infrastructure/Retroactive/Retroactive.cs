@@ -79,7 +79,6 @@ namespace ZES.Infrastructure.Retroactive
             var store = GetStore(stream);
             await store.TrimStream(stream, version);
             await _graph.TrimStream(stream.Key, version);
-            _messageQueue.Alert(new OnTimelineChange());
         }
 
         /// <inheritdoc />
@@ -136,10 +135,7 @@ namespace ZES.Infrastructure.Retroactive
             
             var dict = new Dictionary<IStream, IEnumerable<IEvent>>();
 
-            var sw = Stopwatch.StartNew();
             var changes = await _manager.GetChanges(branch);
-            _log.Trace($"{nameof(GetChanges)} took {sw.ElapsedMilliseconds}ms");
-
             foreach (var c in changes)
             {
                 var stream = _streamLocator.FindBranched(c.Key, branch);
@@ -150,6 +146,52 @@ namespace ZES.Infrastructure.Retroactive
 
             await _manager.DeleteBranch(branch);
             return dict;
+        }
+        
+        /// <inheritdoc />
+        public async Task<List<IEvent>> TryInsert(Dictionary<IStream, IEnumerable<IEvent>> changes, long time)
+        {
+            var currentBranch = _manager.ActiveBranch;
+            var tempStreamId = $"{currentBranch}-{time}";
+            var branch = await _manager.Branch(tempStreamId, time, changes.Keys.Select(k => k.Key));
+
+            var invalidEvents = new List<IEvent>();
+
+            foreach (var c in changes)
+            {
+                var stream = c.Key;
+                var events = c.Value;
+                var version = c.Key.Version + 1;
+                
+                var store = GetStore(stream);
+                var liveStream = _streamLocator.FindBranched(stream, currentBranch);
+
+                IList<IEvent> laterEvents = new List<IEvent>();
+
+                if (liveStream != null)
+                    laterEvents = await store.ReadStream<IEvent>(liveStream, version).ToList();
+
+                var enumerable = events.ToList();
+
+                var newStream = _streamLocator.FindBranched(stream, branch.Id) ?? stream.Branch(branch.Id, ExpectedVersion.EmptyStream);
+                var invalidStreamEvents = (await Append(newStream, version, enumerable.Concat(laterEvents))).ToList();
+                invalidEvents.AddRange(invalidStreamEvents);
+            }
+            
+            await _manager.Branch(currentBranch);
+            if (!invalidEvents.Any())
+            {
+                foreach (var k in changes.Keys)
+                {
+                    var liveStream = _streamLocator.FindBranched(k, currentBranch);
+                    await TrimStream(liveStream, k.Version);
+                }
+                
+                await _manager.Merge(tempStreamId);
+            }
+            
+            await _manager.DeleteBranch(tempStreamId);
+            return invalidEvents;
         }
         
         private async Task<bool> RollbackCommand(ICommand c)
@@ -235,52 +277,6 @@ namespace ZES.Infrastructure.Retroactive
 
             await _manager.DeleteBranch(tempStreamId);
 
-            return invalidEvents;
-        }
-
-        /// <inheritdoc />
-        public async Task<List<IEvent>> TryInsert(Dictionary<IStream, IEnumerable<IEvent>> changes, long time)
-        {
-            var currentBranch = _manager.ActiveBranch;
-            var tempStreamId = $"{currentBranch}-{time}";
-            var branch = await _manager.Branch(tempStreamId, time, changes.Keys.Select(k => k.Key));
-
-            var invalidEvents = new List<IEvent>();
-
-            foreach (var c in changes)
-            {
-                var stream = c.Key;
-                var events = c.Value;
-                var version = c.Key.Version + 1;
-                
-                var store = GetStore(stream);
-                var liveStream = _streamLocator.FindBranched(stream, currentBranch);
-
-                IList<IEvent> laterEvents = new List<IEvent>();
-
-                if (liveStream != null)
-                    laterEvents = await store.ReadStream<IEvent>(liveStream, version).ToList();
-
-                var enumerable = events.ToList();
-
-                var newStream = _streamLocator.FindBranched(stream, branch.Id) ?? stream.Branch(branch.Id, ExpectedVersion.EmptyStream);
-                var invalidStreamEvents = (await Append(newStream, version, enumerable.Concat(laterEvents))).ToList();
-                invalidEvents.AddRange(invalidStreamEvents);
-            }
-            
-            await _manager.Branch(currentBranch);
-            if (!invalidEvents.Any())
-            {
-                foreach (var k in changes.Keys)
-                {
-                    var liveStream = _streamLocator.FindBranched(k, currentBranch);
-                    await TrimStream(liveStream, k.Version);
-                }
-                
-                await _manager.Merge(tempStreamId);
-            }
-            
-            await _manager.DeleteBranch(tempStreamId);
             return invalidEvents;
         }
         

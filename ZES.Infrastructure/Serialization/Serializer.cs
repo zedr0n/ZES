@@ -246,9 +246,54 @@ namespace ZES.Infrastructure.Serialization
         }
 
         /// <inheritdoc />
+        /// <example> {
+        /// "MessageId": "00782936-41af-47bb-8c32-b1fa4e240372",
+        /// "AncestorId": "1d24d8a8-669c-487f-b1ca-9e36f7fd86db",
+        /// "Timestamp": 1583368437195,
+        /// "Version": 0,
+        /// "MessageType": "RecordCreated",
+        /// "Hash": "" }
+        /// </example>
         public IEventMetadata DecodeMetadata(string json)
         {
 #if USE_EXPLICIT
+            var reader = new JsonTextReader(new StringReader(json));
+            
+            var metadata = new EventMetadata();
+            var currentProperty = string.Empty;
+            while (reader.Read())
+            {
+                if (reader.Value == null) 
+                    continue;
+                
+                switch (reader.TokenType)
+                {
+                    case JsonToken.PropertyName:
+                        currentProperty = reader.Value.ToString();
+                        break;
+                    case JsonToken.String when currentProperty == nameof(IEventMetadata.AncestorId):
+                        metadata.AncestorId = Guid.Parse(reader.Value.ToString());
+                        break;
+                    case JsonToken.String when currentProperty == nameof(IEventMetadata.MessageId):
+                        metadata.MessageId = Guid.Parse(reader.Value.ToString());
+                        break;
+                    case JsonToken.Integer when currentProperty == nameof(IEventMetadata.Timestamp):
+                        metadata.Timestamp = (long)reader.Value;
+                        break;
+                    case JsonToken.Integer when currentProperty == nameof(IEventMetadata.Version):
+                        metadata.Version = (int)(long)reader.Value;
+                        break;
+                    case JsonToken.String when currentProperty == nameof(IEventMetadata.MessageType):
+                        metadata.MessageType = (string)reader.Value;
+                        break;
+                    case JsonToken.String when currentProperty == nameof(IEventMetadata.Hash):
+                        metadata.Hash = (string)reader.Value;
+                        break;
+                }
+            }
+
+            return metadata;
+#elif USE_JOBJECT
             var jarray = JObject.Parse(json);
             
             var isValid = true;

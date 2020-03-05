@@ -50,11 +50,13 @@ namespace ZES.Infrastructure.Streams
             return _streams.ContainsKey(key) ? _streams[key] : null;
         }
 
+        /// <inheritdoc />
         public IEnumerable<IStream> ListStreams(string branchId)
         {
             return _streams.Where(s => s.Key.StartsWith(branchId)).Select(s => s.Value);
         }
-        
+
+        /// <inheritdoc />
         public IEnumerable<IStream> ListStreams<T>(string branchId)
             where T : IEventSourced
         {

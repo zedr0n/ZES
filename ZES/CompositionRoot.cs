@@ -89,6 +89,7 @@ namespace ZES
             container.Register(typeof(ILogger), () => LogManager.GetLogger(typeof(Logging.NLog).Name), Lifestyle.Singleton); 
 
             container.Register<IErrorLog, ErrorLog>(Lifestyle.Singleton);
+            container.Register<IRecordLog, RecordLog>(Lifestyle.Singleton);
 
             container.Register(typeof(IStreamLocator), typeof(StreamLocator), Lifestyle.Singleton);    
             container.Register(typeof(IEsRepository<>), typeof(EsRepository<>), Lifestyle.Singleton);

@@ -1,7 +1,11 @@
 using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using SimpleInjector;
 using Xunit.Abstractions;
+using ZES.Infrastructure;
+using ZES.Interfaces;
+using ZES.Replay;
 using ZES.Tests.Domain;
 
 namespace ZES.Tests
@@ -13,6 +17,8 @@ namespace ZES.Tests
         {
         }
         
+        protected override IEnumerable<Type> Configs => new List<Type> { typeof(Config) };
+
         protected override Container CreateContainer(List<Action<Container>> registrations = null)
         {
             var regs = new List<Action<Container>>

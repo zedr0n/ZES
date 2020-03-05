@@ -1,9 +1,12 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
+using System.Threading.Tasks;
 using HotChocolate;
 using HotChocolate.Execution;
+using HotChocolate.Execution.Instrumentation;
 using HotChocolate.Stitching;
 using HotChocolate.Subscriptions;
 using HotChocolate.Types;
@@ -26,6 +29,9 @@ namespace ZES.GraphQL
         private readonly IEnumerable<IGraphQlMutation> _mutations;
         private readonly IEnumerable<IGraphQlQuery> _queries;
         private readonly IServiceCollection _services;
+        private readonly IMessageQueue _messageQueue;
+        private readonly IDiagnosticObserver _observer;
+        private readonly IRecordLog _recordLog;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="SchemaProvider"/> class.
@@ -37,7 +43,10 @@ namespace ZES.GraphQL
         /// <param name="queries">GraphQL queries</param>
         /// <param name="services">Asp.Net services collection</param>
         /// <param name="graph">QGraph</param>
-        public SchemaProvider(IBus bus, ILog log, IBranchManager manager, IEnumerable<IGraphQlMutation> mutations, IEnumerable<IGraphQlQuery> queries, IServiceCollection services, IGraph graph)
+        /// <param name="messageQueue">Message queue</param>
+        /// <param name="observer">Diagnostic observer</param>
+        /// <param name="recordLog">Record log</param>
+        public SchemaProvider(IBus bus, ILog log, IBranchManager manager, IEnumerable<IGraphQlMutation> mutations, IEnumerable<IGraphQlQuery> queries, IServiceCollection services, IGraph graph, IMessageQueue messageQueue, IDiagnosticObserver observer, IRecordLog recordLog)
         {
             _bus = bus;
             _log = log;
@@ -46,6 +55,9 @@ namespace ZES.GraphQL
             _queries = queries;
             _services = services;
             _graph = graph;
+            _messageQueue = messageQueue;
+            _observer = observer;
+            _recordLog = recordLog;
 
             InitialiseServices();
         }
@@ -78,7 +90,22 @@ namespace ZES.GraphQL
 
             return executor;
         }
-        
+
+        /// <inheritdoc />
+        public async Task<ReplayResult> Replay(IScenario scenario)
+        {
+            var executor = Build();
+
+            var sw = Stopwatch.StartNew();
+            foreach (var m in scenario.Requests)
+                await executor.ExecuteAsync(m.GraphQl);
+
+            foreach (var r in scenario.Results)
+                await executor.ExecuteAsync(r.GraphQl);
+
+            return new ReplayResult(sw.ElapsedMilliseconds);
+        }
+
         private void InitialiseServices()
         {
             var rootQuery = _queries.Select(t => t.GetType());
@@ -88,6 +115,9 @@ namespace ZES.GraphQL
             _services.AddSingleton(typeof(IBus), _bus);
             _services.AddSingleton(typeof(IBranchManager), _manager);
             _services.AddSingleton(typeof(IGraph), _graph);
+            _services.AddSingleton(typeof(IMessageQueue), _messageQueue);
+            _services.AddSingleton(typeof(IRecordLog), _recordLog);
+            _services.AddDiagnosticObserver(_observer);
 
             _services.AddInMemorySubscriptionProvider();
             

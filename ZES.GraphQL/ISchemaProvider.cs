@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using HotChocolate.Execution;
+using ZES.Interfaces;
 
 namespace ZES.GraphQL
 {
@@ -14,5 +16,12 @@ namespace ZES.GraphQL
         /// </summary>
         /// <returns><see cref="IQueryExecutor"/></returns>
         IQueryExecutor Build();
+
+        /// <summary>
+        /// Replay the scenario
+        /// </summary>
+        /// <param name="scenario">Scenario instance</param>
+        /// <returns>Replay result</returns>
+        Task<ReplayResult> Replay(IScenario scenario);
     }
 }

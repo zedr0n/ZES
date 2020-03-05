@@ -4,7 +4,7 @@ using ZES.Interfaces;
 namespace ZES.Infrastructure.Domain
 {
     /// <inheritdoc cref="IEvent" />
-    public class Event : EventMetadata, IEvent 
+    public class Event : EventMetadata, IEvent
     {
         /// <summary>
         /// Initializes a new instance of the <see cref="Event"/> class.
@@ -12,7 +12,8 @@ namespace ZES.Infrastructure.Domain
         public Event()
         {
             MessageType = GetType().Name;
-            MessageId = Guid.NewGuid();
+            
+            // MessageId = Guid.NewGuid();
         }
 
         /// <inheritdoc />

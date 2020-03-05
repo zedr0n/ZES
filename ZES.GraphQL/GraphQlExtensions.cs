@@ -2,8 +2,10 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using HotChocolate.Execution.Instrumentation;
 using HotChocolate.Subscriptions;
 using Microsoft.Extensions.DependencyInjection;
+using NLog;
 using SimpleInjector;
 using SimpleInjector.Lifestyles;
 using ZES.Infrastructure.Attributes;
@@ -20,13 +22,14 @@ namespace ZES.GraphQL
         /// </summary>
         /// <param name="services"><see cref="IServiceCollection"/></param>
         /// <param name="config">Config type containing the domain registration, root queries and mutations</param>
-        public static void UseGraphQl(this IServiceCollection services, Type config)
+        /// <param name="logger">Logger instance ( for XUnit )</param>
+        public static void UseGraphQl(this IServiceCollection services, Type config, ILogger logger = null)
         {
             var container = new Container();
             container.Options.DefaultLifestyle = Lifestyle.Singleton;
 
             services.AddInMemorySubscriptionProvider();
-            UseGraphQl(services, container, new[] { config });
+            UseGraphQl(services, container, new[] { config }, logger);
         }
 
         /// <summary>
@@ -34,13 +37,14 @@ namespace ZES.GraphQL
         /// </summary>
         /// <param name="services"><see cref="IServiceCollection"/>></param>
         /// <param name="configs">Root configs</param>
-        public static void UseGraphQl(this IServiceCollection services, IEnumerable<Type> configs)
+        /// <param name="logger">Logger instance ( for XUnit )</param>
+        public static void UseGraphQl(this IServiceCollection services, IEnumerable<Type> configs, ILogger logger = null)
         {
             var container = new Container();
             container.Options.DefaultLifestyle = Lifestyle.Singleton;
 
             services.AddInMemorySubscriptionProvider();
-            UseGraphQl(services, container, configs);
+            UseGraphQl(services, container, configs, logger);
         }
 
         /// <summary>
@@ -49,16 +53,27 @@ namespace ZES.GraphQL
         /// <param name="services"><see cref="IServiceCollection"/></param>
         /// <param name="container"><see cref="SimpleInjector"/> container</param>
         /// <param name="configs">Config types containing the domain registration, root queries and mutations</param>
-        private static void UseGraphQl(this IServiceCollection services, Container container, IEnumerable<Type> configs)
+        /// <param name="logger">Logger instance ( for XUnit )</param>
+        private static void UseGraphQl(this IServiceCollection services, Container container, IEnumerable<Type> configs, ILogger logger = null)
         {
             container.Options.DefaultScopedLifestyle = new AsyncScopedLifestyle();
             new CompositionRoot().ComposeApplication(container);
             container.Register(() => services, Lifestyle.Singleton);
             container.Register<ISchemaProvider, SchemaProvider>(Lifestyle.Singleton);
+            container.Register<IDiagnosticObserver, DiagnosticObserver>(Lifestyle.Singleton);
 
-            var config = Logging.NLog.Configure();
-            Logging.NLog.Enable(config);
-            
+            if (logger != null)
+            {
+                container.Options.AllowOverridingRegistrations = true;
+                container.Register(typeof(ILogger), () => logger, Lifestyle.Singleton);
+                container.Options.AllowOverridingRegistrations = false;
+            }
+            else
+            {
+                var config = Logging.NLog.Configure();
+                Logging.NLog.Enable(config);
+            }
+
             foreach (var t in configs)
             {
                 var regMethod = t.GetMethods(BindingFlags.Static | BindingFlags.Public)
@@ -68,6 +83,8 @@ namespace ZES.GraphQL
             }
             
             container.Verify();
+
+            services.AddSingleton(typeof(Container), t => container);
         }
     }
 }

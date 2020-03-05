@@ -3,7 +3,9 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
+using JsonDiffPatchDotNet;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using ZES.Infrastructure.Utils;
 using ZES.Interfaces;
 
@@ -61,22 +63,25 @@ namespace ZES.Infrastructure
             if (result != null)
                 result.Output = JsonConvert.SerializeObject(scenario.Results.Select(r => r.Result));
 
-            var thisResults = _scenario.Value.Results.ToList();
-            var otherResults = scenario.Results.ToList();
+            var thisResults = scenario.Results.Select(r => JToken.Parse(r.Result)).ToList();
+            var otherResults = _scenario.Value.Results.Select(r => JToken.Parse(r.Result)).ToList();
             if (thisResults.Count != otherResults.Count)
             {
                 _log.Warn($"Output has {thisResults.Count} results, expected {otherResults.Count}");
                 return false;
             }
 
-            foreach (var r in thisResults.Where(r => !otherResults.Any(o => o.Equal(r))))
+            var jdp = new JsonDiffPatch();
+            for (var i = 0; i < thisResults.Count; ++i)
             {
-                _log.Warn($"Result not matching for {r.GraphQl} query, expected {r.Result}");
-                if (otherResults.Count == 1)
-                    _log.Warn($"Received {otherResults[0].Result}");
+                var diff = jdp.Diff(thisResults[i], otherResults[i]);
+                if (diff == null) 
+                    continue;
+                
+                _log.Warn($"Mismatch for \n {scenario.Results[i].GraphQl} : \n {diff.ToString()}");
                 return false;
             }
-
+            
             return true;
         }
 

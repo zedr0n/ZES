@@ -13,6 +13,9 @@ namespace ZES.Interfaces
         }
 
         /// <inheritdoc />
+        public string Difference { get; set; } 
+
+        /// <inheritdoc />
         public string Output { get; set; }
 
         /// <inheritdoc />

@@ -34,9 +34,11 @@ namespace ZES.Infrastructure
         }
 
         /// <inheritdoc />
-        public void AddMutation(string mutation)
+        public void AddMutation(string mutation, long timestamp = default)
         {
-            _scenario.Value.AddMutation(mutation, _timeline.Now);
+            if (timestamp == default)
+                timestamp = _timeline.Now;
+            _scenario.Value.AddMutation(mutation, timestamp);
         }
 
         /// <inheritdoc />
@@ -79,6 +81,8 @@ namespace ZES.Infrastructure
                     continue;
                 
                 _log.Warn($"Mismatch for \n {scenario.Results[i].GraphQl} : \n {diff.ToString()}");
+                if (result != null)
+                    result.Difference = diff.ToString();
                 return false;
             }
             
@@ -95,6 +99,7 @@ namespace ZES.Infrastructure
             }
 
             var scenario = JsonConvert.DeserializeObject<Scenario>(s);
+            scenario.Sort();
             return scenario;
         }
 
@@ -114,6 +119,12 @@ namespace ZES.Infrastructure
             List<IScenarioMutation> IScenario.Requests => Requests.OfType<IScenarioMutation>().ToList();
             List<IScenarioResult> IScenario.Results => Results.OfType<IScenarioResult>().ToList();
 
+            /// <inheritdoc />
+            public void Sort()
+            {
+                Requests.Sort((a, b) => a.Timestamp > b.Timestamp ? 1 : -1);
+            }
+            
             /// <summary>
             /// Add the mutation to scenario
             /// </summary>

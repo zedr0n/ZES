@@ -11,7 +11,8 @@ namespace ZES.Interfaces
         /// Record a mutation into the log
         /// </summary>
         /// <param name="mutation">Mutation to record</param>
-        void AddMutation(string mutation);
+        /// <param name="timestamp">Timestamp</param>
+        void AddMutation(string mutation, long timestamp = default);
         
         /// <summary>
         /// Record query with result into the log

@@ -21,6 +21,10 @@ namespace ZES.Replay
 
             var result = task.Result;
             Console.WriteLine($"{result.Result}, replay took {result.Elapsed} ms");
+            
+            if (!result.Result)
+                Console.WriteLine($"Mismatch in output : {result.Difference}");
+                
             var name = logFile.Split('.')[0];
             using (var sw = new StreamWriter($"{name}_output.json"))
             {

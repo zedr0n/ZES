@@ -19,5 +19,10 @@ namespace ZES.Interfaces
         /// Gets the new record log output
         /// </summary>
         string Output { get; }
+
+        /// <summary>
+        /// Gets the difference if any
+        /// </summary>
+        string Difference { get; }
     }
 }

@@ -1,6 +1,8 @@
+using System.Linq;
 using HotChocolate;
 using HotChocolate.Execution;
 using HotChocolate.Execution.Instrumentation;
+using HotChocolate.Language;
 using Microsoft.Extensions.DiagnosticAdapter;
 using ZES.Interfaces;
 
@@ -35,7 +37,8 @@ namespace ZES.GraphQL
         {
             var query = context.Request.Query.ToString();
             if (query.Contains("mutation") && !query.Contains("flush") && !query.Contains("Introspection"))
-                _recordLog.AddMutation(query);    
+            {
+            }
         }
 
         [DiagnosticName("HotChocolate.Execution.Query.Stop")]
@@ -44,7 +47,17 @@ namespace ZES.GraphQL
             var query = context.Request.Query.ToString();
             if (!query.Contains("mutation"))
             {
+                var vars = context.Request.VariableValues;
                 _recordLog.AddQuery(query, context.Result.ToJson());
+            }
+            else if (!query.Contains("flush") && !query.Contains("Introspection"))
+            {
+                var arguments = context.Document.Definitions.OfType<OperationDefinitionNode>()
+                    .SelectMany(d => d.SelectionSet.Selections)
+                    .OfType<FieldNode>().SelectMany(s => s.Arguments);
+                var timestampStr = (string)arguments.SingleOrDefault(x => x.Name.Value == "timestamp")?.Value?.Value;
+                long.TryParse(timestampStr, out var timestamp);
+                _recordLog.AddMutation(query, timestamp);
             }
         }
     }

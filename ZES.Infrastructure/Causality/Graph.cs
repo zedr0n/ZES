@@ -465,7 +465,7 @@ namespace ZES.Infrastructure.Causality
             {
                 MessageId = messageId;
                 AncestorId = ancestorId;
-                Timestamp = DateTimeOffset.FromUnixTimeMilliseconds(timestamp).DateTime.ToUniversalTime()
+                Timestamp = DateTimeOffset.FromUnixTimeMilliseconds(timestamp).DateTime
                     .ToString("yyyy'-'MM'-'dd'T'HH':'mm':'ss'.'fff'Z'");
                 StreamKey = streamKey;
             }

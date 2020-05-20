@@ -41,6 +41,6 @@ namespace ZES.Interfaces
         /// Warp to time
         /// </summary>
         /// <param name="time">Time to warp to</param>
-        void Warp(DateTime time);
+        void Warp(long time);
     }
 }

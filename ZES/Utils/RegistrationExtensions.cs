@@ -127,10 +127,13 @@ namespace ZES.Utils
         {
             var projections = assembly.GetTypesFromInterface(typeof(IProjection))
                 .Where(p => p.IsClosedTypeOf(typeof(IProjection<>)));
+
+            var registeredStates = new List<Type>();
             foreach (var p in projections.Where(p => !p.IsAbstract))
             {
                 var projectionInterface = p.GetInterfaces().Where(i => i.IsGenericType).First(x => x.Name.StartsWith(nameof(IProjection)));
                 var tState = projectionInterface.GenericTypeArguments[0];
+                registeredStates.Add(tState);
 
                 c.RegisterConditional(
                     projectionInterface,
@@ -138,11 +141,28 @@ namespace ZES.Utils
                     Lifestyle.Transient,
                     x => x.Consumer.ImplementationType.IsClosedTypeOf(typeof(HistoricalQueryHandler<,,>)));
                 c.RegisterConditional(projectionInterface, p, Lifestyle.Singleton, x => !x.Handled);
+            }
 
-                // var builderType = typeof(Projection<>.Dispatcher.Builder).MakeGenericType(tState);
-                // var streamType = typeof(Projection<>.Slice.Builder).MakeGenericType(tState);
-                // c.Register(builderType, builderType, Lifestyle.Singleton);
-                // c.Register(streamType, streamType, Lifestyle.Singleton);
+            var otherStates = assembly.GetTypesFromInterface(typeof(IState)).Where(t => !registeredStates.Contains(t));
+            foreach (var tState in otherStates)
+            {
+                var projectionInterface = typeof(IProjection<>).MakeGenericType(tState);
+                var projection = typeof(DefaultProjection<>).MakeGenericType(tState);
+                
+                c.RegisterConditional(
+                    projectionInterface,
+                    typeof(HistoricalProjection<>).MakeGenericType(tState),
+                    Lifestyle.Transient,
+                    x => x.Consumer.ImplementationType.IsClosedTypeOf(typeof(HistoricalQueryHandler<,,>)));
+                c.RegisterConditional(projectionInterface, projection, Lifestyle.Singleton, x => !x.Handled);
+
+                var tHandler = typeof(IProjectionHandler<>).MakeGenericType(tState);
+                var handlers = assembly.GetTypesFromInterface(tHandler);
+                foreach (var t in handlers)
+                {
+                    var reg = Lifestyle.Singleton.CreateRegistration(t, c);
+                    c.Collection.Append(tHandler, reg);    
+                }
             }
         }
 

@@ -1,8 +1,9 @@
 using System.Threading;
+using ZES.Interfaces.Domain;
 
 namespace ZES.Tests.Domain.Queries
 {
-    public class Stats
+    public class Stats : IState
     {
         private int _numberOfRoots;
 

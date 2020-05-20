@@ -107,6 +107,7 @@ namespace ZES.Infrastructure.Branching
             }
 
             await _messageQueue.UncompletedMessages.Timeout(Configuration.Timeout).FirstAsync(s => s == 0);
+            await _graph.Wait();
             var newBranch = !_branches.ContainsKey(branchId); // && branchId != Master;
             
             var timeline = _branches.GetOrAdd(branchId, b => Timeline.New(branchId, time));

@@ -55,12 +55,12 @@ namespace ZES.Infrastructure.Branching
         }
 
         /// <inheritdoc />
-        public void Warp(DateTime time)
+        public void Warp(long time)
         {
             if (Id == BranchManager.Master)
                 return;
-            
-            _now = ((DateTimeOffset)time).ToUnixTimeMilliseconds();
+
+            _now = time;
         }
     }
 }

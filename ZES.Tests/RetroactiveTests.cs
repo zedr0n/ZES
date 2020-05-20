@@ -173,7 +173,7 @@ namespace ZES.Tests
 
             var branch = await manager.Branch("test0");
             var lastTime = timestamp + (1000 * 60);
-            branch.Warp(DateTimeOffset.FromUnixTimeMilliseconds(lastTime).DateTime);
+            branch.Warp(lastTime);
             await await bus.CommandAsync(new UpdateRoot("Root"));
 
             manager.Reset();

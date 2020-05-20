@@ -1,21 +1,11 @@
 using ZES.Infrastructure.Projections;
-using ZES.Interfaces;
-using ZES.Interfaces.Domain;
-using ZES.Interfaces.EventStore;
-using ZES.Interfaces.Pipes;
 using ZES.Tests.Domain.Events;
 
 namespace ZES.Tests.Domain.Queries
 {
-    public class LastRecordProjection : SingleProjection<LastRecord>
+    public class LastRecordRootRecordedHandler : ProjectionHandlerBase<LastRecord, RootRecorded>
     {
-        public LastRecordProjection(IEventStore<IAggregate> eventStore, ILog log, IMessageQueue messageQueue, ITimeline timeline) 
-            : base(eventStore, log, timeline, messageQueue)
-        {
-            Register<RootRecorded>(When);
-        }
-        
-        private static LastRecord When(RootRecorded e, LastRecord state)
+        public override LastRecord Handle(RootRecorded e, LastRecord state)
         {
             lock (state)
             {

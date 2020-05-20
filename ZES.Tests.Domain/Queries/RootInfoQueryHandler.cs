@@ -3,14 +3,14 @@ using ZES.Interfaces.Domain;
 
 namespace ZES.Tests.Domain.Queries
 {
-    public class RootInfoQueryHandler : QueryHandlerBaseEx<RootInfoQuery, RootInfo, RootInfoProjection.Results>
+    public class RootInfoQueryHandler : QueryHandlerBaseEx<RootInfoQuery, RootInfo, RootInfoProjectionResults>
     {
-        public RootInfoQueryHandler(IProjection<RootInfoProjection.Results> projection)
+        public RootInfoQueryHandler(IProjection<RootInfoProjectionResults> projection)
             : base(projection)
         {
         }
 
-        protected override RootInfo Handle(IProjection<RootInfoProjection.Results> projection, RootInfoQuery query) =>
+        protected override RootInfo Handle(IProjection<RootInfoProjectionResults> projection, RootInfoQuery query) =>
             new RootInfo(query.Id, projection.State.CreatedAt(query.Id), projection.State.UpdatedAt(query.Id), projection.State.NumberOfUpdates);
     }
 }

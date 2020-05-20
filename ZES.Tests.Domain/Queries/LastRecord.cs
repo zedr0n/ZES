@@ -1,6 +1,8 @@
+using ZES.Interfaces.Domain;
+
 namespace ZES.Tests.Domain.Queries
 {
-    public class LastRecord
+    public class LastRecord : IState
     {
         public LastRecord() { }
         

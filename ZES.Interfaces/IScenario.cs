@@ -17,6 +17,9 @@ namespace ZES.Interfaces
         /// </summary>
         List<IScenarioResult> Results { get; }
 
+        /// <summary>
+        /// Sort the scenario actions
+        /// </summary>
         void Sort();
     }
     

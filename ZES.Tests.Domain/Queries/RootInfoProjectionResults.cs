@@ -1,7 +1,5 @@
 using System.Collections.Concurrent;
-using ZES.Infrastructure.Projections;
 using ZES.Interfaces.Domain;
-using ZES.Tests.Domain.Events;
 
 namespace ZES.Tests.Domain.Queries
 {
@@ -24,24 +22,6 @@ namespace ZES.Tests.Domain.Queries
         {
             _updatedAt[id] = timestamp;
             NumberOfUpdates++;
-        }
-    }
-
-    public class RootCreatedProjectionHandler : ProjectionHandlerBase<RootInfoProjectionResults, RootCreated>
-    {
-        public override RootInfoProjectionResults Handle(RootCreated e, RootInfoProjectionResults state)
-        {
-            state.SetCreatedAt(e.RootId, e.Timestamp);
-            return state;
-        }
-    }
-    
-    public class RootUpdatedProjectionHandler : ProjectionHandlerBase<RootInfoProjectionResults, RootUpdated>
-    {
-        public override RootInfoProjectionResults Handle(RootUpdated e, RootInfoProjectionResults state)
-        {
-            state.SetUpdatedAt(e.RootId, e.Timestamp);
-            return state;
         }
     }
 }

@@ -11,6 +11,7 @@ using ZES.Infrastructure.Domain;
 using ZES.Interfaces;
 using ZES.Interfaces.EventStore;
 using ZES.Interfaces.Serialization;
+using Stream = ZES.Infrastructure.EventStore.Stream;
 
 namespace ZES.Infrastructure.Serialization
 {
@@ -156,7 +157,7 @@ namespace ZES.Infrastructure.Serialization
             if (!jarray.TryGetValue(nameof(IStream.Key), out var key))
                 return null;
 
-            var stream = new Streams.Stream((string)key, (int)version);
+            var stream = new Stream((string)key, (int)version);
 
             if (!jarray.TryGetValue(nameof(IStream.Parent), out var jParent))
                 return stream;
@@ -164,7 +165,7 @@ namespace ZES.Infrastructure.Serialization
             ((JObject)jParent).TryGetValue(nameof(IStream.Key), out var parentKey);
             ((JObject)jParent).TryGetValue(nameof(IStream.Version), out var parentVersion);
                 
-            stream.Parent = new Streams.Stream((string)parentKey, (int)parentVersion);
+            stream.Parent = new Stream((string)parentKey, (int)parentVersion);
 
             return stream;
 #else            

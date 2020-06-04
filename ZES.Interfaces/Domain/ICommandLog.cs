@@ -1,9 +1,6 @@
-using System;
 using System.Threading.Tasks;
-using ZES.Interfaces.Domain;
-using ZES.Interfaces.EventStore;
 
-namespace ZES.Interfaces
+namespace ZES.Interfaces.Domain
 {
     /// <summary>
     /// Log recording all commands in the system

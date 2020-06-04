@@ -11,7 +11,7 @@ using ZES.Interfaces.EventStore;
 using ZES.Interfaces.Pipes;
 using ZES.Interfaces.Sagas;
 
-namespace ZES.Infrastructure.Streams
+namespace ZES.Infrastructure.EventStore
 {
     /// <inheritdoc />
     public class StreamLocator : IStreamLocator

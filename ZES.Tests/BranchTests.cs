@@ -8,6 +8,7 @@ using ZES.Infrastructure.Alerts;
 using ZES.Infrastructure.Branching;
 using ZES.Infrastructure.Domain;
 using ZES.Interfaces;
+using ZES.Interfaces.Branching;
 using ZES.Interfaces.Causality;
 using ZES.Interfaces.Domain;
 using ZES.Interfaces.EventStore;

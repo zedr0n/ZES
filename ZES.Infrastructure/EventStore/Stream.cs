@@ -5,7 +5,7 @@ using SqlStreamStore.Streams;
 using ZES.Infrastructure.Sagas;
 using ZES.Interfaces.EventStore;
 
-namespace ZES.Infrastructure.Streams
+namespace ZES.Infrastructure.EventStore
 {
     /// <inheritdoc />
     public class Stream : IStream

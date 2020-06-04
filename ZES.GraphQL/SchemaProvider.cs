@@ -12,6 +12,7 @@ using HotChocolate.Subscriptions;
 using HotChocolate.Types;
 using Microsoft.Extensions.DependencyInjection;
 using ZES.Interfaces;
+using ZES.Interfaces.Branching;
 using ZES.Interfaces.Causality;
 using ZES.Interfaces.Domain;
 using ZES.Interfaces.GraphQL;

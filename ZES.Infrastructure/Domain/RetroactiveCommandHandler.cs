@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using ZES.Interfaces;
 using ZES.Interfaces.Domain;
+using ZES.Interfaces.Retroaction;
 
 namespace ZES.Infrastructure.Domain
 {

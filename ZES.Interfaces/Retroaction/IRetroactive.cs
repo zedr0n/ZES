@@ -1,10 +1,9 @@
-using System.Collections;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using ZES.Interfaces.Domain;
 using ZES.Interfaces.EventStore;
 
-namespace ZES.Interfaces
+namespace ZES.Interfaces.Retroaction
 {
     /// <summary>
     /// Retroactive manipulations

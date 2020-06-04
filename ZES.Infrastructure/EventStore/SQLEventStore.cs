@@ -15,7 +15,7 @@ using ZES.Interfaces.Pipes;
 using ZES.Interfaces.Sagas;
 using ZES.Interfaces.Serialization;
 
-namespace ZES.Infrastructure
+namespace ZES.Infrastructure.EventStore
 {
     /// <inheritdoc />
     public class SqlEventStore<I> : IEventStore<I> 

@@ -4,7 +4,7 @@ using System.Reactive.Linq;
 using System.Threading.Tasks;
 using SqlStreamStore;
 using SqlStreamStore.Streams;
-using ZES.Infrastructure.Streams;
+using ZES.Infrastructure.EventStore;
 using ZES.Interfaces;
 using ZES.Interfaces.Domain;
 using ZES.Interfaces.EventStore;

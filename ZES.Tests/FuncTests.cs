@@ -1,7 +1,7 @@
 using SqlStreamStore.Streams;
 using Xunit;
 using Xunit.Abstractions;
-using ZES.Infrastructure.Streams;
+using ZES.Infrastructure.EventStore;
 using ZES.Tests.Domain;
 using ZES.Tests.Domain.Commands;
 

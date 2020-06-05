@@ -320,6 +320,8 @@ namespace ZES.Tests
             messageQueue.Alert(new InvalidateProjections());
             messageQueue.Alert(new InvalidateProjections());
             
+            Thread.Sleep(50);
+            
             await bus.IsTrue(statsQuery, s => s?.NumberOfRoots == numberOfRoots);
         }
     }

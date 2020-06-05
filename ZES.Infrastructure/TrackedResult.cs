@@ -41,6 +41,6 @@ namespace ZES.Infrastructure
         public void SetResult(TResult result) { _tsc.SetResult(result); }
 
         /// <inheritdoc />
-        public void Complete() => _tsc.SetResult(default(TResult));
+        public void Complete() => _tsc.TrySetResult(default(TResult));
     }
 }

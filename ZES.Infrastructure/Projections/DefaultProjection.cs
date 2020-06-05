@@ -8,7 +8,7 @@ using ZES.Interfaces.Pipes;
 namespace ZES.Infrastructure.Projections
 {
     /// <inheritdoc />
-    public class DefaultProjection<TState> : SingleProjection<TState> 
+    public class DefaultProjection<TState> : GlobalProjection<TState> 
         where TState : new()
     {
         /// <summary>

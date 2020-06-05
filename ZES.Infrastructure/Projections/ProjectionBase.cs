@@ -1,14 +1,19 @@
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Reactive.Linq;
 using System.Reactive.Subjects;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Threading.Tasks.Dataflow;
 using Gridsum.DataflowEx;
+using ZES.Infrastructure.Alerts;
 using ZES.Interfaces;
 using ZES.Interfaces.Domain;
 using ZES.Interfaces.EventStore;
 using static ZES.Interfaces.Domain.ProjectionStatus;
+
+#pragma warning disable CS4014
 
 namespace ZES.Infrastructure.Projections
 {
@@ -32,9 +37,15 @@ namespace ZES.Infrastructure.Projections
             Timeline = timeline;
             CancellationSource = new RepeatableCancellationTokenSource();
             _start = new Lazy<Task>(() => Task.Run(Start));
+            var options = new DataflowOptions
+            {
+                RecommendedParallelismIfMultiThreaded = 1
+            };
+
+            Build = new BuildFlow(options, this);
 
             StatusSubject.Where(s => s != Sleeping)
-                .Subscribe(s => Log?.Debug($"{GetType().GetFriendlyName()} : {s.ToString()}"));
+                .Subscribe(s => Log?.Info($"{GetType().GetFriendlyName()} : {s.ToString()}"));
         }
 
         /// <inheritdoc />
@@ -62,25 +73,40 @@ namespace ZES.Infrastructure.Projections
             new Dictionary<Type, Func<IMessage, TState, TState>>();
 
         /// <summary>
+        /// Gets projection version state
+        /// </summary>
+        public ConcurrentDictionary<string, int> Versions { get; } = new ConcurrentDictionary<string, int>();
+        
+        /// <summary>
+        /// Gets projection cancellation token
+        /// </summary>
+        public CancellationToken CancellationToken => CancellationSource.Token;
+
+        /// <summary>
+        /// Gets event store 
+        /// </summary>
+        public IEventStore<IAggregate> EventStore { get; }
+        
+        /// <summary>
+        /// Gets or sets gets log service 
+        /// </summary>
+        public ILog Log { get; set; }
+        
+        /// <summary>
+        /// Gets build flow instance
+        /// </summary>
+        protected BuildFlow Build { get; }
+
+        /// <summary>
         /// Gets projection timestamp
         /// </summary>
         protected virtual long Latest => long.MaxValue;
 
         /// <summary>
-        /// Gets event store 
-        /// </summary>
-        protected IEventStore<IAggregate> EventStore { get; }
-        
-        /// <summary>
         /// Gets current timeline
         /// </summary>
         protected ITimeline Timeline { get; }
-        
-        /// <summary>
-        /// Gets or sets gets log service 
-        /// </summary>
-        protected ILog Log { get; set; }
-        
+
         /// <summary>
         /// Gets observable representing the projection status
         /// </summary>
@@ -101,15 +127,42 @@ namespace ZES.Infrastructure.Projections
         /// Gets or sets gets the cancellation source for the  projection
         /// </summary>
         protected RepeatableCancellationTokenSource CancellationSource { get; set; }
-
-        /// <summary>
-        /// Gets projection cancellation token
-        /// </summary>
-        protected CancellationToken CancellationToken => CancellationSource.Token;
-
+        
         /// <inheritdoc />
         public virtual string Key(IStream stream) => stream.Key;
 
+        /// <summary>
+        /// Projection message processor
+        /// </summary>
+        /// <param name="e">Message to process</param>
+        public void When(IEvent e)
+        {
+            if (CancellationSource.IsCancellationRequested || e == null)
+                return;
+
+            // Log.Trace($"Stream {e.Stream}@{e.Version}", this);
+            if (!Handlers.TryGetValue(e.GetType(), out var handler))
+                return;
+
+            // do not project the future events
+            if (e.Timestamp > Latest)
+                return;
+            Interlocked.Increment(ref _parallel);
+
+            State = handler(e, State);
+            Log.Debug($"{e.Stream}@{e.Version}:{_parallel}", this);
+            Interlocked.Decrement(ref _parallel);
+        }
+
+        /// <summary>
+        /// Cancel the projection
+        /// </summary>
+        public void Cancel()
+        {
+            StatusSubject.OnNext(Cancelling);
+            CancellationSource.Cancel();
+        }
+        
         /// <summary>
         /// Rebuild the projection 
         /// </summary>
@@ -150,28 +203,37 @@ namespace ZES.Infrastructure.Projections
         {
             Handlers.Add(tEvent, (m, s) => when(m as IEvent, s));
         }
-
+        
         /// <summary>
-        /// Projection message processor
+        /// Build dataflow
         /// </summary>
-        /// <param name="e">Message to process</param>
-        protected void When(IEvent e)
+        protected class BuildFlow : Dataflow<InvalidateProjections>
         {
-            if (CancellationSource.IsCancellationRequested || e == null)
-                return;
+            /// <summary>
+            /// Initializes a new instance of the <see cref="BuildFlow"/> class.
+            /// </summary>
+            /// <param name="dataflowOptions">Dataflow options</param>
+            /// <param name="projection">Related projection</param>
+            public BuildFlow(DataflowOptions dataflowOptions, ProjectionBase<TState> projection) 
+                : base(dataflowOptions)
+            {
+                var actionBlock = new ActionBlock<InvalidateProjections>(async e =>
+                {
+                    projection.Cancel();
+                    var status = projection.StatusSubject.AsObservable().Timeout(Configuration.Timeout)
+                        .Catch<ProjectionStatus, TimeoutException>(x => Observable.Return(Failed));
+                    await status.FirstAsync(s => s == Sleeping || s == Failed);
 
-            // Log.Trace($"Stream {e.Stream}@{e.Version}", this);
-            if (!Handlers.TryGetValue(e.GetType(), out var handler))
-                return;
+                    // Task.Factory.StartNew(projection.Rebuild);
+                    projection.Rebuild();
+                }); 
+               
+                RegisterChild(actionBlock);
+                InputBlock = actionBlock;
+            }
 
-            // do not project the future events
-            if (e.Timestamp > Latest)
-                return;
-            Interlocked.Increment(ref _parallel);
-
-            State = handler(e, State);
-            Log.Debug($"{e.Stream}@{e.Version}:{_parallel}", this);
-            Interlocked.Decrement(ref _parallel);
+            /// <inheritdoc />
+            public override ITargetBlock<InvalidateProjections> InputBlock { get; }
         }
     }
 }

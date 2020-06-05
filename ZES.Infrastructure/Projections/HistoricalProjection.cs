@@ -10,7 +10,7 @@ namespace ZES.Infrastructure.Projections
     /// Historical projection decorator
     /// </summary>
     /// <typeparam name="TState">Projection state</typeparam>
-    public class HistoricalProjection<TState> : SingleProjection<TState>, IHistoricalProjection
+    public class HistoricalProjection<TState> : GlobalProjection<TState>, IHistoricalProjection
         where TState : new()
     {
         private long _timestamp;

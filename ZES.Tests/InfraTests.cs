@@ -184,17 +184,24 @@ namespace ZES.Tests
         {
             var container = CreateContainer();
             var bus = container.GetInstance<IBus>();
+            var timeline = container.GetInstance<ITimeline>();
             
             var command = new CreateRoot("HistoricalRoot");
             await await bus.CommandAsync(command); 
 
             var statsQuery = new StatsQuery();
+            var now = timeline.Now;
             
             var historicalQuery = new HistoricalQuery<StatsQuery, Stats>(statsQuery, 0);
             await bus.IsTrue(historicalQuery, s => s.NumberOfRoots == 0);
             
             var liveQuery = new HistoricalQuery<StatsQuery, Stats>(statsQuery, DateTimeOffset.UtcNow.ToUnixTimeMilliseconds());
             await bus.IsTrue(liveQuery, s => s.NumberOfRoots == 1);
+
+            await await bus.CommandAsync(new UpdateRoot("HistoricalRoot"));            
+            var historicalInfo = new HistoricalQuery<RootInfoQuery, RootInfo>(new RootInfoQuery("HistoricalRoot"), now);
+            await bus.IsTrue(historicalInfo, i => i.CreatedAt == i.UpdatedAt);
+            await bus.IsTrue(new RootInfoQuery("HistoricalRoot"), i => i.UpdatedAt > i.CreatedAt);
         }
 
         [Theory]

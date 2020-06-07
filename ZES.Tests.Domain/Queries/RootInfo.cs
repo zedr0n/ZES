@@ -1,7 +1,13 @@
+using ZES.Interfaces.Domain;
+
 namespace ZES.Tests.Domain.Queries
 {
-    public class RootInfo
+    public class RootInfo : ISingleState
     {
+        public RootInfo()
+        {
+        }
+        
         public RootInfo(string id, long createdAt, long updatedAt, int numberOfUpdates)
         {
             RootId = id;

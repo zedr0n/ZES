@@ -110,7 +110,10 @@ namespace ZES.Utils
                 
                 var historicalHandler = typeof(HistoricalQueryHandler<,,>).MakeGenericType(q, result, tState);
 
-                c.RegisterConditional(iQueryHandler, handler, Lifestyle.Singleton, x => !x.Handled);
+                var lifestyle = tState.GetInterfaces().Contains(typeof(ISingleState))
+                    ? Lifestyle.Transient
+                    : Lifestyle.Singleton; 
+                c.RegisterConditional(iQueryHandler, handler, lifestyle, x => !x.Handled);
                 c.RegisterConditional(iHistoricalQueryHandler, historicalHandler, Lifestyle.Transient, x => !x.Handled);
             }
 

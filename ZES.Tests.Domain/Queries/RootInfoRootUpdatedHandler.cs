@@ -3,11 +3,12 @@ using ZES.Tests.Domain.Events;
 
 namespace ZES.Tests.Domain.Queries
 {
-    public class RootInfoRootUpdatedHandler : ProjectionHandlerBase<RootInfoProjectionResults, RootUpdated>
+    public class RootInfoRootUpdatedHandler : ProjectionHandlerBase<RootInfo, RootUpdated>
     {
-        public override RootInfoProjectionResults Handle(RootUpdated e, RootInfoProjectionResults state)
+        public override RootInfo Handle(RootUpdated e, RootInfo state)
         {
-            state.SetUpdatedAt(e.RootId, e.Timestamp);
+            state.NumberOfUpdates++;
+            state.UpdatedAt = e.Timestamp;
             return state;
         }
     }

@@ -17,6 +17,7 @@ namespace ZES.Infrastructure.Domain
         {
         }
 
+        /// <inheritdoc />
         protected override async Task<TResult> HandleAsync(TQuery query)
         {
             if (query is ISingleQuery singleQuery)

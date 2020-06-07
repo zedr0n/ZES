@@ -1,11 +1,13 @@
-using System;
-using System.Threading.Tasks;
 using ZES.Interfaces;
 using ZES.Interfaces.Domain;
 using ZES.Interfaces.EventStore;
 
 namespace ZES.Infrastructure.Projections
 {
+    /// <summary>
+    /// Single stream default projection
+    /// </summary>
+    /// <typeparam name="TState">Result state type</typeparam>
     public class SingleProjection<TState> : ProjectionBase<TState> 
         where TState : new()
     {
@@ -18,12 +20,6 @@ namespace ZES.Infrastructure.Projections
         public SingleProjection(IEventStore<IAggregate> eventStore, ILog log, ITimeline timeline) 
             : base(eventStore, log, timeline)
         {
-        }
-
-        public async Task Init(Func<IStream, bool> predicate)
-        {
-            Predicate = predicate;
-            await Start();
         }
     }
 }

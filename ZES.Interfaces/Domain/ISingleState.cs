@@ -1,7 +1,9 @@
 namespace ZES.Interfaces.Domain
 {
-    public class ISingleState : IState
+    /// <summary>
+    /// Single stream projection state
+    /// </summary>
+    public interface ISingleState : IState
     {
-        
     }
 }

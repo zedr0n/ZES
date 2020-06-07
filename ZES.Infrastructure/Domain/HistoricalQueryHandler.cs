@@ -11,7 +11,7 @@ namespace ZES.Infrastructure.Domain
     /// <typeparam name="TQuery">Original query type</typeparam>
     /// <typeparam name="TResult">Query result</typeparam>
     /// <typeparam name="TState">Associated projection state type</typeparam>
-    public class HistoricalQueryHandler<TQuery, TResult, TState> : QueryHandlerBaseEx<HistoricalQuery<TQuery, TResult>, TResult, TState>,
+    public class HistoricalQueryHandler<TQuery, TResult, TState> : QueryHandlerBase<HistoricalQuery<TQuery, TResult>, TResult, TState>,
                                                                   IQueryHandler<TQuery, TResult>
         where TQuery : class, IQuery<TResult>
         where TResult : class

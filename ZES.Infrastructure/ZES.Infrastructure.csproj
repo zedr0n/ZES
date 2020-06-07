@@ -43,14 +43,14 @@
       <Compile Update="Domain\CommandLog.cs">
         <DependentUpon>Command.cs</DependentUpon>
       </Compile>
-      <Compile Update="Domain\QueryHandlerBaseEx.cs">
+      <Compile Update="Domain\QueryHandlerBase.cs">
         <DependentUpon>QueryHandlerBase.cs</DependentUpon>
       </Compile>
-      <Compile Update="Domain\QueryHandlerBase.cs">
+      <Compile Update="Domain\DefaultQueryHandler.cs">
         <DependentUpon>Query.cs</DependentUpon>
       </Compile>
       <Compile Update="Domain\QueryHandler.cs">
-        <DependentUpon>QueryHandlerBaseEx.cs</DependentUpon>
+        <DependentUpon>QueryHandlerBase.cs</DependentUpon>
       </Compile>
     </ItemGroup>
 

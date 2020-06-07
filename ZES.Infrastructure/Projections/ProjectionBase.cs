@@ -8,6 +8,7 @@ using System.Threading.Tasks;
 using System.Threading.Tasks.Dataflow;
 using Gridsum.DataflowEx;
 using ZES.Infrastructure.Alerts;
+using ZES.Infrastructure.Utils;
 using ZES.Interfaces;
 using ZES.Interfaces.Domain;
 using ZES.Interfaces.EventStore;
@@ -60,6 +61,11 @@ namespace ZES.Infrastructure.Projections
             }
         }
 
+        /// <summary>
+        /// Gets or sets the stream predicate
+        /// </summary>
+        public virtual Func<IStream, bool> Predicate { get; set; } = s => true;
+        
         /// <inheritdoc />
         public TState State { get; protected set; } = new TState();
 
@@ -92,6 +98,15 @@ namespace ZES.Infrastructure.Projections
         /// </summary>
         public ILog Log { get; set; }
         
+        /// <summary>
+        /// Gets dataflow default options
+        /// </summary>
+        protected DataflowOptions Options { get; } = new DataflowOptions
+        {
+            RecommendedParallelismIfMultiThreaded = Configuration.ThreadsPerInstance,
+            FlowMonitorEnabled = false
+        };
+
         /// <summary>
         /// Gets build flow instance
         /// </summary>
@@ -127,9 +142,6 @@ namespace ZES.Infrastructure.Projections
         /// Gets or sets gets the cancellation source for the  projection
         /// </summary>
         protected RepeatableCancellationTokenSource CancellationSource { get; set; }
-        
-        /// <inheritdoc />
-        public virtual string Key(IStream stream) => stream.Key;
 
         /// <summary>
         /// Projection message processor
@@ -167,8 +179,67 @@ namespace ZES.Infrastructure.Projections
         /// Rebuild the projection 
         /// </summary>
         /// <returns>Completes when the projection has finished rebuilding</returns>
-        protected virtual Task Rebuild() => Task.CompletedTask;
+        protected virtual async Task Rebuild()
+        {
+            StatusSubject.OnNext(Building);
+            
+            CancellationSource.Dispose();
+            Versions.Clear();
+            lock (State)
+            {
+                State = new TState();
+            }
 
+            var rebuildDispatcher = new ProjectionDispatcher<TState>(Options, this);
+            var liveDispatcher = new ProjectionBufferedDispatcher<TState>(Options, this);
+
+            EventStore.Streams
+                .TakeWhile(_ => !CancellationSource.IsCancellationRequested)
+                .Where(Predicate)
+                .Select(s => new Tracked<IStream>(s))
+                .Subscribe(liveDispatcher.InputBlock.AsObserver());
+
+            EventStore.ListStreams(Timeline.Id)
+                .TakeWhile(_ => !CancellationSource.IsCancellationRequested)
+                .Where(Predicate)
+                .Select(s => new Tracked<IStream>(s))
+                .Subscribe(rebuildDispatcher.InputBlock.AsObserver());
+
+            CancellationToken.Register(async () =>
+            {
+                try
+                {
+                    if (!rebuildDispatcher.CompletionTask.IsFaulted)
+                        await rebuildDispatcher.SignalAndWaitForCompletionAsync().Timeout();
+                    if (!liveDispatcher.CompletionTask.IsFaulted)
+                        await liveDispatcher.SignalAndWaitForCompletionAsync().Timeout();
+                }
+                catch (Exception e)
+                {
+                    // StatusSubject.OnNext(Failed);
+                    Log?.Errors.Add(e);
+                }
+                StatusSubject.OnNext(Sleeping);
+            });
+
+            try
+            {
+                await rebuildDispatcher.CompletionTask.Timeout();
+                if (!CancellationToken.IsCancellationRequested)
+                {
+                    await liveDispatcher.Start();
+                    StatusSubject.OnNext(Listening);
+                }
+            }
+            catch (Exception e)
+            {
+                StatusSubject.OnNext(Failed);
+                Log?.Errors.Add(e);
+                CancellationSource.Cancel();
+                await Rebuild();
+            }
+        }
+        
         /// <summary>
         /// Starts or restarts the projection
         /// </summary>

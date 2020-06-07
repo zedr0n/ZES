@@ -99,7 +99,7 @@ namespace ZES.Utils
                 var handler = assembly.GetTypesFromInterface(iQueryHandler).SingleOrDefault();
 
                 if (handler == null)
-                    handler = typeof(QueryHandlerBase<,>).MakeGenericType(q, result);
+                    handler = typeof(DefaultQueryHandler<,>).MakeGenericType(q, result);
                 
                 var parameters = handler?.GetConstructors()[0].GetParameters();
                 var tState = parameters?.First(p => p.ParameterType.GetInterfaces().Contains(typeof(IProjection)))
@@ -140,7 +140,8 @@ namespace ZES.Utils
                     typeof(HistoricalProjection<>).MakeGenericType(tState),
                     Lifestyle.Transient,
                     x => x.Consumer.ImplementationType.IsClosedTypeOf(typeof(HistoricalQueryHandler<,,>)));
-                c.RegisterConditional(projectionInterface, p, Lifestyle.Singleton, x => !x.Handled);
+                var lifestyle = tState.GetInterfaces().Contains(typeof(ISingleState)) ? Lifestyle.Transient : Lifestyle.Singleton;
+                c.RegisterConditional(projectionInterface, p, lifestyle, x => !x.Handled);
             }
 
             var otherStates = assembly.GetTypesFromInterface(typeof(IState)).Where(t => !registeredStates.Contains(t));
@@ -154,7 +155,8 @@ namespace ZES.Utils
                     typeof(HistoricalProjection<>).MakeGenericType(tState),
                     Lifestyle.Transient,
                     x => x.Consumer.ImplementationType.IsClosedTypeOf(typeof(HistoricalQueryHandler<,,>)));
-                c.RegisterConditional(projectionInterface, projection, Lifestyle.Singleton, x => !x.Handled);
+                var lifestyle = tState.GetInterfaces().Contains(typeof(ISingleState)) ? Lifestyle.Transient : Lifestyle.Singleton;
+                c.RegisterConditional(projectionInterface, projection, lifestyle, x => !x.Handled);
 
                 var tHandler = typeof(IProjectionHandler<>).MakeGenericType(tState);
                 var handlers = assembly.GetTypesFromInterface(tHandler);

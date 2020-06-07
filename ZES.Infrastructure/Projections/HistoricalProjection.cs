@@ -10,7 +10,7 @@ namespace ZES.Infrastructure.Projections
     /// Historical projection decorator
     /// </summary>
     /// <typeparam name="TState">Projection state</typeparam>
-    public class HistoricalProjection<TState> : GlobalProjection<TState>, IHistoricalProjection
+    public sealed class HistoricalProjection<TState> : GlobalProjection<TState>, IHistoricalProjection
         where TState : new()
     {
         private long _timestamp;
@@ -32,10 +32,9 @@ namespace ZES.Infrastructure.Projections
             : base(eventStore, log, timeline, messageQueue)
         {
             var projection = (ProjectionBase<TState>)iProjection;
+            Predicate = projection.Predicate;
             foreach (var h in projection.Handlers)
                 Register(h.Key, (e, s) => h.Value(e, s));
-            
-            InvalidateSubscription = new LazySubscription();
         }
 
         /// <inheritdoc />

@@ -46,16 +46,11 @@ namespace ZES.Interfaces.Domain
         /// Completion of this observable means the projection's rebuild has been completed successfully
         /// </value>
         IObservable<ProjectionStatus> Ready { get; }
-        
+
         /// <summary>
-        /// Map stream to read model key
+        /// Gets or sets the stream predicate
         /// </summary>
-        /// <remarks>
-        /// Projections with multiple read models require a key to separate by
-        /// </remarks>
-        /// <param name="stream">Originating stream</param>
-        /// <returns>Read model key</returns>
-        string Key(IStream stream);
+        Func<IStream, bool> Predicate { get; set; }
 
         /*
         /// <summary>

@@ -3,7 +3,7 @@ using ZES.Interfaces.Domain;
 
 namespace ZES.Tests.Domain.Queries
 {
-    public class RootInfoQueryHandler : QueryHandlerBaseEx<RootInfoQuery, RootInfo, RootInfoProjectionResults>
+    public class RootInfoQueryHandler : QueryHandlerBase<RootInfoQuery, RootInfo, RootInfoProjectionResults>
     {
         public RootInfoQueryHandler(IProjection<RootInfoProjectionResults> projection)
             : base(projection)

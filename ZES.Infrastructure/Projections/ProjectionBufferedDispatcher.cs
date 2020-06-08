@@ -23,6 +23,7 @@ namespace ZES.Infrastructure.Projections
             _dispatcher = new ProjectionDispatcher<TState>(dataflowOptions, projection);
             _log = projection.Log;
             _token = projection.CancellationToken;
+            _token.Register(() => _buffer.LinkTo(DataflowBlock.NullTarget<Tracked<IStream>>().ToDataflow()));
 
             RegisterChild(_buffer);
             RegisterChild(_dispatcher);
@@ -35,8 +36,6 @@ namespace ZES.Infrastructure.Projections
             var count = _buffer.BufferedCount;
             _log.Debug($"{count} streams in buffer", this);
                 
-            _token.Register(() => _buffer.LinkTo(DataflowBlock.NullTarget<Tracked<IStream>>().ToDataflow()));
-
             if (count > 0)
             {
                 var obs = _buffer.OutputBlock.AsObservable()

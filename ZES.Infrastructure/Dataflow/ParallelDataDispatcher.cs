@@ -121,7 +121,10 @@ namespace ZES.Infrastructure.Dataflow
             {
                 await block.InputBlock.SendAsync(input, _token);
                 if (input is ITracked tracked)
+                {
+                    _token.Register(tracked.Complete);
                     await tracked.Completed.Timeout(_token);
+                }
             }
             catch (Exception e)
             {

@@ -50,7 +50,7 @@ namespace ZES.Infrastructure.Projections
                 return;
             }
 
-            // _token.Register(trackedStream.Complete);
+            _token.Register(trackedStream.Complete);
 
             var version = _versions.GetOrAdd(s.Key, ExpectedVersion.EmptyStream);
 

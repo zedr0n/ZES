@@ -196,13 +196,13 @@ namespace ZES.Infrastructure.Projections
             EventStore.Streams
                 .TakeWhile(_ => !CancellationSource.IsCancellationRequested)
                 .Where(Predicate)
-                .Select(s => new Tracked<IStream>(s))
+                .Select(s => new Tracked<IStream>(s, CancellationToken))
                 .Subscribe(liveDispatcher.InputBlock.AsObserver());
 
             EventStore.ListStreams(Timeline.Id)
                 .TakeWhile(_ => !CancellationSource.IsCancellationRequested)
                 .Where(Predicate)
-                .Select(s => new Tracked<IStream>(s))
+                .Select(s => new Tracked<IStream>(s, CancellationToken))
                 .Subscribe(rebuildDispatcher.InputBlock.AsObserver());
 
             CancellationToken.Register(async () =>
@@ -225,11 +225,10 @@ namespace ZES.Infrastructure.Projections
             try
             {
                 await rebuildDispatcher.CompletionTask.Timeout();
+                await liveDispatcher.Start();
+
                 if (!CancellationToken.IsCancellationRequested)
-                {
-                    await liveDispatcher.Start();
                     StatusSubject.OnNext(Listening);
-                }
             }
             catch (Exception e)
             {

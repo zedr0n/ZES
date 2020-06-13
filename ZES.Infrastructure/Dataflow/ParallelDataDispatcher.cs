@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Reactive.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Threading.Tasks.Dataflow;
@@ -119,11 +120,11 @@ namespace ZES.Infrastructure.Dataflow
 
             try
             {
-                await block.InputBlock.SendAsync(input, _token);
+                await block.InputBlock.SendAsync(input);
                 if (input is ITracked tracked)
                 {
-                    _token.Register(tracked.Complete);
-                    await tracked.Completed.Timeout(_token);
+                    // _token.Register(tracked.Complete);
+                    await tracked.Completed.Timeout();
                 }
             }
             catch (Exception e)

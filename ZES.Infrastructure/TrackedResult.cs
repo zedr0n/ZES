@@ -1,3 +1,4 @@
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace ZES.Infrastructure
@@ -15,12 +16,14 @@ namespace ZES.Infrastructure
         /// Initializes a new instance of the <see cref="TrackedResult{T,TResult}"/> class.
         /// </summary>
         /// <param name="value">Underlying value</param>
-        public TrackedResult(T value)
+        /// <param name="token">Cancellation token</param>
+        public TrackedResult(T value, CancellationToken token = default)
         {
             _tsc = new TaskCompletionSource<TResult>();
             Value = value;
+            token.Register(Complete);
         }
-        
+
         /// <summary>
         /// Gets wrapped value 
         /// </summary>

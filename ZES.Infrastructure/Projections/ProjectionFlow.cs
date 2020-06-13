@@ -49,8 +49,9 @@ namespace ZES.Infrastructure.Projections
                 trackedStream.Complete();
                 return;
             }
-
-            _token.Register(trackedStream.Complete);
+            
+            if (trackedStream.Completed.IsCompleted)
+                return;
 
             var version = _versions.GetOrAdd(s.Key, ExpectedVersion.EmptyStream);
 

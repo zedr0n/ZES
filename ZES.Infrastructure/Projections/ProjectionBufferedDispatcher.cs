@@ -1,3 +1,4 @@
+using System;
 using System.Reactive.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -26,13 +27,16 @@ namespace ZES.Infrastructure.Projections
             _token.Register(() => _buffer.LinkTo(DataflowBlock.NullTarget<Tracked<IStream>>().ToDataflow()));
 
             RegisterChild(_buffer);
-            RegisterChild(_dispatcher);
         }
 
         public override ITargetBlock<Tracked<IStream>> InputBlock => _buffer.InputBlock;
             
         public async Task Start()
         {
+            if (_token.IsCancellationRequested)
+                return;
+            
+            RegisterChild(_dispatcher);
             var count = _buffer.BufferedCount;
             _log.Debug($"{count} streams in buffer", this);
                 

@@ -1,4 +1,3 @@
-using System.Threading.Tasks;
 using ZES.Interfaces.Domain;
 
 namespace ZES.Infrastructure.Domain
@@ -15,14 +14,6 @@ namespace ZES.Infrastructure.Domain
         public DefaultQueryHandler(IProjection<TResult> projection)
             : base(projection)
         {
-        }
-
-        /// <inheritdoc />
-        protected override async Task<TResult> HandleAsync(TQuery query)
-        {
-            if (query is ISingleQuery singleQuery)
-                Projection.Predicate = s => s.Id == singleQuery.Id;
-            return await base.HandleAsync(query);
         }
 
         /// <inheritdoc />

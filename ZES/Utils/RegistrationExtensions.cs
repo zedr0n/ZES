@@ -91,16 +91,21 @@ namespace ZES.Utils
             var queries = assembly.GetTypes().Where(t => t.IsClosedTypeOf(typeof(IQuery<>)));
             foreach (var q in queries)
             {
-                var result = q.GetInterfaces().SingleOrDefault(g => g.IsGenericType)?.GetGenericArguments().SingleOrDefault(); 
+                var result = q.GetInterfaces().FirstOrDefault(g => g.IsGenericType)?.GetGenericArguments().SingleOrDefault(); 
                 if (result == null)
                     continue;
                 
                 var iQueryHandler = typeof(IQueryHandler<,>).MakeGenericType(q, result);
                 var handler = assembly.GetTypesFromInterface(iQueryHandler).SingleOrDefault();
+                var isSingle = q.GetTypeInfo().IsClosedTypeOf(typeof(ISingleQuery<>)); 
 
                 if (handler == null)
-                    handler = typeof(DefaultQueryHandler<,>).MakeGenericType(q, result);
-                
+                {
+                    handler = isSingle ?
+                        typeof(DefaultSingleQueryHandler<,>).MakeGenericType(q, result) :
+                        typeof(DefaultQueryHandler<,>).MakeGenericType(q, result);
+                }
+
                 var parameters = handler?.GetConstructors()[0].GetParameters();
                 var tState = parameters?.First(p => p.ParameterType.GetInterfaces().Contains(typeof(IProjection)))
                     .ParameterType.GenericTypeArguments[0];
@@ -110,9 +115,8 @@ namespace ZES.Utils
                 
                 var historicalHandler = typeof(HistoricalQueryHandler<,,>).MakeGenericType(q, result, tState);
 
-                var lifestyle = tState.GetInterfaces().Contains(typeof(ISingleState))
-                    ? Lifestyle.Transient
-                    : Lifestyle.Singleton; 
+                var lifestyle = isSingle ? Lifestyle.Transient : Lifestyle.Singleton; 
+                
                 c.RegisterConditional(iQueryHandler, handler, lifestyle, x => !x.Handled);
                 c.RegisterConditional(iHistoricalQueryHandler, historicalHandler, Lifestyle.Transient, x => !x.Handled);
             }

@@ -187,7 +187,9 @@ namespace ZES.Tests
             var timeline = container.GetInstance<ITimeline>();
             
             var command = new CreateRoot("HistoricalRoot");
-            await await bus.CommandAsync(command); 
+            await await bus.CommandAsync(command);
+
+            await await bus.CommandAsync(new CreateRoot("TempRoot"));
 
             var statsQuery = new StatsQuery();
             var now = timeline.Now;
@@ -196,12 +198,20 @@ namespace ZES.Tests
             await bus.IsTrue(historicalQuery, s => s.NumberOfRoots == 0);
             
             var liveQuery = new HistoricalQuery<StatsQuery, Stats>(statsQuery, DateTimeOffset.UtcNow.ToUnixTimeMilliseconds());
-            await bus.IsTrue(liveQuery, s => s.NumberOfRoots == 1);
+            await bus.IsTrue(liveQuery, s => s.NumberOfRoots == 2);
 
             await await bus.CommandAsync(new UpdateRoot("HistoricalRoot"));            
             var historicalInfo = new HistoricalQuery<RootInfoQuery, RootInfo>(new RootInfoQuery("HistoricalRoot"), now);
             await bus.IsTrue(historicalInfo, i => i.CreatedAt == i.UpdatedAt);
             await bus.IsTrue(new RootInfoQuery("HistoricalRoot"), i => i.UpdatedAt > i.CreatedAt);
+
+            historicalInfo =
+                new HistoricalQuery<RootInfoQuery, RootInfo>(new RootInfoQuery("HistoricalRoot"), DateTimeOffset.UtcNow.ToUnixTimeMilliseconds());
+            await bus.IsTrue(historicalInfo, i => i.UpdatedAt > i.CreatedAt);
+            
+            historicalInfo =
+                new HistoricalQuery<RootInfoQuery, RootInfo>(new RootInfoQuery("TempRoot"), DateTimeOffset.UtcNow.ToUnixTimeMilliseconds());
+            await bus.IsTrue(historicalInfo, i => i.UpdatedAt == i.CreatedAt);
         }
 
         [Theory]
@@ -221,6 +231,7 @@ namespace ZES.Tests
 
             // await bus.IsTrue(new StatsQuery(), s => s?.NumberOfRoots == numRoots, TimeSpan.FromMilliseconds(numRoots));
             await bus.Equal(new StatsQuery(), s => s?.NumberOfRoots, numRoots);
+            await bus.Equal(new RootInfoQuery("Root1"), r => r.RootId, "Root1");
         }
 
         [Fact]

@@ -114,6 +114,8 @@ namespace ZES.Utils
                 var iHistoricalQueryHandler = typeof(IQueryHandler<,>).MakeGenericType(iHistoricalQuery, result);
                 
                 var historicalHandler = typeof(HistoricalQueryHandler<,,>).MakeGenericType(q, result, tState);
+                if (isSingle)
+                    historicalHandler = typeof(HistoricalSingleQueryHandler<,,>).MakeGenericType(q, result, tState);
 
                 var lifestyle = isSingle ? Lifestyle.Transient : Lifestyle.Singleton; 
                 

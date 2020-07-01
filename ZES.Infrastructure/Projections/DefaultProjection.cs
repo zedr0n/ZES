@@ -26,11 +26,9 @@ namespace ZES.Infrastructure.Projections
             foreach (var h in handlers)
             {
                 var typeArguments =
-                    h.GetType().GetInterfaces().SingleOrDefault(i => i.GenericTypeArguments.Length > 1)?.GenericTypeArguments;
-                if (typeArguments == null) 
-                    continue;
-                var tEvent = typeArguments[1];
-                Register(tEvent, h.Handle);
+                    h.GetType().GetInterfaces().Where(i => i.GenericTypeArguments.Length > 1).Select(i => i.GenericTypeArguments[1]);
+                foreach (var tEvent in typeArguments)
+                    Register(tEvent, h.Handle);
             }
         }
     }

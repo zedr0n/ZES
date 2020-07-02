@@ -48,7 +48,7 @@ namespace ZES.GraphQL
             var allParams = string.Empty;
             if (constructor != null)
             {
-                var paramsProps = query.GetType().GetProperties(BindingFlags.DeclaredOnly | BindingFlags.Public | BindingFlags.Instance);
+                var paramsProps = query.GetType().GetProperties(BindingFlags.Public | BindingFlags.Instance);
             
                 allParams = string.Join(",", paramsProps.Select(p => $"{p.Name.ToLowerFirst()} : {BackQuote(p)}{p.GetValue(query)}{BackQuote(p)}"));
             }

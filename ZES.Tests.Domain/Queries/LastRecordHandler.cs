@@ -3,7 +3,7 @@ using ZES.Tests.Domain.Events;
 
 namespace ZES.Tests.Domain.Queries
 {
-    public class LastRecordRootRecordedHandler : ProjectionHandlerBase<LastRecord, RootRecorded>
+    public class LastRecordHandler : ProjectionHandlerBase<LastRecord, RootRecorded>
     {
         public override LastRecord Handle(RootRecorded e, LastRecord state)
         {

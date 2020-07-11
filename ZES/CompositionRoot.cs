@@ -12,7 +12,7 @@ using ZES.Infrastructure.Causality;
 using ZES.Infrastructure.Domain;
 using ZES.Infrastructure.EventStore;
 using ZES.Infrastructure.Projections;
-using ZES.Infrastructure.Retroactive;
+using ZES.Infrastructure.Retroaction;
 using ZES.Infrastructure.Serialization;
 using ZES.Interfaces;
 using ZES.Interfaces.Branching;

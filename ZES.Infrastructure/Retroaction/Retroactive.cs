@@ -1,13 +1,9 @@
 using System;
-using System.Collections;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
 using System.Reactive.Linq;
 using System.Threading.Tasks;
-using SqlStreamStore;
 using SqlStreamStore.Streams;
-using ZES.Infrastructure.Alerts;
 using ZES.Infrastructure.Domain;
 using ZES.Interfaces;
 using ZES.Interfaces.Branching;
@@ -18,7 +14,7 @@ using ZES.Interfaces.Pipes;
 using ZES.Interfaces.Retroaction;
 using ZES.Interfaces.Sagas;
 
-namespace ZES.Infrastructure.Retroactive
+namespace ZES.Infrastructure.Retroaction
 {
     /// <inheritdoc />
     public class Retroactive : IRetroactive

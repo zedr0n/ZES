@@ -21,6 +21,14 @@ namespace ZES.Interfaces.EventStore
             where T : IEventMetadata;
 
         /// <summary>
+        /// Gets the version of the event with the timestamp before specified
+        /// </summary>
+        /// <param name="stream">Stream descriptor</param>
+        /// <param name="timestamp">Up to time</param>
+        /// <returns>The last version before timestamp</returns>
+        Task<int> GetVersion(IStream stream, long timestamp);
+        
+        /// <summary>
         /// Append events to stream
         /// </summary>
         /// <param name="stream">Target stream</param>

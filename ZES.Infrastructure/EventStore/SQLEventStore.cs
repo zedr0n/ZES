@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reactive.Linq;
@@ -28,6 +29,7 @@ namespace ZES.Infrastructure.EventStore
         private readonly ILog _log;
 
         private readonly bool _isDomainStore;
+        private ConcurrentDictionary<string, ConcurrentDictionary<int, long>> _versions = new ConcurrentDictionary<string, ConcurrentDictionary<int, long>>();
 
         /// <summary>
         /// Initializes a new instance of the <see cref="SqlEventStore{I}"/> class
@@ -109,6 +111,23 @@ namespace ZES.Infrastructure.EventStore
         }
 
         /// <inheritdoc />
+        public async Task<int> GetVersion(IStream stream, long timestamp)
+        {
+            if (_versions.TryGetValue(stream.Key, out var versions))
+            {
+                if (!versions.Any(v => v.Value <= timestamp))
+                    return ExpectedVersion.NoStream;
+
+                return versions.Last(v => v.Value <= timestamp).Key;
+            }
+            
+            var metadata = await ReadStream<IEventMetadata>(stream, 0)
+                .LastOrDefaultAsync(e => e.Timestamp <= timestamp);
+
+            return metadata?.Version ?? ExpectedVersion.NoStream;
+        }
+
+        /// <inheritdoc />
         public async Task AppendToStream(IStream stream, IEnumerable<IEvent> enumerable = null, bool publish = true)
         {
             var events = enumerable as IList<IEvent> ?? enumerable?.ToList();
@@ -136,6 +155,19 @@ namespace ZES.Infrastructure.EventStore
                     metadataJson: _serializer.EncodeStreamMetadata(stream)); // JExtensions.JStreamMetadata(stream));
 
                 // await _graph.AddStreamMetadata(stream);
+                var dict = _versions.GetOrAdd(stream.Key, new ConcurrentDictionary<int, long>());
+                foreach (var e in events ?? new List<IEvent>())
+                    dict[e.Version] = e.Timestamp;
+                var s = stream.Parent;
+                while (s != null)
+                {
+                    if (!_versions.TryGetValue(s.Key, out var d))
+                        break;
+                    foreach (var k in d.Keys)
+                        dict[k] = d[k];
+                    s = s.Parent;
+                }
+
                 _streams.OnNext(stream); 
             }
             
@@ -158,6 +190,10 @@ namespace ZES.Infrastructure.EventStore
             var events = await ReadStream<IEvent>(stream, version + 1).ToList();
             foreach (var e in events.Reverse())
                 await _streamStore.DeleteMessage(stream.Key, e.MessageId);
+           
+            var dict = _versions.GetOrAdd(stream.Key, new ConcurrentDictionary<int, long>());
+            foreach (var e in events)
+                dict.TryRemove(e.Version, out _);
             
             _log.Trace($"Deleted {events.Count} {(events.Count > 1 ? "events" : "event")} from {stream.Key}");
 

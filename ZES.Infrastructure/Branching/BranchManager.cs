@@ -452,13 +452,11 @@ namespace ZES.Infrastructure.Branching
                 _inputBlock = new ActionBlock<IStream>(
                     async s =>
                     {
-                        var metadata = await eventStore.ReadStream<IEventMetadata>(s, 0)
-                            .LastOrDefaultAsync(e => e.Timestamp <= time);
-
-                        if (metadata == null)
+                        var version = await eventStore.GetVersion(s, time);
+                        if (version == ExpectedVersion.NoStream)
                             return;
 
-                        var clone = s.Branch(timeline, metadata.Version);
+                        var clone = s.Branch(timeline, version);
                         await eventStore.AppendToStream(clone);
                         Interlocked.Increment(ref _numberOfStreams);
                     }, new ExecutionDataflowBlockOptions { MaxDegreeOfParallelism = Configuration.ThreadsPerInstance });

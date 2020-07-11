@@ -8,7 +8,6 @@ using SimpleInjector;
 using Xunit;
 using Xunit.Abstractions;
 using ZES.Infrastructure.Domain;
-using ZES.Infrastructure.Retroactive;
 using ZES.Interfaces;
 using ZES.Interfaces.Branching;
 using ZES.Interfaces.Causality;

@@ -3,6 +3,7 @@ using System.IO;
 using System.Runtime.Serialization.Formatters.Binary;
 using System.Security.Cryptography;
 using System.Text;
+using Force.Crc32;
 
 namespace ZES.Infrastructure
 {
@@ -41,6 +42,20 @@ namespace ZES.Infrastructure
             return sb.ToString();
         }
 
+        /// <summary>
+        /// Sha256 object hash
+        /// </summary>
+        /// <param name="value">Object to hash</param>
+        /// <returns>String hash</returns>
+        public static string Crc32(object value)
+        {
+            if (value == null)
+                return string.Empty;
+
+            var bytes = Byte(value);
+            return Crc32CAlgorithm.Compute(bytes).ToString();
+        }
+        
         /// <summary>
         /// Sha256 object hash
         /// </summary>

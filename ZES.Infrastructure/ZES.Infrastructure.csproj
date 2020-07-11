@@ -9,6 +9,7 @@
     </PropertyGroup>
 
     <ItemGroup>
+      <PackageReference Include="Crc32.NET" Version="1.2.0" />
       <PackageReference Include="Gridsum.DataflowEx" Version="2.0.0" />
       <PackageReference Include="Jil" Version="2.17.0" />
       <PackageReference Include="JsonDiffPatch.Net" Version="2.1.0" />

@@ -114,9 +114,9 @@ namespace ZES.Infrastructure.Domain
         {
             if (!_computeHash)
                 return;
-            
-            var objectHash = Hashing.Sha256(value);
-            _hash = Hashing.Sha256(_hash + objectHash);
+
+            var objectHash = Hashing.Crc32(value); // Hashing.Sha256(value);
+            _hash = Hashing.Crc32(_hash + objectHash); // Hashing.Sha256(_hash + objectHash);
         }
         
         /// <summary>

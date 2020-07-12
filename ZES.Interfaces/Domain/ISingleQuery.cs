@@ -3,6 +3,7 @@ namespace ZES.Interfaces.Domain
     /// <summary>
     /// Single stream query
     /// </summary>
+    /// <typeparam name="TState">State type</typeparam>
     public interface ISingleQuery<TState> : IQuery<TState>
         where TState : ISingleState
     {

@@ -5,6 +5,8 @@ using System.Linq;
 using System.Reactive.Linq;
 using System.Reactive.Subjects;
 using System.Threading.Tasks;
+using System.Threading.Tasks.Dataflow;
+using Gridsum.DataflowEx;
 using SqlStreamStore;
 using SqlStreamStore.Streams;
 using ZES.Infrastructure.Alerts;
@@ -215,11 +217,36 @@ namespace ZES.Infrastructure.EventStore
                 observer.OnCompleted();
                 return;
             }
-
+            
             var page = await _streamStore.ReadStreamForwards(stream.Key, position, Configuration.BatchSize);
             while (page.Messages.Length > 0 && count > 0)
             {
-                foreach (var m in page.Messages)
+                if (typeof(T) == typeof(IEvent))
+                {
+                    var dataflow = new DeserializeEventFlow( new DataflowOptions { RecommendedParallelismIfMultiThreaded = Configuration.ThreadsPerInstance }, _serializer);
+                    await dataflow.ProcessAsync(page.Messages);
+                    foreach (var e in dataflow.Events.OrderBy(e => e.Version))
+                    {
+                        observer.OnNext((T)e);
+                        count--;
+                        if (count == 0)
+                            break;
+                    }
+                }
+                else
+                {
+                    var dataflow = new DeserializeMetadataFlow( new DataflowOptions { RecommendedParallelismIfMultiThreaded = Configuration.ThreadsPerInstance }, _serializer);
+                    await dataflow.ProcessAsync(page.Messages);
+                    foreach (var metadata in dataflow.Metadata.OrderBy(e => e.Version))
+                    {
+                        observer.OnNext((T)metadata);
+                        count--;
+                        if (count == 0)
+                            break;
+                    }
+                }
+                
+                /*foreach (var m in page.Messages)
                 {
                     if (typeof(T) == typeof(IEvent))
                     {
@@ -237,7 +264,7 @@ namespace ZES.Infrastructure.EventStore
                     count--;
                     if (count == 0)
                         break;
-                }
+                }*/
                 
                 page = await page.ReadNext();
             } 
@@ -261,6 +288,48 @@ namespace ZES.Infrastructure.EventStore
 
             foreach (var e in events)
                 _messageQueue.Event(e);
+        }
+    
+        private class DeserializeEventFlow : Dataflow<StreamMessage>
+        {
+            public DeserializeEventFlow(DataflowOptions dataflowOptions, ISerializer<IEvent> serializer) 
+                : base(dataflowOptions)
+            {
+                var block = new ActionBlock<StreamMessage>(async m =>
+                {
+                    var payload = await m.GetJsonData();
+                    var @event = serializer.Deserialize(payload);
+                    Events.Add(@event);
+                });
+
+                RegisterChild(block);
+                InputBlock = block;
+            }
+            
+            public List<IEvent> Events { get; } = new List<IEvent>();
+
+            public override ITargetBlock<StreamMessage> InputBlock { get; }
+        }
+        
+        private class DeserializeMetadataFlow : Dataflow<StreamMessage>
+        {
+            public DeserializeMetadataFlow(DataflowOptions dataflowOptions, ISerializer<IEvent> serializer) 
+                : base(dataflowOptions)
+            {
+                var block = new ActionBlock<StreamMessage>(async m =>
+                {
+                    var payload = await m.GetJsonData();
+                    var metadata = serializer.DecodeMetadata(payload);
+                    Metadata.Add(metadata);
+                });
+
+                RegisterChild(block);
+                InputBlock = block;
+            }
+            
+            public List<IEventMetadata> Metadata { get; } = new List<IEventMetadata>();
+
+            public override ITargetBlock<StreamMessage> InputBlock { get; }
         }
     }
 }

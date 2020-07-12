@@ -295,12 +295,13 @@ namespace ZES.Infrastructure.EventStore
             public DeserializeEventFlow(DataflowOptions dataflowOptions, ISerializer<IEvent> serializer) 
                 : base(dataflowOptions)
             {
-                var block = new ActionBlock<StreamMessage>(async m =>
+                var block = new ActionBlock<StreamMessage>(
+                    async m =>
                 {
                     var payload = await m.GetJsonData();
                     var @event = serializer.Deserialize(payload);
                     Events.Add(@event);
-                });
+                }, dataflowOptions.ToExecutionBlockOption());
 
                 RegisterChild(block);
                 InputBlock = block;
@@ -316,12 +317,13 @@ namespace ZES.Infrastructure.EventStore
             public DeserializeMetadataFlow(DataflowOptions dataflowOptions, ISerializer<IEvent> serializer) 
                 : base(dataflowOptions)
             {
-                var block = new ActionBlock<StreamMessage>(async m =>
+                var block = new ActionBlock<StreamMessage>(
+                    async m =>
                 {
                     var payload = await m.GetJsonData();
                     var metadata = serializer.DecodeMetadata(payload);
                     Metadata.Add(metadata);
-                });
+                }, dataflowOptions.ToExecutionBlockOption());
 
                 RegisterChild(block);
                 InputBlock = block;

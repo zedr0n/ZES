@@ -224,8 +224,9 @@ namespace ZES.Infrastructure.EventStore
                 if (typeof(T) == typeof(IEvent))
                 {
                     var dataflow = new DeserializeEventFlow( new DataflowOptions { RecommendedParallelismIfMultiThreaded = Configuration.ThreadsPerInstance }, _serializer);
-                    await dataflow.ProcessAsync(page.Messages.Take(count));
-                    foreach (var e in dataflow.Events.OrderBy(e => e.Version))
+                    page.Messages.Take(count).ToList().ToObservable().Subscribe(dataflow.InputBlock.AsObserver());
+                    var events = await dataflow.OutputBlock.AsObservable().ToList();
+                    foreach (var e in events.OrderBy(e => e.Version))
                     {
                         observer.OnNext((T)e);
                         count--;
@@ -236,10 +237,11 @@ namespace ZES.Infrastructure.EventStore
                 else
                 {
                     var dataflow = new DeserializeMetadataFlow( new DataflowOptions { RecommendedParallelismIfMultiThreaded = Configuration.ThreadsPerInstance }, _serializer);
-                    await dataflow.ProcessAsync(page.Messages.Take(count));
-                    foreach (var metadata in dataflow.Metadata.OrderBy(e => e.Version))
+                    page.Messages.Take(count).ToList().ToObservable().Subscribe(dataflow.InputBlock.AsObserver());
+                    var metadata = await dataflow.OutputBlock.AsObservable().ToList();
+                    foreach (var m in metadata.OrderBy(e => e.Version))
                     {
-                        observer.OnNext((T)metadata);
+                        observer.OnNext((T)m);
                         count--;
                         if (count == 0)
                             break;
@@ -290,48 +292,48 @@ namespace ZES.Infrastructure.EventStore
                 _messageQueue.Event(e);
         }
     
-        private class DeserializeEventFlow : Dataflow<StreamMessage>
+        private class DeserializeEventFlow : Dataflow<StreamMessage, IEvent>
         {
             public DeserializeEventFlow(DataflowOptions dataflowOptions, ISerializer<IEvent> serializer) 
                 : base(dataflowOptions)
             {
-                var block = new ActionBlock<StreamMessage>(
+                var block = new TransformBlock<StreamMessage, IEvent>(
                     async m =>
                 {
                     var payload = await m.GetJsonData();
                     var @event = serializer.Deserialize(payload);
-                    Events.Add(@event);
+                    return @event;
                 }, dataflowOptions.ToExecutionBlockOption(true));
 
                 RegisterChild(block);
                 InputBlock = block;
+                OutputBlock = block;
             }
-            
-            public List<IEvent> Events { get; } = new List<IEvent>();
 
             public override ITargetBlock<StreamMessage> InputBlock { get; }
+            public override ISourceBlock<IEvent> OutputBlock { get; }
         }
         
-        private class DeserializeMetadataFlow : Dataflow<StreamMessage>
+        private class DeserializeMetadataFlow : Dataflow<StreamMessage, IEventMetadata>
         {
             public DeserializeMetadataFlow(DataflowOptions dataflowOptions, ISerializer<IEvent> serializer) 
                 : base(dataflowOptions)
             {
-                var block = new ActionBlock<StreamMessage>(
+                var block = new TransformBlock<StreamMessage, IEventMetadata>(
                     m =>
                 {
                     var payload = m.JsonMetadata;
                     var metadata = serializer.DecodeMetadata(payload);
-                    Metadata.Add(metadata);
+                    return metadata;
                 }, dataflowOptions.ToExecutionBlockOption(true));
 
                 RegisterChild(block);
                 InputBlock = block;
+                OutputBlock = block;
             }
             
-            public List<IEventMetadata> Metadata { get; } = new List<IEventMetadata>();
-
             public override ITargetBlock<StreamMessage> InputBlock { get; }
+            public override ISourceBlock<IEventMetadata> OutputBlock { get; }
         }
     }
 }

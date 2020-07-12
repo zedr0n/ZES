@@ -318,9 +318,9 @@ namespace ZES.Infrastructure.EventStore
                 : base(dataflowOptions)
             {
                 var block = new ActionBlock<StreamMessage>(
-                    async m =>
+                    m =>
                 {
-                    var payload = await m.GetJsonData();
+                    var payload = m.JsonMetadata;
                     var metadata = serializer.DecodeMetadata(payload);
                     Metadata.Add(metadata);
                 }, dataflowOptions.ToExecutionBlockOption(true));

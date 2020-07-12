@@ -224,7 +224,7 @@ namespace ZES.Infrastructure.EventStore
                 if (typeof(T) == typeof(IEvent))
                 {
                     var dataflow = new DeserializeEventFlow( new DataflowOptions { RecommendedParallelismIfMultiThreaded = Configuration.ThreadsPerInstance }, _serializer);
-                    await dataflow.ProcessAsync(page.Messages);
+                    await dataflow.ProcessAsync(page.Messages.Take(count));
                     foreach (var e in dataflow.Events.OrderBy(e => e.Version))
                     {
                         observer.OnNext((T)e);
@@ -236,7 +236,7 @@ namespace ZES.Infrastructure.EventStore
                 else
                 {
                     var dataflow = new DeserializeMetadataFlow( new DataflowOptions { RecommendedParallelismIfMultiThreaded = Configuration.ThreadsPerInstance }, _serializer);
-                    await dataflow.ProcessAsync(page.Messages);
+                    await dataflow.ProcessAsync(page.Messages.Take(count));
                     foreach (var metadata in dataflow.Metadata.OrderBy(e => e.Version))
                     {
                         observer.OnNext((T)metadata);

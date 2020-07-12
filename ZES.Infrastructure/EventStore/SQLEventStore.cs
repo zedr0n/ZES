@@ -301,7 +301,7 @@ namespace ZES.Infrastructure.EventStore
                     var payload = await m.GetJsonData();
                     var @event = serializer.Deserialize(payload);
                     Events.Add(@event);
-                }, dataflowOptions.ToExecutionBlockOption());
+                }, dataflowOptions.ToExecutionBlockOption(true));
 
                 RegisterChild(block);
                 InputBlock = block;
@@ -323,7 +323,7 @@ namespace ZES.Infrastructure.EventStore
                     var payload = await m.GetJsonData();
                     var metadata = serializer.DecodeMetadata(payload);
                     Metadata.Add(metadata);
-                }, dataflowOptions.ToExecutionBlockOption());
+                }, dataflowOptions.ToExecutionBlockOption(true));
 
                 RegisterChild(block);
                 InputBlock = block;

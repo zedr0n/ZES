@@ -79,6 +79,7 @@ namespace ZES
                 store, 
                 c => c.Consumer.ImplementationType.GetGenericArguments().Contains(typeof(ISaga))); 
             
+            container.Register<IEventDeserializerRegistry, EventDeserializerRegistry>(Lifestyle.Singleton);
             container.Register(typeof(ISerializer<>), typeof(Serializer<>), Lifestyle.Singleton);
             container.Register(typeof(IEventStore<>), typeof(SqlEventStore<>), Lifestyle.Singleton);
             
@@ -96,6 +97,7 @@ namespace ZES
             container.Register(typeof(IStreamLocator), typeof(StreamLocator), Lifestyle.Singleton);    
             container.Register(typeof(IEsRepository<>), typeof(EsRepository<>), Lifestyle.Singleton);
             container.Register<IGraph, NullGraph>(Lifestyle.Singleton);
+            container.Register<IStopWatch, StopWatch>(Lifestyle.Singleton);
             
             container.RegisterDecorator(
                 typeof(ICommandHandler<>),

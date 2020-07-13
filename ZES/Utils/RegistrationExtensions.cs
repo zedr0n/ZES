@@ -3,9 +3,11 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using SimpleInjector;
+using ZES.Infrastructure;
 using ZES.Infrastructure.Domain;
 using ZES.Infrastructure.Projections;
 using ZES.Infrastructure.Sagas;
+using ZES.Infrastructure.Serialization;
 using ZES.Interfaces;
 using ZES.Interfaces.Domain;
 using ZES.Interfaces.GraphQL;
@@ -25,6 +27,7 @@ namespace ZES.Utils
         /// <param name="assembly">Assembly containing the domain to register</param>
         public static void RegisterAll(this Container c, Assembly assembly)
         {
+            c.RegisterEvents(assembly);
             c.RegisterCommands(assembly);
             c.RegisterQueries(assembly);
             c.RegisterProjections(assembly);
@@ -50,6 +53,18 @@ namespace ZES.Utils
                     c.Collection.Append(typeof(IEventSourced), reg);
                 }
             }
+        }
+
+        /// <summary>
+        /// Register events with <see cref="SimpleInjector"/> container
+        /// </summary>
+        /// <param name="c"><see cref="SimpleInjector"/> container</param>
+        /// <param name="assembly">Assembly containing the domain to register</param>
+        public static void RegisterEvents(this Container c, Assembly assembly)
+        {
+            var deserializers = assembly.GetTypesFromInterface(typeof(IEventDeserializer)).Where(t => !t.IsAbstract);
+            foreach (var d in deserializers)
+                c.Collection.Append(typeof(IEventDeserializer), d);
         }
 
         /// <summary>

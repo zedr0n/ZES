@@ -32,12 +32,18 @@ namespace ZES.Infrastructure.Domain
         /// <inheritdoc />
         public async Task Handle(RetroactiveCommand<TCommand> iCommand)
         {
+            _log.StopWatch.Start($"{nameof(RetroactiveCommandHandler<TCommand>)}");
             iCommand.Command.Timestamp = iCommand.Timestamp;
             iCommand.Command.ForceTimestamp();
             var time = iCommand.Timestamp;
 
+            _log.StopWatch.Start("GetChanges_1");
             var changes = await _retroactive.GetChanges(iCommand.Command, time);
+            _log.StopWatch.Stop("GetChanges_1");
+           
+            _log.StopWatch.Start("TryInsert_1");
             var invalidEvents = await _retroactive.TryInsert(changes, time); 
+            _log.StopWatch.Stop("TryInsert_1");
 
             if (invalidEvents.Count > 0)
             {
@@ -48,9 +54,10 @@ namespace ZES.Infrastructure.Domain
                 foreach (var c in commands)
                     await _retroactive.ReplayCommand(c);
             }
-                
+
             await _commandLog.AppendCommand(iCommand.Command);
             iCommand.EventType = iCommand.Command.EventType;
+            _log.StopWatch.Stop($"{nameof(RetroactiveCommandHandler<TCommand>)}");
         }
 
         /// <inheritdoc />

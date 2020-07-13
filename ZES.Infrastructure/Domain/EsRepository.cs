@@ -141,6 +141,7 @@ namespace ZES.Infrastructure.Domain
             if (stream == null)
                 return null;
             
+            // return new List<IEvent>();
             var events = await _eventStore.ReadStream<IEvent>(stream, 0).ToList();
             var es = EventSourced.Create<T>(id);
             es.LoadFrom<T>(events, true);

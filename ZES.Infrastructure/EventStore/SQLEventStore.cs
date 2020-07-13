@@ -208,6 +208,7 @@ namespace ZES.Infrastructure.EventStore
 
         private async Task ReadSingleStream<T>(IObserver<T> observer, IStream stream, int start, int count)
         {
+            _log.StopWatch.Start("ReadSingleStream");
             var position = stream.ReadPosition(start);
             if (position <= ExpectedVersion.EmptyStream)
                 position = 0;
@@ -272,6 +273,7 @@ namespace ZES.Infrastructure.EventStore
             } 
             
             observer.OnCompleted(); 
+            _log.StopWatch.Stop("ReadSingleStream");
         }
         
         private void LogEvents(IEnumerable<NewStreamMessage> messages)

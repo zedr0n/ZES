@@ -10,6 +10,11 @@ namespace ZES.Interfaces
     public interface ILog
     {
         /// <summary>
+        /// Gets the stopwatch 
+        /// </summary>
+        IStopWatch StopWatch { get; }
+        
+        /// <summary>
         /// Gets or sets gets error log
         /// </summary>
         /// <value>

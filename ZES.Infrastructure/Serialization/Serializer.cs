@@ -20,6 +20,7 @@ namespace ZES.Infrastructure.Serialization
         where T : class, IMessage
     {
         private readonly JsonSerializer _serializer;
+        private readonly IEventDeserializerRegistry _deserializerRegistry;
 #if USE_JSON        
         private readonly JsonSerializer _simpleSerializer;
 #endif
@@ -28,8 +29,10 @@ namespace ZES.Infrastructure.Serialization
         /// Initializes a new instance of the <see cref="Serializer{T}"/> class.
         /// <para> Uses <see cref="TypeNameHandling.All"/> for JSON serialisation </para>
         /// </summary>
-        public Serializer()
+        /// <param name="deserializerRegistry">Deserializer collection</param>
+        public Serializer(IEventDeserializerRegistry deserializerRegistry)
         {
+            _deserializerRegistry = deserializerRegistry;
             _serializer = JsonSerializer.Create(new JsonSerializerSettings
             {
                 // Allows deserializing to the actual runtime type
@@ -59,7 +62,7 @@ namespace ZES.Infrastructure.Serialization
                 Version = 0
             });
             JSON.Serialize(new StreamMetadata("master:Root:0", 0));
-#endif            
+#endif
         }
 
         /// <inheritdoc />
@@ -86,6 +89,14 @@ namespace ZES.Infrastructure.Serialization
 
                 try
                 {
+#if USE_EXPLICIT
+                    if (typeof(T) != typeof(IEvent)) 
+                        return _serializer.Deserialize<T>(jsonReader);
+                    
+                    var e = DeserializeEvent(payload);
+                    if (e != null)
+                        return e as T;
+#endif
                     return _serializer.Deserialize<T>(jsonReader);
                 }
                 catch (Exception e)
@@ -382,5 +393,63 @@ namespace ZES.Infrastructure.Serialization
             public StreamMetadata Parent { get; set; }
         }
 #endif
+        
+        #if USE_EXPLICIT
+        private Event DeserializeEvent(string payload)
+        {
+            if (payload == null)
+                return null;
+
+            var reader = new JsonTextReader(new StringReader(payload));
+
+            var deserializer = _deserializerRegistry.GetDeserializer(payload);
+            if (deserializer == null)
+                return null;
+
+            var e = deserializer.Create();
+            
+            var currentProperty = string.Empty;
+            while (reader.Read())
+            {
+                if (reader.Value == null)
+                    continue;
+                switch (reader.TokenType)
+                {
+                    case JsonToken.PropertyName:
+                        currentProperty = reader.Value.ToString();
+                        break;
+                    case JsonToken.String when currentProperty == nameof(Message.MessageId):
+                        e.MessageId = Guid.Parse(reader.Value.ToString());
+                        break;
+                    case JsonToken.String when currentProperty == nameof(Message.AncestorId):
+                        e.AncestorId = Guid.Parse(reader.Value.ToString());
+                        break;
+                    case JsonToken.Integer when currentProperty == nameof(Message.Timestamp):
+                        e.Timestamp = (long)reader.Value;
+                        break;
+                    case JsonToken.Integer when currentProperty == nameof(EventMetadata.Version):
+                        e.Version = (int)(long)reader.Value;
+                        break;
+                    case JsonToken.String when currentProperty == nameof(EventMetadata.MessageType):
+                        e.MessageType = (string)reader.Value;
+                        break;
+                    case JsonToken.String when currentProperty == nameof(EventMetadata.Hash):
+                        e.Hash = (string)reader.Value;
+                        break;
+                    case JsonToken.String when currentProperty == nameof(Event.CommandId):
+                        e.CommandId = Guid.Parse(reader.Value.ToString());
+                        break;
+                    case JsonToken.String when currentProperty == nameof(Event.Stream):
+                        e.Stream = (string)reader.Value;
+                        break;
+                }
+                
+                deserializer.Switch(reader, currentProperty, e);
+            }
+
+            return e;
+        }
+        #endif
+        
     }
 }

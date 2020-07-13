@@ -85,6 +85,7 @@ namespace ZES.Infrastructure.Branching
         /// <inheritdoc />
         public async Task DeleteBranch(string branchId)
         {
+            _log.StopWatch.Start("DeleteBranch");
             await _messageQueue.UncompletedMessagesOnBranch(branchId).Timeout(Configuration.Timeout)
                 .FirstAsync(s => s == 0);
 
@@ -95,20 +96,23 @@ namespace ZES.Infrastructure.Branching
             _branches.TryRemove(branchId, out var branch);
             _messageQueue.Alert(new BranchDeleted(branchId));
             
-            // _messageQueue.Alert(new InvalidateProjections());
+            _log.StopWatch.Stop("DeleteBranch");
         }
 
         /// <inheritdoc />
         public async Task<ITimeline> Branch(string branchId, long? time = null, IEnumerable<string> keys = null)
         {
+            _log.StopWatch.Start("Branch");
             if (_activeTimeline.Id == branchId)
             {
                 _log.Trace($"Already on branch {branchId}");
                 return _activeTimeline;
             }
 
+            _log.StopWatch.Start("Branch.Wait");
             await _messageQueue.UncompletedMessages.Timeout(Configuration.Timeout).FirstAsync(s => s == 0);
             await _graph.Wait();
+            _log.StopWatch.Stop("Branch.Wait");
             var newBranch = !_branches.ContainsKey(branchId); // && branchId != Master;
             
             var timeline = _branches.GetOrAdd(branchId, b => Timeline.New(branchId, time));
@@ -118,12 +122,16 @@ namespace ZES.Infrastructure.Branching
                 return null;
             }
             
+            _log.StopWatch.Start("Branch.Clone");
+            
             // copy the events
             if (newBranch)
             {
                 await Clone<IAggregate>(branchId, time ?? DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(), keys);
                 await Clone<ISaga>(branchId, time ?? DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(), keys);
             }
+
+            _log.StopWatch.Stop("Branch.Clone");
 
             // update current timeline
             _activeTimeline.Set(timeline);
@@ -133,6 +141,7 @@ namespace ZES.Infrastructure.Branching
             /* rebuild all projections
              _messageQueue.Alert(new Alerts.InvalidateProjections());*/
                 
+            _log.StopWatch.Stop("Branch");
             return _activeTimeline;
         }
 
@@ -214,23 +223,28 @@ namespace ZES.Infrastructure.Branching
 
         private async Task DeleteCommands(string branchId)
         {
+            _log.StopWatch.Start("DeleteCommands");
             await _commandLog.DeleteBranch(branchId);
+            _log.StopWatch.Stop("DeleteCommands");
         }
         
         private async Task DeleteBranch<T>(string branchId)
             where T : IEventSourced
         {
+            _log.StopWatch.Start("EventStore.DeleteBranch");
             var store = GetStore<T>();
             
             // var streams = await store.ListStreams(branchId).ToList();
             var streams = _streamLocator.ListStreams<T>(branchId).ToList();
             foreach (var s in streams)
             {
-                await _eventStore.DeleteStream(s);
+                await store.DeleteStream(s);
                 if (s.Version != s.Parent?.Version)
                     _log.Trace($"Deleted {typeof(T).Name} stream {s.Key}");
                 await _graph.DeleteStream(s.Key);
             }
+            
+            _log.StopWatch.Stop("EventStore.DeleteBranch");
         }
 
         private async Task StoreChanges(string branchId, ConcurrentDictionary<IStream, int> changes)

@@ -104,6 +104,8 @@ namespace ZES.GraphQL
             foreach (var r in scenario.Results)
                 await executor.ExecuteAsync(r.GraphQl);
 
+            foreach (var pair in _log.StopWatch.Totals)
+                _log.Info($"{pair.Key} : {pair.Value}ms");
             return new ReplayResult(sw.ElapsedMilliseconds);
         }
 

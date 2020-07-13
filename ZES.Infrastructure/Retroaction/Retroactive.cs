@@ -134,6 +134,7 @@ namespace ZES.Infrastructure.Retroaction
             var dict = new Dictionary<IStream, IEnumerable<IEvent>>();
 
             var changes = await _manager.GetChanges(branch);
+            _log.StopWatch.Start("GetChanges.Read");
             foreach (var c in changes)
             {
                 var stream = _streamLocator.FindBranched(c.Key, branch);
@@ -141,6 +142,8 @@ namespace ZES.Infrastructure.Retroaction
 
                 dict[c.Key] = e;
             }
+            
+            _log.StopWatch.Stop("GetChanges.Read");
 
             await _manager.DeleteBranch(branch);
             return dict;

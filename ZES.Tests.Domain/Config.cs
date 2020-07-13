@@ -44,6 +44,11 @@ namespace ZES.Tests.Domain
         {
             c.RegisterAggregates(Assembly.GetExecutingAssembly());
         }
+
+        public static void RegisterEvents(Container c)
+        {    
+            c.RegisterEvents(Assembly.GetExecutingAssembly());   
+        }
         
         public class Queries : GraphQlQuery 
         {

@@ -26,9 +26,11 @@ namespace ZES.Logging
         /// Initializes a new instance of the <see cref="NLog"/> class.
         /// </summary>
         /// <param name="logger"><see cref="ILogger"/></param>
-        public NLog(ILogger logger)
+        /// <param name="stopWatch">Performance stopwatch</param>
+        public NLog(ILogger logger, IStopWatch stopWatch)
         {
             _logger = logger;
+            StopWatch = stopWatch;
             if (!Configuration.CommonLogEnabled())
                 return;
             
@@ -38,7 +40,10 @@ namespace ZES.Logging
             };
             Common.Logging.LogManager.Adapter = new Common.Logging.NLog.NLogLoggerFactoryAdapter(props);
         }
-        
+
+        /// <inheritdoc />
+        public IStopWatch StopWatch { get; }
+
         /// <inheritdoc />
         public IErrorLog Errors { get; set; }
 

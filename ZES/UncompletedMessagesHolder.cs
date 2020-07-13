@@ -33,7 +33,7 @@ namespace ZES
             /// <param name="count">Count dictionary</param>
             public State(ConcurrentDictionary<string, int> count)
             {
-                Count = new ConcurrentDictionary<string, int>(count); 
+                Count = count; // new ConcurrentDictionary<string, int>(count); 
             }
             
             /// <summary>

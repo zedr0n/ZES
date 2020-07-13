@@ -11,7 +11,12 @@ namespace ZES.Interfaces
         /// Gets all performance metrics
         /// </summary>
         Dictionary<string, long> Totals { get; }
-        
+
+        /// <summary>
+        /// Gets or sets a value indicating whether performance monitoring is enabled
+        /// </summary>
+        bool Enabled { get; set; }
+
         /// <summary>
         /// Gets the elapsed milliseconds for metric
         /// </summary>

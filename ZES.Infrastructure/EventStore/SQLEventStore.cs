@@ -249,26 +249,6 @@ namespace ZES.Infrastructure.EventStore
                     }
                 }
                 
-                /*foreach (var m in page.Messages)
-                {
-                    if (typeof(T) == typeof(IEvent))
-                    {
-                        var payload = await m.GetJsonData();
-                        var @event = _serializer.Deserialize(payload);
-                        observer.OnNext((T)@event);
-                    }
-                    else
-                    {
-                        var payload = m.JsonMetadata;
-                        var metadata = _serializer.DecodeMetadata(payload);
-                        observer.OnNext((T)metadata);
-                    }
-
-                    count--;
-                    if (count == 0)
-                        break;
-                }*/
-                
                 page = await page.ReadNext();
             } 
             

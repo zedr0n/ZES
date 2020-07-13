@@ -63,20 +63,20 @@ namespace ZES.Infrastructure
             // var otherJson = JsonConvert.SerializeObject(scenario.Results, Formatting.Indented);
             // var thisJson = JsonConvert.SerializeObject(_scenario.Value.Results, Formatting.Indented);
             if (result != null)
-                result.Output = JsonConvert.SerializeObject(scenario.Results.Select(r => r.Result));
+                result.Output = JsonConvert.SerializeObject(_scenario.Value.Results.Select(r => r.Result));
 
-            var thisResults = scenario.Results.Select(r => JToken.Parse(r.Result)).ToList();
-            var otherResults = _scenario.Value.Results.Select(r => JToken.Parse(r.Result)).ToList();
-            if (thisResults.Count != otherResults.Count)
+            var expectedResults = scenario.Results.Select(r => JToken.Parse(r.Result)).ToList();
+            var thisResults = _scenario.Value.Results.Select(r => JToken.Parse(r.Result)).ToList();
+            if (expectedResults.Count != thisResults.Count)
             {
-                _log.Warn($"Output has {thisResults.Count} results, expected {otherResults.Count}");
+                _log.Warn($"Output has {thisResults.Count} results, expected {expectedResults.Count}");
                 return false;
             }
 
             var jdp = new JsonDiffPatch();
             for (var i = 0; i < thisResults.Count; ++i)
             {
-                var diff = jdp.Diff(thisResults[i], otherResults[i]);
+                var diff = jdp.Diff(expectedResults[i], thisResults[i]);
                 if (diff == null) 
                     continue;
                 
@@ -99,7 +99,6 @@ namespace ZES.Infrastructure
             }
 
             var scenario = JsonConvert.DeserializeObject<Scenario>(s);
-            scenario.Sort();
             return scenario;
         }
 

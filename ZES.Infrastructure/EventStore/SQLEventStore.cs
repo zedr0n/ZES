@@ -56,7 +56,7 @@ namespace ZES.Infrastructure.EventStore
         /// <inheritdoc />
         public async Task<long> Size() => await _streamStore.ReadHeadPosition() + 1;
 
-
+        /// <inheritdoc />
         public IObservable<IStream> ListStreams(string branch = null)
         {
             return ListStreams(branch, CancellationToken.None);
@@ -210,7 +210,6 @@ namespace ZES.Infrastructure.EventStore
             stream.AddDeleted(events.Count);
             var meta = await _streamStore.GetStreamMetadata(stream.Key);
             await _streamStore.SetStreamMetadata(stream.Key, meta.MetadataStreamVersion, metadataJson: _serializer.EncodeStreamMetadata(stream));
-            // _messageQueue.Alert(new InvalidateProjections());
         }
 
         private async Task ReadSingleStream<T>(IObserver<T> observer, IStream stream, int start, int count)

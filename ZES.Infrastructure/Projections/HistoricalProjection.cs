@@ -18,7 +18,6 @@ namespace ZES.Infrastructure.Projections
         /// <param name="eventStore">Aggregate event store</param>
         /// <param name="log">Application log</param>
         /// <param name="iProjection">Original projection</param>
-        /// <param name="messageQueue">Message queue</param>
         /// <param name="timeline">Active branch</param>
         public HistoricalProjection(
             IEventStore<IAggregate> eventStore,

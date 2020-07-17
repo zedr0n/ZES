@@ -27,6 +27,11 @@ namespace ZES.Infrastructure
         public static string MsSqlConnectionString => Environment.GetEnvironmentVariable("ConnectionString".ToUpper());
         
         /// <summary>
+        /// Gets default throttle period for subscription invalidation
+        /// </summary>
+        public static TimeSpan Throttle => TimeSpan.FromMilliseconds(250);
+        
+        /// <summary>
         /// Gets default timeout
         /// </summary>
         /// <value>

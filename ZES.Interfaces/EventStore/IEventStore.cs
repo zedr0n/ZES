@@ -82,11 +82,12 @@ namespace ZES.Interfaces.EventStore
         /// <param name="branch">Branch to filter by</param>
         /// <returns>Stream observable</returns>
         IObservable<IStream> ListStreams(string branch = null);
-        
+
         /// <summary>
         /// Gets the current streams in the store 
         /// </summary>
         /// <param name="branch">Branch to filter by</param>
+        /// <param name="token">Cancellation token</param>
         /// <returns>Stream observable</returns>
         IObservable<IStream> ListStreams(string branch, CancellationToken token);
     }

@@ -28,7 +28,7 @@ namespace ZES.Infrastructure.Projections
         {
             InvalidateSubscription = new LazySubscription(() =>
                 messageQueue.Alerts.OfType<InvalidateProjections>()
-                    .Throttle(TimeSpan.FromSeconds(1))
+                    .Throttle(Configuration.Throttle)
                     .Subscribe(Build.InputBlock.AsObserver()));
         }
     }

@@ -52,7 +52,7 @@ namespace ZES
         /// <inheritdoc />
         public void Event(IEvent e)
         {
-            _log.Debug(e.EventType, this);
+            _log.Debug(e.MessageType, this);
             _messages.OnNext(e);
         }
 

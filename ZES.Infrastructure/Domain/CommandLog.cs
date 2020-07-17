@@ -38,7 +38,7 @@ namespace ZES.Infrastructure.Domain
         /// <inheritdoc />
         public async Task<ICommand> GetCommand(IEvent e)
         {
-            var stream = new Stream(Key(e.EventType), ExpectedVersion.Any); 
+            var stream = new Stream(Key(e.MessageType), ExpectedVersion.Any); 
             var obs = GetCommands(stream);
 
             var command = await obs.FirstOrDefaultAsync(c => e.CommandId == c.MessageId).Timeout(Configuration.Timeout);

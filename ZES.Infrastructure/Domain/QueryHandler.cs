@@ -16,12 +16,12 @@ namespace ZES.Infrastructure.Domain
         where TResult : class
     {
         /// <summary>
-        /// Gets the projection as common base interface
+        /// Gets or sets gets the projection as common base interface
         /// </summary>
         /// <value>
         /// The projection as common base interface
         /// </value>
-        protected virtual IProjection Projection { get; } = null;
+        protected IProjection Projection { get; set; } = null;
 
         /// <summary>
         /// Unimplemented 

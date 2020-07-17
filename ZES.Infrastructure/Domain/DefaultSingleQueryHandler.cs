@@ -11,16 +11,16 @@ namespace ZES.Infrastructure.Domain
         /// <summary>
         /// Initializes a new instance of the <see cref="DefaultSingleQueryHandler{TQuery,TResult}"/> class.
         /// </summary>
-        /// <param name="projection">Projection</param>
-        public DefaultSingleQueryHandler(IProjection<TResult> projection)
-            : base(projection)
+        /// <param name="manager">Projection manager</param>
+        public DefaultSingleQueryHandler(IProjectionManager manager)
+            : base(manager)
         {
         }
 
         /// <inheritdoc />
         protected override async Task<TResult> HandleAsync(TQuery query)
         {
-            Projection.Predicate = s => s.Id == query.Id;
+            Projection = Manager.GetProjection<TResult>(query.Id); 
             return await base.HandleAsync(query);
         }
     }

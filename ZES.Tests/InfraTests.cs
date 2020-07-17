@@ -107,6 +107,27 @@ namespace ZES.Tests
             
             await bus.IsTrue(new RootInfoQuery("Root"), c => c?.CreatedAt != 0);
         }
+
+        [Fact]
+        public void CanCreateProjectionManager()
+        {
+            var container = CreateContainer();
+            var manager = container.GetInstance<IProjectionManager>();
+
+            var stats = manager.GetProjection<Stats>();
+            Assert.NotNull(stats);
+
+            var otherStats = manager.GetProjection<Stats>();
+            Assert.Equal(stats.Guid, otherStats.Guid);
+
+            var rootInfo = manager.GetProjection<RootInfo>("Root");
+            var otherRootInfo = manager.GetProjection<RootInfo>("Root");
+            Assert.Equal(otherRootInfo?.Guid, rootInfo?.Guid);
+            
+            var rootInfo2 = manager.GetProjection<RootInfo>("Root2"); 
+            
+            Assert.NotEqual(rootInfo?.Guid, rootInfo2.Guid);
+        }
         
         [Fact]
         public async void CanUpdateRoot()

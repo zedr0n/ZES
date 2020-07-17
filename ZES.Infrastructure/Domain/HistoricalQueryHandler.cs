@@ -15,6 +15,7 @@ namespace ZES.Infrastructure.Domain
                                                                   IQueryHandler<TQuery, TResult>
         where TQuery : class, IQuery<TResult>
         where TResult : class
+        where TState : IState, new()
     {
         private readonly IQueryHandler<TQuery, TResult> _handler;
 
@@ -22,9 +23,9 @@ namespace ZES.Infrastructure.Domain
         /// Initializes a new instance of the <see cref="HistoricalQueryHandler{TQuery, TResult, TState}"/> class.
         /// </summary>
         /// <param name="handler">Original query handler</param>
-        /// <param name="projection">Historical projection injected by DI</param>
-        public HistoricalQueryHandler(IQueryHandler<TQuery, TResult> handler, IProjection<TState> projection)
-            : base(projection)
+        /// <param name="manager">Projection manager</param>
+        public HistoricalQueryHandler(IQueryHandler<TQuery, TResult> handler, IProjectionManager manager)
+            : base(manager)
         {
             _handler = handler;
         }
@@ -36,8 +37,9 @@ namespace ZES.Infrastructure.Domain
         /// <returns>Task representing the asynchronous execution of historical query</returns>
         protected override async Task<TResult> HandleAsync(HistoricalQuery<TQuery, TResult> query)
         {
-            var projection = (IHistoricalProjection)Projection;
-            await projection.Init(query.Timestamp);
+            var projection = Manager.GetHistoricalProjection<TState>();
+            projection.Predicate = Projection.Predicate;
+            projection.Timestamp = query.Timestamp;
             await projection.Ready;
             
             return (_handler as QueryHandler<TQuery, TResult>)?.Handle(projection, query.Query);

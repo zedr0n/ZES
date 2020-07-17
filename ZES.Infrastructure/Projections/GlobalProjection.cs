@@ -1,3 +1,4 @@
+using System;
 using System.Reactive.Linq;
 using System.Threading.Tasks.Dataflow;
 using ZES.Infrastructure.Alerts;
@@ -27,6 +28,7 @@ namespace ZES.Infrastructure.Projections
         {
             InvalidateSubscription = new LazySubscription(() =>
                 messageQueue.Alerts.OfType<InvalidateProjections>()
+                    .Throttle(TimeSpan.FromSeconds(1))
                     .Subscribe(Build.InputBlock.AsObserver()));
         }
     }

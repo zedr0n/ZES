@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Reactive.Concurrency;
 using System.Reactive.Linq;
 using System.Reactive.Subjects;
 using System.Threading;
@@ -61,6 +62,9 @@ namespace ZES.Infrastructure.Projections
             }
         }
 
+        /// <inheritdoc />
+        public Guid Guid { get; } = Guid.NewGuid();
+        
         /// <summary>
         /// Gets or sets the stream predicate
         /// </summary>
@@ -193,18 +197,6 @@ namespace ZES.Infrastructure.Projections
             var rebuildDispatcher = new ProjectionDispatcher<TState>(Options, this);
             var liveDispatcher = new ProjectionBufferedDispatcher<TState>(Options, this);
 
-            EventStore.Streams
-                .TakeWhile(_ => !CancellationSource.IsCancellationRequested)
-                .Where(Predicate)
-                .Select(s => new Tracked<IStream>(s, CancellationToken))
-                .Subscribe(liveDispatcher.InputBlock.AsObserver());
-
-            EventStore.ListStreams(Timeline.Id)
-                .TakeWhile(_ => !CancellationSource.IsCancellationRequested)
-                .Where(Predicate)
-                .Select(s => new Tracked<IStream>(s, CancellationToken))
-                .Subscribe(rebuildDispatcher.InputBlock.AsObserver());
-
             CancellationToken.Register(async () =>
             {
                 try
@@ -221,6 +213,20 @@ namespace ZES.Infrastructure.Projections
                 }
                 StatusSubject.OnNext(Sleeping);
             });
+            
+            EventStore.Streams
+                .TakeWhile(_ => !CancellationSource.IsCancellationRequested)
+                .Where(Predicate)
+                .Select(s => new Tracked<IStream>(s, CancellationToken))
+                .SubscribeOn(Scheduler.Default)
+                .Subscribe(liveDispatcher.InputBlock.AsObserver());
+
+            EventStore.ListStreams(Timeline.Id, CancellationToken)
+                .TakeWhile(_ => !CancellationSource.IsCancellationRequested)
+                .Where(Predicate)
+                .Select(s => new Tracked<IStream>(s, CancellationToken))
+                .SubscribeOn(Scheduler.Default)
+                .Subscribe(rebuildDispatcher.InputBlock.AsObserver());
 
             try
             {

@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using SimpleInjector;
 using Xunit;
 using Xunit.Abstractions;
+using ZES.Infrastructure.Alerts;
 using ZES.Infrastructure.Domain;
 using ZES.Interfaces;
 using ZES.Interfaces.Branching;
@@ -53,7 +54,8 @@ namespace ZES.Tests
             var bus = container.GetInstance<IBus>();
             var streamLocator = container.GetInstance<IStreamLocator>();
             var retroactive = container.GetInstance<IRetroactive>();
-
+            var messageQueue = container.GetInstance<IMessageQueue>();
+            
             await await bus.CommandAsync(new CreateRoot("Root"));
             await bus.IsTrue(new RootInfoQuery("Root"), c => c.CreatedAt == c.UpdatedAt);
             await await bus.CommandAsync(new UpdateRoot("Root"));
@@ -61,6 +63,7 @@ namespace ZES.Tests
             
             var stream = streamLocator.Find<Root>("Root");
             await retroactive.TrimStream(stream, 0);
+            messageQueue.Alert(new InvalidateProjections());
             await bus.IsTrue(new RootInfoQuery("Root"), c => c.CreatedAt == c.UpdatedAt);
 
             stream = streamLocator.Find<Root>("Root");
@@ -94,7 +97,8 @@ namespace ZES.Tests
             var bus = container.GetInstance<IBus>();
             var retroactive = container.GetInstance<IRetroactive>();
             var locator = container.GetInstance<IStreamLocator>();
-
+            var messageQueue = container.GetInstance<IMessageQueue>();
+            
             await await bus.CommandAsync(new CreateRoot("Root"));
             await await bus.CommandAsync(new UpdateRoot("Root"));
             await await bus.CommandAsync(new UpdateRoot("Root"));
@@ -108,10 +112,12 @@ namespace ZES.Tests
             canDelete = await retroactive.TryDelete(stream, 1);
             
             Assert.True(canDelete);
+            messageQueue.Alert(new InvalidateProjections());
             await bus.Equal(new RootInfoQuery("Root"), r => r.NumberOfUpdates, 1);
 
             canDelete = await retroactive.TryDelete(stream, 1);
             Assert.True(canDelete);
+            messageQueue.Alert(new InvalidateProjections());
             await bus.Equal(new RootInfoQuery("Root"), r => r.NumberOfUpdates, 0);
 
             canDelete = await retroactive.TryDelete(stream, 0);
@@ -211,7 +217,7 @@ namespace ZES.Tests
             var container = CreateContainer(new List<Action<Container>> { Config.RegisterSagas });
             var bus = container.GetInstance<IBus>();
             var timeline = container.GetInstance<ITimeline>();
-            var log = container.GetInstance<ILog>();
+            var messageQueue = container.GetInstance<IMessageQueue>();
             
             var timestamp = timeline.Now;
             var lastTime = timestamp + (60 * 1000);
@@ -224,6 +230,7 @@ namespace ZES.Tests
             await bus.Equal(new HistoricalQuery<RootInfoQuery, RootInfo>(new RootInfoQuery("Root"), lastTime), r => r.UpdatedAt, lastTime);
             
             await await bus.CommandAsync(new RetroactiveCommand<CreateRoot>(new CreateRoot("LastRoot"), lastTime));
+            messageQueue.Alert(new InvalidateProjections());
             await bus.Equal(new RootInfoQuery("LastRootCopy"), r => r.CreatedAt, lastTime);
 
             await await bus.CommandAsync(
@@ -232,6 +239,7 @@ namespace ZES.Tests
             await bus.Equal(new HistoricalQuery<RootInfoQuery, RootInfo>(new RootInfoQuery("LastRoot"), lastTime + 1000), r => r.UpdatedAt, lastTime + 1000);
             
             await await bus.CommandAsync(new RetroactiveCommand<CreateRoot>(new CreateRoot("MidRoot"), midTime));
+            messageQueue.Alert(new InvalidateProjections());
             await bus.Equal(new RootInfoQuery("MidRootCopy"), r => r.CreatedAt, midTime);
         }
     }

@@ -8,14 +8,6 @@ namespace ZES.Interfaces
     public interface IEvent : IEventMetadata
     {
         /// <summary>
-        /// Gets event type
-        /// </summary>
-        /// <value>
-        /// Event type
-        /// </value>
-        string EventType { get; }
-        
-        /// <summary>
         /// Gets originating command id
         /// </summary>
         Guid CommandId { get; }

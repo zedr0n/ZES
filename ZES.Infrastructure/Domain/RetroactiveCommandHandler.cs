@@ -2,8 +2,10 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using ZES.Infrastructure.Alerts;
 using ZES.Interfaces;
 using ZES.Interfaces.Domain;
+using ZES.Interfaces.Pipes;
 using ZES.Interfaces.Retroaction;
 
 namespace ZES.Infrastructure.Domain
@@ -15,6 +17,7 @@ namespace ZES.Infrastructure.Domain
         private readonly IRetroactive _retroactive;
         private readonly ICommandLog _commandLog;
         private readonly ILog _log;
+        private readonly IMessageQueue _messageQueue;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="RetroactiveCommandHandler{TCommand}"/> class.
@@ -22,11 +25,12 @@ namespace ZES.Infrastructure.Domain
         /// <param name="retroactive">Retroactive functional</param>
         /// <param name="commandLog">Command log</param>
         /// <param name="log">Application log</param>
-        public RetroactiveCommandHandler(IRetroactive retroactive, ICommandLog commandLog, ILog log) 
+        public RetroactiveCommandHandler(IRetroactive retroactive, ICommandLog commandLog, ILog log, IMessageQueue messageQueue) 
         {
             _retroactive = retroactive;
             _commandLog = commandLog;
             _log = log;
+            _messageQueue = messageQueue;
         }
 
         /// <inheritdoc />
@@ -57,6 +61,7 @@ namespace ZES.Infrastructure.Domain
 
             await _commandLog.AppendCommand(iCommand.Command);
             iCommand.EventType = iCommand.Command.EventType;
+            _messageQueue.Alert(new InvalidateProjections());
             _log.StopWatch.Stop($"{nameof(RetroactiveCommandHandler<TCommand>)}");
         }
 
@@ -71,7 +76,7 @@ namespace ZES.Infrastructure.Domain
             var commands = new Dictionary<string, List<ICommand>>();
             foreach (var e in invalidEvents)
             {
-                _log.Warn($"Invalid event found in stream {e.Stream} : {e.EventType}@{e.Version}", this);
+                _log.Warn($"Invalid event found in stream {e.Stream} : {e.MessageType}@{e.Version}", this);
                 var c = await _commandLog.GetCommand(e);
                 
                 if (!commands.ContainsKey(e.Stream))

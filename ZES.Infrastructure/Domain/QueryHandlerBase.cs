@@ -6,21 +6,24 @@ namespace ZES.Infrastructure.Domain
     public abstract class QueryHandlerBase<TQuery, TResult, TState> : QueryHandler<TQuery, TResult>
         where TQuery : class, IQuery<TResult>
         where TResult : class
+        where TState : IState
     {
-        private readonly IProjection<TState> _projection;
-
         /// <summary>
         /// Initializes a new instance of the <see cref="QueryHandlerBase{TQuery,TResult,TState}"/> class.
         /// </summary>
-        /// <param name="projection">Projection with State TState</param>
-        protected QueryHandlerBase(IProjection<TState> projection)
+        /// <param name="manager">Projection manager</param>
+        protected QueryHandlerBase(IProjectionManager manager)
         {
-            _projection = projection;
+            // Projection = projection;
+            Projection = manager.GetProjection<TState>();
+            Manager = manager;
         }
 
-        /// <inheritdoc />
-        protected override IProjection Projection => _projection;
-        
+        /// <summary>
+        /// Gets the projection manager 
+        /// </summary>
+        protected IProjectionManager Manager { get; }
+
         /// <inheritdoc />
         public override TResult Handle(IProjection projection, TQuery query)
         {

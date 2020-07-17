@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reactive.Linq;
 using System.Reactive.Subjects;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Threading.Tasks.Dataflow;
 using Gridsum.DataflowEx;
@@ -55,13 +56,19 @@ namespace ZES.Infrastructure.EventStore
         /// <inheritdoc />
         public async Task<long> Size() => await _streamStore.ReadHeadPosition() + 1;
 
-        /// <inheritdoc />
+
         public IObservable<IStream> ListStreams(string branch = null)
+        {
+            return ListStreams(branch, CancellationToken.None);
+        }
+        
+        /// <inheritdoc />
+        public IObservable<IStream> ListStreams(string branch, CancellationToken token)
         {
             return Observable.Create(async (IObserver<IStream> observer) =>
             {
-                var page = await _streamStore.ListStreams();
-                while (page.StreamIds.Length > 0)
+                var page = await _streamStore.ListStreams(Configuration.BatchSize, default, token);
+                while (page.StreamIds.Length > 0 && !token.IsCancellationRequested)
                 {
                     foreach (var s in page.StreamIds.Where(x => !x.Contains("Command") && !x.StartsWith("$")))
                     {
@@ -76,7 +83,7 @@ namespace ZES.Infrastructure.EventStore
                             observer.OnNext(stream);
                     }
 
-                    page = await page.Next();
+                    page = await page.Next(token);
                 }
 
                 observer.OnCompleted();
@@ -203,7 +210,7 @@ namespace ZES.Infrastructure.EventStore
             stream.AddDeleted(events.Count);
             var meta = await _streamStore.GetStreamMetadata(stream.Key);
             await _streamStore.SetStreamMetadata(stream.Key, meta.MetadataStreamVersion, metadataJson: _serializer.EncodeStreamMetadata(stream));
-            _messageQueue.Alert(new InvalidateProjections());
+            // _messageQueue.Alert(new InvalidateProjections());
         }
 
         private async Task ReadSingleStream<T>(IObserver<T> observer, IStream stream, int start, int count)

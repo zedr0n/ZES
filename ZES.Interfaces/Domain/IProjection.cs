@@ -52,6 +52,11 @@ namespace ZES.Interfaces.Domain
         /// </summary>
         Func<IStream, bool> Predicate { get; set; }
 
+        /// <summary>
+        /// Gets the projection identifier 
+        /// </summary>
+        Guid Guid { get; }
+
         /*
         /// <summary>
         /// Returns when projection is rebuilt

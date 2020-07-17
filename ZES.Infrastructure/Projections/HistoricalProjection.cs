@@ -1,4 +1,3 @@
-using System.Threading.Tasks;
 using ZES.Interfaces;
 using ZES.Interfaces.Domain;
 using ZES.Interfaces.EventStore;
@@ -10,11 +9,9 @@ namespace ZES.Infrastructure.Projections
     /// Historical projection decorator
     /// </summary>
     /// <typeparam name="TState">Projection state</typeparam>
-    public sealed class HistoricalProjection<TState> : GlobalProjection<TState>, IHistoricalProjection
+    public sealed class HistoricalProjection<TState> : ProjectionBase<TState>, IHistoricalProjection<TState>
         where TState : new()
     {
-        private long _timestamp;
-
         /// <summary>
         /// Initializes a new instance of the <see cref="HistoricalProjection{TState}"/> class.
         /// </summary>
@@ -27,9 +24,8 @@ namespace ZES.Infrastructure.Projections
             IEventStore<IAggregate> eventStore,
             ILog log,
             IProjection<TState> iProjection,
-            IMessageQueue messageQueue,
             ITimeline timeline)
-            : base(eventStore, log, timeline, messageQueue)
+            : base(eventStore, log, timeline)
         {
             var projection = (ProjectionBase<TState>)iProjection;
             Predicate = projection.Predicate;
@@ -38,13 +34,9 @@ namespace ZES.Infrastructure.Projections
         }
 
         /// <inheritdoc />
-        protected override long Latest => _timestamp;
-
+        public long Timestamp { get; set; }
+        
         /// <inheritdoc />
-        public async Task Init(long timestamp)
-        {
-            _timestamp = timestamp;
-            await Start();
-        }
+        protected override long Latest => Timestamp;
     }
 }

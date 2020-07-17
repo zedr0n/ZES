@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace ZES.Interfaces.EventStore
@@ -81,5 +82,12 @@ namespace ZES.Interfaces.EventStore
         /// <param name="branch">Branch to filter by</param>
         /// <returns>Stream observable</returns>
         IObservable<IStream> ListStreams(string branch = null);
+        
+        /// <summary>
+        /// Gets the current streams in the store 
+        /// </summary>
+        /// <param name="branch">Branch to filter by</param>
+        /// <returns>Stream observable</returns>
+        IObservable<IStream> ListStreams(string branch, CancellationToken token);
     }
 }

@@ -47,6 +47,7 @@ namespace ZES
             });
             container.Register<IBus, Bus>(Lifestyle.Singleton);
             container.Register<IEsRegistry, EsRegistry>(Lifestyle.Singleton);
+            container.Register<IProjectionManager, ProjectionManager>(Lifestyle.Singleton);
             
             var store = GetStore(container);
             

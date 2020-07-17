@@ -32,7 +32,7 @@ namespace ZES.Infrastructure
         /// <value>
         /// Default timeout
         /// </value>
-        public static TimeSpan Timeout => TimeSpan.FromSeconds(Debugger.IsAttached ? 600 : 1);
+        public static TimeSpan Timeout => TimeSpan.FromSeconds(Debugger.IsAttached ? 600 : 5);
 
         /// <summary>
         /// Gets the batch size for stream store

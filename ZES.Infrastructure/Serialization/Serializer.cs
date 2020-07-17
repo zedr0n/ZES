@@ -220,6 +220,34 @@ namespace ZES.Infrastructure.Serialization
             var version = e?.Version ?? 0;
             var hash = e?.Hash ?? string.Empty;
 #if USE_EXPLICIT
+            
+            var sw = new StringWriter();
+            var writer = new JsonTextWriter(sw);
+
+            // {
+            writer.WriteStartObject();
+            
+            writer.WritePropertyName(nameof(IEventMetadata.MessageId));
+            writer.WriteValue(message.MessageId);
+            
+            writer.WritePropertyName(nameof(IEventMetadata.AncestorId));
+            writer.WriteValue(message.AncestorId);
+            
+            writer.WritePropertyName(nameof(IEventMetadata.Timestamp));
+            writer.WriteValue(message.Timestamp);
+            
+            writer.WritePropertyName(nameof(IEventMetadata.Version));
+            writer.WriteValue(version);
+            
+            writer.WritePropertyName(nameof(IEventMetadata.MessageType));
+            writer.WriteValue(message.GetType().Name);
+            
+            writer.WritePropertyName(nameof(IEventMetadata.Hash));
+            writer.WriteValue(hash);
+            
+            writer.WriteEndObject();
+            return sw.ToString();
+#else
             var meta = new JObject(
                 new JProperty(nameof(IEventMetadata.MessageId), message.MessageId),
                 new JProperty(nameof(IEventMetadata.AncestorId), message.AncestorId),
@@ -227,17 +255,6 @@ namespace ZES.Infrastructure.Serialization
                 new JProperty(nameof(IEventMetadata.Version), version),
                 new JProperty(nameof(IEventMetadata.MessageType), message.GetType().Name),
                 new JProperty(nameof(IEventMetadata.Hash), hash));
-
-            return meta.ToString();
-#else
-            var meta = new EventMetadata
-            {
-                AncestorId = message.AncestorId,
-                MessageId = message.MessageId,
-                Timestamp = message.Timestamp,
-                Version = version
-            };
-           
 #if USE_UTF8
             return Utf8Json.JsonSerializer.ToJsonString(meta);
 #elif USE_JIL

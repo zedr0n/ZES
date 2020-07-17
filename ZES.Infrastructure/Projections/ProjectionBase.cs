@@ -230,7 +230,7 @@ namespace ZES.Infrastructure.Projections
 
             try
             {
-                await rebuildDispatcher.CompletionTask.Timeout();
+                await rebuildDispatcher.CompletionTask;
                 await liveDispatcher.Start();
 
                 if (!CancellationToken.IsCancellationRequested)

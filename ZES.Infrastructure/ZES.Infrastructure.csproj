@@ -5,6 +5,7 @@
         <CodeAnalysisRuleSet>..\Analysis.ruleset</CodeAnalysisRuleSet>
         <IsPackable>true</IsPackable>
         <Version>1.0.0</Version>
+        <NoWarn>4014</NoWarn>
         <GenerateDocumentationFile>true</GenerateDocumentationFile>
     </PropertyGroup>
 

@@ -1,11 +1,7 @@
 using System;
 using System.Collections.Generic;
-using System.Threading.Tasks;
 using SimpleInjector;
 using Xunit.Abstractions;
-using ZES.Infrastructure;
-using ZES.Interfaces;
-using ZES.Replay;
 using ZES.Tests.Domain;
 
 namespace ZES.Tests

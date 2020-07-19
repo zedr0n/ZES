@@ -11,6 +11,7 @@ using ZES.Infrastructure.Branching;
 using ZES.Infrastructure.Causality;
 using ZES.Infrastructure.Domain;
 using ZES.Infrastructure.EventStore;
+using ZES.Infrastructure.Net;
 using ZES.Infrastructure.Projections;
 using ZES.Infrastructure.Retroaction;
 using ZES.Infrastructure.Serialization;
@@ -19,6 +20,7 @@ using ZES.Interfaces.Branching;
 using ZES.Interfaces.Causality;
 using ZES.Interfaces.Domain;
 using ZES.Interfaces.EventStore;
+using ZES.Interfaces.Net;
 using ZES.Interfaces.Pipes;
 using ZES.Interfaces.Retroaction;
 using ZES.Interfaces.Sagas;
@@ -48,6 +50,9 @@ namespace ZES
             container.Register<IBus, Bus>(Lifestyle.Singleton);
             container.Register<IEsRegistry, EsRegistry>(Lifestyle.Singleton);
             container.Register<IProjectionManager, ProjectionManager>(Lifestyle.Singleton);
+            
+            container.Register<IJSonConnector, JsonConnector>(Lifestyle.Singleton);
+            container.Register<ICommandHandler<RequestJson>, JsonRequestHandler>(Lifestyle.Singleton);
             
             var store = GetStore(container);
             

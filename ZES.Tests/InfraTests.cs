@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Reactive.Linq;
 using System.Threading;
 using SimpleInjector;
 using Xunit;
@@ -9,6 +10,7 @@ using Xunit.Abstractions;
 using ZES.Infrastructure;
 using ZES.Infrastructure.Alerts;
 using ZES.Infrastructure.Domain;
+using ZES.Infrastructure.Net;
 using ZES.Infrastructure.Utils;
 using ZES.Interfaces;
 using ZES.Interfaces.Causality;
@@ -362,6 +364,21 @@ namespace ZES.Tests
             Thread.Sleep(50);
             
             await bus.IsTrue(statsQuery, s => s?.NumberOfRoots == numberOfRoots);
+        }
+
+        [Fact]
+        public async void CanRequestJson()
+        {
+            var container = CreateContainer();
+            var bus = container.GetInstance<IBus>();
+            var queue = container.GetInstance<IMessageQueue>();
+
+            const string url = "https://api.coingecko.com/api/v3/coins/bitcoin/history?date=30-12-2017&localization=false";
+            await await bus.CommandAsync(new RequestJson(url));
+
+            var res = await queue.Alerts.OfType<JsonRequestCompleted>().FirstAsync().Timeout(Configuration.Timeout);
+            Assert.NotNull(res.JsonData); 
+            Assert.Contains("13620.3618741461", res.JsonData);
         }
     }
 }

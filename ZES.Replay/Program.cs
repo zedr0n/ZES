@@ -1,6 +1,7 @@
 ﻿using System;
 using System.IO;
 using System.Threading.Tasks;
+using ZES.GraphQL;
 using ZES.Tests.Domain;
 
 #pragma warning disable 1591

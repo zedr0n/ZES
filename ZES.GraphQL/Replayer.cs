@@ -1,18 +1,12 @@
 using System;
-using System.Collections;
 using System.Collections.Generic;
-using System.Linq;
 using System.Threading.Tasks;
-using HotChocolate.Execution.Instrumentation;
 using Microsoft.Extensions.DependencyInjection;
 using NLog;
 using SimpleInjector;
-using ZES.GraphQL;
-using ZES.Infrastructure.Causality;
 using ZES.Interfaces;
-using ZES.Tests.Domain;
 
-namespace ZES.Replay
+namespace ZES.GraphQL
 {
     /// <summary>
     /// Replayer class

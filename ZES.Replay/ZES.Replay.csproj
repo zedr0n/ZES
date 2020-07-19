@@ -5,6 +5,7 @@
         <TargetFramework>netcoreapp3.1</TargetFramework>
         <CodeAnalysisRuleSet>..\Analysis.ruleset</CodeAnalysisRuleSet>
         <Version>1.0.0</Version>
+        <IsPackable>False</IsPackable>
         <GenerateDocumentationFile>true</GenerateDocumentationFile>
         <LangVersion>latest</LangVersion>
     </PropertyGroup>

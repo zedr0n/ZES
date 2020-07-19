@@ -57,9 +57,9 @@ namespace ZES.Interfaces.EventStore
     /// <summary>
     /// Stream store facade
     /// </summary>
-    /// <typeparam name="I">Event sourced type</typeparam>
-    public interface IEventStore<I> : IEventStore
-        where I : IEventSourced
+    /// <typeparam name="TEventSourced">Event sourced type</typeparam>
+    public interface IEventStore<TEventSourced> : IEventStore
+        where TEventSourced : IEventSourced
     {
         /// <summary>
         /// Gets stream details channel 

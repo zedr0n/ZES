@@ -18,7 +18,7 @@ namespace ZES.Interfaces
             /// <summary>
             /// Fast forward succeeded 
             /// </summary>
-            Success = 0
+            Success = 0,
         }
 
         /// <summary>

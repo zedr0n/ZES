@@ -52,7 +52,7 @@ namespace ZES.Infrastructure.Sagas
             where TEvent : class, IEvent
         {
             _sagaId[typeof(TEvent)] = e => sagaId(e as TEvent);
-            base.Register(action);
+            Register(action);
         }
 
         private void ClearUncommittedCommands()

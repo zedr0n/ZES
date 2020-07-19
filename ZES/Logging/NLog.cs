@@ -36,7 +36,7 @@ namespace ZES.Logging
             
             var props = new Common.Logging.Configuration.NameValueCollection
             {
-                { "ConfigType", "INLINE" }
+                { "ConfigType", "INLINE" },
             };
             Common.Logging.LogManager.Adapter = new Common.Logging.NLog.NLogLoggerFactoryAdapter(props);
         }
@@ -95,13 +95,13 @@ namespace ZES.Logging
             var consoleTarget = new ColoredConsoleTarget
             {
                 Name = "Console",
-                Layout = trace  
+                Layout = trace, 
             };
             
             _memory = new MemoryTarget
             {
                 Name = "Memory",
-                Layout = trace
+                Layout = trace,
             };
             
             config.AddTarget(consoleTarget);

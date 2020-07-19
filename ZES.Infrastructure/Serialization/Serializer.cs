@@ -41,7 +41,7 @@ namespace ZES.Infrastructure.Serialization
                 // In a version resilient way
                 TypeNameAssemblyFormatHandling = TypeNameAssemblyFormatHandling.Simple,
                 Converters = new List<JsonConverter>(),
-                DateParseHandling = DateParseHandling.None
+                DateParseHandling = DateParseHandling.None,
             });
 #if USE_JSON            
             _simpleSerializer = JsonSerializer.Create(new JsonSerializerSettings

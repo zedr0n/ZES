@@ -16,8 +16,31 @@ namespace ZES.Tests.Domain.Sagas
             Register<RootUpdated>(e => e.RootId, Trigger.Update);
         }
         
-        public enum Trigger { Create, Update } 
-        public enum State { Open, Complete }
+        public enum Trigger 
+        { 
+            /// <summary>
+            /// Root created
+            /// </summary>
+            Create,
+            
+            /// <summary>
+            /// Root updated
+            /// </summary>
+            Update, 
+        }
+
+        public enum State
+        {
+            /// <summary>
+            /// Saga started
+            /// </summary>
+            Open,
+            
+            /// <summary>
+            /// Saga completed
+            /// </summary>
+            Complete,
+        }
         
         protected override void ConfigureStateMachine()
         {

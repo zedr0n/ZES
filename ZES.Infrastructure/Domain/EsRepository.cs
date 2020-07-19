@@ -16,10 +16,10 @@ using ZES.Interfaces.Sagas;
 namespace ZES.Infrastructure.Domain
 {
     /// <inheritdoc />
-    public class EsRepository<I> : IEsRepository<I>
-        where I : IEventSourced
+    public class EsRepository<TEventSourced> : IEsRepository<TEventSourced>
+        where TEventSourced : IEventSourced
     {
-        private readonly IEventStore<I> _eventStore;
+        private readonly IEventStore<TEventSourced> _eventStore;
         private readonly IStreamLocator _streams;
         private readonly ITimeline _timeline;
         private readonly IBus _bus;
@@ -35,7 +35,7 @@ namespace ZES.Infrastructure.Domain
         /// <param name="bus">Message bus</param>
         /// <param name="messageQueue">Message queue</param>
         /// <param name="registry">Event sourced registry</param>
-        public EsRepository(IEventStore<I> eventStore, IStreamLocator streams, ITimeline timeline, IBus bus, IMessageQueue messageQueue, IEsRegistry registry)
+        public EsRepository(IEventStore<TEventSourced> eventStore, IStreamLocator streams, ITimeline timeline, IBus bus, IMessageQueue messageQueue, IEsRegistry registry)
         {
             _eventStore = eventStore;
             _streams = streams;
@@ -47,7 +47,7 @@ namespace ZES.Infrastructure.Domain
 
         /// <inheritdoc />
         public async Task Save<T>(T es)
-            where T : class, I
+            where T : class, TEventSourced
         {
             if (es == null)
                 return;
@@ -82,7 +82,7 @@ namespace ZES.Infrastructure.Domain
 
         /// <inheritdoc />
         public async Task<T> GetOrAdd<T>(string id)
-            where T : class, I, new()
+            where T : class, TEventSourced, new()
         {
             var instance = await Find<T>(id);
             return instance ?? EventSourced.Create<T>(id);
@@ -90,7 +90,7 @@ namespace ZES.Infrastructure.Domain
 
         /// <inheritdoc />
         public async Task<T> Find<T>(string id)
-            where T : class, I, new()
+            where T : class, TEventSourced, new()
         {
             var stream = _streams.Find<T>(id, _timeline.Id);
             if (stream == null)
@@ -105,7 +105,7 @@ namespace ZES.Infrastructure.Domain
 
         /// <inheritdoc />
         public async Task<bool> IsValid<T>(string id)
-            where T : class, I, new()
+            where T : class, TEventSourced, new()
         {
             var stream = _streams.Find<T>(id, _timeline.Id);
             if (stream == null)
@@ -120,7 +120,7 @@ namespace ZES.Infrastructure.Domain
 
         /// <inheritdoc />
         public async Task<int> LastValidVersion<T>(string id) 
-            where T : class, I, new()
+            where T : class, TEventSourced, new()
         {
             var stream = _streams.Find<T>(id, _timeline.Id);
             if (stream == null)
@@ -135,7 +135,7 @@ namespace ZES.Infrastructure.Domain
         
         /// <inheritdoc />
         public async Task<IEnumerable<IEvent>> FindInvalidEvents<T>(string id) 
-            where T : class, I, new()
+            where T : class, TEventSourced, new()
         {
             var stream = _streams.Find<T>(id, _timeline.Id);
             if (stream == null)

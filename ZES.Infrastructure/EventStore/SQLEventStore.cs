@@ -22,8 +22,8 @@ using ZES.Interfaces.Serialization;
 namespace ZES.Infrastructure.EventStore
 {
     /// <inheritdoc />
-    public class SqlEventStore<I> : IEventStore<I> 
-        where I : IEventSourced
+    public class SqlEventStore<TEventSourced> : IEventStore<TEventSourced> 
+        where TEventSourced : IEventSourced
     {
         private readonly IStreamStore _streamStore;
         private readonly ISerializer<IEvent> _serializer;
@@ -47,7 +47,7 @@ namespace ZES.Infrastructure.EventStore
             _serializer = serializer;
             _messageQueue = messageQueue;
             _log = log;
-            _isDomainStore = typeof(I) == typeof(IAggregate);
+            _isDomainStore = typeof(TEventSourced) == typeof(IAggregate);
         }
 
         /// <inheritdoc />
@@ -74,9 +74,9 @@ namespace ZES.Infrastructure.EventStore
                     {
                         var stream = await _streamStore.GetStream(s, _serializer).Timeout();
                         
-                        if (typeof(I) == typeof(ISaga) && !stream.IsSaga) 
+                        if (typeof(TEventSourced) == typeof(ISaga) && !stream.IsSaga) 
                             continue;
-                        if (typeof(I) == typeof(IAggregate) && stream.IsSaga)
+                        if (typeof(TEventSourced) == typeof(IAggregate) && stream.IsSaga)
                             continue;
                         
                         if (stream.Timeline == branch || branch == null)

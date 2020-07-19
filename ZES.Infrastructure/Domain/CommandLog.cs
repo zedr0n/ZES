@@ -89,6 +89,7 @@ namespace ZES.Infrastructure.Domain
                     
                     page = await page.ReadNext();
                 }
+                
                 observer.OnCompleted();    
             });
 

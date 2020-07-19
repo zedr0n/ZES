@@ -32,7 +32,7 @@ namespace ZES.Tests
             var testTarget = new TestOutputTarget 
             {
                 Name = "Test",
-                Layout = layout 
+                Layout = layout, 
             };  
             config.AddTarget(testTarget);
 

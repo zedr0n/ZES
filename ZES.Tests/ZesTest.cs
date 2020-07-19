@@ -30,7 +30,7 @@ namespace ZES.Tests
                     Config.RegisterCommands(c);
                     Config.RegisterQueries(c);
                     Config.RegisterProjections(c);
-                }
+                },
             };
             if (registrations != null)
                 regs.AddRange(registrations);

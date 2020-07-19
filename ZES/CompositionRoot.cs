@@ -43,7 +43,7 @@ namespace ZES
             container.Options.RegisterParameterConventions(new List<IParameterConvention>
             {
                 new LogNameConvention(),
-                new UtcNowConvention()
+                new UtcNowConvention(),
             });
             container.Register<IBus, Bus>(Lifestyle.Singleton);
             container.Register<IEsRegistry, EsRegistry>(Lifestyle.Singleton);

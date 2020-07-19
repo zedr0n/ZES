@@ -164,10 +164,7 @@ namespace ZES.Infrastructure.EventStore
             if (Timeline == timeline)
                 return new Stream(Key, version, Parent);
             
-            var stream = new Stream(Key, version, new Stream(Key, version))
-            {
-                Timeline = timeline
-            };
+            var stream = new Stream(Key, version, new Stream(Key, version)) { Timeline = timeline };
             if (version == ExpectedVersion.EmptyStream)
                 stream.Parent = new Stream(stream.Key, version);
 

@@ -154,6 +154,7 @@ namespace ZES.GraphQL
                     if (arg != null && arg.GetInterfaces().Contains(typeof(ICommand)))
                         c.RegisterType(typeof(CommandType<>).MakeGenericType(arg));
                 }
+                
                 c.RegisterMutationType(typeof(ObjectType<>).MakeGenericType(t.Item2));
             })).ToList();
 

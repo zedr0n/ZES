@@ -21,8 +21,15 @@ namespace ZES.Tests.Domain
 
         public enum Type
         {
+            /// <summary>
+            /// Default root
+            /// </summary>
             Ordinary,
-            Special
+            
+            /// <summary>
+            /// Special root
+            /// </summary>
+            Special,
         }
         
         public long UpdatedAt { get; private set; }

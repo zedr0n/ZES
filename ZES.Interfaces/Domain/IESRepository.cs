@@ -37,9 +37,9 @@ namespace ZES.Interfaces.Domain
     /// <summary>
     /// Event-sourced repository
     /// </summary>
-    /// <typeparam name="I">Event-sourced instance type</typeparam>
-    public interface IEsRepository<in I> : IEsRepository
-        where I : IEventSourced
+    /// <typeparam name="TEventSourced">Event-sourced instance type</typeparam>
+    public interface IEsRepository<in TEventSourced> : IEsRepository
+        where TEventSourced : IEventSourced
     {
         /// <summary>
         /// Saves the events to event store and publish those to event bus
@@ -48,7 +48,7 @@ namespace ZES.Interfaces.Domain
         /// <param name="es">The event sourced instance</param>
         /// <returns>Task representing the save operation</returns>
         Task Save<T>(T es)
-            where T : class, I;
+            where T : class, TEventSourced;
 
         /// <summary>
         /// Get or add new event sourced instance
@@ -57,7 +57,7 @@ namespace ZES.Interfaces.Domain
         /// <typeparam name="T">Event sourced type</typeparam>
         /// <returns>Task representing the hydrated event sourced instance</returns>
         Task<T> GetOrAdd<T>(string id)
-            where T : class, I, new();
+            where T : class, TEventSourced, new();
         
         /// <summary>
         /// Rebuild from event history extracted from Event Store
@@ -66,7 +66,7 @@ namespace ZES.Interfaces.Domain
         /// <typeparam name="T">Event sourced type</typeparam>
         /// <returns>Aggregate/saga or null if no events found</returns>
         Task<T> Find<T>(string id)
-            where T : class, I, new();
+            where T : class, TEventSourced, new();
         
         /// <summary>
         /// Check if the root is valid 
@@ -75,7 +75,7 @@ namespace ZES.Interfaces.Domain
         /// <typeparam name="T">Event sourced type</typeparam>
         /// <returns>True if valid, otherwise false</returns>
         Task<bool> IsValid<T>(string id)
-            where T : class, I, new();
+            where T : class, TEventSourced, new();
 
         /// <summary>
         /// Gets last valid version of the event sourced instance 
@@ -84,7 +84,7 @@ namespace ZES.Interfaces.Domain
         /// <typeparam name="T">Event source type</typeparam>
         /// <returns>True if valid, otherwise false</returns>
         Task<int> LastValidVersion<T>(string id)
-            where T : class, I, new();
+            where T : class, TEventSourced, new();
 
         /// <summary>
         /// Gets invalid events in the event sourced instance
@@ -93,6 +93,6 @@ namespace ZES.Interfaces.Domain
         /// <typeparam name="T">Event sourced type</typeparam>
         /// <returns>List of invalid events</returns>
         Task<IEnumerable<IEvent>> FindInvalidEvents<T>(string id) 
-            where T : class, I, new();
+            where T : class, TEventSourced, new();
     }
 }

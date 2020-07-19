@@ -39,10 +39,7 @@ namespace ZES.Infrastructure.Projections
             Timeline = timeline;
             CancellationSource = new RepeatableCancellationTokenSource();
             _start = new Lazy<Task>(() => Task.Run(Start));
-            var options = new DataflowOptions
-            {
-                RecommendedParallelismIfMultiThreaded = 1
-            };
+            var options = new DataflowOptions { RecommendedParallelismIfMultiThreaded = 1 };
 
             Build = new BuildFlow(options, this);
 
@@ -108,7 +105,7 @@ namespace ZES.Infrastructure.Projections
         protected DataflowOptions Options { get; } = new DataflowOptions
         {
             RecommendedParallelismIfMultiThreaded = Configuration.ThreadsPerInstance,
-            FlowMonitorEnabled = false
+            FlowMonitorEnabled = false,
         };
 
         /// <summary>
@@ -211,6 +208,7 @@ namespace ZES.Infrastructure.Projections
                     // StatusSubject.OnNext(Failed);
                     Log?.Errors.Add(e);
                 }
+                
                 StatusSubject.OnNext(Sleeping);
             });
             

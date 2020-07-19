@@ -49,7 +49,7 @@ namespace ZES.Infrastructure.Sagas
                     StateMachine.Fire(t);
             }
             
-            base.Register(sagaId, Handler);
+            Register(sagaId, Handler);
         }
 
         /// <summary>

@@ -31,7 +31,7 @@ namespace ZES.Interfaces.Domain
         /// <summary>
         /// Projection failed 
         /// </summary>
-        Failed
+        Failed,
     }
     
     /// <summary>

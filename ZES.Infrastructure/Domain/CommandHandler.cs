@@ -50,6 +50,7 @@ namespace ZES.Infrastructure.Domain
             _log.Trace($"{_handler.GetType().Name}.Handle({command.GetType().Name})");
             if (command.Timestamp == default(long))
                 command.Timestamp = _timeline.Now;
+            command.Timeline = _timeline.Id;
 
             try
             {

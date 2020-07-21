@@ -123,11 +123,14 @@ namespace ZES.Infrastructure.Retroaction
             var branch = $"{command.GetType().Name}-{time}";
 
             await _manager.Branch(branch, time);
+
+            var copy = command;
+            copy.Timeline = branch;
             
-            var handler = _commandRegistry.GetHandler(command);
+            var handler = _commandRegistry.GetHandler(copy);
             if (handler == null)
                 throw new InvalidOperationException($"No handler found for command {command.GetType().Name}");
-            await handler.Handle(command);
+            await handler.Handle(copy);
             
             await _manager.Branch(activeBranch);
             

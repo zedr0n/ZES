@@ -61,10 +61,11 @@ namespace ZES.Infrastructure.Projections
 
         /// <inheritdoc />
         public Guid Guid { get; } = Guid.NewGuid();
-        
-        /// <summary>
-        /// Gets or sets the stream predicate
-        /// </summary>
+
+        /// <inheritdoc />
+        public virtual Func<string, bool> StreamIdPredicate { get; set; } = s => true;
+
+        /// <inheritdoc />
         public virtual Func<IStream, bool> Predicate { get; set; } = s => true;
         
         /// <inheritdoc />
@@ -219,7 +220,7 @@ namespace ZES.Infrastructure.Projections
                 .SubscribeOn(Scheduler.Default)
                 .Subscribe(liveDispatcher.InputBlock.AsObserver());
 
-            EventStore.ListStreams(Timeline.Id, CancellationToken)
+            EventStore.ListStreams(Timeline.Id, StreamIdPredicate, CancellationToken)
                 .TakeWhile(_ => !CancellationSource.IsCancellationRequested)
                 .Where(Predicate)
                 .Select(s => new Tracked<IStream>(s, CancellationToken))

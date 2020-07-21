@@ -32,7 +32,8 @@ namespace ZES.Infrastructure.EventStore
         private readonly ILog _log;
 
         private readonly bool _isDomainStore;
-        private ConcurrentDictionary<string, ConcurrentDictionary<int, long>> _versions = new ConcurrentDictionary<string, ConcurrentDictionary<int, long>>();
+        private readonly ConcurrentDictionary<string, ConcurrentDictionary<int, long>> _versions = new ConcurrentDictionary<string, ConcurrentDictionary<int, long>>();
+        private readonly ConcurrentDictionary<Guid, IEvent> _cache = new ConcurrentDictionary<Guid, IEvent>();
 
         /// <summary>
         /// Initializes a new instance of the <see cref="SqlEventStore{I}"/> class
@@ -57,20 +58,16 @@ namespace ZES.Infrastructure.EventStore
         public async Task<long> Size() => await _streamStore.ReadHeadPosition() + 1;
 
         /// <inheritdoc />
-        public IObservable<IStream> ListStreams(string branch = null)
+        public IObservable<IStream> ListStreams(string branch, Func<string, bool> predicate = null, CancellationToken token = default)
         {
-            return ListStreams(branch, CancellationToken.None);
-        }
-        
-        /// <inheritdoc />
-        public IObservable<IStream> ListStreams(string branch, CancellationToken token)
-        {
+            if (predicate == null)
+                predicate = s => true;
             return Observable.Create(async (IObserver<IStream> observer) =>
             {
-                var page = await _streamStore.ListStreams(Configuration.BatchSize, default, token);
+                var page = await _streamStore.ListStreams(branch != null ? Pattern.StartsWith(branch) : Pattern.Anything(), Configuration.BatchSize, default, token);
                 while (page.StreamIds.Length > 0 && !token.IsCancellationRequested)
                 {
-                    foreach (var s in page.StreamIds.Where(x => !x.Contains("Command") && !x.StartsWith("$")))
+                    foreach (var s in page.StreamIds.Where(x => predicate(x) && !x.Contains("Command") && !x.StartsWith("$")))
                     {
                         var stream = await _streamStore.GetStream(s, _serializer).Timeout();
                         
@@ -79,8 +76,7 @@ namespace ZES.Infrastructure.EventStore
                         if (typeof(TEventSourced) == typeof(IAggregate) && stream.IsSaga)
                             continue;
                         
-                        if (stream.Timeline == branch || branch == null)
-                            observer.OnNext(stream);
+                        observer.OnNext(stream);
                     }
 
                     page = await page.Next(token);
@@ -222,6 +218,7 @@ namespace ZES.Infrastructure.EventStore
             if (count <= 0)
             {
                 observer.OnCompleted();
+                _log.StopWatch.Stop("ReadSingleStream");
                 return;
             }
             
@@ -230,7 +227,7 @@ namespace ZES.Infrastructure.EventStore
             {
                 if (typeof(T) == typeof(IEvent))
                 {
-                    var dataflow = new DeserializeEventFlow( new DataflowOptions { RecommendedParallelismIfMultiThreaded = Configuration.ThreadsPerInstance }, _serializer);
+                    var dataflow = new DeserializeEventFlow( new DataflowOptions { RecommendedParallelismIfMultiThreaded = Configuration.ThreadsPerInstance }, _serializer, _cache);
                     page.Messages.Take(count).ToList().ToObservable().Subscribe(dataflow.InputBlock.AsObserver());
                     var events = await dataflow.OutputBlock.AsObservable().ToList();
                     foreach (var e in events.OrderBy(e => e.Version))
@@ -279,17 +276,25 @@ namespace ZES.Infrastructure.EventStore
             foreach (var e in events)
                 _messageQueue.Event(e);
         }
-    
+
         private class DeserializeEventFlow : Dataflow<StreamMessage, IEvent>
         {
-            public DeserializeEventFlow(DataflowOptions dataflowOptions, ISerializer<IEvent> serializer) 
+            private readonly ConcurrentDictionary<Guid, IEvent> _cache;
+            
+            public DeserializeEventFlow(DataflowOptions dataflowOptions, ISerializer<IEvent> serializer, ConcurrentDictionary<Guid, IEvent> cache) 
                 : base(dataflowOptions)
             {
+                _cache = cache;
                 var block = new TransformBlock<StreamMessage, IEvent>(
                     async m =>
                 {
-                    var payload = await m.GetJsonData();
-                    var @event = serializer.Deserialize(payload);
+                    if (!_cache.TryGetValue(m.MessageId, out var @event))
+                    {
+                        var payload = await m.GetJsonData();
+                        @event = serializer.Deserialize(payload);
+                        _cache.TryAdd(m.MessageId, @event);
+                    }
+                    
                     return @event;
                 }, dataflowOptions.ToExecutionBlockOption(true));
 

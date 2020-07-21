@@ -30,5 +30,10 @@ namespace ZES.Interfaces
         /// Event unix epoch timestamp
         /// </value>
         long Timestamp { get; set; }
+        
+        /// <summary>
+        /// Gets or sets the corresponding message timeline
+        /// </summary>
+        string Timeline { get; set; }
     }
 }

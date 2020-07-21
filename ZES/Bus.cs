@@ -22,6 +22,7 @@ namespace ZES
         private readonly ConcurrentDictionary<string, CommandDispatcher> _dispatchers = new ConcurrentDictionary<string, CommandDispatcher>();
         private readonly ILog _log;
         private readonly ITimeline _timeline;
+        private readonly IMessageQueue _messageQueue;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="Bus"/> class.
@@ -35,6 +36,7 @@ namespace ZES
             _container = container;
             _log = log;
             _timeline = timeline;
+            _messageQueue = messageQueue;
 
             messageQueue.Alerts.OfType<BranchDeleted>().Subscribe(e => DeleteDispatcher(e.BranchId));
         }
@@ -42,10 +44,13 @@ namespace ZES
         /// <inheritdoc />
         public async Task<Task> CommandAsync(ICommand command)
         {
+            command.Timeline = _timeline.Id;
+            await _messageQueue.UncompleteMessage(command);
             var tracked = new Tracked<ICommand>(command);
             var dispatcher = _dispatchers.GetOrAdd(_timeline.Id, CreateDispatcher);
             await dispatcher.SendAsync(tracked);
 
+            tracked.Task.ContinueWith(_ => _messageQueue.CompleteMessage(command));
             return tracked.Task;
         }
 

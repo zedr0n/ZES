@@ -245,6 +245,9 @@ namespace ZES.Infrastructure.Serialization
             writer.WritePropertyName(nameof(IEventMetadata.Hash));
             writer.WriteValue(hash);
             
+            writer.WritePropertyName(nameof(IEventMetadata.Timeline));
+            writer.WriteValue(message.Timeline);
+            
             writer.WriteEndObject();
             return sw.ToString();
 #else
@@ -317,6 +320,9 @@ namespace ZES.Infrastructure.Serialization
                         break;
                     case JsonToken.String when currentProperty == nameof(IEventMetadata.Hash):
                         metadata.Hash = (string)reader.Value;
+                        break;
+                    case JsonToken.String when currentProperty == nameof(IEventMetadata.Timeline):
+                        metadata.Timeline = (string)reader.Value;
                         break;
                 }
             }
@@ -458,6 +464,9 @@ namespace ZES.Infrastructure.Serialization
                         break;
                     case JsonToken.String when currentProperty == nameof(Event.Stream):
                         e.Stream = (string)reader.Value;
+                        break;
+                    case JsonToken.String when currentProperty == nameof(Event.Timeline):
+                        e.Timeline = (string)reader.Value;
                         break;
                 }
                 

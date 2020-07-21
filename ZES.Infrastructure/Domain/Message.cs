@@ -27,5 +27,8 @@ namespace ZES.Infrastructure.Domain
 
         /// <inheritdoc />
         public long Timestamp { get; set; }
+
+        /// <inheritdoc />
+        public string Timeline { get; set; }
     }
 }

@@ -50,6 +50,11 @@ namespace ZES.Interfaces.Domain
         /// <summary>
         /// Gets or sets the stream predicate
         /// </summary>
+        Func<string, bool> StreamIdPredicate { get; set; }
+        
+        /// <summary>
+        /// Gets or sets the stream predicate
+        /// </summary>
         Func<IStream, bool> Predicate { get; set; }
 
         /// <summary>

@@ -1,5 +1,6 @@
 using System;
 using System.Linq;
+using System.Reactive.Concurrency;
 using System.Reactive.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -52,7 +53,7 @@ namespace ZES.Infrastructure.Sagas
                 var tracked = new Tracked<IEvent>(e);
                 tracked.Task.ContinueWith(t => _messageQueue.CompleteMessage(e));
                 return tracked;
-            }).Subscribe(dispatcher.InputBlock.AsObserver(), _source.Token);
+            }).SubscribeOn(Scheduler.Default).Subscribe(dispatcher.InputBlock.AsObserver(), _source.Token);
             dispatcher.CompletionTask.ContinueWith(t => _source.Cancel());
         }
 

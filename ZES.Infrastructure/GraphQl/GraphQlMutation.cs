@@ -1,4 +1,5 @@
 using System;
+using System.Reactive.Linq;
 using ZES.Interfaces;
 using ZES.Interfaces.Domain;
 using ZES.Interfaces.GraphQL;
@@ -37,7 +38,7 @@ namespace ZES.Infrastructure.GraphQl
             var isError = false;
             _log.Errors.Observable.Subscribe(e =>
             {
-                if (e != null && e.ErrorType == typeof(InvalidOperationException).Name)
+                if (e != null && e.ErrorType == nameof(InvalidOperationException))
                     isError = true;
             });
             

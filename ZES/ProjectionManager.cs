@@ -41,8 +41,11 @@ namespace ZES
         {
             var historicalProjection = _container.GetInstance<IHistoricalProjection<TState>>();
             if (id != string.Empty)
+            {
                 historicalProjection.Predicate = s => s.Id == id;
-            
+                historicalProjection.StreamIdPredicate = s => s.Contains(id);
+            }
+
             return historicalProjection;
         }
 
@@ -52,9 +55,13 @@ namespace ZES
             var p = _container.GetInstance<IProjection<TState>>();
             if (typeof(TState).GetInterfaces().Contains(typeof(ISingleState)) && id == string.Empty)
                 return null;
- 
+
             if (id != string.Empty)
+            {
                 p.Predicate = s => s.Id == id;
+                p.StreamIdPredicate = s => s.Contains(id);
+            }
+
             return p;
         }
         

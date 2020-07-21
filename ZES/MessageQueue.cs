@@ -3,6 +3,8 @@ using System.Collections.Concurrent;
 using System.Reactive.Linq;
 using System.Reactive.Subjects;
 using System.Threading.Tasks;
+using SimpleInjector;
+using ZES.Infrastructure.Domain;
 using ZES.Interfaces;
 using ZES.Interfaces.Pipes;
 
@@ -61,11 +63,15 @@ namespace ZES
         {
             await await _messagesHolder.UpdateState(b =>
             {
-                if (!b.Count.TryGetValue(_timeline.Id, out var count))
-                    throw new InvalidOperationException("Message completed before being produced");
+                if (message.GetType().IsClosedTypeOf(typeof(RetroactiveCommand<>)))
+                    return b;
+                
+                if (!b.Count.TryGetValue(message.Timeline, out var count))
+                    throw new InvalidOperationException($"Message {message.Timeline}:{message.GetType()} completed before being produced");
+
                 count--;
-                b.Count[_timeline.Id] = count;
-                _log.Debug($"Uncompleted messages : {count}, removed {_timeline.Id}:{message.GetType().Name}");
+                b.Count[message.Timeline] = count;
+                _log.Debug($"Uncompleted messages : {count}, removed {message.Timeline}:{message.GetType().Name}");
 
                 return b;
             });
@@ -76,12 +82,15 @@ namespace ZES
         {
             await await _messagesHolder.UpdateState(b =>
             {
-                if (!b.Count.TryGetValue(_timeline.Id, out var count))
-                    count = 0;
+                if (message.GetType().IsClosedTypeOf(typeof(RetroactiveCommand<>)))
+                    return b;
                     
+                if (!b.Count.TryGetValue(message.Timeline, out var count))
+                    count = 0;
+
                 count++;
-                b.Count[_timeline.Id] = count;
-                _log.Debug($"Uncompleted messages : {count}, added {_timeline.Id}:{message.GetType().Name}");
+                b.Count[message.Timeline] = count;
+                _log.Debug($"Uncompleted messages : {count}, added {message.Timeline}:{message.GetType().Name}");
 
                 return b;
             });

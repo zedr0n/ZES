@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reactive.Linq;
@@ -26,6 +27,8 @@ namespace ZES.Infrastructure.Domain
         private readonly IMessageQueue _messageQueue;
         private readonly IEsRegistry _registry;
 
+        private readonly ConcurrentDictionary<string, Func<string, Task<IEnumerable<IEvent>>>> _delegates = new ConcurrentDictionary<string, Func<string, Task<IEnumerable<IEvent>>>>(); 
+        
         /// <summary>
         /// Initializes a new instance of the <see cref="EsRepository{I}"/> class.
         /// </summary>
@@ -65,18 +68,15 @@ namespace ZES.Infrastructure.Domain
                 if (e.Timestamp == default(long))
                     e.Timestamp = _timeline.Now;
                 e.Stream = stream.Key;
+                e.Timeline = _timeline.Id;
             }
 
             await _eventStore.AppendToStream(stream, events);
             if (es is ISaga saga)
             {
                 var commands = saga.GetUncommittedCommands();
-                foreach (var command in commands.Cast<Command>())
-                {
-                    await _messageQueue.UncompleteMessage(command);
-                    var task = await _bus.CommandAsync(command);
-                    task.ContinueWith(async t => await _messageQueue.CompleteMessage(command));
-                }
+                foreach (var command in commands)
+                    await _bus.CommandAsync(command);
             }
         }
 
@@ -97,6 +97,8 @@ namespace ZES.Infrastructure.Domain
                 return null;
 
             var events = await _eventStore.ReadStream<IEvent>(stream, 0).ToList();
+            if (events.Count == 0)
+                return null;
             var es = EventSourced.Create<T>(id);
             es.LoadFrom<T>(events);
 
@@ -152,19 +154,17 @@ namespace ZES.Infrastructure.Domain
         /// <inheritdoc />
         public async Task<IEnumerable<IEvent>> FindInvalidEvents(string type, string id)
         {
-            var t = _registry.GetType(type);
-            var m = GetType().GetMethods(BindingFlags.Instance | BindingFlags.Public)
-                .SingleOrDefault(x => x.IsGenericMethod && x.Name == nameof(FindInvalidEvents))
-                ?.MakeGenericMethod(t);
-
-            if (m != null)
+            var @delegate = _delegates.GetOrAdd(type, s =>
             {
-                var task = (Task<IEnumerable<IEvent>>)m.Invoke(this, new object[] { id });
-                await task;
-                return task.Result;
-            }
+                var t = _registry.GetType(s);
+                var m = GetType().GetMethods(BindingFlags.Instance | BindingFlags.Public)
+                    .SingleOrDefault(x => x.IsGenericMethod && x.Name == nameof(FindInvalidEvents))
+                    ?.MakeGenericMethod(t);
 
-            return null;
+                return (Func<string, Task<IEnumerable<IEvent>>>)Delegate.CreateDelegate(typeof(Func<string, Task<IEnumerable<IEvent>>>), this, m);
+            });
+            
+            return await @delegate(id);
         }
 
         /// <inheritdoc />

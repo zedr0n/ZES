@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reactive.Linq;
 using System.Threading.Tasks;
 using SqlStreamStore;
 using SqlStreamStore.Streams;
@@ -144,6 +145,9 @@ namespace ZES.Infrastructure.Branching
             string branchId,
             bool failOnNoStream = false )
         {
+            await _messageQueue.UncompletedMessagesOnBranch(branchId).FirstAsync(s => s == 0)
+                .Timeout(Configuration.Timeout);
+            
             var page = await from.ListStreams();
             while (page.StreamIds.Length > 0)
             {

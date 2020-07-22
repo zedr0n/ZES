@@ -4,6 +4,8 @@
         <TargetFramework>netstandard2.0</TargetFramework>
         <CodeAnalysisRuleSet>..\Analysis.ruleset</CodeAnalysisRuleSet>
         <IsPackable>true</IsPackable>
+        <IncludeSource>true</IncludeSource>
+        <IncludeSymbols>true</IncludeSymbols>
         <Version>1.0.0</Version>
         <NoWarn>4014</NoWarn>
         <GenerateDocumentationFile>true</GenerateDocumentationFile>

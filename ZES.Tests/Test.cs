@@ -13,7 +13,6 @@ using ZES.Infrastructure;
 using ZES.Infrastructure.Causality;
 using ZES.Interfaces;
 using ZES.Interfaces.Causality;
-using ZES.Replay;
 using ZES.Tests.Utils;
 
 namespace ZES.Tests

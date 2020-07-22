@@ -8,7 +8,6 @@ using Xunit.Abstractions;
 using ZES.GraphQL;
 using ZES.Interfaces;
 using ZES.Interfaces.Pipes;
-using ZES.Replay;
 using ZES.Tests.Domain;
 using ZES.Tests.Domain.Commands;
 using ZES.Tests.Domain.Queries;

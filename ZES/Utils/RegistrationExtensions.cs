@@ -65,6 +65,10 @@ namespace ZES.Utils
             var deserializers = assembly.GetTypesFromInterface(typeof(IEventDeserializer)).Where(t => !t.IsAbstract);
             foreach (var d in deserializers)
                 c.Collection.Append(typeof(IEventDeserializer), d);
+
+            var serializers = assembly.GetTypesFromInterface(typeof(IEventSerializer)).Where(t => !t.IsAbstract);
+            foreach (var s in serializers)
+                c.Collection.Append(typeof(IEventSerializer), s);
         }
 
         /// <summary>

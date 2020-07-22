@@ -58,7 +58,7 @@ namespace ZES.Infrastructure.EventStore
         public async Task<long> Size() => await _streamStore.ReadHeadPosition() + 1;
 
         /// <inheritdoc />
-        public IObservable<IStream> ListStreams(string branch, Func<string, bool> predicate = null, CancellationToken token = default)
+        public IObservable<IStream> ListStreams(string branch = null, Func<string, bool> predicate = null, CancellationToken token = default)
         {
             if (predicate == null)
                 predicate = s => true;
@@ -138,6 +138,7 @@ namespace ZES.Infrastructure.EventStore
             var events = enumerable as IList<IEvent> ?? enumerable?.ToList();
 
             var streamMessages = events?.Select(_serializer.Encode).ToArray() ?? new NewStreamMessage[] { };
+           
             var result = await _streamStore.AppendToStream(stream.Key, stream.AppendPosition(), streamMessages);
             LogEvents(streamMessages);
 
@@ -288,14 +289,17 @@ namespace ZES.Infrastructure.EventStore
                 var block = new TransformBlock<StreamMessage, IEvent>(
                     async m =>
                 {
-                    if (!_cache.TryGetValue(m.MessageId, out var @event))
+                    var payload = await m.GetJsonData();
+                    return serializer.Deserialize(payload);
+                    
+                    /*if (!_cache.TryGetValue(m.MessageId, out var @event))
                     {
                         var payload = await m.GetJsonData();
                         @event = serializer.Deserialize(payload);
                         _cache.TryAdd(m.MessageId, @event);
                     }
                     
-                    return @event;
+                    return @event;*/
                 }, dataflowOptions.ToExecutionBlockOption(true));
 
                 RegisterChild(block);

@@ -85,7 +85,7 @@ namespace ZES
                 store, 
                 c => c.Consumer.ImplementationType.GetGenericArguments().Contains(typeof(ISaga))); 
             
-            container.Register<IEventDeserializerRegistry, EventDeserializerRegistry>(Lifestyle.Singleton);
+            container.Register<IEventSerializationRegistry, EventSerializationRegistry>(Lifestyle.Singleton);
             container.Register(typeof(ISerializer<>), typeof(Serializer<>), Lifestyle.Singleton);
             container.Register(typeof(IEventStore<>), typeof(SqlEventStore<>), Lifestyle.Singleton);
             

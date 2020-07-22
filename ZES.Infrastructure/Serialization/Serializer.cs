@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Runtime.Serialization;
+using System.Text;
 using Jil;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -20,7 +21,7 @@ namespace ZES.Infrastructure.Serialization
         where T : class, IMessage
     {
         private readonly JsonSerializer _serializer;
-        private readonly IEventDeserializerRegistry _deserializerRegistry;
+        private readonly IEventSerializationRegistry _serializationRegistry;
 #if USE_JSON        
         private readonly JsonSerializer _simpleSerializer;
 #endif
@@ -29,10 +30,10 @@ namespace ZES.Infrastructure.Serialization
         /// Initializes a new instance of the <see cref="Serializer{T}"/> class.
         /// <para> Uses <see cref="TypeNameHandling.All"/> for JSON serialisation </para>
         /// </summary>
-        /// <param name="deserializerRegistry">Deserializer collection</param>
-        public Serializer(IEventDeserializerRegistry deserializerRegistry)
+        /// <param name="serializationRegistry">Deserializer collection</param>
+        public Serializer(IEventSerializationRegistry serializationRegistry)
         {
-            _deserializerRegistry = deserializerRegistry;
+            _serializationRegistry = serializationRegistry;
             _serializer = JsonSerializer.Create(new JsonSerializerSettings
             {
                 // Allows deserializing to the actual runtime type
@@ -68,18 +69,51 @@ namespace ZES.Infrastructure.Serialization
         /// <inheritdoc />
         public string Serialize(T e)
         {
+            string payload = null;
             using (var writer = new StringWriter())
             {
                 var jsonWriter = new JsonTextWriter(writer) { Formatting = Formatting.Indented };
+#if USE_EXPLICIT
+                payload = SerializeEvent(e as IEvent);
 
+                if (payload != null) 
+                    return payload;
+                
+                _serializer.Serialize(jsonWriter, e);
+                writer.Flush();
+                payload = writer.ToString();
+#else
                 _serializer.Serialize(jsonWriter, e);
 
                 // We don't close the stream as it's owned by the message.
                 writer.Flush();
-                return writer.ToString();
+                payload = writer.ToString();
+#endif
             }
+
+            return payload;
         }
-        
+
+        /// <inheritdoc />
+        public void SerializeEventAndMetadata(T e, out string eventJson, out string metadataJson)
+        {
+            eventJson = null;
+            metadataJson = null;
+
+#if USE_EXPLICIT
+            SerializeEventAndMetadata(e as IEvent, out eventJson, out metadataJson);
+            
+            if (eventJson == null || metadataJson == null)
+            {
+                eventJson = Serialize(e);
+                metadataJson = EncodeMetadata(e);
+            }
+#else
+            eventJson = Serialize(e);
+            metadataJson = EncodeMetadata(e);
+#endif
+        }
+
         /// <inheritdoc />
         public T Deserialize(string payload)
         {
@@ -416,8 +450,92 @@ namespace ZES.Infrastructure.Serialization
             public StreamMetadata Parent { get; set; }
         }
 #endif
+#if USE_EXPLICIT
+
+        private void WriteEventMetadata(JsonWriter writer, IEventMetadata e)
+        {
+            writer.WritePropertyName(nameof(IEventMetadata.MessageId));
+            writer.WriteValue(e.MessageId);
+            
+            writer.WritePropertyName(nameof(IEventMetadata.AncestorId));
+            writer.WriteValue(e.AncestorId);
+            
+            writer.WritePropertyName(nameof(IEventMetadata.Timestamp));
+            writer.WriteValue(e.Timestamp);
+            
+            writer.WritePropertyName(nameof(IEventMetadata.Timeline));
+            writer.WriteValue(e.Timeline);
+            
+            writer.WritePropertyName(nameof(IEventMetadata.MessageType));
+            writer.WriteValue(e.GetType().Name);
+            
+            writer.WritePropertyName(nameof(IEventMetadata.Version));
+            writer.WriteValue(e.Version);
+            
+            writer.WritePropertyName(nameof(IEventMetadata.Hash));
+            writer.WriteValue(e.Hash);
+        }
+
+        private void SerializeEventAndMetadata(IEvent e, out string eventJson, out string metadataJson)
+        {
+            eventJson = null;
+            metadataJson = null;
+            if (e == null)
+               return;
+            
+            var sb = new StringBuilder();
+            var sw = new StringWriter(sb);
+            var writer = new JsonTextWriter(sw) { Formatting = Formatting.Indented };
+            
+            var serializer = _serializationRegistry.GetSerializer(e);
+            if (serializer == null)
+                return;
+            
+            writer.WriteStartObject();
+            WriteEventMetadata(writer, e);
+            
+            metadataJson = sb + "\n}";
+            
+            writer.WritePropertyName(nameof(IEvent.CommandId));
+            writer.WriteValue(e.CommandId);
+            
+            writer.WritePropertyName(nameof(IEvent.Stream));
+            writer.WriteValue(e.Stream);
+            
+            serializer.Write(writer, e);
+            writer.WriteEndObject();
+            eventJson = sw.ToString();
+        }
         
-        #if USE_EXPLICIT
+        private string SerializeEvent(IEvent e)
+        {
+            if (e == null)
+                return null;
+            
+            var sw = new StringWriter();
+            var writer = new JsonTextWriter(sw) { Formatting = Formatting.Indented };
+            
+            var serializer = _serializationRegistry.GetSerializer(e);
+            if (serializer == null)
+                return null;
+
+            writer.WriteStartObject();
+            
+            WriteEventMetadata(writer, e);
+            
+            writer.WritePropertyName(nameof(IEvent.CommandId));
+            writer.WriteValue(e.CommandId);
+            
+            writer.WritePropertyName(nameof(IEvent.Stream));
+            writer.WriteValue(e.Stream);
+            
+            serializer.Write(writer, e);
+            
+            writer.WriteEndObject();
+            sw.Flush();
+            return sw.ToString();
+        }
+        
         private Event DeserializeEvent(string payload)
         {
             if (payload == null)
@@ -425,7 +543,7 @@ namespace ZES.Infrastructure.Serialization
 
             var reader = new JsonTextReader(new StringReader(payload));
 
-            var deserializer = _deserializerRegistry.GetDeserializer(payload);
+            var deserializer = _serializationRegistry.GetDeserializer(payload);
             if (deserializer == null)
                 return null;
 

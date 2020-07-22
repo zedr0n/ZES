@@ -1,5 +1,6 @@
 using Newtonsoft.Json;
 using ZES.Infrastructure.Domain;
+using ZES.Interfaces;
 
 namespace ZES.Infrastructure.Serialization
 {
@@ -42,9 +43,9 @@ namespace ZES.Infrastructure.Serialization
     }
 
     /// <summary>
-    /// Event deserializers collection
+    /// Events explicit serialization
     /// </summary>
-    public interface IEventDeserializerRegistry
+    public interface IEventSerializationRegistry
     {
         /// <summary>
         /// Gets the deserializer corresponding to the serialized event
@@ -52,5 +53,12 @@ namespace ZES.Infrastructure.Serialization
         /// <param name="payload">JSON data</param>
         /// <returns>Deserializer instance</returns>
         IEventDeserializer GetDeserializer(string payload);
+
+        /// <summary>
+        /// Gets the serializer corresponding to the input event
+        /// </summary>
+        /// <param name="e">Input event</param>
+        /// <returns>Serializer instance</returns>
+        IEventSerializer GetSerializer(IEvent e);
     }
 }

@@ -18,6 +18,7 @@ namespace ZES.Infrastructure.Utils
         public static NewStreamMessage Encode(this ISerializer<IEvent> serializer, IEvent e)
         {
             serializer.SerializeEventAndMetadata(e, out var eventJson, out var metadataJson);
+            
             // return new NewStreamMessage(e.MessageId, e.MessageType, serializer.Serialize(e), serializer.EncodeMetadata(e));
             return new NewStreamMessage(e.MessageId, e.MessageType, eventJson, metadataJson);
         }

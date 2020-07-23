@@ -17,6 +17,12 @@ namespace ZES.Interfaces.Serialization
         /// <returns>JSON serialization string</returns>
         string Serialize(T e);
 
+        /// <summary>
+        /// Serialize the event to json data and metadata
+        /// </summary>
+        /// <param name="e">Instance to serialize</param>
+        /// <param name="eventJson">JSON payload</param>
+        /// <param name="metadataJson">JSON metadata</param>
         void SerializeEventAndMetadata(T e, out string eventJson, out string metadataJson);
 
         /// <summary>

@@ -1,5 +1,4 @@
 using System;
-using System.Collections;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
@@ -17,7 +16,6 @@ using ZES.Interfaces.Causality;
 using ZES.Interfaces.Domain;
 using ZES.Interfaces.EventStore;
 using ZES.Interfaces.Pipes;
-using ZES.Interfaces.Sagas;
 
 namespace ZES.Infrastructure.Branching
 {
@@ -111,7 +109,6 @@ namespace ZES.Infrastructure.Branching
 
             _log.StopWatch.Start("Branch.Wait");
             await _messageQueue.UncompletedMessages.Timeout(Configuration.Timeout).FirstAsync(s => s == 0);
-            await _graph.Wait();
             _log.StopWatch.Stop("Branch.Wait");
             var newBranch = !_branches.ContainsKey(branchId); // && branchId != Master;
             

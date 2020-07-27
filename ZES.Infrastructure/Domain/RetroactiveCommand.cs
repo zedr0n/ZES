@@ -1,5 +1,3 @@
-using ZES.Interfaces.Domain;
-
 namespace ZES.Infrastructure.Domain
 {
     /// <inheritdoc />

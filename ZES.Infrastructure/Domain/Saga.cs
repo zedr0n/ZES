@@ -1,11 +1,9 @@
 using System;
 using System.Collections.Generic;
-using ZES.Infrastructure.Domain;
 using ZES.Interfaces;
 using ZES.Interfaces.Domain;
-using ZES.Interfaces.Sagas;
 
-namespace ZES.Infrastructure.Sagas
+namespace ZES.Infrastructure.Domain
 {
     /// <inheritdoc cref="ISaga" />
     public class Saga : EventSourced, ISaga

@@ -1,6 +1,6 @@
 using System;
 using Stateless;
-using ZES.Infrastructure.Sagas;
+using ZES.Infrastructure.Domain;
 using ZES.Tests.Domain.Commands;
 using ZES.Tests.Domain.Events;
 

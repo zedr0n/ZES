@@ -6,7 +6,6 @@ using System.Threading.Tasks;
 using SqlStreamStore;
 using SqlStreamStore.Streams;
 using ZES.Infrastructure.Alerts;
-using ZES.Infrastructure.Attributes;
 using ZES.Infrastructure.Utils;
 using ZES.Interfaces;
 using ZES.Interfaces.Pipes;

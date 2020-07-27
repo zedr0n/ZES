@@ -1,4 +1,4 @@
-namespace ZES.Interfaces.Sagas
+namespace ZES.Interfaces.Domain
 {
     /// <summary>
     /// Saga handler

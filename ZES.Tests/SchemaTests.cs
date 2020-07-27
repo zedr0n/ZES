@@ -1,17 +1,12 @@
 using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
-using HotChocolate;
 using HotChocolate.Execution;
 using Xunit;
 using Xunit.Abstractions;
 using ZES.GraphQL;
 using ZES.Interfaces;
 using ZES.Interfaces.Pipes;
-using ZES.Tests.Domain;
 using ZES.Tests.Domain.Commands;
 using ZES.Tests.Domain.Queries;
-using static ZES.Tests.Domain.Config;
 
 namespace ZES.Tests
 {

@@ -1,7 +1,6 @@
 using System;
 using System.Threading.Tasks;
 using Xunit;
-using ZES.Infrastructure;
 using ZES.Interfaces.Domain;
 using ZES.Interfaces.Pipes;
 using ZES.Utils;

@@ -6,15 +6,12 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Threading.Tasks.Dataflow;
 using Gridsum.DataflowEx;
-using ZES.Infrastructure.Dataflow;
-using ZES.Infrastructure.Domain;
 using ZES.Infrastructure.Utils;
 using ZES.Interfaces;
 using ZES.Interfaces.Domain;
 using ZES.Interfaces.Pipes;
-using ZES.Interfaces.Sagas;
 
-namespace ZES.Infrastructure.Sagas
+namespace ZES.Infrastructure.Domain
 {
     /// <inheritdoc />
     public class SagaHandler<TSaga> : ISagaHandler<TSaga>
@@ -44,7 +41,7 @@ namespace ZES.Infrastructure.Sagas
             _source = new CancellationTokenSource();
             
             var dispatcher = _dispatcher
-                .WithOptions(new DataflowOptionsEx { RecommendedParallelismIfMultiThreaded = Configuration.ThreadsPerInstance })
+                .WithOptions(new DataflowOptions { RecommendedParallelismIfMultiThreaded = Configuration.ThreadsPerInstance })
                 .Bind(); 
 
             _messageQueue.Messages.Select(e =>

@@ -5,7 +5,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.Runtime.Serialization;
 using System.Text;
-using Jil;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using ZES.Infrastructure.Domain;

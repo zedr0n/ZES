@@ -2,7 +2,7 @@ using System;
 using Stateless;
 using ZES.Interfaces;
 
-namespace ZES.Infrastructure.Sagas
+namespace ZES.Infrastructure.Domain
 {
     /// <summary>
     /// Saga as a state machine, using <see cref="Stateless"/>

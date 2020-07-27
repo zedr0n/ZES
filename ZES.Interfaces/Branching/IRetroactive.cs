@@ -3,7 +3,7 @@ using System.Threading.Tasks;
 using ZES.Interfaces.Domain;
 using ZES.Interfaces.EventStore;
 
-namespace ZES.Interfaces.Retroaction
+namespace ZES.Interfaces.Branching
 {
     /// <summary>
     /// Retroactive manipulations

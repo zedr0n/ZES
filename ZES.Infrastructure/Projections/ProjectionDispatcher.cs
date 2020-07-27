@@ -1,5 +1,4 @@
 using Gridsum.DataflowEx;
-using ZES.Infrastructure.Dataflow;
 using ZES.Interfaces.EventStore;
 
 namespace ZES.Infrastructure.Projections

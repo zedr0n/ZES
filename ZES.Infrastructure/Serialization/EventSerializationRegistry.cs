@@ -1,6 +1,5 @@
 using System.Collections.Generic;
 using System.Linq;
-using ZES.Infrastructure.Domain;
 using ZES.Interfaces;
 
 namespace ZES.Infrastructure.Serialization

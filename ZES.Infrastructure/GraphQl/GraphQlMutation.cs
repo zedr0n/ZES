@@ -1,5 +1,4 @@
 using System;
-using System.Reactive.Linq;
 using ZES.Interfaces;
 using ZES.Interfaces.Domain;
 using ZES.Interfaces.GraphQL;

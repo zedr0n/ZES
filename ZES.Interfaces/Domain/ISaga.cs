@@ -1,7 +1,6 @@
 using System.Collections.Generic;
-using ZES.Interfaces.Domain;
 
-namespace ZES.Interfaces.Sagas
+namespace ZES.Interfaces.Domain
 {
     /// <summary>
     /// Event-sourced saga

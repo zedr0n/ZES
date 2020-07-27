@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using SqlStreamStore.Streams;
 using ZES.Interfaces;
 
 namespace ZES.Infrastructure.Domain

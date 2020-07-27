@@ -1,4 +1,3 @@
-using ZES.Infrastructure;
 using ZES.Infrastructure.Alerts;
 using ZES.Infrastructure.GraphQl;
 using ZES.Interfaces;

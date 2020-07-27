@@ -1,6 +1,6 @@
 using System;
 
-namespace ZES.Infrastructure.Attributes
+namespace ZES.Infrastructure
 {
     /// <summary>
     /// Defines remote store attribute 

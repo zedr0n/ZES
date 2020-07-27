@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using SqlStreamStore.Streams;
-using ZES.Infrastructure.Sagas;
+using ZES.Infrastructure.Domain;
 using ZES.Interfaces.EventStore;
 
 namespace ZES.Infrastructure.EventStore

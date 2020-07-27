@@ -1,6 +1,6 @@
 using System;
 
-namespace ZES.Infrastructure.Attributes
+namespace ZES.Infrastructure
 {
     /// <summary>
     /// Methods marked with this attribute are used to register new domains

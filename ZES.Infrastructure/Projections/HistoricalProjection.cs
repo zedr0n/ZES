@@ -1,7 +1,6 @@
 using ZES.Interfaces;
 using ZES.Interfaces.Domain;
 using ZES.Interfaces.EventStore;
-using ZES.Interfaces.Pipes;
 
 namespace ZES.Infrastructure.Projections
 {

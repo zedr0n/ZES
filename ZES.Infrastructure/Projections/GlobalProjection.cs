@@ -1,4 +1,3 @@
-using System;
 using System.Reactive.Linq;
 using System.Threading.Tasks.Dataflow;
 using ZES.Infrastructure.Alerts;

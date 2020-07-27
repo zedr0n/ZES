@@ -8,7 +8,7 @@ using Microsoft.Extensions.DependencyInjection;
 using NLog;
 using SimpleInjector;
 using SimpleInjector.Lifestyles;
-using ZES.Infrastructure.Attributes;
+using ZES.Infrastructure;
 
 namespace ZES.GraphQL
 {

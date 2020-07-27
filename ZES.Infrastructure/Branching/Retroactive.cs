@@ -11,10 +11,8 @@ using ZES.Interfaces.Causality;
 using ZES.Interfaces.Domain;
 using ZES.Interfaces.EventStore;
 using ZES.Interfaces.Pipes;
-using ZES.Interfaces.Retroaction;
-using ZES.Interfaces.Sagas;
 
-namespace ZES.Infrastructure.Retroaction
+namespace ZES.Infrastructure.Branching
 {
     /// <inheritdoc />
     public class Retroactive : IRetroactive

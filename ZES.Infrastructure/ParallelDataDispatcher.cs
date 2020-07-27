@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.Reactive.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Threading.Tasks.Dataflow;
@@ -9,7 +8,7 @@ using Gridsum.DataflowEx;
 using ZES.Infrastructure.Utils;
 using ZES.Interfaces;
 
-namespace ZES.Infrastructure.Dataflow
+namespace ZES.Infrastructure
 {
     /// <summary>
     /// Provides an abstract flow that dispatch inputs to multiple child flows by a special dispatch function, which is

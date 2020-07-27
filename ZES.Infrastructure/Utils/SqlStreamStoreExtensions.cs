@@ -3,7 +3,6 @@ using System.Threading.Tasks;
 using SqlStreamStore;
 using SqlStreamStore.Streams;
 using ZES.Infrastructure.EventStore;
-using ZES.Infrastructure.Serialization;
 using ZES.Interfaces;
 using ZES.Interfaces.EventStore;
 using ZES.Interfaces.Serialization;

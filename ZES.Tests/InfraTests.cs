@@ -380,5 +380,20 @@ namespace ZES.Tests
             Assert.NotNull(res.JsonData); 
             Assert.Contains("13620.3618741461", res.JsonData);
         }
+        
+        [Fact]
+        public async void CanDeserializeRequestedJson()
+        {
+            var container = CreateContainer();
+            var bus = container.GetInstance<IBus>();
+            var queue = container.GetInstance<IMessageQueue>();
+
+            const string url = "https://api.coingecko.com/api/v3/coins/bitcoin/history?date=30-12-2017&localization=false";
+            await await bus.CommandAsync(new RequestJson<TestJson>(url));
+
+            var res = await queue.Alerts.OfType<JsonRequestCompleted<TestJson>>().FirstAsync().Timeout(Configuration.Timeout);
+            Assert.NotNull(res.Data);
+            Assert.Equal("btc", res.Data.Symbol);
+        }
     }
 }

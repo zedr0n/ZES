@@ -4,11 +4,13 @@ using System.Linq;
 using System.Reflection;
 using SimpleInjector;
 using ZES.Infrastructure.Domain;
+using ZES.Infrastructure.Net;
 using ZES.Infrastructure.Projections;
 using ZES.Infrastructure.Serialization;
 using ZES.Interfaces;
 using ZES.Interfaces.Domain;
 using ZES.Interfaces.GraphQL;
+using ZES.Interfaces.Net;
 
 namespace ZES.Utils
 {
@@ -222,6 +224,7 @@ namespace ZES.Utils
         public static void RegisterCommands(this Container c, Assembly assembly)
         {
             var commands = assembly.GetTypesFromInterface(typeof(ICommand));
+            
             foreach (var command in commands)
             {
                 var iHandler = typeof(ICommandHandler<>).MakeGenericType(command);
@@ -237,6 +240,14 @@ namespace ZES.Utils
 
                 c.RegisterConditional(iHandler, handler, Lifestyle.Singleton, x => !x.Handled);
                 c.RegisterConditional(iRetroactiveCommandHandler, retroactiveCommandHandler, Lifestyle.Singleton, x => !x.Handled);
+            }
+
+            var jsonResults = assembly.GetTypesFromInterface(typeof(IJsonResult));
+            foreach (var t in jsonResults)
+            {
+                var iHandler = typeof(ICommandHandler<>).MakeGenericType(typeof(RequestJson<>).MakeGenericType(t));
+                var handler = typeof(JsonRequestHandler<>).MakeGenericType(t);
+                c.RegisterConditional(iHandler, handler, Lifestyle.Singleton, x => !x.Handled);
             }
 
             var mutations = assembly.GetTypesFromInterface(typeof(IGraphQlMutation));

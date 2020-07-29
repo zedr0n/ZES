@@ -8,7 +8,7 @@ namespace ZES.Interfaces.Serialization
     /// </summary>
     /// <typeparam name="T"><see cref="ICommand"/>/<see cref="IEvent"/></typeparam>
     public interface ISerializer<T>
-        where T : class, IMessage
+        where T : class
     {
         /// <summary>
         /// Serializes the instance to json string

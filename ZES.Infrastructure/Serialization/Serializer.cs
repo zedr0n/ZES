@@ -17,7 +17,7 @@ namespace ZES.Infrastructure.Serialization
 {
     /// <inheritdoc />
     public class Serializer<T> : ISerializer<T>
-        where T : class, IMessage
+        where T : class
     {
         private readonly JsonSerializer _serializer;
         private readonly IEventSerializationRegistry _serializationRegistry;
@@ -250,6 +250,8 @@ namespace ZES.Infrastructure.Serialization
         public string EncodeMetadata(T message)
         {
             var e = message as IEvent;
+            if (e == null)
+                return null;
             var version = e?.Version ?? 0;
             var hash = e?.Hash ?? string.Empty;
 #if USE_EXPLICIT
@@ -261,25 +263,25 @@ namespace ZES.Infrastructure.Serialization
             writer.WriteStartObject();
             
             writer.WritePropertyName(nameof(IEventMetadata.MessageId));
-            writer.WriteValue(message.MessageId);
+            writer.WriteValue(e.MessageId);
             
             writer.WritePropertyName(nameof(IEventMetadata.AncestorId));
-            writer.WriteValue(message.AncestorId);
+            writer.WriteValue(e.AncestorId);
             
             writer.WritePropertyName(nameof(IEventMetadata.Timestamp));
-            writer.WriteValue(message.Timestamp);
+            writer.WriteValue(e.Timestamp);
             
             writer.WritePropertyName(nameof(IEventMetadata.Version));
             writer.WriteValue(version);
             
             writer.WritePropertyName(nameof(IEventMetadata.MessageType));
-            writer.WriteValue(message.GetType().Name);
+            writer.WriteValue(e.GetType().Name);
             
             writer.WritePropertyName(nameof(IEventMetadata.Hash));
             writer.WriteValue(hash);
             
             writer.WritePropertyName(nameof(IEventMetadata.Timeline));
-            writer.WriteValue(message.Timeline);
+            writer.WriteValue(e.Timeline);
             
             writer.WriteEndObject();
             return sw.ToString();

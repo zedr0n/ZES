@@ -24,15 +24,18 @@ namespace ZES.Utils
         /// </summary>
         /// <param name="c"><see cref="SimpleInjector"/> container</param>
         /// <param name="assembly">Assembly containing the domain to register</param>
-        public static void RegisterAll(this Container c, Assembly assembly)
+        /// <param name="useSagas">Enable sagas</param>
+        public static void RegisterAll(this Container c, Assembly assembly, bool useSagas = true)
         {
             c.RegisterEvents(assembly);
             c.RegisterAlerts(assembly);
+            c.RegisterJsonHandlers(assembly);
             c.RegisterCommands(assembly);
             c.RegisterQueries(assembly);
             c.RegisterProjections(assembly);
             c.RegisterAggregates(assembly);
-            c.RegisterSagas(assembly);
+            if (useSagas)
+                c.RegisterSagas(assembly);
         }
 
         /// <summary>
@@ -230,6 +233,26 @@ namespace ZES.Utils
             {
                 var iHandler = h.GetAsClosedInterfaceOf(typeof(IAlertHandler<>)); 
                 c.RegisterConditional(iHandler, h, Lifestyle.Singleton, x => !x.Handled);
+            } 
+        }
+
+        /// <summary>
+        /// Register the handlers for json responses
+        /// </summary>
+        /// <param name="c"><see cref="SimpleInjector"/> container</param>
+        /// <param name="assembly">Assembly containing the domain to register</param>
+        public static void RegisterJsonHandlers(this Container c, Assembly assembly)
+        {
+            var results = assembly.GetTypesFromInterface(typeof(IJsonResult));
+
+            foreach (var r in results)
+            {
+                var iHandler = typeof(IJsonHandler<>).MakeGenericType(r);
+                var handler = assembly.GetTypesFromInterface(iHandler).SingleOrDefault();
+                if (handler == null)
+                    handler = typeof(DefaultJsonHandler<>).MakeGenericType(r);
+                
+                c.Register(iHandler, handler, Lifestyle.Singleton);
             } 
         }
 

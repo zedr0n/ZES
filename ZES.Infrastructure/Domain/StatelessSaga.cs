@@ -61,8 +61,6 @@ namespace ZES.Infrastructure.Domain
         /// <summary>
         /// State machine configuration 
         /// </summary>
-        protected virtual void ConfigureStateMachine()
-        {
-        }
+        protected abstract void ConfigureStateMachine();
     }
 }

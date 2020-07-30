@@ -13,6 +13,7 @@ namespace ZES.Infrastructure
         {
             "AddCommand",
             "LogEvents",
+            "LogCommands",
             "GridSum",
             "InMemoryStreamStore",
             "Common",

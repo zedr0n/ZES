@@ -37,8 +37,8 @@ namespace ZES.Infrastructure.Projections
             
             RegisterChild(_dispatcher);
             var count = _buffer.BufferedCount;
-            _log.Debug($"{count} streams in buffer", this);
-                
+            
+            // _log.Debug($"{count} streams in buffer", this);
             if (count > 0)
             {
                 var obs = _buffer.OutputBlock.AsObservable()

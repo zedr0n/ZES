@@ -33,7 +33,14 @@ namespace ZES.Infrastructure.Net
         {
             command.EventType = "JsonRequest";
             var res = await _connector.SubmitRequest(command.Url);
-            res.ContinueWith(r => _messageQueue.Alert(new JsonRequestCompleted(command.Url, r.Result)));
+            var alert = new JsonRequestSubmitted(command.Url) { Timeline = command.Timeline };
+            _messageQueue.Alert(alert);
+            _messageQueue.UncompleteMessage(alert);
+            res.ContinueWith(r =>
+            {
+                _messageQueue.CompleteMessage(alert);
+                _messageQueue.Alert(new JsonRequestCompleted(command.Url, r.Result));
+            });
         }
 
         /// <inheritdoc />
@@ -50,6 +57,7 @@ namespace ZES.Infrastructure.Net
         private readonly IMessageQueue _messageQueue;
         private readonly ISerializer<T> _serializer;
         private readonly ICommandHandler<RequestJson> _handler;
+        private readonly IJsonHandler<T> _jsonHandler;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="JsonRequestHandler{T}"/> class.
@@ -57,27 +65,44 @@ namespace ZES.Infrastructure.Net
         /// <param name="messageQueue">Message queue</param>
         /// <param name="serializer">JSON deserializer</param>
         /// <param name="handler">JSON request connection handler</param>
-        public JsonRequestHandler(IMessageQueue messageQueue, ISerializer<T> serializer, ICommandHandler<RequestJson> handler) 
+        /// <param name="jsonHandler">JSON result handler</param>
+        public JsonRequestHandler(IMessageQueue messageQueue, ISerializer<T> serializer, ICommandHandler<RequestJson> handler, IJsonHandler<T> jsonHandler) 
         {
             _messageQueue = messageQueue;
             _serializer = serializer;
             _handler = handler;
+            _jsonHandler = jsonHandler;
         }
         
         /// <inheritdoc />
-        public async Task Handle(RequestJson<T> command)
+        public virtual async Task Handle(RequestJson<T> command)
         {
             _messageQueue.Alerts.OfType<JsonRequestCompleted>()
                 .Where(r => r.Url == command.Url)
                 .Subscribe(r =>
                 {
                     var o = _serializer.Deserialize(r.JsonData);
-                    _messageQueue.Alert(new JsonRequestCompleted<T>(r.Url, o));
+                    var alert = new JsonRequestCompleted<T>(r.Url, o) { Timeline = command.Timeline };
+                    _messageQueue.Alert(alert);
+                    PostEvents(o, command.Timeline);
                 });
             await _handler.Handle(command);
         }
 
         /// <inheritdoc />
         public async Task Handle(ICommand command) => await Handle(command as RequestJson<T>);
+        
+        private void PostEvents(T response, string timeline)
+        {
+            var events = _jsonHandler.Handle(response);
+            if (events == null) 
+                return;
+
+            foreach (var e in events)
+            {
+                e.Timeline = timeline;
+                _messageQueue.Event(e);
+            }
+        }
     }
 }

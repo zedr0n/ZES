@@ -57,8 +57,6 @@ namespace ZES.Tests.Domain.Sagas
                     if (!_rootId.Contains("Copy"))
                         SendCommand(new CreateRoot($"{_rootId}Copy"));
                 });
-            
-            base.ConfigureStateMachine();
         }
     }
 }

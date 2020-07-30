@@ -6,6 +6,7 @@ using SimpleInjector;
 using ZES.Infrastructure.Domain;
 using ZES.Interfaces;
 using ZES.Interfaces.Pipes;
+using ZES.Utils;
 
 namespace ZES
 {
@@ -46,14 +47,14 @@ namespace ZES
         /// <inheritdoc />
         public void Alert(IAlert alert)
         {
-            _log.Debug(alert.GetType().Name, this);
+            _log.Debug(alert.GetType().GetFriendlyName(), this);
             _alerts.OnNext(alert);
         }
 
         /// <inheritdoc />
         public void Event(IEvent e)
         {
-            _log.Debug(e.MessageType, this);
+            _log.Debug(e.GetType().GetFriendlyName(), this);
             _messages.OnNext(e);
         }
 

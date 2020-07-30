@@ -48,7 +48,7 @@ namespace ZES.Infrastructure.Domain
         public async Task AppendCommand(ICommand command)
         {
             var message = Encode(command);
-            _log.Debug(message.JsonData);
+            LogCommands(message);
             
             await _streamStore.AppendToStream(Key(command.EventType), ExpectedVersion.Any, message);
         }
@@ -70,6 +70,11 @@ namespace ZES.Infrastructure.Domain
                 
                 page = await page.Next();
             }
+        }
+        
+        private void LogCommands(NewStreamMessage message)
+        {
+            _log.Debug(message.JsonData);
         }
         
         private IObservable<ICommand> GetCommands(IStream stream)

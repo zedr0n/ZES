@@ -38,6 +38,5 @@ namespace ZES.Infrastructure
 
         /// <inheritdoc />
         public bool Remove(T item) => _list.Remove(item);
-
     }
 }

@@ -77,7 +77,8 @@ namespace ZES.Tests
                 var container = new Container();
                 container.Options.DefaultLifestyle = Lifestyle.Singleton;
 
-                CreateRoot().ComposeApplication(container);
+                var root = CreateRoot();
+                root.ComposeApplication(container);
                 container.Register<IGraphQlGenerator, GraphQlGenerator>(Lifestyle.Singleton);
                 container.Register<IServiceCollection>(() => new ServiceCollection(), Lifestyle.Singleton);
                 container.Register<ISchemaProvider, SchemaProvider>(Lifestyle.Singleton);
@@ -93,7 +94,8 @@ namespace ZES.Tests
                 foreach (var reg in registrations)
                     reg(container);
 
-                container.Verify();
+                // container.Verify();
+                root.Verify(container);
                 return container;
             }
         }

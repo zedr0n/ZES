@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
@@ -17,6 +18,7 @@ using ZES.Interfaces.Branching;
 using ZES.Interfaces.Causality;
 using ZES.Interfaces.Domain;
 using ZES.Interfaces.EventStore;
+using ZES.Interfaces.GraphQL;
 using ZES.Interfaces.Net;
 using ZES.Interfaces.Pipes;
 using ZES.Interfaces.Serialization;
@@ -29,8 +31,23 @@ namespace ZES
     /// <inheritdoc />
     public sealed class CompositionRoot : ICompositionRoot
     {
-        // private readonly bool _isMemoryStore = true;
-
+        /// <summary>
+        /// Verify the container 
+        /// </summary>
+        /// <param name="container">Container</param>
+        public void Verify(Container container)
+        {
+            if (!container.GetAllInstances<IEventDeserializer>().Any())
+                container.Collection.Register<IEventDeserializer>(new Type[] { });
+            if (!container.GetAllInstances<IEventSerializer>().Any())
+                container.Collection.Register<IEventSerializer>(new Type[] { });
+            if (!container.GetAllInstances<IGraphQlMutation>().Any())
+                container.Collection.Register<IGraphQlMutation>(new Type[] { });
+            if (!container.GetAllInstances<IGraphQlQuery>().Any())
+                container.Collection.Register<IGraphQlQuery>(new Type[] { });
+            container.Verify();
+        }
+        
         /// <summary>
         /// Register the services with container
         /// </summary>

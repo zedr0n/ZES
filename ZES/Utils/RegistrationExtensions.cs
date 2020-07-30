@@ -27,6 +27,7 @@ namespace ZES.Utils
         public static void RegisterAll(this Container c, Assembly assembly)
         {
             c.RegisterEvents(assembly);
+            c.RegisterAlerts(assembly);
             c.RegisterCommands(assembly);
             c.RegisterQueries(assembly);
             c.RegisterProjections(assembly);
@@ -61,12 +62,10 @@ namespace ZES.Utils
         /// <param name="assembly">Assembly containing the domain to register</param>
         public static void RegisterEvents(this Container c, Assembly assembly)
         {
-            c.Collection.Register<IEventDeserializer>( new Type[] { });
             var deserializers = assembly.GetTypesFromInterface(typeof(IEventDeserializer)).Where(t => !t.IsAbstract);
             foreach (var d in deserializers)
                 c.Collection.Append(typeof(IEventDeserializer), d);
 
-            c.Collection.Register<IEventSerializer>( new Type[] { });
             var serializers = assembly.GetTypesFromInterface(typeof(IEventSerializer)).Where(t => !t.IsAbstract);
             foreach (var s in serializers)
                 c.Collection.Append(typeof(IEventSerializer), s);
@@ -153,7 +152,6 @@ namespace ZES.Utils
                 c.RegisterConditional(iHistoricalQueryHandler, historicalHandler, Lifestyle.Transient, x => !x.Handled);
             }
 
-            c.Collection.Register<IGraphQlQuery>(new Type[] { });
             foreach (var q in assembly.GetTypesFromInterface(typeof(IGraphQlQuery)))
                 c.Collection.Append(typeof(IGraphQlQuery), q);
         }
@@ -220,6 +218,22 @@ namespace ZES.Utils
         }
 
         /// <summary>
+        /// Register the alert handlers
+        /// </summary>
+        /// <param name="c"><see cref="SimpleInjector"/> container</param>
+        /// <param name="assembly">Assembly containing the domain to register</param>
+        public static void RegisterAlerts(this Container c, Assembly assembly)
+        {
+            var handlers = assembly.GetTypesFromInterface(typeof(IAlertHandler))
+                .Where(h => !h.IsAbstract);
+            foreach (var h in handlers)
+            {
+                var iHandler = h.GetAsClosedInterfaceOf(typeof(IAlertHandler<>)); 
+                c.RegisterConditional(iHandler, h, Lifestyle.Singleton, x => !x.Handled);
+            } 
+        }
+
+        /// <summary>
         /// Registers commands with <see cref="SimpleInjector"/> container
         /// </summary>
         /// <param name="c"><see cref="SimpleInjector"/> container</param>
@@ -253,7 +267,6 @@ namespace ZES.Utils
                 c.RegisterConditional(iHandler, handler, Lifestyle.Singleton, x => !x.Handled);
             }
 
-            c.Collection.Register<IGraphQlMutation>(new Type[] { });
             var mutations = assembly.GetTypesFromInterface(typeof(IGraphQlMutation));
             foreach (var mutation in mutations)
                c.Collection.Append(typeof(IGraphQlMutation), mutation ); 
@@ -264,6 +277,19 @@ namespace ZES.Utils
             var types = assembly.GetTypes()
                 .Where(p => p.GetInterfaces().Contains(t));
             return types;
+        }
+
+        private static Type GetAsClosedTypeOf(this Type t, Type genericTypeDefinition)
+        {
+            while (t != null && (!t.IsGenericType || t.GetGenericTypeDefinition() != genericTypeDefinition))
+                t = t.BaseType;
+            return t;
+        }
+        
+        private static Type GetAsClosedInterfaceOf(this Type t, Type genericTypeDefinition)
+        {
+            var interfaces = t.GetInterfaces().ToList();
+            return interfaces.SingleOrDefault(i => i.IsGenericType && i.GetGenericTypeDefinition() == genericTypeDefinition);
         }
     }
 }

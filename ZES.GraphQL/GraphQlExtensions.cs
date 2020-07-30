@@ -57,7 +57,8 @@ namespace ZES.GraphQL
         private static void UseGraphQl(this IServiceCollection services, Container container, IEnumerable<Type> configs, ILogger logger = null)
         {
             container.Options.DefaultScopedLifestyle = new AsyncScopedLifestyle();
-            new CompositionRoot().ComposeApplication(container);
+            var root = new CompositionRoot();
+            root.ComposeApplication(container);
             container.Register(() => services, Lifestyle.Singleton);
             container.Register<ISchemaProvider, SchemaProvider>(Lifestyle.Singleton);
             container.Register<IDiagnosticObserver, DiagnosticObserver>(Lifestyle.Singleton);
@@ -82,7 +83,8 @@ namespace ZES.GraphQL
                 regMethod?.Invoke(null, new object[] { container });
             }
             
-            container.Verify();
+            // container.Verify();
+            root.Verify(container);
 
             services.AddSingleton(typeof(Container), t => container);
         }

@@ -27,14 +27,16 @@ namespace ZES.Perf
             var config = Logging.NLog.Configure();
             Logging.NLog.Enable(config);
 
-            new CompositionRoot().ComposeApplication(container);
+            var root = new CompositionRoot();
+            root.ComposeApplication(container);
             container.Register<IServiceCollection>(() => new ServiceCollection(), Lifestyle.Singleton);
 
             Config.RegisterCommands(container);
             Config.RegisterQueries(container);
             Config.RegisterProjections(container);
 
-            container.Verify();
+            //container.Verify();
+            root.Verify(container);
             return container;
         }
 

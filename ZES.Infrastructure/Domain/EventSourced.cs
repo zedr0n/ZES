@@ -82,7 +82,9 @@ namespace ZES.Infrastructure.Domain
         {
             lock (_changes)
             {
-                ApplyEvent(e, true);
+                if (!ApplyEvent(e, true)) 
+                    return;
+                
                 e.Hash = _hash;
                 
                 ((Event)e).Version = Version;
@@ -135,10 +137,10 @@ namespace ZES.Infrastructure.Domain
         /// </summary>
         /// <param name="e">Event</param>
         /// <param name="computeHash">True to compute the event hashes</param>
-        private void ApplyEvent(IEvent e, bool computeHash = false)
+        private bool ApplyEvent(IEvent e, bool computeHash = false)
         {
             if (e == null)
-                return;
+                return false;
             
             Version++;
 
@@ -152,10 +154,12 @@ namespace ZES.Infrastructure.Domain
                 handler(e);
 
             if (!computeHash)
-                return;
+                return true;
             
             if (e.Hash != _hash)
                 _invalidEvents.Add(e);
+
+            return true;
         }
 
         private void ClearUncommittedEvents()

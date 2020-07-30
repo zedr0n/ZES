@@ -45,7 +45,7 @@ namespace ZES.Infrastructure.Domain
             void Handler(TEvent e)
             {
                 action?.Invoke(e);
-                if (t != null)
+                if (t != null && StateMachine.CanFire(t))
                     StateMachine.Fire(t);
             }
             

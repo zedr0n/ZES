@@ -37,13 +37,14 @@ namespace ZES
         /// <param name="container">Container</param>
         public void Verify(Container container)
         {
-            if (!container.GetAllInstances<IEventDeserializer>().Any())
+            var registrations = container.GetCurrentRegistrations();
+            if (registrations.All(r => r.ServiceType != typeof(IEventDeserializer)))
                 container.Collection.Register<IEventDeserializer>(new Type[] { });
-            if (!container.GetAllInstances<IEventSerializer>().Any())
+            if (registrations.All(r => r.ServiceType != typeof(IEventSerializer)))
                 container.Collection.Register<IEventSerializer>(new Type[] { });
-            if (!container.GetAllInstances<IGraphQlMutation>().Any())
+            if (registrations.All(r => r.ServiceType != typeof(IGraphQlMutation)))
                 container.Collection.Register<IGraphQlMutation>(new Type[] { });
-            if (!container.GetAllInstances<IGraphQlQuery>().Any())
+            if (registrations.All(r => r.ServiceType != typeof(IGraphQlQuery)))
                 container.Collection.Register<IGraphQlQuery>(new Type[] { });
             container.Verify();
         }

@@ -31,6 +31,11 @@ namespace ZES.Infrastructure.Domain
         public long Timestamp { get; private set; }
 
         /// <summary>
+        /// Gets or sets a value indicating whether the current event should be ignored
+        /// </summary>
+        protected bool IgnoreCurrentEvent { get; set; }
+        
+        /// <summary>
         /// Static event sourced instance factory
         /// </summary>
         /// <param name="id">Event sourced identifier</param>
@@ -82,13 +87,12 @@ namespace ZES.Infrastructure.Domain
         {
             lock (_changes)
             {
-                if (!ApplyEvent(e, true)) 
-                    return;
-                
+                ApplyEvent(e, true);
                 e.Hash = _hash;
                 
                 ((Event)e).Version = Version;
-                _changes.Add(e);
+                if (!IgnoreCurrentEvent)
+                    _changes.Add(e);
             }
         }
 
@@ -137,11 +141,12 @@ namespace ZES.Infrastructure.Domain
         /// </summary>
         /// <param name="e">Event</param>
         /// <param name="computeHash">True to compute the event hashes</param>
-        private bool ApplyEvent(IEvent e, bool computeHash = false)
+        private void ApplyEvent(IEvent e, bool computeHash = false)
         {
             if (e == null)
-                return false;
-            
+                return;
+
+            IgnoreCurrentEvent = false;
             Version++;
 
             if (computeHash)
@@ -154,12 +159,10 @@ namespace ZES.Infrastructure.Domain
                 handler(e);
 
             if (!computeHash)
-                return true;
+                return;
             
             if (e.Hash != _hash)
                 _invalidEvents.Add(e);
-
-            return true;
         }
 
         private void ClearUncommittedEvents()

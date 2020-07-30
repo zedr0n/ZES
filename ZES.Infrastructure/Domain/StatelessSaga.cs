@@ -45,8 +45,14 @@ namespace ZES.Infrastructure.Domain
             void Handler(TEvent e)
             {
                 action?.Invoke(e);
-                if (t != null && StateMachine.CanFire(t))
+                if (t == null) 
+                    return;
+                
+                // we do not persist the events which are not registered
+                if (StateMachine.CanFire(t))
                     StateMachine.Fire(t);
+                else
+                    IgnoreCurrentEvent = true;
             }
             
             Register(sagaId, Handler);

@@ -260,11 +260,8 @@ namespace ZES.Infrastructure.EventStore
         
         private void LogEvents(IEnumerable<NewStreamMessage> messages)
         {
-            if (!_isDomainStore)
-                return;
-            
             foreach (var m in messages) 
-                _log.Debug(m.JsonData);
+                _log.Debug($"IsSaga : {!_isDomainStore} \n {m.JsonData}");
         }
 
         private void PublishEvents(IEnumerable<IEvent> events)

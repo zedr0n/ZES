@@ -56,7 +56,7 @@ namespace ZES.Infrastructure.EventStore
         public string Id { get; }
 
         /// <inheritdoc />
-        public string Key => $"{Timeline}:{_type}:{Id.Replace(' '.ToString(), "_")}";
+        public string Key => $"{Timeline}:{_type}:{Id.ToUpper().Replace(' '.ToString(), "_")}";
 
         /// <inheritdoc />
         public int Version

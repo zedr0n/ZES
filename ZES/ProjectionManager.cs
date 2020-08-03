@@ -39,7 +39,7 @@ namespace ZES
         public IHistoricalProjection<TState> GetHistoricalProjection<TState>(string id = "")
             where TState : IState, new()
         {
-            id = id.Replace(' '.ToString(), "_");
+            id = id.ToUpper().Replace(' '.ToString(), "_");
             var historicalProjection = _container.GetInstance<IHistoricalProjection<TState>>();
             if (id != string.Empty)
             {
@@ -53,7 +53,7 @@ namespace ZES
         private IProjection<TState> CreateProjection<TState>(string id)
             where TState : IState
         {
-            id = id.Replace(' '.ToString(), "_");
+            id = id.ToUpper().Replace(' '.ToString(), "_");
             var p = _container.GetInstance<IProjection<TState>>();
             if (typeof(TState).GetInterfaces().Contains(typeof(ISingleState)) && id == string.Empty)
                 return null;

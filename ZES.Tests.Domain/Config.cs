@@ -18,6 +18,11 @@ namespace ZES.Tests.Domain
             c.RegisterAll(Assembly.GetExecutingAssembly());
         }
         
+        public static void RegisterAllButSagas(Container c)
+        {
+            c.RegisterAll(Assembly.GetExecutingAssembly(), false);
+        }
+        
         public static void RegisterProjections(Container c)
         {
             c.RegisterProjections(Assembly.GetExecutingAssembly());

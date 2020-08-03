@@ -19,14 +19,7 @@ namespace ZES.Tests
         {
             var regs = new List<Action<Container>>
             {
-                c =>
-                {
-                    Config.RegisterEvents(c);
-                    Config.RegisterAggregates(c);
-                    Config.RegisterCommands(c);
-                    Config.RegisterQueries(c);
-                    Config.RegisterProjections(c);
-                },
+                Config.RegisterAllButSagas,
             };
             if (registrations != null)
                 regs.AddRange(registrations);

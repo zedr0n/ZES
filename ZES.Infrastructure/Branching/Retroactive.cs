@@ -228,6 +228,7 @@ namespace ZES.Infrastructure.Branching
             foreach (var e in enumerable)
             {
                 e.Version = version;
+                e.Timeline = stream.Timeline;
                 e.Stream = stream.Key;
                 version++;
             }

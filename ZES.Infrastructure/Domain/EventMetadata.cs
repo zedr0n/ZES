@@ -1,3 +1,5 @@
+using System.ComponentModel;
+using Newtonsoft.Json;
 using ZES.Interfaces;
 
 namespace ZES.Infrastructure.Domain
@@ -12,6 +14,8 @@ namespace ZES.Infrastructure.Domain
         public int Version { get; set; }
 
         /// <inheritdoc />
-        public string Hash { get; set; }
+        [DefaultValue("")]
+        [JsonProperty(DefaultValueHandling = DefaultValueHandling.Ignore)]
+        public string Hash { get; set; } = string.Empty;
     }
 }

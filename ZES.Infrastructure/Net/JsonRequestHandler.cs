@@ -1,7 +1,9 @@
 using System;
+using System.Linq;
 using System.Reactive.Linq;
 using System.Threading.Tasks;
 using ZES.Infrastructure.Alerts;
+using ZES.Infrastructure.Domain;
 using ZES.Interfaces.Domain;
 using ZES.Interfaces.Net;
 using ZES.Interfaces.Pipes;
@@ -84,7 +86,7 @@ namespace ZES.Infrastructure.Net
                     var o = _serializer.Deserialize(r.JsonData);
                     var alert = new JsonRequestCompleted<T>(r.Url, o) { Timeline = command.Timeline };
                     _messageQueue.Alert(alert);
-                    PostEvents(o, command.Timeline);
+                    PostEvents(o, command);
                 });
             await _handler.Handle(command);
         }
@@ -92,15 +94,16 @@ namespace ZES.Infrastructure.Net
         /// <inheritdoc />
         public async Task Handle(ICommand command) => await Handle(command as RequestJson<T>);
         
-        private void PostEvents(T response, string timeline)
+        private void PostEvents(T response, ICommand command)
         {
             var events = _jsonHandler.Handle(response);
             if (events == null) 
                 return;
 
-            foreach (var e in events)
+            foreach (var e in events.Cast<Event>())
             {
-                e.Timeline = timeline;
+                e.CommandId = command.MessageId;
+                e.Timeline = command.Timeline;
                 _messageQueue.Event(e);
             }
         }

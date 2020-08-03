@@ -472,9 +472,12 @@ namespace ZES.Infrastructure.Serialization
             
             writer.WritePropertyName(nameof(IEventMetadata.Version));
             writer.WriteValue(e.Version);
-            
-            writer.WritePropertyName(nameof(IEventMetadata.Hash));
-            writer.WriteValue(e.Hash);
+
+            if (e.Hash != string.Empty)
+            {
+                writer.WritePropertyName(nameof(IEventMetadata.Hash));
+                writer.WriteValue(e.Hash);
+            }
         }
 
         private void SerializeEventAndMetadata(IEvent e, out string eventJson, out string metadataJson)

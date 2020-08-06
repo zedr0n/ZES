@@ -271,7 +271,7 @@ namespace ZES.Tests
         [Fact]
         public async void CanPushToRemote()
         {
-            var container = CreateContainer(new List<Action<Container>> { c => c.UseRemoteStore() });
+            var container = CreateContainer(new List<Action<Container>> { c => c.UseLocalStore() });
             var bus = container.GetInstance<IBus>();
             var remote = container.GetInstance<IRemote>();
 

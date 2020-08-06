@@ -33,6 +33,7 @@ namespace ZES.GraphQL
         private readonly IMessageQueue _messageQueue;
         private readonly IDiagnosticObserver _observer;
         private readonly IRecordLog _recordLog;
+        private readonly IRemote _remote;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="SchemaProvider"/> class.
@@ -47,7 +48,8 @@ namespace ZES.GraphQL
         /// <param name="messageQueue">Message queue</param>
         /// <param name="observer">Diagnostic observer</param>
         /// <param name="recordLog">Record log</param>
-        public SchemaProvider(IBus bus, ILog log, IBranchManager manager, IEnumerable<IGraphQlMutation> mutations, IEnumerable<IGraphQlQuery> queries, IServiceCollection services, IGraph graph, IMessageQueue messageQueue, IDiagnosticObserver observer, IRecordLog recordLog)
+        /// <param name="remote">Remote service</param>
+        public SchemaProvider(IBus bus, ILog log, IBranchManager manager, IEnumerable<IGraphQlMutation> mutations, IEnumerable<IGraphQlQuery> queries, IServiceCollection services, IGraph graph, IMessageQueue messageQueue, IDiagnosticObserver observer, IRecordLog recordLog, IRemote remote)
         {
             _bus = bus;
             _log = log;
@@ -59,6 +61,7 @@ namespace ZES.GraphQL
             _messageQueue = messageQueue;
             _observer = observer;
             _recordLog = recordLog;
+            _remote = remote;
 
             InitialiseServices();
         }
@@ -120,6 +123,7 @@ namespace ZES.GraphQL
             _services.AddSingleton(typeof(IGraph), _graph);
             _services.AddSingleton(typeof(IMessageQueue), _messageQueue);
             _services.AddSingleton(typeof(IRecordLog), _recordLog);
+            _services.AddSingleton(typeof(IRemote), _remote);
             _services.AddDiagnosticObserver(_observer);
 
             _services.AddInMemorySubscriptionProvider();

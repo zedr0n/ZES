@@ -76,6 +76,7 @@ namespace ZES.Infrastructure.Branching
             
             _log.Info($"Pulled {pullResult.NumberOfMessages} objects from {pullResult.NumberOfStreams} streams on branch {branchId}");
             _messageQueue.Alert(new PullCompleted());
+            _messageQueue.Alert(new InvalidateProjections());
             return pullResult; 
         }
 

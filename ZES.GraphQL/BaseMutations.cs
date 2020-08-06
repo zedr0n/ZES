@@ -14,7 +14,8 @@ namespace ZES.GraphQL
         private readonly IGraph _graph;
         private readonly IMessageQueue _messageQueue;
         private readonly IRecordLog _recordLog;
-
+        private readonly IRemote _remote;
+        
         /// <summary>
         /// Initializes a new instance of the <see cref="BaseMutations"/> class.
         /// </summary>
@@ -24,15 +25,45 @@ namespace ZES.GraphQL
         /// <param name="graph">Graph</param>
         /// <param name="messageQueue">Message queue</param>
         /// <param name="recordLog">GraphQl record log</param>
-        public BaseMutations(IBus bus, ILog log, IBranchManager manager, IGraph graph, IMessageQueue messageQueue, IRecordLog recordLog) 
+        /// <param name="remote">Remote service</param>
+        public BaseMutations(IBus bus, ILog log, IBranchManager manager, IGraph graph, IMessageQueue messageQueue, IRecordLog recordLog, IRemote remote) 
             : base(bus, log)
         {
             _manager = manager;
             _graph = graph;
             _messageQueue = messageQueue;
             _recordLog = recordLog;
+            _remote = remote;
         }
 
+        /// <summary>
+        /// Remote push
+        /// </summary>
+        /// <param name="branch">Branch id</param>
+        /// <returns>True if fast-forward is successful</returns>
+        public bool Push(string branch)
+        {
+            if (branch == string.Empty)
+                return false;
+
+            var result = _remote.Push(branch).Result;
+            return result.ResultStatus == FastForwardResult.Status.Success;
+        }
+        
+        /// <summary>
+        /// Remote pull
+        /// </summary>
+        /// <param name="branch">Branch id</param>
+        /// <returns>True if fast-forward is successful</returns>
+        public bool Pull(string branch)
+        {
+            if (branch == string.Empty)
+                return false;
+
+            var result = _remote.Pull(branch).Result;
+            return result.ResultStatus == FastForwardResult.Status.Success;
+        }
+        
         /// <summary>
         /// Branch mutation
         /// </summary>

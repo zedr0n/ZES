@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using System.Threading.Tasks;
 using NLog;
 using SimpleInjector;
 using SqlStreamStore;
@@ -187,16 +188,39 @@ namespace ZES
             return Lifestyle.Singleton.CreateRegistration(
                 () =>
                 {
-                    var store = new MsSqlStreamStoreV3(new MsSqlStreamStoreV3Settings(Configuration.MsSqlConnectionString));
-
-                    if (dropAll)
-                        store.DropAll().Wait();
-                    if (dropAll || !store.CheckSchema().Result.IsMatch())
-                        store.CreateSchemaIfNotExists().Wait();
+                    IStreamStore store = null;
+                    if (!Configuration.UseMySql)
+                        store = GetMsSqlStore(dropAll).Result;
+                    else
+                        store = GetMySqlStore(dropAll).Result;
 
                     return store;
                 },
                 container);
+        }
+
+        private async Task<IStreamStore> GetMsSqlStore(bool dropAll)
+        {
+            var store = new MsSqlStreamStoreV3(new MsSqlStreamStoreV3Settings(Configuration.MsSqlConnectionString));
+
+            if (dropAll)
+                await store.DropAll();
+            if (dropAll || !(await store.CheckSchema()).IsMatch())
+                store.CreateSchemaIfNotExists().Wait();
+
+            return store;
+        }
+
+        private async Task<IStreamStore> GetMySqlStore(bool dropAll)
+        {
+            var store = new MySqlStreamStore(new MySqlStreamStoreSettings(Configuration.MySqlConnectionString));
+
+            if (dropAll)
+                store.DropAll().Wait();
+            if (dropAll || !store.CheckSchema().Result.IsMatch)
+                store.CreateSchemaIfNotExists().Wait();
+
+            return store;
         }
 
         private class RemoteStreamStore

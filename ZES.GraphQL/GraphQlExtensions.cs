@@ -23,7 +23,8 @@ namespace ZES.GraphQL
         /// <param name="services"><see cref="IServiceCollection"/></param>
         /// <param name="config">Config type containing the domain registration, root queries and mutations</param>
         /// <param name="logger">Logger instance ( for XUnit )</param>
-        public static void UseGraphQl(this IServiceCollection services, Type config, ILogger logger = null)
+        /// <param name="useRemoteStore">Use remote store</param>
+        public static void UseGraphQl(this IServiceCollection services, Type config, ILogger logger = null, bool useRemoteStore = false)
         {
             var container = new Container();
             container.Options.DefaultLifestyle = Lifestyle.Singleton;
@@ -38,13 +39,14 @@ namespace ZES.GraphQL
         /// <param name="services"><see cref="IServiceCollection"/>></param>
         /// <param name="configs">Root configs</param>
         /// <param name="logger">Logger instance ( for XUnit )</param>
-        public static void UseGraphQl(this IServiceCollection services, IEnumerable<Type> configs, ILogger logger = null)
+        /// <param name="useRemoteStore">Use remote store</param>
+        public static void UseGraphQl(this IServiceCollection services, IEnumerable<Type> configs, ILogger logger = null, bool useRemoteStore = false)
         {
             var container = new Container();
             container.Options.DefaultLifestyle = Lifestyle.Singleton;
 
             services.AddInMemorySubscriptionProvider();
-            UseGraphQl(services, container, configs, logger);
+            UseGraphQl(services, container, configs, logger, useRemoteStore);
         }
 
         /// <summary>
@@ -54,7 +56,8 @@ namespace ZES.GraphQL
         /// <param name="container"><see cref="SimpleInjector"/> container</param>
         /// <param name="configs">Config types containing the domain registration, root queries and mutations</param>
         /// <param name="logger">Logger instance ( for XUnit )</param>
-        private static void UseGraphQl(this IServiceCollection services, Container container, IEnumerable<Type> configs, ILogger logger = null)
+        /// <param name="useRemoteStore">Use remote store</param>
+        private static void UseGraphQl(this IServiceCollection services, Container container, IEnumerable<Type> configs, ILogger logger = null, bool useRemoteStore = false)
         {
             container.Options.DefaultScopedLifestyle = new AsyncScopedLifestyle();
             var root = new CompositionRoot();
@@ -62,6 +65,8 @@ namespace ZES.GraphQL
             container.Register(() => services, Lifestyle.Singleton);
             container.Register<ISchemaProvider, SchemaProvider>(Lifestyle.Singleton);
             container.Register<IDiagnosticObserver, DiagnosticObserver>(Lifestyle.Singleton);
+            if (useRemoteStore)
+                root.RegisterRemoteStore(container, false);
 
             if (logger != null)
             {

@@ -20,6 +20,19 @@ namespace ZES.Infrastructure
         };
 
         /// <summary>
+        /// Gets a value indicating whether to use local MySql or Azure MSSql
+        /// </summary>
+        /// <remarks>SQL requires to run SET @@global.sql_mode= ''; for long name support</remarks>
+        public static bool UseMySql => true;
+
+        /// <summary>
+        /// Gets MySql database connection string
+        /// </summary>
+        public static string MySqlConnectionString =>
+            @"Server=localhost;Port=4406;Database=zes;Uid=zes;Pwd=zes";
+            //Environment.GetEnvironmentVariable("MySqlConnectionString".ToUpper());
+        
+        /// <summary>
         /// Gets azure SQL database connection string
         /// </summary>
         /// <value>

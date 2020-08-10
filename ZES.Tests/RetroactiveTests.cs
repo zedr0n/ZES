@@ -147,8 +147,6 @@ namespace ZES.Tests
 
             manager.Reset();
             stream = streamLocator.Find<Root>("Root", timeline.Id);
-            var time = graph.GetTimestamp(stream.Key, 1);
-            Assert.Equal(lastTime, time);
 
             await retroactive.TryInsertIntoStream(stream, 1, new[] { e });
 

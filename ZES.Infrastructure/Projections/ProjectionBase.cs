@@ -99,15 +99,6 @@ namespace ZES.Infrastructure.Projections
         /// Gets or sets gets log service 
         /// </summary>
         public ILog Log { get; set; }
-        
-        /// <summary>
-        /// Gets dataflow default options
-        /// </summary>
-        protected DataflowOptions Options { get; } = new DataflowOptions
-        {
-            RecommendedParallelismIfMultiThreaded = Configuration.ThreadsPerInstance,
-            FlowMonitorEnabled = false,
-        };
 
         /// <summary>
         /// Gets build flow instance
@@ -192,8 +183,8 @@ namespace ZES.Infrastructure.Projections
                 State = new TState();
             }
 
-            var rebuildDispatcher = new ProjectionDispatcher<TState>(Options, this);
-            var liveDispatcher = new ProjectionBufferedDispatcher<TState>(Options, this);
+            var rebuildDispatcher = new ProjectionDispatcher<TState>(Configuration.DataflowOptions, this);
+            var liveDispatcher = new ProjectionBufferedDispatcher<TState>(Configuration.DataflowOptions, this);
 
             CancellationToken.Register(async () =>
             {

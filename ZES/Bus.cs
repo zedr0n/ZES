@@ -71,9 +71,9 @@ namespace ZES
         }
 
         private CommandDispatcher CreateDispatcher(string timeline) => new CommandDispatcher(
-            HandleCommand, 
-            timeline, 
-            new DataflowOptions { RecommendedParallelismIfMultiThreaded = 1 }); 
+            HandleCommand,
+            timeline,
+            Configuration.DataflowOptions); 
 
         private object GetInstance(Type type)
         {
@@ -102,11 +102,13 @@ namespace ZES
         private class CommandDispatcher : ParallelDataDispatcher<string, Tracked<ICommand>>
         {
             private readonly Func<ICommand, Task> _handler;
+            private DataflowOptions _options;
 
             public CommandDispatcher(Func<ICommand, Task> handler, string timeline, DataflowOptions options) 
                 : base(c => $"{timeline}:{c.Value.Target}", options, CancellationToken.None)
             {
                 _handler = handler;
+                _options = options;
             }
             
             protected override Dataflow<Tracked<ICommand>> CreateChildFlow(string target)
@@ -116,9 +118,9 @@ namespace ZES
                     {
                         await _handler(c.Value);
                         c.Complete();
-                    }, new ExecutionDataflowBlockOptions { MaxDegreeOfParallelism = 1 } );
+                    }, _options.ToExecutionBlockOption()); 
                 
-                return block.ToDataflow();
+                return block.ToDataflow(_options);
             }
         }
     }

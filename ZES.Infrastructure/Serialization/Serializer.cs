@@ -7,6 +7,7 @@ using System.Runtime.Serialization;
 using System.Text;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using SqlStreamStore.Streams;
 using ZES.Infrastructure.Domain;
 using ZES.Interfaces;
 using ZES.Interfaces.EventStore;
@@ -147,10 +148,33 @@ namespace ZES.Infrastructure.Serialization
         public string EncodeStreamMetadata(IStream stream)
         {
 #if USE_EXPLICIT
-            var meta = new JObject(
+            using (var writer = new StringWriter())
+            {
+                var jsonWriter = new JsonTextWriter(writer) {Formatting = Formatting.Indented};
+                jsonWriter.WriteStartObject();
+                
+                jsonWriter.WritePropertyName(nameof(IStream.Key));
+                jsonWriter.WriteValue(stream.Key);
+                
+                jsonWriter.WritePropertyName(nameof(IStream.Version));
+                jsonWriter.WriteValue(stream.Version);
+
+                if (stream.Parent != null)
+                {
+                    jsonWriter.WritePropertyName($"Parent{nameof(IStream.Key)}");
+                    jsonWriter.WriteValue(stream.Parent.Key);
+                    
+                    jsonWriter.WritePropertyName($"Parent{nameof(IStream.Version)}");
+                    jsonWriter.WriteValue(stream.Parent.Version);
+                }
+                
+                jsonWriter.WriteEndObject();
+                return writer.ToString();
+            }
+            
+            /*var meta = new JObject(
                 new JProperty(nameof(IStream.Key), stream.Key),
                 new JProperty(nameof(IStream.Version), stream.Version));
-
             if (stream.Parent != null)
             {
                 var parent = new JObject(
@@ -159,8 +183,8 @@ namespace ZES.Infrastructure.Serialization
                 meta.Add(nameof(IStream.Parent), parent);
             }
 
-            return meta.ToString();
-#else            
+            return meta.ToString();*/
+#else
             var meta = new StreamMetadata(stream.Key, stream.Version);
             
             if (stream.Parent != null)
@@ -193,7 +217,46 @@ namespace ZES.Infrastructure.Serialization
             if (json == null)
                 return null;
 #if USE_EXPLICIT
-            var jarray = JObject.Parse(json);
+            
+            var reader = new JsonTextReader(new StringReader(json));
+            
+            var currentProperty = string.Empty;
+            var key = string.Empty;
+            var version = ExpectedVersion.EmptyStream;
+            var parentKey = string.Empty;
+            var parentVersion = ExpectedVersion.NoStream;
+            while (reader.Read())
+            {
+                if (reader.Value == null)
+                    continue;
+
+                switch (reader.TokenType)
+                {
+                    case JsonToken.PropertyName:
+                        currentProperty = reader.Value.ToString();
+                        break;
+                    case JsonToken.String when currentProperty == nameof(IStream.Key):
+                        key = (string)reader.Value;
+                        break;
+                    case JsonToken.String when currentProperty == $"Parent{nameof(IStream.Key)}":
+                        parentKey = (string) reader.Value;
+                        break;
+                    case JsonToken.Integer when currentProperty == nameof(IStream.Version):
+                        version = (int)(long)reader.Value;
+                        break;
+                    case JsonToken.Integer when currentProperty == $"Parent{nameof(IStream.Version)}":
+                        parentVersion = (int)(long)reader.Value;
+                        break;
+                }
+            }
+            
+            var stream = new Stream(key, version);
+            if (parentKey != string.Empty)
+                stream.Parent = new Stream(parentKey, parentVersion);
+
+            return stream;
+
+            /*var jarray = JObject.Parse(json);
             
             if (!jarray.TryGetValue(nameof(IStream.Version), out var version))
                 return null;
@@ -211,8 +274,8 @@ namespace ZES.Infrastructure.Serialization
                 
             stream.Parent = new Stream((string)parentKey, (int)parentVersion);
 
-            return stream;
-#else            
+            return stream;*/
+#else
             StreamMetadata meta;
 
 #if USE_UTF8

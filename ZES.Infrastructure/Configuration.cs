@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using Gridsum.DataflowEx;
 
 namespace ZES.Infrastructure
 {
@@ -19,6 +20,16 @@ namespace ZES.Infrastructure
             "Common",
         };
 
+        /// <summary>
+        /// Gets default dataflow options 
+        /// </summary>
+        public static DataflowOptions DataflowOptions => new DataflowOptions
+        {
+            RecommendedParallelismIfMultiThreaded = ThreadsPerInstance,
+            BlockMonitorEnabled = false,
+            FlowMonitorEnabled = false,
+        };
+        
         /// <summary>
         /// Gets a value indicating whether to use local MySql or Azure MSSql
         /// </summary>

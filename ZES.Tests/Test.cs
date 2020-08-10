@@ -86,7 +86,8 @@ namespace ZES.Tests
 
                 container.Options.AllowOverridingRegistrations = true;
                 container.Register(typeof(ILogger), () => _logger, Lifestyle.Singleton);
-                container.Register<IGraph, Graph>(Lifestyle.Singleton);
+                // container.Register<IGraph, Graph>(Lifestyle.Singleton);
+                container.Register<IGraph, NullGraph>(Lifestyle.Singleton);
                 container.Options.AllowOverridingRegistrations = false;
                 
                 if (registrations == null)

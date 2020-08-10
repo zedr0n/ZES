@@ -344,7 +344,7 @@ namespace ZES.Infrastructure.Branching
             private readonly ActionBlock<IStream> _inputBlock;
             
             public ChangesFlow(ITimeline currentBranch, ConcurrentDictionary<IStream, int> streams) 
-                : base(DataflowOptions.Default)
+                : base(Configuration.DataflowOptions)
             {
                 _inputBlock = new ActionBlock<IStream>(
                     s =>
@@ -357,7 +357,7 @@ namespace ZES.Infrastructure.Branching
 
                             if (s.Version == version)
                                 return;
-                            
+
                             if (parent.Timeline == currentBranch?.Id)
                                 break;
 
@@ -366,7 +366,7 @@ namespace ZES.Infrastructure.Branching
 
                         var stream = parent ?? s.Branch(s.Timeline, version);
                         streams.TryAdd(stream, s.Version - version);
-                    }, new ExecutionDataflowBlockOptions { MaxDegreeOfParallelism = Configuration.ThreadsPerInstance });
+                    }, Configuration.DataflowOptions.ToExecutionBlockOption(true)); 
 
                 RegisterChild(_inputBlock);
             }
@@ -382,7 +382,7 @@ namespace ZES.Infrastructure.Branching
             private int _numberOfStreams;
             
             public MergeFlow(ITimeline currentBranch, IEventStore<T> eventStore, IStreamLocator streamLocator) 
-                : base(DataflowOptions.Default)
+                : base(Configuration.DataflowOptions)
             {
                 _inputBlock = new ActionBlock<IStream>(
                     async s =>
@@ -395,12 +395,15 @@ namespace ZES.Infrastructure.Branching
                             parentStream = streamLocator.Find(parent);
                             version = parentStream.Version;
 
-                            if (currentBranch != null && (version > parent.Version && parent.Timeline == currentBranch.Id))
+                            if (currentBranch != null &&
+                                (version > parent.Version && parent.Timeline == currentBranch.Id))
                             {
                                 var theseEvents = await eventStore
-                                    .ReadStream<IEvent>(parentStream, parent.Version + 1, version - parent.Version).Select(e => e.MessageId).ToList();
+                                    .ReadStream<IEvent>(parentStream, parent.Version + 1, version - parent.Version)
+                                    .Select(e => e.MessageId).ToList();
                                 var thoseEvents = await eventStore
-                                    .ReadStream<IEvent>(s, parent.Version + 1, version - parent.Version).Select(e => e.MessageId).ToList();
+                                    .ReadStream<IEvent>(s, parent.Version + 1, version - parent.Version)
+                                    .Select(e => e.MessageId).ToList();
                                 if (theseEvents.Zip(thoseEvents, (e1, e2) => (e1, e2)).Any(x => x.Item1 != x.Item2))
                                 {
                                     throw new InvalidOperationException(
@@ -412,7 +415,7 @@ namespace ZES.Infrastructure.Branching
 
                             if (s.Version == version)
                                 return;
-                            
+
                             if (parentStream.Timeline == currentBranch?.Id)
                                 break;
 
@@ -426,9 +429,9 @@ namespace ZES.Infrastructure.Branching
                             e.Stream = parentStream.Key;
 
                         Interlocked.Add(ref _numberOfEvents, events.Count);
-                        
+
                         await eventStore.AppendToStream(parentStream, events, false);
-                }, new ExecutionDataflowBlockOptions { MaxDegreeOfParallelism = Configuration.ThreadsPerInstance });
+                    }, Configuration.DataflowOptions.ToExecutionBlockOption(true)); 
 
                 RegisterChild(_inputBlock);
             }
@@ -458,7 +461,7 @@ namespace ZES.Infrastructure.Branching
             private int _numberOfStreams;
             
             public CloneFlow(string timeline, long time, IEventStore<T> eventStore) 
-                : base(DataflowOptions.Default)
+                : base(Configuration.DataflowOptions)
             {
                 _inputBlock = new ActionBlock<IStream>(
                     async s =>
@@ -470,7 +473,7 @@ namespace ZES.Infrastructure.Branching
                         var clone = s.Branch(timeline, version);
                         await eventStore.AppendToStream(clone);
                         Interlocked.Increment(ref _numberOfStreams);
-                    }, new ExecutionDataflowBlockOptions { MaxDegreeOfParallelism = Configuration.ThreadsPerInstance });
+                    }, Configuration.DataflowOptions.ToExecutionBlockOption(true)); 
 
                 RegisterChild(_inputBlock);
             }

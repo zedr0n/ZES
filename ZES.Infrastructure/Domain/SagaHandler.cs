@@ -41,7 +41,8 @@ namespace ZES.Infrastructure.Domain
             _source = new CancellationTokenSource();
             
             var dispatcher = _dispatcher
-                .WithOptions(new DataflowOptions { RecommendedParallelismIfMultiThreaded = Configuration.ThreadsPerInstance })
+                //.WithOptions(new DataflowOptions { RecommendedParallelismIfMultiThreaded = Configuration.ThreadsPerInstance })
+                .WithOptions(Configuration.DataflowOptions)
                 .Bind(); 
 
             _messageQueue.Messages.Select(e =>
@@ -88,7 +89,7 @@ namespace ZES.Infrastructure.Domain
             {
                 private readonly ILog _log;
                 private readonly SagaFlow.Builder _sagaFlow;
-                private DataflowOptions _options = DataflowOptions.Default;
+                private DataflowOptions _options = Configuration.DataflowOptions;
 
                 /// <summary>
                 /// Initializes a new instance of the <see cref="Builder"/> class.

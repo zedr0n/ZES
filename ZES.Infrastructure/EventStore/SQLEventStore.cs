@@ -1,3 +1,5 @@
+// #define USE_CACHE
+
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -226,7 +228,7 @@ namespace ZES.Infrastructure.EventStore
             {
                 if (typeof(T) == typeof(IEvent))
                 {
-                    var dataflow = new DeserializeEventFlow( new DataflowOptions { RecommendedParallelismIfMultiThreaded = Configuration.ThreadsPerInstance }, _serializer, _cache);
+                    var dataflow = new DeserializeEventFlow(Configuration.DataflowOptions, _serializer, _cache);
                     page.Messages.Take(count).ToList().ToObservable().Subscribe(dataflow.InputBlock.AsObserver());
                     var events = await dataflow.OutputBlock.AsObservable().ToList();
                     foreach (var e in events.OrderBy(e => e.Version))
@@ -239,7 +241,7 @@ namespace ZES.Infrastructure.EventStore
                 }
                 else
                 {
-                    var dataflow = new DeserializeMetadataFlow( new DataflowOptions { RecommendedParallelismIfMultiThreaded = Configuration.ThreadsPerInstance }, _serializer);
+                    var dataflow = new DeserializeMetadataFlow(Configuration.DataflowOptions, _serializer);
                     page.Messages.Take(count).ToList().ToObservable().Subscribe(dataflow.InputBlock.AsObserver());
                     var metadata = await dataflow.OutputBlock.AsObservable().ToList();
                     foreach (var m in metadata.OrderBy(e => e.Version))
@@ -284,17 +286,19 @@ namespace ZES.Infrastructure.EventStore
                 var block = new TransformBlock<StreamMessage, IEvent>(
                     async m =>
                 {
+#if USE_CACHE
+                    if (_cache.TryGetValue(m.MessageId, out var @event)) 
+                        return @event;
+                    
+                    var payload = await m.GetJsonData();
+                    @event = serializer.Deserialize(payload);
+                    _cache.TryAdd(m.MessageId, @event);
+
+                    return @event;
+#else
                     var payload = await m.GetJsonData();
                     return serializer.Deserialize(payload);
-                    
-                    /*if (!_cache.TryGetValue(m.MessageId, out var @event))
-                    {
-                        var payload = await m.GetJsonData();
-                        @event = serializer.Deserialize(payload);
-                        _cache.TryAdd(m.MessageId, @event);
-                    }
-                    
-                    return @event;*/
+#endif
                 }, dataflowOptions.ToExecutionBlockOption(true));
 
                 RegisterChild(block);

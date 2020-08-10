@@ -4,6 +4,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Threading.Tasks.Dataflow;
 using Gridsum.DataflowEx;
+using ZES.Interfaces;
 using ZES.Interfaces.Net;
 
 namespace ZES.Infrastructure.Net
@@ -15,12 +16,15 @@ namespace ZES.Infrastructure.Net
             new ConcurrentDictionary<string, AsyncLazy<string>>(); 
         private readonly ConnectorFlow _flow;
 
+        private readonly ILog _log;
+        
         /// <summary>
         /// Initializes a new instance of the <see cref="JsonConnector"/> class.
         /// </summary>
-        public JsonConnector()
+        public JsonConnector(ILog log)
         {
-            _flow = new ConnectorFlow(new DataflowOptions { RecommendedParallelismIfMultiThreaded = Configuration.ThreadsPerInstance }, this);
+            _log = log;
+            _flow = new ConnectorFlow(Configuration.DataflowOptions, this);
         }
         
         /// <inheritdoc />
@@ -35,6 +39,7 @@ namespace ZES.Infrastructure.Net
         {
             using (var w = new HttpClient())
             {
+                _log.Info($"Initiating json connection to {url}");
                 var task = _jsonData.GetOrAdd(url, s => new AsyncLazy<string>(() => w.GetStringAsync(url)));
                 var json = await task;
                 return string.IsNullOrEmpty(json) ? null : json;

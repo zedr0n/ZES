@@ -5,6 +5,7 @@ namespace ZES.Interfaces.Domain
     /// </summary>
     /// <typeparam name="TState">State type</typeparam>
     public interface IProjectionHandler<TState>
+        where TState : IState
     {
         /// <summary>
         /// Modify state according to event
@@ -17,6 +18,7 @@ namespace ZES.Interfaces.Domain
 
     /// <inheritdoc />
     public interface IProjectionHandler<TState, TEvent> : IProjectionHandler<TState>
+        where TState : IState
     {
         /// <summary>
         /// Modify state according to event

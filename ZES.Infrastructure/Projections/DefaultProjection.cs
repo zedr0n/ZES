@@ -9,7 +9,7 @@ namespace ZES.Infrastructure.Projections
 {
     /// <inheritdoc />
     public class DefaultProjection<TState> : GlobalProjection<TState> 
-        where TState : new()
+        where TState : IState, new()
     {
         /// <summary>
         /// Initializes a new instance of the <see cref="DefaultProjection{TState}"/> class.

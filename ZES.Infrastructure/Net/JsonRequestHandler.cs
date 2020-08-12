@@ -35,13 +35,13 @@ namespace ZES.Infrastructure.Net
         {
             command.EventType = "JsonRequest";
             var res = await _connector.SubmitRequest(command.Url);
-            var alert = new JsonRequestSubmitted(command.Url) { Timeline = command.Timeline };
+            var alert = new JsonRequestSubmitted(command.Target, command.Url) { Timeline = command.Timeline };
             _messageQueue.Alert(alert);
             _messageQueue.UncompleteMessage(alert);
             res.ContinueWith(r =>
             {
                 _messageQueue.CompleteMessage(alert);
-                _messageQueue.Alert(new JsonRequestCompleted(command.Url, r.Result));
+                _messageQueue.Alert(new JsonRequestCompleted(command.Target, command.Url, r.Result));
             });
         }
 
@@ -84,7 +84,8 @@ namespace ZES.Infrastructure.Net
                 .Subscribe(r =>
                 {
                     var o = _serializer.Deserialize(r.JsonData);
-                    var alert = new JsonRequestCompleted<T>(r.Url, o) { Timeline = command.Timeline };
+                    o.RequestorId = r.RequestorId;
+                    var alert = new JsonRequestCompleted<T>(r.RequestorId, r.Url, o) { Timeline = command.Timeline };
                     _messageQueue.Alert(alert);
                     PostEvents(o, command);
                 });

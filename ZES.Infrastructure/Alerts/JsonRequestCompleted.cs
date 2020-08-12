@@ -10,14 +10,21 @@ namespace ZES.Infrastructure.Alerts
         /// <summary>
         /// Initializes a new instance of the <see cref="JsonRequestCompleted"/> class.
         /// </summary>
+        /// <param name="requestorId">Request correlation id</param>
         /// <param name="url">JSON endpoint url</param>
         /// <param name="jsonData">JSON data result</param>
-        public JsonRequestCompleted(string url, string jsonData)
+        public JsonRequestCompleted(string requestorId, string url, string jsonData)
         {
             Url = url;
             JsonData = jsonData;
+            RequestorId = requestorId;
         }
 
+        /// <summary>
+        /// Gets the request correlation id
+        /// </summary>
+        public string RequestorId { get; }
+        
         /// <summary>
         /// Gets the json data payload
         /// </summary>
@@ -39,13 +46,20 @@ namespace ZES.Infrastructure.Alerts
         /// <summary>
         /// Initializes a new instance of the <see cref="JsonRequestCompleted{T}"/> class.
         /// </summary>
+        /// <param name="requestorId">Request correlation id</param>
         /// <param name="url">JSON endpoint url</param>
         /// <param name="data">Deserialized result</param>
-        public JsonRequestCompleted(string url, T data)
+        public JsonRequestCompleted(string requestorId, string url, T data)
         {
             Url = url;
             Data = data;
+            RequestorId = requestorId;
         }
+        
+        /// <summary>
+        /// Gets the request correlation id
+        /// </summary>
+        public string RequestorId { get; }
 
         /// <summary>
         /// Gets the deserialized result

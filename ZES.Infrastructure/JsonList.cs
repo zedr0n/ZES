@@ -1,12 +1,13 @@
 using System.Collections;
 using System.Collections.Generic;
 using Newtonsoft.Json;
+using ZES.Interfaces.Net;
 
 namespace ZES.Infrastructure
 {
     /// <inheritdoc />
     [JsonArray]
-    public class JsonList<T> : ICollection<T>
+    public class JsonList<T> : ICollection<T>, IJsonResult
     {
         private readonly List<T> _list = new List<T>();
 
@@ -38,5 +39,8 @@ namespace ZES.Infrastructure
 
         /// <inheritdoc />
         public bool Remove(T item) => _list.Remove(item);
+
+        /// <inheritdoc />
+        public string RequestorId { get; set; }
     }
 }

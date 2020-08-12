@@ -12,9 +12,10 @@ namespace ZES.Infrastructure.Net
         /// <summary>
         /// Initializes a new instance of the <see cref="RequestJson"/> class.
         /// </summary>
+        /// <param name="requestorId">Request correlation id</param>
         /// <param name="url">Target url</param>
-        public RequestJson(string url) 
-            : base("JsonRequest")
+        public RequestJson(string requestorId, string url) 
+            : base(requestorId)
         {
             Url = url;
         }
@@ -35,9 +36,10 @@ namespace ZES.Infrastructure.Net
         /// <summary>
         /// Initializes a new instance of the <see cref="RequestJson{T}"/> class.
         /// </summary>
+        /// <param name="requestorId">Request correlation id</param>
         /// <param name="url">Target url</param>
-        public RequestJson(string url) 
-            : base(url)
+        public RequestJson(string requestorId, string url) 
+            : base(requestorId, url)
         {
         }
     }

@@ -7,6 +7,7 @@ using ZES.Interfaces.EventStore;
 
 namespace ZES.Infrastructure.EventStore
 {
+    
     /// <inheritdoc />
     public class Stream : IStream
     {
@@ -21,7 +22,7 @@ namespace ZES.Infrastructure.EventStore
         /// <param name="type">Event sourced type</param>
         /// <param name="version">Event sourced version</param>
         /// <param name="timeline">Stream timeline</param>
-        public Stream(string id, string type, int version, string timeline)
+        public Stream(string id, string type, int version, string timeline, IStream parent = null)
         {
             Id = id;
             _type = type;
@@ -56,7 +57,7 @@ namespace ZES.Infrastructure.EventStore
         public string Id { get; }
 
         /// <inheritdoc />
-        public string Key => $"{Timeline}:{_type}:{Id.ToUpper().Replace(' '.ToString(), "_")}";
+        public string Key => $"{Timeline}:{_type}:{Id.Replace(' '.ToString(), "_")}";
 
         /// <inheritdoc />
         public int Version

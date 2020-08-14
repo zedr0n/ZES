@@ -19,6 +19,8 @@ using ZES.Tests.Domain.Sagas;
 using static ZES.Interfaces.FastForwardResult;
 using static ZES.Utils.ObservableExtensions;
 
+#pragma warning disable SA1600
+
 namespace ZES.Tests
 {
     public class BranchTests : ZesTest
@@ -61,6 +63,35 @@ namespace ZES.Tests
 
             var graph = container.GetInstance<IGraph>();
             await graph.Serialise(nameof(CanMergeTimeline));
+        }
+
+        [Fact]
+        public async void CanMergeWithoutNewStreams()
+        {
+            var container = CreateContainer(new List<Action<Container>>() { Config.RegisterSagas });
+            var bus = container.GetInstance<IBus>();
+            var manager = container.GetInstance<IBranchManager>();
+            
+            var command = new CreateRoot("Root");
+            await await bus.CommandAsync(command);
+            
+            await manager.Branch("test");
+            
+            await await bus.CommandAsync(new UpdateRoot("Root"));
+            
+            var infoQuery = new RootInfoQuery("Root");
+            await bus.IsTrue(infoQuery, r => r.CreatedAt < r.UpdatedAt);
+
+            await await bus.CommandAsync(new CreateRoot("BranchRoot"));
+
+            manager.Reset();
+            
+            await bus.IsTrue(infoQuery, r => r.CreatedAt == r.UpdatedAt);
+
+            await manager.Merge("test", false);
+            
+            await bus.IsTrue(infoQuery, r => r.CreatedAt < r.UpdatedAt);
+            await bus.Equal(new StatsQuery(), s => s.NumberOfRoots, 2);
         }
 
         [Fact]

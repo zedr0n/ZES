@@ -67,6 +67,12 @@ namespace ZES.Infrastructure.Domain
         }
 
         /// <inheritdoc />
+        public virtual void Clear()
+        {
+            ClearUncommittedEvents();
+        }
+
+        /// <inheritdoc />
         public void TimestampEvents(long timestamp)
         {
             lock (_changes)

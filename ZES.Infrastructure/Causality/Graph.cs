@@ -17,6 +17,8 @@ using ZES.Interfaces;
 using ZES.Interfaces.Causality;
 using ZES.Interfaces.Serialization;
 
+#pragma warning disable SA1600
+
 namespace ZES.Infrastructure.Causality
 {
     /// <inheritdoc />

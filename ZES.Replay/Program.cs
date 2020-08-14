@@ -5,6 +5,7 @@ using ZES.GraphQL;
 using ZES.Tests.Domain;
 
 #pragma warning disable 1591
+#pragma warning disable SA1600
 
 namespace ZES.Replay
 {

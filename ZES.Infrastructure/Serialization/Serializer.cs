@@ -150,7 +150,7 @@ namespace ZES.Infrastructure.Serialization
 #if USE_EXPLICIT
             using (var writer = new StringWriter())
             {
-                var jsonWriter = new JsonTextWriter(writer) {Formatting = Formatting.Indented};
+                var jsonWriter = new JsonTextWriter(writer) { Formatting = Formatting.Indented };
                 jsonWriter.WriteStartObject();
                 
                 jsonWriter.WritePropertyName(nameof(IStream.Key));
@@ -239,7 +239,7 @@ namespace ZES.Infrastructure.Serialization
                         key = (string)reader.Value;
                         break;
                     case JsonToken.String when currentProperty == $"Parent{nameof(IStream.Key)}":
-                        parentKey = (string) reader.Value;
+                        parentKey = (string)reader.Value;
                         break;
                     case JsonToken.Integer when currentProperty == nameof(IStream.Version):
                         version = (int)(long)reader.Value;

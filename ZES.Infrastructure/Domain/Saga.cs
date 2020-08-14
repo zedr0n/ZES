@@ -38,6 +38,13 @@ namespace ZES.Infrastructure.Domain
             ClearUncommittedCommands();
         }
 
+        /// <inheritdoc />
+        public override void Clear()
+        {
+            ClearUncommittedCommands();
+            base.Clear();
+        }
+
         /// <summary>
         /// Associate the event with the specified saga id resolver
         /// and handle using the provided action

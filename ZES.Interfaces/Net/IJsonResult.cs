@@ -6,7 +6,7 @@ namespace ZES.Interfaces.Net
     public interface IJsonResult
     {
         /// <summary>
-        /// Gets request correlation id
+        /// Gets or sets request correlation id
         /// </summary>
         string RequestorId { get; set; }
     }

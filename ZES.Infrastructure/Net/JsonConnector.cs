@@ -21,6 +21,7 @@ namespace ZES.Infrastructure.Net
         /// <summary>
         /// Initializes a new instance of the <see cref="JsonConnector"/> class.
         /// </summary>
+        /// <param name="log">Log service</param>
         public JsonConnector(ILog log)
         {
             _log = log;

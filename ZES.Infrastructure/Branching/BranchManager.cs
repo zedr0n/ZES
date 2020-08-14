@@ -10,6 +10,7 @@ using Gridsum.DataflowEx;
 using SqlStreamStore.Streams;
 using ZES.Infrastructure.Alerts;
 using ZES.Infrastructure.Domain;
+using ZES.Infrastructure.EventStore;
 using ZES.Interfaces;
 using ZES.Interfaces.Branching;
 using ZES.Interfaces.Causality;
@@ -166,7 +167,7 @@ namespace ZES.Infrastructure.Branching
         }
         
         /// <inheritdoc />
-        public async Task Merge(string branchId)
+        public async Task Merge(string branchId, bool includeNewStreams = true)
         {
             if (!_branches.TryGetValue(branchId, out var branch))
             {
@@ -186,8 +187,8 @@ namespace ZES.Infrastructure.Branching
                 return;
             }*/
 
-            var aggrResult = await MergeStore<IAggregate>(branchId);
-            var sagaResult = await MergeStore<ISaga>(branchId);
+            var aggrResult = await MergeStore<IAggregate>(branchId, includeNewStreams);
+            var sagaResult = await MergeStore<ISaga>(branchId, includeNewStreams);
             
             /*var mergeFlow = new MergeFlow(_activeTimeline, _eventStore, _streamLocator);
 
@@ -278,14 +279,26 @@ namespace ZES.Infrastructure.Branching
             }
         }
         
-        private async Task<MergeFlow<T>.MergeResult> MergeStore<T>(string branchId)
+        private async Task<MergeFlow<T>.MergeResult> MergeStore<T>(string branchId, bool includeNewStreams)
             where T : IEventSourced
         {
             var store = GetStore<T>();
             var mergeFlow = new MergeFlow<T>(_activeTimeline, store, _streamLocator);
 
             // store.ListStreams(branchId).Subscribe(mergeFlow.InputBlock.AsObserver());
-            _streamLocator.ListStreams<T>(branchId).Subscribe(mergeFlow.InputBlock.AsObserver());
+            IEnumerable<IStream> streams; 
+            var branchStreams = _streamLocator.ListStreams<T>(branchId);
+            if (includeNewStreams)
+            {
+                streams = branchStreams;
+            }
+            else
+            {
+                var currentStreams = _streamLocator.ListStreams<T>(_activeTimeline.Id);
+                streams = branchStreams.Intersect(currentStreams, new Stream.BranchComparer()).ToList();
+            }
+            
+            streams.Subscribe(mergeFlow.InputBlock.AsObserver());
             
             try
             {

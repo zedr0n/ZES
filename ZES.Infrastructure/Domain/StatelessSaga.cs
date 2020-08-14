@@ -42,8 +42,31 @@ namespace ZES.Infrastructure.Domain
         protected void Register<TEvent>(Func<TEvent, string> sagaId, TTrigger t, Action<TEvent> action = null)
             where TEvent : class, IEvent
         {
+            RegisterIf(sagaId, t, e => true, action);
+        }
+        
+        /// <summary>
+        /// Associate the event with the specified trigger, saga id resolver
+        /// and handle using the provided action
+        /// <para> - Actions normally deal with saga state and can be null </para>
+        /// </summary>
+        /// <param name="sagaId">Id of saga handling this event</param>
+        /// <param name="t">Trigger value</param>
+        /// <param name="predicate">Event predicate</param>
+        /// <param name="action">Event handler</param>
+        /// <typeparam name="TEvent">Handled event type</typeparam>
+        protected void RegisterIf<TEvent>(Func<TEvent, string> sagaId, TTrigger t, Func<TEvent, bool> predicate, Action<TEvent> action = null)
+            where TEvent : class, IEvent
+        {
             void Handler(TEvent e)
             {
+                var condition = predicate == null || predicate(e);
+                if (!condition)
+                {
+                    IgnoreCurrentEvent = true;
+                    return;
+                }
+                
                 action?.Invoke(e);
                 if (t == null) 
                     return;

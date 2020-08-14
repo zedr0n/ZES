@@ -41,7 +41,6 @@ namespace ZES.Infrastructure.Domain
             _source = new CancellationTokenSource();
             
             var dispatcher = _dispatcher
-                //.WithOptions(new DataflowOptions { RecommendedParallelismIfMultiThreaded = Configuration.ThreadsPerInstance })
                 .WithOptions(Configuration.DataflowOptions)
                 .Bind(); 
 

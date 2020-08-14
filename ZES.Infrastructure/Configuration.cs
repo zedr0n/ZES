@@ -40,8 +40,9 @@ namespace ZES.Infrastructure
         /// Gets MySql database connection string
         /// </summary>
         public static string MySqlConnectionString =>
+            
+            // Environment.GetEnvironmentVariable("MySqlConnectionString".ToUpper());
             @"Server=localhost;Port=4406;Database=zes;Uid=zes;Pwd=zes";
-            //Environment.GetEnvironmentVariable("MySqlConnectionString".ToUpper());
         
         /// <summary>
         /// Gets azure SQL database connection string

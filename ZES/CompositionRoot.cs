@@ -109,7 +109,7 @@ namespace ZES
             container.Register<ICommandRegistry, CommandRegistry>(Lifestyle.Singleton);
 
             container.Register<ILog, Logging.NLog>(Lifestyle.Singleton);
-            container.Register(typeof(ILogger), () => LogManager.GetLogger(typeof(Logging.NLog).Name), Lifestyle.Singleton); 
+            container.Register(typeof(ILogger), () => LogManager.GetLogger(nameof(Logging.NLog)), Lifestyle.Singleton); 
 
             container.Register<IErrorLog, ErrorLog>(Lifestyle.Singleton);
             container.Register<IRecordLog, RecordLog>(Lifestyle.Singleton);
@@ -132,7 +132,7 @@ namespace ZES
                     c.Consumer == null ||
                     (!c.Consumer.ImplementationType.IsClosedTypeOf(typeof(HistoricalQueryHandler<,,>)) && 
                     !c.Consumer.ImplementationType.IsClosedTypeOf(typeof(QueryHandlerDecorator<,>))));
-            
+
             container.Register<IBranchManager, BranchManager>(Lifestyle.Singleton);
             container.Register<IRetroactive, Retroactive>(Lifestyle.Singleton);
         }

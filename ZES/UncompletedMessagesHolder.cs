@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Concurrent;
+using System.Collections.Generic;
 using ZES.Infrastructure.Utils;
 
 namespace ZES
@@ -31,7 +32,7 @@ namespace ZES
             /// Initializes a new instance of the <see cref="State"/> struct.
             /// </summary>
             /// <param name="count">Count dictionary</param>
-            public State(ConcurrentDictionary<string, int> count)
+            public State(Dictionary<string, int> count)
             {
                 Count = count; // new ConcurrentDictionary<string, int>(count); 
             }
@@ -39,7 +40,7 @@ namespace ZES
             /// <summary>
             /// Gets current count per branch 
             /// </summary>
-            public ConcurrentDictionary<string, int> Count { get; }
+            public Dictionary<string, int> Count { get; }
         }
 
         /// <inheritdoc />
@@ -48,12 +49,12 @@ namespace ZES
             /// <summary>
             /// Gets or sets [branch, number of uncompleted messages]
             /// </summary>
-            public ConcurrentDictionary<string, int> Count { get; set; }
+            public Dictionary<string, int> Count { get; set; }
 
             /// <inheritdoc />
             public void InitializeFrom(State state)
             {
-                Count = new ConcurrentDictionary<string, int>(state.Count);
+                Count = new Dictionary<string, int>(state.Count);
             }
 
             /// <inheritdoc />
@@ -65,7 +66,7 @@ namespace ZES
             /// <inheritdoc />
             public State DefaultState()
             {
-                return new State(new ConcurrentDictionary<string, int>());
+                return new State(new Dictionary<string, int>());
             }
         }
     }

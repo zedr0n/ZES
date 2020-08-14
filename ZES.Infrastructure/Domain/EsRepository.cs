@@ -1,3 +1,5 @@
+#define USE_ES_CACHE
+
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -26,6 +28,8 @@ namespace ZES.Infrastructure.Domain
         private readonly IMessageQueue _messageQueue;
         private readonly IEsRegistry _registry;
 
+        private readonly ConcurrentDictionary<string, TEventSourced> _cache = new ConcurrentDictionary<string, TEventSourced>();
+        
         private readonly ConcurrentDictionary<string, Func<string, Task<IEnumerable<IEvent>>>> _delegates = new ConcurrentDictionary<string, Func<string, Task<IEnumerable<IEvent>>>>(); 
         
         /// <summary>
@@ -94,14 +98,25 @@ namespace ZES.Infrastructure.Domain
             var stream = _streams.Find<T>(id, _timeline.Id);
             if (stream == null)
                 return null;
+            TEventSourced es;
+#if USE_ES_CACHE
+            if (_cache.TryGetValue(stream.Key, out es) && es.Version == stream.Version)
+            {
+                es.Clear();
+                return es as T;
+            }
+#endif
 
             var events = await _eventStore.ReadStream<IEvent>(stream, 0).ToList();
             if (events.Count == 0)
                 return null;
-            var es = EventSourced.Create<T>(id);
+            es = EventSourced.Create<T>(id);
             es.LoadFrom<T>(events);
+#if USE_ES_CACHE            
+            _cache[stream.Key] = es;
+#endif            
 
-            return es;
+            return es as T;
         }
 
         /// <inheritdoc />

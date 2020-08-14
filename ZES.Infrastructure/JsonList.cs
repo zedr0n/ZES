@@ -5,11 +5,17 @@ using ZES.Interfaces.Net;
 
 namespace ZES.Infrastructure
 {
-    /// <inheritdoc />
+    /// <summary>
+    /// JSON array class
+    /// </summary>
+    /// <typeparam name="T">JSON element result</typeparam>
     [JsonArray]
     public class JsonList<T> : ICollection<T>, IJsonResult
     {
         private readonly List<T> _list = new List<T>();
+
+        /// <inheritdoc />
+        public string RequestorId { get; set; }
 
         /// <inheritdoc />
         public int Count => _list.Count;
@@ -20,6 +26,7 @@ namespace ZES.Infrastructure
         /// <inheritdoc />
         public IEnumerator<T> GetEnumerator() => _list.GetEnumerator();
 
+        /// <inheritdoc/>
         IEnumerator IEnumerable.GetEnumerator()
         {
             return GetEnumerator();
@@ -39,8 +46,5 @@ namespace ZES.Infrastructure
 
         /// <inheritdoc />
         public bool Remove(T item) => _list.Remove(item);
-
-        /// <inheritdoc />
-        public string RequestorId { get; set; }
     }
 }

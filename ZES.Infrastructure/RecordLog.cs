@@ -115,7 +115,10 @@ namespace ZES.Infrastructure
             /// </summary>
             public List<ScenarioResult> Results { get; set; } = new List<ScenarioResult>();
 
+            /// <inheritdoc/>
             List<IScenarioMutation> IScenario.Requests => Requests.OfType<IScenarioMutation>().ToList();
+            
+            /// <inheritdoc/>
             List<IScenarioResult> IScenario.Results => Results.OfType<IScenarioResult>().ToList();
 
             /// <inheritdoc />

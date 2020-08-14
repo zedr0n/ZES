@@ -24,6 +24,10 @@ namespace ZES.GraphQL
             _recordLog = recordLog;
         }
 
+        /// <summary>
+        /// Enable the begin/end query handling
+        /// </summary>
+        /// <param name="context">Query context</param>
         [DiagnosticName("HotChocolate.Execution.Query")]
         public void OnQuery(IQueryContext context)
         {
@@ -32,6 +36,10 @@ namespace ZES.GraphQL
             // end of this event.
         }
 
+        /// <summary>
+        /// Action to perform before beginning the query 
+        /// </summary>
+        /// <param name="context">Query context</param>
         [DiagnosticName("HotChocolate.Execution.Query.Start")]
         public void BeginQueryExecute(IQueryContext context)
         {
@@ -41,6 +49,10 @@ namespace ZES.GraphQL
             }
         }
 
+        /// <summary>
+        /// Action perform after finishing the query
+        /// </summary>
+        /// <param name="context">Query context</param>
         [DiagnosticName("HotChocolate.Execution.Query.Stop")]
         public void EndQueryExecute(IQueryContext context)
         {

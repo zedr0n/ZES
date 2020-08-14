@@ -7,7 +7,6 @@ using ZES.Interfaces.EventStore;
 
 namespace ZES.Infrastructure.EventStore
 {
-    
     /// <inheritdoc />
     public class Stream : IStream
     {
@@ -22,7 +21,7 @@ namespace ZES.Infrastructure.EventStore
         /// <param name="type">Event sourced type</param>
         /// <param name="version">Event sourced version</param>
         /// <param name="timeline">Stream timeline</param>
-        public Stream(string id, string type, int version, string timeline, IStream parent = null)
+        public Stream(string id, string type, int version, string timeline)
         {
             Id = id;
             _type = type;
@@ -176,6 +175,25 @@ namespace ZES.Infrastructure.EventStore
         public override string ToString()
         {
             return $"{Key}@{Version}";
+        }
+
+        /// <inheritdoc />
+        public class BranchComparer : IEqualityComparer<IStream>
+        {
+            /// <inheritdoc />
+            public bool Equals(IStream x, IStream y)
+            {
+                if (x == y)
+                    return true;
+                
+                if (x == null || y == null)
+                    return false;
+
+                return x.Id == y.Id && x.Type == y.Type;
+            }
+
+            /// <inheritdoc />
+            public int GetHashCode(IStream obj) => obj.Id.GetHashCode() ^ obj.Type.GetHashCode();
         }
     }
 }

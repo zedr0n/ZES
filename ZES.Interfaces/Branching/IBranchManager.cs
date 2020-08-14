@@ -37,8 +37,9 @@ namespace ZES.Interfaces.Branching
         /// Merges the timeline into master
         /// </summary>
         /// <param name="branchId">Branch to merge</param>
+        /// <param name="includeNewStreams">Whether to create new streams which don't exist on current branch</param>
         /// <returns>Master timeline</returns>
-        Task Merge(string branchId);
+        Task Merge(string branchId, bool includeNewStreams = true);
 
         /// <summary>
         /// Reset the timeline

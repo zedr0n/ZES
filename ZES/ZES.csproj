@@ -30,6 +30,7 @@
 
     <ItemGroup>
       <Folder Include="Conventions" />
+      <AdditionalFiles Include="..\stylecop.json"/>
     </ItemGroup>
 
 </Project>

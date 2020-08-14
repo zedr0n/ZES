@@ -51,6 +51,11 @@ namespace ZES.Interfaces
         IEnumerable<IEvent> GetInvalidEvents();
 
         /// <summary>
+        /// Clear the changes
+        /// </summary>
+        void Clear();
+        
+        /// <summary>
         /// Hydrate the event sourced instance from event sequence
         /// </summary>
         /// <param name="pastEvents">Past event sequence</param>

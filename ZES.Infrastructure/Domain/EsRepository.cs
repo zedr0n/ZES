@@ -1,4 +1,4 @@
-#define USE_ES_CACHE
+// #define USE_ES_CACHE
 
 using System;
 using System.Collections.Concurrent;
@@ -81,6 +81,9 @@ namespace ZES.Infrastructure.Domain
                 foreach (var command in commands)
                     await _bus.CommandAsync(command);
             }
+#if USE_ES_CACHE
+            _cache[stream.Key] = es;
+#endif
         }
 
         /// <inheritdoc />
@@ -112,9 +115,6 @@ namespace ZES.Infrastructure.Domain
                 return null;
             es = EventSourced.Create<T>(id);
             es.LoadFrom<T>(events);
-#if USE_ES_CACHE            
-            _cache[stream.Key] = es;
-#endif            
 
             return es as T;
         }

@@ -51,7 +51,7 @@ namespace ZES.Infrastructure.Stochastics
         {
             var prevValue = 0.0;
             var value = Iterate(policy);
-            while (Math.Abs(value - prevValue) > tolerance || value == 0)
+            while ((Math.Abs(value - prevValue) > tolerance || value == 0) && _iteration < _maxIterations)
             {
                 prevValue = value;
                 value = Iterate(policy);

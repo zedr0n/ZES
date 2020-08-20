@@ -1,6 +1,10 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
+using System.Threading.Tasks.Dataflow;
+using Gridsum.DataflowEx;
+using ZES.Interfaces;
 using ZES.Interfaces.Stochastic;
 
 namespace ZES.Infrastructure.Stochastics
@@ -20,27 +24,31 @@ namespace ZES.Infrastructure.Stochastics
         /// <param name="initialState">Starting state</param>
         /// <param name="transitionProbability">Transition probability</param>
         /// <param name="actions">Set of actions</param>
-        /// <param name="reward">Reward function</param>
+        /// <param name="rewards">Rewards for all actions</param>
         /// <param name="maxIterations">Maximum number of iterations</param>
-        protected MarkovDecisionProcessBase(TState initialState, TProbability transitionProbability, IEnumerable<IMarkovAction<TState>> actions, IReward<TState> reward, int maxIterations = 100)
+        protected MarkovDecisionProcessBase(TState initialState, TProbability transitionProbability, IEnumerable<IMarkovAction<TState>> actions, IEnumerable<IActionReward<TState>> rewards, int maxIterations = 100)
         {
             _initialState = initialState;
             StateSpace = new Dictionary<int, List<TState>>
             {
                 { 0, new List<TState> { _initialState } },
             };
-            ValueFunctions = new Dictionary<IPolicy<TState>, Dictionary<int, IValueFunction<TState>>>();
             _maxIterations = maxIterations;
             Probability = transitionProbability;
             Actions = actions.ToList();
-            Reward = reward;
+            Rewards = rewards.ToList();
         }
+        
+        /// <summary>
+        /// Gets or sets the log service
+        /// </summary>
+        public ILog Log { get; set; }
         
         private TProbability Probability { get; }
         private List<IMarkovAction<TState>> Actions { get; }
-        private IReward<TState> Reward { get; }
-        private Dictionary<IPolicy<TState>, Dictionary<int, IValueFunction<TState>>> ValueFunctions { get; }
-
+        private Dictionary<IPolicy<TState>, Dictionary<int, IValueFunction<TState>>> ValueFunctions { get; } = new Dictionary<IPolicy<TState>, Dictionary<int, IValueFunction<TState>>>();
+        private List<IActionReward<TState>> Rewards { get; }
+        
         /// <summary>
         /// Gets the state space categorized by the distance from the initial state
         /// </summary>
@@ -51,10 +59,13 @@ namespace ZES.Infrastructure.Stochastics
         {
             var prevValue = 0.0;
             var value = Iterate(policy);
-            while ((Math.Abs(value - prevValue) > tolerance || value == 0) && _iteration < _maxIterations)
+            var change = double.MaxValue;
+            while ((change > tolerance || change == 0 || value == 0) && _iteration < _maxIterations && StateSpace[_iteration].Count > 0)
             {
+                Log?.Info($"Iteration {_iteration} : {prevValue} -> {value} \t {value - prevValue}");
                 prevValue = value;
                 value = Iterate(policy);
+                change = Math.Abs(value - prevValue);
             }
 
             return value;
@@ -69,22 +80,51 @@ namespace ZES.Infrastructure.Stochastics
         /// <summary>
         /// Populate states reachable from initial state within the current number of iterations
         /// </summary>
-        private void ExtendStateSpace()
+        private void ExtendStateSpace(IPolicy<TState> policy)
         {
             var previousLayer = StateSpace[_iteration - 1];
             if (StateSpace.ContainsKey(_iteration))
                 return;
             var layer = new List<TState>();
-            foreach (var s in previousLayer)
+            foreach (var state in previousLayer)
             {
-                foreach (var a in Actions)
+                foreach (var action in Actions)
                 {
-                    layer.AddRange(a[s]);
+                    if (policy[action, state] > 0)
+                        layer.AddRange(action[state]);
                 }
             }
 
             StateSpace[_iteration] = layer.Distinct().ToList();
         }
+
+        /*private class ActionFlow<TState> : Dataflow<(IMarkovAction<TState> action, TState state ), IEnumerable<TState>>
+            where TState : IMarkovState
+        {
+            private int _parallelCount = 0;
+            
+            public ActionFlow(DataflowOptions dataflowOptions) 
+                : base(dataflowOptions)
+            {
+                var block = new TransformBlock<(IMarkovAction<TState>, TState),IEnumerable<TState>>(
+                    x =>
+                    {
+                        Interlocked.Increment(ref _parallelCount);
+                        var list = new List<TState>();
+                        var (action, state) = x;
+                        list.AddRange(action[state]);
+                        Interlocked.Decrement(ref _parallelCount);
+                        return list;
+                    }, dataflowOptions.ToExecutionBlockOption(true));
+                
+                RegisterChild(block);
+                InputBlock = block;
+                OutputBlock = block;
+            }
+
+            public override ITargetBlock<(IMarkovAction<TState> action, TState state)> InputBlock { get; }
+            public override ISourceBlock<IEnumerable<TState>> OutputBlock { get; }
+        }*/
 
         private void ComputeValueFunction(int iteration, IPolicy<TState> policy, IEnumerable<TState> states)
         {
@@ -105,9 +145,19 @@ namespace ZES.Infrastructure.Stochastics
                        continue;
 
                    var expectation = 0.0;
+                   var expectedReward = 0.0;
                    foreach (var nextState in action[state])
-                       expectation += Probability[state, nextState, action] * previousFunction[nextState];
-                   value += policy[action, state] * (Reward[action, state] + expectation);
+                   {
+                       var probability = Probability[state, nextState, action];
+                       if (probability == 0)
+                           continue;
+                       
+                       expectation += probability * previousFunction[nextState];
+                       foreach (var reward in Rewards)
+                           expectedReward += probability * reward[state, nextState, action];
+                   }
+
+                   value += policy[action, state] * (expectedReward + expectation);
                 }
 
                 function[state] = value;
@@ -127,7 +177,7 @@ namespace ZES.Infrastructure.Stochastics
             _iteration++;
             
             // add newly reachable states
-            ExtendStateSpace();
+            ExtendStateSpace(policy);
             
             // populate previous needed values
             for (var i = 1; i < _iteration; ++i)

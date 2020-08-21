@@ -1,9 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Threading;
-using System.Threading.Tasks.Dataflow;
-using Gridsum.DataflowEx;
 using ZES.Interfaces;
 using ZES.Interfaces.Stochastic;
 
@@ -23,20 +20,14 @@ namespace ZES.Infrastructure.Stochastics
         /// </summary>
         /// <param name="initialState">Starting state</param>
         /// <param name="transitionProbability">Transition probability</param>
-        /// <param name="actions">Set of actions</param>
-        /// <param name="rewards">Rewards for all actions</param>
         /// <param name="maxIterations">Maximum number of iterations</param>
-        protected MarkovDecisionProcessBase(TState initialState, TProbability transitionProbability, IEnumerable<IMarkovAction<TState>> actions, IEnumerable<IActionReward<TState>> rewards, int maxIterations = 100)
+        protected MarkovDecisionProcessBase(TState initialState, TProbability transitionProbability, int maxIterations)
         {
             _initialState = initialState;
-            StateSpace = new Dictionary<int, List<TState>>
-            {
-                { 0, new List<TState> { _initialState } },
-            };
             _maxIterations = maxIterations;
             Probability = transitionProbability;
-            Actions = actions.ToList();
-            Rewards = rewards.ToList();
+            Actions = new List<IMarkovAction<TState>>();
+            Rewards = new List<IActionReward<TState>>();
         }
         
         /// <summary>
@@ -44,19 +35,28 @@ namespace ZES.Infrastructure.Stochastics
         /// </summary>
         public ILog Log { get; set; }
         
+        /// <summary>
+        /// Gets set of possible actions for the process
+        /// </summary>
+        protected List<IMarkovAction<TState>> Actions { get; set; }
+        
+        /// <summary>
+        /// Gets reward set for the process
+        /// </summary>
+        protected List<IActionReward<TState>> Rewards { get; set; }
+        
         private TProbability Probability { get; }
-        private List<IMarkovAction<TState>> Actions { get; }
         private Dictionary<IPolicy<TState>, Dictionary<int, IValueFunction<TState>>> ValueFunctions { get; } = new Dictionary<IPolicy<TState>, Dictionary<int, IValueFunction<TState>>>();
-        private List<IActionReward<TState>> Rewards { get; }
         
         /// <summary>
         /// Gets the state space categorized by the distance from the initial state
         /// </summary>
-        private Dictionary<int, List<TState>> StateSpace { get; }
+        private Dictionary<int, List<TState>> StateSpace { get; set; }
 
         /// <inheritdoc />
         public double GetOptimalValue(IPolicy<TState> policy, double tolerance = 1e-4)
         {
+            Initialize(policy);
             var prevValue = 0.0;
             var value = Iterate(policy);
             var change = double.MaxValue;
@@ -88,43 +88,31 @@ namespace ZES.Infrastructure.Stochastics
             var layer = new List<TState>();
             foreach (var state in previousLayer)
             {
-                foreach (var action in Actions)
+                foreach (var action in Actions.Where(a => policy[a, state] > 0))
                 {
-                    if (policy[action, state] > 0)
-                        layer.AddRange(action[state]);
+                    layer.AddRange(action[state]);
                 }
             }
 
             StateSpace[_iteration] = layer.Distinct().ToList();
         }
 
-        /*private class ActionFlow<TState> : Dataflow<(IMarkovAction<TState> action, TState state ), IEnumerable<TState>>
-            where TState : IMarkovState
+        private void Initialize(IPolicy<TState> policy)
         {
-            private int _parallelCount = 0;
-            
-            public ActionFlow(DataflowOptions dataflowOptions) 
-                : base(dataflowOptions)
+            StateSpace = new Dictionary<int, List<TState>>
             {
-                var block = new TransformBlock<(IMarkovAction<TState>, TState),IEnumerable<TState>>(
-                    x =>
-                    {
-                        Interlocked.Increment(ref _parallelCount);
-                        var list = new List<TState>();
-                        var (action, state) = x;
-                        list.AddRange(action[state]);
-                        Interlocked.Decrement(ref _parallelCount);
-                        return list;
-                    }, dataflowOptions.ToExecutionBlockOption(true));
-                
-                RegisterChild(block);
-                InputBlock = block;
-                OutputBlock = block;
-            }
+                { 0, new List<TState> { _initialState } },
+            };
+           
+            ValueFunctions.Clear();
+            ValueFunctions[policy] = new Dictionary<int, IValueFunction<TState>>
+            {
+                { 0, new ZeroValueFunction<TState>() },
+            };
 
-            public override ITargetBlock<(IMarkovAction<TState> action, TState state)> InputBlock { get; }
-            public override ISourceBlock<IEnumerable<TState>> OutputBlock { get; }
-        }*/
+            Actions.Clear();
+            Actions.AddRange(policy.GetAllowedActions());
+        }
 
         private void ComputeValueFunction(int iteration, IPolicy<TState> policy, IEnumerable<TState> states)
         {
@@ -166,14 +154,6 @@ namespace ZES.Infrastructure.Stochastics
 
         private double Iterate(IPolicy<TState> policy)   
         {
-            if (!ValueFunctions.ContainsKey(policy))
-            {
-                ValueFunctions[policy] = new Dictionary<int, IValueFunction<TState>>
-                {
-                    { 0, new ZeroValueFunction<TState>() },
-                };
-            }
-            
             _iteration++;
             
             // add newly reachable states

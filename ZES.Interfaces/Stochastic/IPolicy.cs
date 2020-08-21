@@ -1,3 +1,5 @@
+using System.Collections.Generic;
+
 namespace ZES.Interfaces.Stochastic
 {
     /// <summary>
@@ -13,5 +15,11 @@ namespace ZES.Interfaces.Stochastic
         /// <param name="a">Associated action</param>
         /// <param name="s">Current state</param>
         double this[IMarkovAction<TState> a, TState s] { get; }
+        
+        /// <summary>
+        /// Gets the set of actions which have non-zero probability
+        /// </summary>
+        /// <returns>Set of possible actions</returns>
+        IEnumerable<IMarkovAction<TState>> GetAllowedActions();
     }
 }

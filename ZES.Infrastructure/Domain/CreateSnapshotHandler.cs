@@ -13,6 +13,7 @@ namespace ZES.Infrastructure.Domain
         public CreateSnapshotHandler(IEsRepository<IAggregate> repository)
             : base(repository)
         {
+            ComputeHash = true;
         }
 
         /// <inheritdoc />

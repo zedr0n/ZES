@@ -57,14 +57,15 @@ namespace ZES.Interfaces.Domain
         /// <returns>Task representing the hydrated event sourced instance</returns>
         Task<T> GetOrAdd<T>(string id)
             where T : class, TEventSourced, new();
-        
+
         /// <summary>
         /// Rebuild from event history extracted from Event Store
         /// </summary>
         /// <param name="id">Event sourced guid</param>
+        /// <param name="computeHash">If true, hash computation is enabled</param>
         /// <typeparam name="T">Event sourced type</typeparam>
         /// <returns>Aggregate/saga or null if no events found</returns>
-        Task<T> Find<T>(string id)
+        Task<T> Find<T>(string id, bool computeHash = false)
             where T : class, TEventSourced, new();
         
         /// <summary>

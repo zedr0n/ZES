@@ -184,7 +184,11 @@ namespace ZES.Infrastructure.Domain
                 handler(e);
 
             if (e is ISnapshotEvent)
+            {
                 SnapshotVersion = e.Version;
+                if (_hash == string.Empty)
+                    _hash = e.Hash;
+            }
 
             if (!computeHash)
                 return;

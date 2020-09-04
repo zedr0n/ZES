@@ -95,7 +95,7 @@ namespace ZES.Infrastructure.Domain
         }
 
         /// <inheritdoc />
-        public async Task<T> Find<T>(string id)
+        public async Task<T> Find<T>(string id, bool computeHash = false)
             where T : class, TEventSourced, new()
         {
             var stream = _streams.Find<T>(id, _timeline.Id);
@@ -115,7 +115,7 @@ namespace ZES.Infrastructure.Domain
             if (events.Count == 0)
                 return null;
             es = EventSourced.Create<T>(id);
-            es.LoadFrom<T>(events);
+            es.LoadFrom<T>(events, computeHash);
 
             return es as T;
         }

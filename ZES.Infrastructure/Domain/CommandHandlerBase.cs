@@ -22,10 +22,15 @@ namespace ZES.Infrastructure.Domain
             _repository = repository;
         }
 
+        /// <summary>
+        /// Gets or sets a value indicating whether hash computation is required
+        /// </summary>
+        protected bool ComputeHash { get; set; } = false;
+
         /// <inheritdoc />
         public async Task Handle(TCommand command)
         {
-            var root = await _repository.Find<TRoot>(command.Target);
+            var root = await _repository.Find<TRoot>(command.Target, ComputeHash);
             if (command.Timestamp < root.Timestamp)
             {
                 throw new InvalidOperationException(

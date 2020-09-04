@@ -143,13 +143,23 @@ namespace ZES.Infrastructure.EventStore
             LogEvents(streamMessages);
 
             var version = result.CurrentVersion - stream.DeletedCount;
-            
+            var snapshotVersion = 0;
+            var snapshotEvent = events?.LastOrDefault(e => e is ISnapshotEvent);
+            if (snapshotEvent != default)
+                snapshotVersion = snapshotEvent.Version;
+
             if (stream.Parent != null)
+            {
                 version += stream.Parent.Version + 1;
-            
+                if (snapshotVersion > 0)
+                    snapshotVersion += stream.Parent.Version + 1;
+            }
+
             if (version >= stream.Version || result.CurrentVersion == -1)
             {
                 stream.Version = version;
+                if (snapshotVersion > stream.SnapshotVersion)
+                    stream.SnapshotVersion = snapshotVersion;
 
                 var metaVersion = (await _streamStore.GetStreamMetadata(stream.Key)).MetadataStreamVersion;
                 if (metaVersion == ExpectedVersion.EmptyStream)

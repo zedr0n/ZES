@@ -36,12 +36,12 @@ namespace ZES.Infrastructure.Stochastics
         public ILog Log { get; set; }
         
         /// <summary>
-        /// Gets set of possible actions for the process
+        /// Gets or sets set of possible actions for the process
         /// </summary>
         protected List<IMarkovAction<TState>> Actions { get; set; }
         
         /// <summary>
-        /// Gets reward set for the process
+        /// Gets or sets reward set for the process
         /// </summary>
         protected List<IActionReward<TState>> Rewards { get; set; }
         
@@ -49,7 +49,7 @@ namespace ZES.Infrastructure.Stochastics
         private Dictionary<IPolicy<TState>, Dictionary<int, IValueFunction<TState>>> ValueFunctions { get; } = new Dictionary<IPolicy<TState>, Dictionary<int, IValueFunction<TState>>>();
         
         /// <summary>
-        /// Gets the state space categorized by the distance from the initial state
+        /// Gets or sets the state space categorized by the distance from the initial state
         /// </summary>
         private Dictionary<int, List<TState>> StateSpace { get; set; }
 

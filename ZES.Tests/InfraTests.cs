@@ -395,5 +395,20 @@ namespace ZES.Tests
             Assert.NotNull(res.Data);
             Assert.Equal("btc", res.Data.Symbol);
         }
+
+        [Fact]
+        public async void CanCreateSnapshot()
+        {
+            var container = CreateContainer();
+            var bus = container.GetInstance<IBus>();
+            var repository = container.GetInstance<IEsRepository<IAggregate>>();
+
+            await await bus.CommandAsync(new CreateRoot("Root"));
+            await await bus.CommandAsync(new UpdateRoot("Root"));
+            await await bus.CommandAsync(new CreateSnapshot<Root>("Root"));
+
+            var root = await repository.Find<Root>("Root");
+            Assert.Equal(2, root.SnapshotVersion);
+        }
     }
 }

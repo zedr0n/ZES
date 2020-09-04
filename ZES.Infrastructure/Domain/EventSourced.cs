@@ -31,6 +31,11 @@ namespace ZES.Infrastructure.Domain
         public long Timestamp { get; private set; }
 
         /// <summary>
+        /// Gets the last snapshot version
+        /// </summary>
+        public int SnapshotVersion { get; private set; } = -1;
+        
+        /// <summary>
         /// Gets or sets a value indicating whether the current event should be ignored
         /// </summary>
         protected bool IgnoreCurrentEvent { get; set; }
@@ -116,6 +121,20 @@ namespace ZES.Infrastructure.Domain
 
             ClearUncommittedEvents();
         }
+
+        /// <inheritdoc />
+        public void Snapshot()
+        {
+            var e = CreateSnapshot();
+            if (e != null)
+                When(e);
+        }
+
+        /// <summary>
+        /// Snapshot creation virtual method
+        /// </summary>
+        /// <returns>Snapshot of current state, if snapshotting is available</returns>
+        protected virtual ISnapshotEvent CreateSnapshot() => null;
         
         /// <summary>
         /// Update the hash with object
@@ -163,6 +182,9 @@ namespace ZES.Infrastructure.Domain
             
             if (_handlers.TryGetValue(e.GetType(), out var handler))
                 handler(e);
+
+            if (e is ISnapshotEvent)
+                SnapshotVersion = e.Version;
 
             if (!computeHash)
                 return;

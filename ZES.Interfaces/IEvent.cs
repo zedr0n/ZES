@@ -20,4 +20,9 @@ namespace ZES.Interfaces
         /// </value>
         string Stream { get; set; }
     }
+    
+    /// <summary>
+    /// Snapshot event
+    /// </summary>
+    public interface ISnapshotEvent : IEvent { }
 }

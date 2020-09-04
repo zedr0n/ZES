@@ -55,6 +55,11 @@ namespace ZES.Utils
                     var reg = Lifestyle.Singleton.CreateRegistration(typeof(IEventSourced), () => m.Invoke(null, new object[] { string.Empty }), c);
                     c.Collection.Append(typeof(IEventSourced), reg);
                 }
+
+                var command = typeof(CreateSnapshot<>).MakeGenericType(a);
+                var iHandler = typeof(ICommandHandler<>).MakeGenericType(command);
+                var handler = typeof(CreateSnapshotHandler<>).MakeGenericType(a);
+                c.RegisterConditional(iHandler, handler, Lifestyle.Singleton, x => !x.Handled);
             }
         }
 

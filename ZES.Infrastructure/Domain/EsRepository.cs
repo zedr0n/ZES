@@ -110,7 +110,8 @@ namespace ZES.Infrastructure.Domain
             }
 #endif
 
-            var events = await _eventStore.ReadStream<IEvent>(stream, 0).ToList();
+            var start = stream.SnapshotVersion;
+            var events = await _eventStore.ReadStream<IEvent>(stream, start).ToList();
             if (events.Count == 0)
                 return null;
             es = EventSourced.Create<T>(id);
@@ -127,7 +128,8 @@ namespace ZES.Infrastructure.Domain
             if (stream == null)
                 return true;
 
-            var events = await _eventStore.ReadStream<IEvent>(stream, 0).ToList();
+            var start = stream.SnapshotVersion;
+            var events = await _eventStore.ReadStream<IEvent>(stream, start).ToList();
             var es = EventSourced.Create<T>(id);
             es.LoadFrom<T>(events, true);
 
@@ -141,8 +143,9 @@ namespace ZES.Infrastructure.Domain
             var stream = _streams.Find<T>(id, _timeline.Id);
             if (stream == null)
                 return ExpectedVersion.NoStream;
-            
-            var events = await _eventStore.ReadStream<IEvent>(stream, 0).ToList();
+
+            var start = stream.SnapshotVersion;            
+            var events = await _eventStore.ReadStream<IEvent>(stream, start).ToList();
             var es = EventSourced.Create<T>(id);
             es.LoadFrom<T>(events, true);
 

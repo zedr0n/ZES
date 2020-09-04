@@ -1,4 +1,5 @@
 using ZES.Infrastructure.Domain;
+using ZES.Interfaces;
 using ZES.Interfaces.Domain;
 using ZES.Tests.Domain.Events;
 
@@ -10,6 +11,7 @@ namespace ZES.Tests.Domain
         {
             Register<RootCreated>(ApplyEvent);
             Register<RootUpdated>(ApplyEvent);
+            Register<SnapshotEvent>(ApplyEvent);
         }
 
         public Root(string id)
@@ -39,6 +41,9 @@ namespace ZES.Tests.Domain
             When(new RootUpdated(Id));
         }
 
+        /// <inheritdoc/>
+        protected override ISnapshotEvent CreateSnapshot() => new SnapshotEvent(UpdatedAt, Id);
+
         private void ApplyEvent(RootUpdated e)
         {
             UpdatedAt = e.Timestamp;
@@ -47,6 +52,28 @@ namespace ZES.Tests.Domain
         private void ApplyEvent(RootCreated e)
         {
             Id = e.RootId;
+        }
+
+        private void ApplyEvent(SnapshotEvent e)
+        {
+            Id = e.RootId;
+            UpdatedAt = e.UpdatedAt;
+        }
+        
+        private class SnapshotEvent : Event, ISnapshotEvent
+        {
+            /// <summary>
+            /// Initializes a new instance of the <see cref="SnapshotEvent"/> class.
+            /// </summary>
+            /// <param name="updatedAt">Updated at property</param>
+            public SnapshotEvent(long updatedAt, string rootId)
+            {
+                UpdatedAt = updatedAt;
+                RootId = rootId;
+            }
+
+            public long UpdatedAt { get; }
+            public string RootId { get; }
         }
     }
 }

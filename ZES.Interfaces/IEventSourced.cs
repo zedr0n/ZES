@@ -69,5 +69,10 @@ namespace ZES.Interfaces
         /// </summary>
         /// <param name="timestamp">Unix timestamp</param>
         void TimestampEvents(long timestamp);
+
+        /// <summary>
+        /// Creates and persists the aggregate snapshot as an event
+        /// </summary>
+        void Snapshot();
     }
 }

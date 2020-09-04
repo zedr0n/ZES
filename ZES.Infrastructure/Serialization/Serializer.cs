@@ -159,6 +159,9 @@ namespace ZES.Infrastructure.Serialization
                 jsonWriter.WritePropertyName(nameof(IStream.Version));
                 jsonWriter.WriteValue(stream.Version);
 
+                jsonWriter.WritePropertyName(nameof(IStream.SnapshotVersion));
+                jsonWriter.WriteValue(stream.SnapshotVersion);
+                
                 if (stream.Parent != null)
                 {
                     jsonWriter.WritePropertyName($"Parent{nameof(IStream.Key)}");
@@ -166,6 +169,9 @@ namespace ZES.Infrastructure.Serialization
                     
                     jsonWriter.WritePropertyName($"Parent{nameof(IStream.Version)}");
                     jsonWriter.WriteValue(stream.Parent.Version);
+                    
+                    jsonWriter.WritePropertyName($"Parent{nameof(IStream.SnapshotVersion)}");
+                    jsonWriter.WriteValue(stream.Parent.SnapshotVersion);
                 }
                 
                 jsonWriter.WriteEndObject();
@@ -223,8 +229,10 @@ namespace ZES.Infrastructure.Serialization
             var currentProperty = string.Empty;
             var key = string.Empty;
             var version = ExpectedVersion.EmptyStream;
+            var snapshotVersion = 0; 
             var parentKey = string.Empty;
             var parentVersion = ExpectedVersion.NoStream;
+            var parentSnapshotVersion = 0; 
             while (reader.Read())
             {
                 if (reader.Value == null)
@@ -247,12 +255,18 @@ namespace ZES.Infrastructure.Serialization
                     case JsonToken.Integer when currentProperty == $"Parent{nameof(IStream.Version)}":
                         parentVersion = (int)(long)reader.Value;
                         break;
+                    case JsonToken.Integer when currentProperty == nameof(IStream.SnapshotVersion):
+                        snapshotVersion = (int)(long)reader.Value;
+                        break;
+                    case JsonToken.Integer when currentProperty == $"Parent{nameof(IStream.SnapshotVersion)}":
+                        parentSnapshotVersion = (int)(long)reader.Value;
+                        break;
                 }
             }
             
-            var stream = new Stream(key, version);
+            var stream = new Stream(key, version) { SnapshotVersion = snapshotVersion };
             if (parentKey != string.Empty)
-                stream.Parent = new Stream(parentKey, parentVersion);
+                stream.Parent = new Stream(parentKey, parentVersion) { SnapshotVersion = parentSnapshotVersion };
 
             return stream;
 

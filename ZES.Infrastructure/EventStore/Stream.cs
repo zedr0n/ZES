@@ -66,6 +66,9 @@ namespace ZES.Infrastructure.EventStore
         }
 
         /// <inheritdoc />
+        public int SnapshotVersion { get; set; }
+
+        /// <inheritdoc />
         public string Type => _type;
 
         /// <inheritdoc />

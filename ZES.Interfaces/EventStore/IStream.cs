@@ -40,6 +40,11 @@ namespace ZES.Interfaces.EventStore
         int Version { get; set; }
 
         /// <summary>
+        /// Gets or sets the last snapshot version
+        /// </summary>
+        int SnapshotVersion { get; set; }
+        
+        /// <summary>
         /// Gets or sets the parent stream
         /// </summary>
         /// <value>

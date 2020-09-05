@@ -15,6 +15,19 @@ namespace ZES.Infrastructure.Domain
         private string _hash;
         private bool _computeHash;
 
+        /// <summary>
+        /// Gets or sets current change hash
+        /// </summary>
+        public string Hash
+        {
+            get => _hash;
+            set
+            {
+                _computeHash = true;
+                _hash = value;
+            }
+        }
+        
         /// <inheritdoc />
         public bool IsValid => _invalidEvents.Count == 0;
 
@@ -98,8 +111,9 @@ namespace ZES.Infrastructure.Domain
         {
             lock (_changes)
             {
-                ApplyEvent(e, true);
-                e.Hash = _hash;
+                Hash = string.Empty;
+                ApplyEvent(e);
+                e.Hash = Hash;
                 
                 ((Event)e).Version = Version;
                 if (!IgnoreCurrentEvent)
@@ -115,7 +129,13 @@ namespace ZES.Infrastructure.Domain
             
             var enumerable = pastEvents.ToList();
             foreach (var e in enumerable)
-                ApplyEvent(e, computeHash);
+            {
+                if (computeHash)
+                    Hash = string.Empty;
+                ApplyEvent(e);
+                if (computeHash && e.Hash != _hash)
+                    _invalidEvents.Add(e);
+            }
 
             Timestamp = enumerable.Max(e => e.Timestamp);
 
@@ -140,13 +160,13 @@ namespace ZES.Infrastructure.Domain
         /// Update the hash with object
         /// </summary>
         /// <param name="value">Object to hash</param>
-        protected void Hash(object value)
+        protected void AddHash(object value)
         {
             if (!_computeHash)
                 return;
 
             var objectHash = Hashing.Crc32(value); // Hashing.Sha256(value);
-            _hash = Hashing.Crc32(_hash + objectHash); // Hashing.Sha256(_hash + objectHash);
+            Hash = Hashing.Crc32(_hash + objectHash); // Hashing.Sha256(_hash + objectHash);
         }
         
         /// <summary>
@@ -160,41 +180,24 @@ namespace ZES.Infrastructure.Domain
             if (handler != null)
                 _handlers.Add(typeof(TEvent), e => handler(e as TEvent));
         }
-
+        
         /// <summary>
         /// Apply the event to the instance
         /// </summary>
         /// <param name="e">Event</param>
-        /// <param name="computeHash">True to compute the event hashes</param>
-        private void ApplyEvent(IEvent e, bool computeHash = false)
+        private void ApplyEvent(IEvent e)
         {
             if (e == null)
                 return;
 
             IgnoreCurrentEvent = false;
             Version++;
-
-            if (computeHash)
-            {
-                _computeHash = true;
-                _hash = string.Empty;
-            }
             
             if (_handlers.TryGetValue(e.GetType(), out var handler))
                 handler(e);
 
             if (e is ISnapshotEvent)
-            {
                 SnapshotVersion = e.Version;
-                if (_hash == string.Empty)
-                    _hash = e.Hash;
-            }
-
-            if (!computeHash)
-                return;
-            
-            if (e.Hash != _hash)
-                _invalidEvents.Add(e);
         }
 
         private void ClearUncommittedEvents()

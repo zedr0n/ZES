@@ -1,6 +1,6 @@
 using System;
-using Stateless;
 using ZES.Infrastructure.Domain;
+using ZES.Interfaces;
 using ZES.Tests.Domain.Commands;
 using ZES.Tests.Domain.Events;
 
@@ -9,11 +9,15 @@ namespace ZES.Tests.Domain.Sagas
     public class TestSaga : StatelessSaga<TestSaga.State, TestSaga.Trigger>
     {
         private string _rootId;
-        
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="TestSaga"/> class.
+        /// </summary>
         public TestSaga()
         {
             Register<RootCreated>(e => e.RootId, Trigger.Create, e => _rootId = e.RootId);
             Register<RootUpdated>(e => e.RootId, Trigger.Update);
+            Register<TestSagaSnapshotEvent>(e => e.RootId, e => _rootId = e.RootId);
         }
         
         public enum Trigger 
@@ -41,10 +45,14 @@ namespace ZES.Tests.Domain.Sagas
             /// </summary>
             Complete,
         }
-        
+
+        /// <inheritdoc/>
+        protected override ISnapshotEvent CreateSnapshot() => new TestSagaSnapshotEvent(StateMachine.State, _rootId);
+
+        /// <inheritdoc/>
         protected override void ConfigureStateMachine()
         {
-            StateMachine = new StateMachine<State, Trigger>(State.Open);
+            base.ConfigureStateMachine(); 
 
             StateMachine.Configure(State.Open)
                 .Permit(Trigger.Create, State.Complete);
@@ -57,6 +65,22 @@ namespace ZES.Tests.Domain.Sagas
                     if (!_rootId.Contains("Copy"))
                         SendCommand(new CreateRoot($"{_rootId}Copy"));
                 });
+        }
+
+        private class TestSagaSnapshotEvent : SnapshotEvent
+        {
+            /// <summary>
+            /// Initializes a new instance of the <see cref="TestSagaSnapshotEvent"/> class.
+            /// </summary>
+            /// <param name="state">Current state</param>
+            /// <param name="rootId">Root id</param>
+            public TestSagaSnapshotEvent(State state, string rootId) 
+                : base(state)
+            {
+                RootId = rootId;
+            }
+            
+            public string RootId { get; }
         }
     }
 }

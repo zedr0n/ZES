@@ -11,6 +11,7 @@ namespace ZES.Infrastructure.Domain
     /// <typeparam name="TTrigger">Trigger types</typeparam>
     public abstract class StatelessSaga<TState, TTrigger> : Saga
     {
+        
         private StateMachine<TState, TTrigger> _stateMachine;
 
         /// <summary>
@@ -29,6 +30,11 @@ namespace ZES.Infrastructure.Domain
             }
             set => _stateMachine = value;
         }
+        
+        /// <summary>
+        /// Gets or sets the initial state of the saga 
+        /// </summary>
+        protected TState InitialState { get; set; } = default(TState);
 
         /// <summary>
         /// Associate the event with the specified trigger, saga id resolver
@@ -81,9 +87,43 @@ namespace ZES.Infrastructure.Domain
             Register(sagaId, Handler);
         }
 
+        /// <inheritdoc />
+        protected override void DefaultHash() => AddHash(StateMachine.State);
+
         /// <summary>
         /// State machine configuration 
         /// </summary>
-        protected abstract void ConfigureStateMachine();
+        protected virtual void ConfigureStateMachine()
+        {
+            StateMachine = new StateMachine<TState, TTrigger>(InitialState);
+        }
+
+        /// <inheritdoc />
+        protected override void ApplyEvent(ISnapshotEvent e)
+        {
+            if (!(e is SnapshotEvent snapshotEvent)) 
+                return;
+            
+            StateMachine = null;    // clear the state machine to reinitialize the state
+            InitialState = snapshotEvent.CurrentState;
+            AddHash(StateMachine.State);
+        }
+        
+        /// <summary>
+        /// Snapshot event base class
+        /// </summary>
+        protected class SnapshotEvent : Event, ISnapshotEvent
+        {
+            /// <summary>
+            /// Initializes a new instance of the <see cref="SnapshotEvent"/> class.
+            /// </summary>
+            /// <param name="state">Current state of the saga</param>
+            public SnapshotEvent(TState state)
+            {
+                CurrentState = state;
+            }
+
+            public TState CurrentState { get; }
+        }
     }
 }

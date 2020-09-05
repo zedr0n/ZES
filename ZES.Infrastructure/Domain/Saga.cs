@@ -6,7 +6,7 @@ using ZES.Interfaces.Domain;
 namespace ZES.Infrastructure.Domain
 {
     /// <inheritdoc cref="ISaga" />
-    public class Saga : EventSourced, ISaga
+    public abstract class Saga : EventSourced, ISaga
     {
         private readonly List<ICommand> _undispatchedCommands = new List<ICommand>();
         private readonly Dictionary<Type, Func<IEvent, string>> _sagaId = new Dictionary<Type, Func<IEvent, string>>();
@@ -46,6 +46,14 @@ namespace ZES.Infrastructure.Domain
         }
 
         /// <summary>
+        /// Apply the snapshot event to saga
+        /// </summary>
+        /// <param name="e">Snapshot event</param>
+        protected abstract void ApplyEvent(ISnapshotEvent e);
+
+        protected virtual void DefaultHash() { }
+
+        /// <summary>
         /// Associate the event with the specified saga id resolver
         /// and handle using the provided action
         /// <para> - Actions normally deal with saga state and can be null </para>
@@ -57,7 +65,21 @@ namespace ZES.Infrastructure.Domain
             where TEvent : class, IEvent
         {
             _sagaId[typeof(TEvent)] = e => sagaId(e as TEvent);
-            Register(action);
+            Action<TEvent> handler = e =>
+            {
+                action?.Invoke(e);
+                DefaultHash();                               
+            };
+            if (action != null && typeof(ISnapshotEvent).IsAssignableFrom(typeof(TEvent)))
+            {
+                handler = e =>
+                {
+                    ApplyEvent(e as ISnapshotEvent);
+                    action(e);
+                };
+            }
+
+            Register(handler);
         }
 
         private void ClearUncommittedCommands()

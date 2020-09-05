@@ -5,7 +5,7 @@ using ZES.Tests.Domain.Events;
 
 namespace ZES.Tests.Domain
 {
-    public sealed class Record : EventSourced, IAggregate
+    public sealed class Record : AggregateRoot, IAggregate
     {
         public Record()
         {

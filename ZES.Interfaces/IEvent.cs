@@ -20,9 +20,23 @@ namespace ZES.Interfaces
         /// </value>
         string Stream { get; set; }
     }
-    
+
     /// <summary>
     /// Snapshot event
     /// </summary>
-    public interface ISnapshotEvent : IEvent { }
+    public interface ISnapshotEvent : IEvent
+    {
+        /// <summary>
+        /// Gets or sets the event-sourced instance id 
+        /// </summary>
+        string Id { get; set; }
+    }
+
+    /// <inheritdoc />
+    public interface ISnapshotEvent<T> : ISnapshotEvent { }
+    
+    /// <summary>
+    /// Saga snapshot event
+    /// </summary>
+    public interface ISagaSnapshotEvent : ISnapshotEvent { }
 }

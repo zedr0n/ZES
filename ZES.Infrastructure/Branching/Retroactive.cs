@@ -170,8 +170,9 @@ namespace ZES.Infrastructure.Branching
 
                 IList<IEvent> laterEvents = new List<IEvent>();
 
+                // remove the snapshot events from the future
                 if (liveStream != null)
-                    laterEvents = await store.ReadStream<IEvent>(liveStream, version).ToList();
+                    laterEvents = await store.ReadStream<IEvent>(liveStream, version).Where(e => !(e is ISnapshotEvent)).ToList();
 
                 var enumerable = events.ToList();
 

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using ZES.Interfaces;
 using ZES.Interfaces.Domain;
 
@@ -28,7 +29,8 @@ namespace ZES.Infrastructure.Domain
         /// <inheritdoc />
         public string SagaId(IEvent e)
         {
-            return _sagaId.TryGetValue(e.GetType(), out var sagaId) ? sagaId(e) : null;
+            var sagaId = _sagaId.SingleOrDefault(h => h.Key.IsInstanceOfType(e)).Value;
+            return sagaId?.Invoke(e);
         }
         
         /// <inheritdoc />
@@ -44,13 +46,24 @@ namespace ZES.Infrastructure.Domain
             ClearUncommittedCommands();
             base.Clear();
         }
+        
+        /// <inheritdoc />
+        public override void Snapshot()
+        {
+            Version--;
+            base.Snapshot();
+            IgnoreCurrentEvent = true;
+        }
 
         /// <summary>
         /// Apply the snapshot event to saga
         /// </summary>
         /// <param name="e">Snapshot event</param>
-        protected abstract void ApplyEvent(ISnapshotEvent e);
+        protected abstract void ApplyEvent(ISagaSnapshotEvent e);
 
+        /// <summary>
+        /// Saga state hash
+        /// </summary>
         protected virtual void DefaultHash() { }
 
         /// <summary>
@@ -65,16 +78,18 @@ namespace ZES.Infrastructure.Domain
             where TEvent : class, IEvent
         {
             _sagaId[typeof(TEvent)] = e => sagaId(e as TEvent);
+            var isSagaSnapshot = typeof(ISagaSnapshotEvent).IsAssignableFrom(typeof(TEvent));
+            
             Action<TEvent> handler = e =>
             {
                 action?.Invoke(e);
                 DefaultHash();                               
             };
-            if (action != null && typeof(ISnapshotEvent).IsAssignableFrom(typeof(TEvent)))
+            if (action != null && isSagaSnapshot) 
             {
                 handler = e =>
                 {
-                    ApplyEvent(e as ISnapshotEvent);
+                    ApplyEvent(e as ISagaSnapshotEvent);
                     action(e);
                 };
             }

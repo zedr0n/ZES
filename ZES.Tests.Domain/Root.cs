@@ -5,7 +5,7 @@ using ZES.Tests.Domain.Events;
 
 namespace ZES.Tests.Domain
 {
-    public sealed class Root : EventSourced, IAggregate
+    public sealed class Root : AggregateRoot, IAggregate
     {
         public Root()
         {
@@ -56,11 +56,11 @@ namespace ZES.Tests.Domain
 
         private void ApplyEvent(SnapshotEvent e)
         {
-            Id = e.RootId;
+            Id = e.Id;
             UpdatedAt = e.UpdatedAt;
         }
         
-        private class SnapshotEvent : Event, ISnapshotEvent
+        private class SnapshotEvent : Event, ISnapshotEvent<Root>
         {
             /// <summary>
             /// Initializes a new instance of the <see cref="SnapshotEvent"/> class.
@@ -69,11 +69,11 @@ namespace ZES.Tests.Domain
             public SnapshotEvent(long updatedAt, string rootId)
             {
                 UpdatedAt = updatedAt;
-                RootId = rootId;
+                Id = rootId;
             }
 
             public long UpdatedAt { get; }
-            public string RootId { get; }
+            public string Id { get; set; }
         }
     }
 }

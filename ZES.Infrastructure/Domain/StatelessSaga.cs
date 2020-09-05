@@ -10,9 +10,14 @@ namespace ZES.Infrastructure.Domain
     /// <typeparam name="TState">State types</typeparam>
     /// <typeparam name="TTrigger">Trigger types</typeparam>
     public abstract class StatelessSaga<TState, TTrigger> : Saga
+        where TState : Enum
     {
-        
         private StateMachine<TState, TTrigger> _stateMachine;
+        
+        /// <summary>
+        /// Gets the current state
+        /// </summary>
+        public TState CurrentState => StateMachine.State;
 
         /// <summary>
         /// Gets or sets gets state machine from <see cref="Stateless"/>
@@ -30,7 +35,7 @@ namespace ZES.Infrastructure.Domain
             }
             set => _stateMachine = value;
         }
-        
+
         /// <summary>
         /// Gets or sets the initial state of the saga 
         /// </summary>
@@ -99,31 +104,40 @@ namespace ZES.Infrastructure.Domain
         }
 
         /// <inheritdoc />
-        protected override void ApplyEvent(ISnapshotEvent e)
+        protected override void ApplyEvent(ISagaSnapshotEvent e)
         {
             if (!(e is SnapshotEvent snapshotEvent)) 
                 return;
             
             StateMachine = null;    // clear the state machine to reinitialize the state
-            InitialState = snapshotEvent.CurrentState;
-            AddHash(StateMachine.State);
+            InitialState = (TState)Enum.Parse(typeof(TState), snapshotEvent.CurrentState);
+            SnapshotVersion = snapshotEvent.Version;
+            DefaultHash();
         }
         
         /// <summary>
         /// Snapshot event base class
         /// </summary>
-        protected class SnapshotEvent : Event, ISnapshotEvent
+        protected class SnapshotEvent : Event, ISagaSnapshotEvent
         {
             /// <summary>
             /// Initializes a new instance of the <see cref="SnapshotEvent"/> class.
             /// </summary>
+            /// <param name="id">Event-sourced id</param>
             /// <param name="state">Current state of the saga</param>
-            public SnapshotEvent(TState state)
+            public SnapshotEvent(string id, TState state)
             {
-                CurrentState = state;
+                Id = id;
+                CurrentState = state.ToString();
             }
 
-            public TState CurrentState { get; }
+            /// <summary>
+            /// Gets or sets the saga current state
+            /// </summary>
+            public string CurrentState { get; set; }
+
+            /// <inheritdoc />
+            public string Id { get; set; }
         }
     }
 }

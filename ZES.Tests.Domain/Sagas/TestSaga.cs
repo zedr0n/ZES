@@ -17,7 +17,12 @@ namespace ZES.Tests.Domain.Sagas
         {
             Register<RootCreated>(e => e.RootId, Trigger.Create, e => _rootId = e.RootId);
             Register<RootUpdated>(e => e.RootId, Trigger.Update);
-            Register<TestSagaSnapshotEvent>(e => e.RootId, e => _rootId = e.RootId);
+            Register<ISnapshotEvent<Root>>(e => e.Id, _ =>
+            {
+                Snapshot();
+                IgnoreCurrentEvent = true;
+            });
+            Register<TestSagaSnapshotEvent>(e => e.Id, e => _rootId = e.Id);
         }
         
         public enum Trigger 
@@ -75,12 +80,9 @@ namespace ZES.Tests.Domain.Sagas
             /// <param name="state">Current state</param>
             /// <param name="rootId">Root id</param>
             public TestSagaSnapshotEvent(State state, string rootId) 
-                : base(state)
+                : base(rootId, state)
             {
-                RootId = rootId;
             }
-            
-            public string RootId { get; }
         }
     }
 }

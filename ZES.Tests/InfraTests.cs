@@ -12,12 +12,14 @@ using ZES.Infrastructure.Alerts;
 using ZES.Infrastructure.Domain;
 using ZES.Infrastructure.Net;
 using ZES.Interfaces;
+using ZES.Interfaces.Branching;
 using ZES.Interfaces.Causality;
 using ZES.Interfaces.Domain;
 using ZES.Interfaces.Pipes;
 using ZES.Tests.Domain;
 using ZES.Tests.Domain.Commands;
 using ZES.Tests.Domain.Queries;
+using ZES.Tests.Domain.Sagas;
 using ZES.Utils;
 
 namespace ZES.Tests
@@ -409,6 +411,29 @@ namespace ZES.Tests
 
             var root = await repository.Find<Root>("Root");
             Assert.Equal(2, root.SnapshotVersion);
+        }
+
+        [Fact]
+        public async void CanCreateSagaSnapshot()
+        {
+            var container = CreateContainer(new List<Action<Container>> { Config.RegisterSagas });
+            var bus = container.GetInstance<IBus>();
+            var repository = container.GetInstance<IEsRepository<ISaga>>();
+            var manager = container.GetInstance<IBranchManager>();
+
+            await await bus.CommandAsync(new CreateRoot("Root"));
+            await await bus.CommandAsync(new UpdateRoot("Root"));
+            
+            var saga = await repository.Find<TestSaga>("Root");
+            Assert.Equal(0, saga.SnapshotVersion);
+            
+            await await bus.CommandAsync(new CreateSnapshot<Root>("Root"));
+
+            await manager.Ready;
+            
+            saga = await repository.Find<TestSaga>("Root");
+            Assert.Equal(2, saga.SnapshotVersion);
+            Assert.Equal(TestSaga.State.Complete, saga.CurrentState);
         }
     }
 }

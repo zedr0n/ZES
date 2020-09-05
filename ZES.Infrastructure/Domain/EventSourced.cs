@@ -38,15 +38,15 @@ namespace ZES.Infrastructure.Domain
         public string Id { get; protected set; }
 
         /// <inheritdoc />
-        public int Version { get; private set; } = -1;
+        public int Version { get; protected set; } = -1;
 
         /// <inheritdoc />
         public long Timestamp { get; private set; }
 
         /// <summary>
-        /// Gets the last snapshot version
+        /// Gets or sets the last snapshot version
         /// </summary>
-        public int SnapshotVersion { get; private set; } = -1;
+        public int SnapshotVersion { get; protected set; }
         
         /// <summary>
         /// Gets or sets a value indicating whether the current event should be ignored
@@ -143,7 +143,7 @@ namespace ZES.Infrastructure.Domain
         }
 
         /// <inheritdoc />
-        public void Snapshot()
+        public virtual void Snapshot()
         {
             var e = CreateSnapshot();
             if (e != null)
@@ -174,7 +174,7 @@ namespace ZES.Infrastructure.Domain
         /// </summary>
         /// <param name="handler">Event handler</param>
         /// <typeparam name="TEvent">Event type</typeparam>
-        protected void Register<TEvent>(Action<TEvent> handler)
+        protected virtual void Register<TEvent>(Action<TEvent> handler)
             where TEvent : class, IEvent
         {
             if (handler != null)
@@ -193,11 +193,9 @@ namespace ZES.Infrastructure.Domain
             IgnoreCurrentEvent = false;
             Version++;
             
-            if (_handlers.TryGetValue(e.GetType(), out var handler))
-                handler(e);
-
-            if (e is ISnapshotEvent)
-                SnapshotVersion = e.Version;
+            // if (_handlers.TryGetValue(e.GetType(), out var handler))
+            var handler = _handlers.SingleOrDefault(h => h.Key.IsInstanceOfType(e)).Value;
+            handler?.Invoke(e);
         }
 
         private void ClearUncommittedEvents()

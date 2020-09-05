@@ -46,14 +46,6 @@ namespace ZES.Infrastructure.Domain
             ClearUncommittedCommands();
             base.Clear();
         }
-        
-        /// <inheritdoc />
-        public override void Snapshot()
-        {
-            Version--;
-            base.Snapshot();
-            IgnoreCurrentEvent = true;
-        }
 
         /// <summary>
         /// Apply the snapshot event to saga
@@ -66,6 +58,21 @@ namespace ZES.Infrastructure.Domain
         /// </summary>
         protected virtual void DefaultHash() { }
 
+        /// <summary>
+        /// Register the aggregate snapshot trigger
+        /// </summary>
+        /// <typeparam name="TRoot">Aggregate type</typeparam>
+        protected void RegisterOnSnapshot<TRoot>()
+        {
+            Register<ISnapshotEvent<TRoot>>(e => e.Id, _ =>
+            {
+                // version needs to be decremented as the aggregate event is ignored
+                Version--;
+                Snapshot();
+                IgnoreCurrentEvent = true;
+            });
+        }
+        
         /// <summary>
         /// Associate the event with the specified saga id resolver
         /// and handle using the provided action

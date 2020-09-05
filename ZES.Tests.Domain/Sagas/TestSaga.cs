@@ -17,11 +17,7 @@ namespace ZES.Tests.Domain.Sagas
         {
             Register<RootCreated>(e => e.RootId, Trigger.Create, e => _rootId = e.RootId);
             Register<RootUpdated>(e => e.RootId, Trigger.Update);
-            Register<ISnapshotEvent<Root>>(e => e.Id, _ =>
-            {
-                Snapshot();
-                IgnoreCurrentEvent = true;
-            });
+            RegisterOnSnapshot<Root>();
             Register<TestSagaSnapshotEvent>(e => e.Id, e => _rootId = e.Id);
         }
         

@@ -420,18 +420,19 @@ namespace ZES.Tests
             var bus = container.GetInstance<IBus>();
             var repository = container.GetInstance<IEsRepository<ISaga>>();
             var manager = container.GetInstance<IBranchManager>();
-
-            await await bus.CommandAsync(new CreateRoot("Root"));
-            await await bus.CommandAsync(new UpdateRoot("Root"));
+            var id = "SnapshotRoot";
             
-            var saga = await repository.Find<TestSaga>("Root");
+            await await bus.CommandAsync(new CreateRoot(id));
+            await await bus.CommandAsync(new UpdateRoot(id));
+            
+            var saga = await repository.Find<TestSaga>(id);
             Assert.Equal(0, saga.SnapshotVersion);
-            
-            await await bus.CommandAsync(new CreateSnapshot<Root>("Root"));
+
+            await await bus.CommandAsync(new CreateSnapshot<Root>(id));
 
             await manager.Ready;
             
-            saga = await repository.Find<TestSaga>("Root");
+            saga = await repository.Find<TestSaga>(id);
             Assert.Equal(2, saga.SnapshotVersion);
             Assert.Equal(TestSaga.State.Complete, saga.CurrentState);
         }

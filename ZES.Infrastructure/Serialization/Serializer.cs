@@ -37,7 +37,7 @@ namespace ZES.Infrastructure.Serialization
             _serializer = JsonSerializer.Create(new JsonSerializerSettings
             {
                 // Allows deserializing to the actual runtime type
-                TypeNameHandling = TypeNameHandling.All,
+                TypeNameHandling = TypeNameHandling.Objects,
 
                 // In a version resilient way
                 TypeNameAssemblyFormatHandling = TypeNameAssemblyFormatHandling.Simple,

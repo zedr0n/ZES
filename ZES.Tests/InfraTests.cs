@@ -438,5 +438,29 @@ namespace ZES.Tests
             Assert.Equal(2, saga.SnapshotVersion);
             Assert.Equal(TestSaga.State.Complete, saga.CurrentState);
         }
+
+        [Fact]
+        public async void CanHaveListsInEvents()
+        {
+            var container = CreateContainer();
+            var bus = container.GetInstance<IBus>();
+
+            var id = nameof(CanHaveListsInEvents); 
+            await await bus.CommandAsync(new CreateRoot(id));
+
+            var lst = new List<string>()
+            {
+                "a",
+                "b",
+                "c",
+            };
+
+            await await bus.CommandAsync(new AddRootDetails(id, lst.ToArray()));
+            var repository = container.GetInstance<IEsRepository<IAggregate>>();
+
+            var root = await repository.Find<Root>(id);
+            
+            Assert.Equal(3, root.Details.Count);
+        }
     }
 }

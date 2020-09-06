@@ -1,3 +1,5 @@
+using System.Collections.Generic;
+using System.Linq;
 using ZES.Infrastructure.Domain;
 using ZES.Interfaces;
 using ZES.Interfaces.Domain;
@@ -12,6 +14,7 @@ namespace ZES.Tests.Domain
             Register<RootCreated>(ApplyEvent);
             Register<RootUpdated>(ApplyEvent);
             Register<SnapshotEvent>(ApplyEvent);
+            Register<RootDetailsAdded>(ApplyEvent);
         }
 
         public Root(string id)
@@ -33,12 +36,19 @@ namespace ZES.Tests.Domain
             /// </summary>
             Special,
         }
+
+        public List<string> Details { get; set; }
         
         public long UpdatedAt { get; private set; }
 
         public void Update()
         {
             When(new RootUpdated(Id));
+        }
+
+        public void AddDetails(string[] details)
+        {
+            When(new RootDetailsAdded(details));
         }
 
         /// <inheritdoc/>
@@ -60,6 +70,11 @@ namespace ZES.Tests.Domain
             UpdatedAt = e.UpdatedAt;
         }
         
+        private void ApplyEvent(RootDetailsAdded e)
+        {
+            Details = e.Details.ToList();
+        }
+
         private class SnapshotEvent : Event, ISnapshotEvent<Root>
         {
             /// <summary>

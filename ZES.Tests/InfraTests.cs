@@ -424,6 +424,8 @@ namespace ZES.Tests
             
             await await bus.CommandAsync(new CreateRoot(id));
             await await bus.CommandAsync(new UpdateRoot(id));
+
+            await manager.Ready;
             
             var saga = await repository.Find<TestSaga>(id);
             Assert.Equal(0, saga.SnapshotVersion);

@@ -91,7 +91,7 @@ namespace ZES.Infrastructure.Domain
             where T : class, TEventSourced, new()
         {
             var instance = await Find<T>(id);
-            return instance ?? EventSourced.Create<T>(id);
+            return instance ?? EventSourced.Create<T>(id, 0);
         }
 
         /// <inheritdoc />

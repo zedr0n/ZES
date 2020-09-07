@@ -60,7 +60,7 @@ namespace ZES.Infrastructure.Domain
         /// <param name="version">Initial version</param>
         /// <typeparam name="T">Event sourced type</typeparam>
         /// <returns>Event sourced instance with the provided id</returns>
-        public static T Create<T>(string id, int version = 0)
+        public static T Create<T>(string id, int version)
             where T : class, IEventSourced, new()
         {
             var instance = new T() as EventSourced;
@@ -72,7 +72,7 @@ namespace ZES.Infrastructure.Domain
                 instance.Version = version;
             return instance as T;
         }
-
+        
         /// <inheritdoc />
         public IEnumerable<IEvent> GetUncommittedEvents()
         {

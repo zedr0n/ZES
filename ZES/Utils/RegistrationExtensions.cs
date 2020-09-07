@@ -52,7 +52,7 @@ namespace ZES.Utils
                     ?.MakeGenericMethod(a);
                 if (m != null)
                 {
-                    var reg = Lifestyle.Singleton.CreateRegistration(typeof(IEventSourced), () => m.Invoke(null, new object[] { string.Empty }), c);
+                    var reg = Lifestyle.Singleton.CreateRegistration(typeof(IEventSourced), () => m.Invoke(null, new object[] { string.Empty, 0 }), c);
                     c.Collection.Append(typeof(IEventSourced), reg);
                 }
 
@@ -93,7 +93,7 @@ namespace ZES.Utils
                     ?.MakeGenericMethod(s);
                 if (m != null)
                 {
-                    var reg = Lifestyle.Singleton.CreateRegistration(typeof(IEventSourced), () => m.Invoke(null, new object[] { string.Empty }), c);
+                    var reg = Lifestyle.Singleton.CreateRegistration(typeof(IEventSourced), () => m.Invoke(null, new object[] { string.Empty, 0 }), c);
                     c.Collection.Append(typeof(IEventSourced), reg);
                 }
                 

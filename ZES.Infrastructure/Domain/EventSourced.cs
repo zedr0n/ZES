@@ -52,14 +52,15 @@ namespace ZES.Infrastructure.Domain
         /// Gets or sets a value indicating whether the current event should be ignored
         /// </summary>
         protected bool IgnoreCurrentEvent { get; set; }
-        
+
         /// <summary>
         /// Static event sourced instance factory
         /// </summary>
         /// <param name="id">Event sourced identifier</param>
+        /// <param name="version">Initial version</param>
         /// <typeparam name="T">Event sourced type</typeparam>
         /// <returns>Event sourced instance with the provided id</returns>
-        public static T Create<T>(string id)
+        public static T Create<T>(string id, int version = 0)
             where T : class, IEventSourced, new()
         {
             var instance = new T() as EventSourced;
@@ -67,6 +68,8 @@ namespace ZES.Infrastructure.Domain
                 return default(T);
 
             instance.Id = id;
+            if (version > 0)
+                instance.Version = version;
             return instance as T;
         }
 

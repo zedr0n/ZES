@@ -443,5 +443,35 @@ namespace ZES.Tests
             result = await remote.Pull("grandTest");
             Assert.Equal(Status.Success, result.ResultStatus);
         }
+
+        [Fact]
+        public async void CanPushSnapshot()
+        {
+            var container = CreateContainer(new List<Action<Container>> { c => c.UseLocalStore() });
+            var bus = container.GetInstance<IBus>();
+            var manager = container.GetInstance<IBranchManager>(); 
+            var remote = container.GetInstance<IRemote>();
+            var repository = container.GetInstance<IEsRepository<IAggregate>>();
+
+            var id = "Root";
+            var command = new CreateRoot(id);
+            await await bus.CommandAsync(command);
+            await await bus.CommandAsync(new UpdateRoot(id));
+
+            await await bus.CommandAsync(new CreateSnapshot<Root>(id));
+
+            var result = await remote.Push(BranchManager.Master);
+            Assert.Equal(Status.Success, result.ResultStatus);
+            
+            await manager.Branch("test");
+            await await bus.CommandAsync(new UpdateRoot(id));
+
+            result = await remote.Push("test");
+            Assert.Equal(Status.Success, result.ResultStatus);
+
+            var root = await repository.Find<Root>(id);
+            Assert.Equal(3, root.Version);
+            Assert.Equal(2, root.SnapshotVersion);
+        }
     }
 }

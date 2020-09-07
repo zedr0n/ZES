@@ -100,7 +100,11 @@ namespace ZES.Infrastructure.EventStore
         public string Timeline { get; set; }
 
         /// <inheritdoc />
-        public IStream Copy() => new Stream(Key, Version, Parent) { DeletedCount = DeletedCount };
+        public IStream Copy() => new Stream(Key, Version, Parent)
+        {
+            SnapshotVersion = SnapshotVersion,
+            DeletedCount = DeletedCount,
+        };
         
         /// <inheritdoc />
         public int ReadPosition(int version)
@@ -170,9 +174,9 @@ namespace ZES.Infrastructure.EventStore
             var stream = new Stream(
                 Key,
                 version,
-                new Stream(Key, version) { SnapshotVersion = SnapshotVersion < version ? SnapshotVersion : 0 })
+                new Stream(Key, version) { SnapshotVersion = SnapshotVersion <= version ? SnapshotVersion : 0 })
             {
-                SnapshotVersion = SnapshotVersion < version ? SnapshotVersion : 0,
+                SnapshotVersion = SnapshotVersion <= version ? SnapshotVersion : 0,
                 Timeline = timeline,
             };
             

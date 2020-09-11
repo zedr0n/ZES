@@ -12,6 +12,6 @@ namespace ZES.Infrastructure.Stochastics
         public abstract IEnumerable<TState> this[TState current] { get; }
 
         /// <inheritdoc />
-        public bool this[TState from, TState to] => this[from].Any(s => s.Equals(to));
+        public virtual double this[TState from, TState to] => this[from].Any(s => s.Equals(to)) ? 1.0 : 0.0;
     }
 }

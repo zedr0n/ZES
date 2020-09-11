@@ -16,10 +16,10 @@ namespace ZES.Interfaces.Stochastic
         IEnumerable<TState> this[TState current] { get; }
         
         /// <summary>
-        /// True if action allows moving between the specified states
+        /// Transition probability of the action
         /// </summary>
         /// <param name="from">Source state</param>
         /// <param name="to">Target state</param>
-        bool this[TState from, TState to] { get; }
+        double this[TState from, TState to] { get; }
     }
 }

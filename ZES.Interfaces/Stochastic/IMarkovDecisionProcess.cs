@@ -4,10 +4,8 @@ namespace ZES.Interfaces.Stochastic
     /// Markov decision process
     /// </summary>
     /// <typeparam name="TState">State</typeparam>
-    /// <typeparam name="TProbability">Transition probability</typeparam>
-    public interface IMarkovDecisionProcess<TState, TProbability>
+    public interface IMarkovDecisionProcess<TState>
         where TState : IMarkovState
-        where TProbability : ITransitionProbability<TState>
     {
         /// <summary>
         /// Get the optimal value for the evaluated policy

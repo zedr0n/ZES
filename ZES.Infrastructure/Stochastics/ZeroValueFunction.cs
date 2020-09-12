@@ -1,3 +1,4 @@
+using System;
 using ZES.Interfaces.Stochastic;
 
 namespace ZES.Infrastructure.Stochastics
@@ -7,7 +8,7 @@ namespace ZES.Infrastructure.Stochastics
     /// </summary>
     /// <typeparam name="TState">State type</typeparam>
     public class ZeroValueFunction<TState> : IValueFunction<TState>
-        where TState : IMarkovState
+        where TState : IMarkovState, IEquatable<TState>
     {
         /// <summary>
         /// Function indexer
@@ -18,5 +19,7 @@ namespace ZES.Infrastructure.Stochastics
             get => 0.0;
             set { } 
         }
+
+        public bool HasState(TState state) => false;
     }
 }

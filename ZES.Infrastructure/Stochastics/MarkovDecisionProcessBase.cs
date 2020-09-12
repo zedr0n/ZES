@@ -8,7 +8,7 @@ namespace ZES.Infrastructure.Stochastics
 {
     /// <inheritdoc />
     public abstract class MarkovDecisionProcessBase<TState> : IMarkovDecisionProcess<TState>
-        where TState : IMarkovState 
+        where TState : IMarkovState, IEquatable<TState>
     {
         private readonly int _maxIterations;
         private readonly TState _initialState;
@@ -114,9 +114,14 @@ namespace ZES.Infrastructure.Stochastics
                 ValueFunctions[policy][iteration] = NextFunction();
 
             var function = ValueFunctions[policy][iteration];
+            // var newStates = function.Distinct(states);
+            var newStates = states;
 
-            foreach (var state in states)
+            foreach (var state in newStates)
             {
+                if (function.HasState(state))
+                    continue;
+                
                 var value = 0.0;
                 var action = policy[state];
                 if (action != null)

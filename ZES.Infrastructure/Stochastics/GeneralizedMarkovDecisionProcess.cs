@@ -8,7 +8,7 @@ namespace ZES.Infrastructure.Stochastics
 {
     /// <inheritdoc />
     public abstract class GeneralizedMarkovDecisionProcess<TState> : IMarkovDecisionProcess<TState>
-        where TState : IMarkovState 
+        where TState : IMarkovState, IEquatable<TState>
     {
         private readonly int _maxIterations;
         private readonly TState _initialState;

@@ -26,7 +26,7 @@ namespace ZES.Infrastructure.Stochastics
         {
             get
             {
-                if (action is TAction markovAction && action[from, to] > 0)
+                if (action is TAction markovAction ) // && action[from, to] > 0)
                     return this[from, to, markovAction];
                 return 0.0;
             }

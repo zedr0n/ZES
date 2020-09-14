@@ -1,5 +1,6 @@
 #define USE_ACTION_STATE_CACHE
 
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using ZES.Interfaces.Stochastic;
@@ -10,7 +11,9 @@ namespace ZES.Infrastructure.Stochastics
     public abstract class MarkovActionBase<TState> : IMarkovAction<TState>
         where TState : IMarkovState
     {
-        private Dictionary<TState, TState[]> NextStates { get; } = new Dictionary<TState, TState[]>();
+        private readonly Lazy<Dictionary<TState, TState[]>> _lazyNextStates = new Lazy<Dictionary<TState, TState[]>>(() => new Dictionary<TState, TState[]>());
+
+        private Dictionary<TState, TState[]> NextStates => _lazyNextStates.Value; 
         
         /// <inheritdoc />
         public virtual IEnumerable<TState> this[TState current]

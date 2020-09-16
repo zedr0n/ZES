@@ -21,10 +21,13 @@ namespace ZES.Infrastructure.Stochastics
             get
             {
             #if USE_ACTION_STATE_CACHE
-                if (!NextStates.ContainsKey(current))
-                    NextStates[current] = GetStates(current);
+                if (NextStates.TryGetValue(current, out var value))
+                    return value;
 
-                return NextStates[current];
+                value = GetStates(current);
+                NextStates.Add(current, value);
+
+                return value;
             #else
                 return GetStates(current);
             #endif

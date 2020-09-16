@@ -10,13 +10,17 @@ namespace ZES.Infrastructure.Stochastics
     {
         private readonly Dictionary<TState, double> _map = new Dictionary<TState, double>();
 
-        public bool HasState(TState state) => _map.ContainsKey(state);
-
         /// <inheritdoc />
         public double this[TState s]
         {
             get => _map[s];
             set => _map[s] = value;
         }
+
+        /// <inheritdoc />
+        public void Add(TState s, double value) => _map.Add(s, value);
+        
+        /// <inheritdoc />
+        public bool HasState(TState state) => _map.ContainsKey(state);
     }
 }

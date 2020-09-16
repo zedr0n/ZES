@@ -20,6 +20,10 @@ namespace ZES.Infrastructure.Stochastics
             set { } 
         }
 
+        /// <inheritdoc />
         public bool HasState(TState state) => false;
+
+        /// <inheritdoc />
+        public void Add(TState s, double value) { }
     }
 }

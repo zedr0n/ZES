@@ -43,10 +43,13 @@ namespace ZES.Infrastructure.Stochastics
         /// </summary>
         private Dictionary<int, List<TState>> StateSpace { get; set; }
 
+        private Dictionary<int, List<TState>> DistinctStateSpace { get; set; }
+        private HashSet<TState> AllStateSpace { get; set; }
+        
         /// <inheritdoc />
         public double GetOptimalValue(IPolicy<TState> policy, double tolerance = 0.0001)
         {
-            return GetOptimalValue(policy as IDeterministicPolicy<TState>);
+            return GetOptimalValue(policy as IDeterministicPolicy<TState>, tolerance);
         }
         
         /// <summary>
@@ -81,14 +84,28 @@ namespace ZES.Infrastructure.Stochastics
             if (StateSpace.ContainsKey(_iteration))
                 return;
             var layer = new List<TState>();
+            var distinctLayer = new List<TState>();
             foreach (var state in previousLayer)
             {
                 var action = policy[state];
-                if (action != null) 
-                    layer.AddRange(action[state]);
+                if (action != null)
+                {
+                    var nextStates = action[state];
+                    foreach (var nextState in nextStates)
+                    {
+                        if (!AllStateSpace.Contains(nextState))
+                        {
+                            distinctLayer.Add(nextState);
+                            AllStateSpace.Add(nextState);
+                        }
+                        
+                        layer.Add(nextState); 
+                    }
+                }
             }
 
             StateSpace[_iteration] = layer.Distinct().ToList();
+            DistinctStateSpace[_iteration] = distinctLayer.Distinct().ToList();
         }
 
         private void Initialize(IPolicy<TState> policy)
@@ -97,6 +114,13 @@ namespace ZES.Infrastructure.Stochastics
             {
                 { 0, new List<TState> { _initialState } },
             };
+
+            DistinctStateSpace = new Dictionary<int, List<TState>>
+            {
+                { 0, new List<TState> {_initialState } },
+            };
+            
+            AllStateSpace = new HashSet<TState> { _initialState }; 
            
             ValueFunctions.Clear();
             ValueFunctions[policy] = new Dictionary<int, IValueFunction<TState>>
@@ -114,14 +138,13 @@ namespace ZES.Infrastructure.Stochastics
                 ValueFunctions[policy][iteration] = NextFunction();
 
             var function = ValueFunctions[policy][iteration];
-            // var newStates = function.Distinct(states);
             var newStates = states;
 
             foreach (var state in newStates)
             {
-                if (function.HasState(state))
-                    continue;
-                
+                // if (function.HasState(state))
+                //    continue;
+
                 var value = 0.0;
                 var action = policy[state];
                 if (action != null)
@@ -141,8 +164,8 @@ namespace ZES.Infrastructure.Stochastics
 
                     value += expectedReward + expectation;
                 }
-                    
-                function[state] = value;
+
+                function.Add(state, value);
             }   
         }
 
@@ -158,7 +181,7 @@ namespace ZES.Infrastructure.Stochastics
             
             // populate previous needed values
             for (var i = 1; i < _iteration; ++i)
-                ComputeValueFunction(i, policy, StateSpace[_iteration - i]);
+                ComputeValueFunction(i, policy, DistinctStateSpace[_iteration - i]);
            
             // compute current iteration result
             ComputeValueFunction(_iteration, policy, new List<TState> { _initialState });

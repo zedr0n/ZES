@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using ZES.Interfaces;
 using ZES.Interfaces.Stochastic;
 
@@ -117,7 +118,7 @@ namespace ZES.Infrastructure.Stochastics
 
             DistinctStateSpace = new Dictionary<int, List<TState>>
             {
-                { 0, new List<TState> {_initialState } },
+                { 0, new List<TState> { _initialState } },
             };
             
             AllStateSpace = new HashSet<TState> { _initialState }; 
@@ -138,35 +139,37 @@ namespace ZES.Infrastructure.Stochastics
                 ValueFunctions[policy][iteration] = NextFunction();
 
             var function = ValueFunctions[policy][iteration];
-            var newStates = states;
+            var newStates = states.ToList();
 
-            foreach (var state in newStates)
-            {
-                // if (function.HasState(state))
-                //    continue;
-
-                var value = 0.0;
-                var action = policy[state];
-                if (action != null)
+            // foreach (var state in newStates)
+            Parallel.ForEach(
+                newStates,
+                new ParallelOptions { MaxDegreeOfParallelism = Configuration.ThreadsPerInstance / 2 },
+                state =>
                 {
-                    var expectation = 0.0;
-                    var expectedReward = 0.0;
-                    foreach (var nextState in action[state])
+                    var value = 0.0;
+                    var action = policy[state];
+                    if (action != null)
                     {
-                        var probability = action[state, nextState];
-                        if (probability == 0)
-                            continue;
-                       
-                        expectation += probability * previousFunction[nextState];
-                        foreach (var reward in Rewards)
-                            expectedReward += probability * reward[state, nextState, action];
+                        var expectation = 0.0;
+                        foreach (var nextState in action[state])
+                        {
+                            var probability = action[state, nextState];
+                            if (probability != 0)
+                            {
+                                expectation += probability * previousFunction[nextState];
+                                foreach (var reward in Rewards)
+                                    expectation += probability * reward[state, nextState, action];
+                            }
+                        }
+                        
+                        value += expectation;
                     }
 
-                    value += expectedReward + expectation;
-                }
-
-                function.Add(state, value);
-            }   
+                    // function.Add(state, value);
+                    lock (function)
+                        function.Add(state, value);
+                });
         }
 
         private double Iterate(IPolicy<TState> iPolicy)   

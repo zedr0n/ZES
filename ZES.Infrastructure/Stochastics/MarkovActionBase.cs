@@ -11,7 +11,7 @@ namespace ZES.Infrastructure.Stochastics
     public abstract class MarkovActionBase<TState> : IMarkovAction<TState>
         where TState : IMarkovState
     {
-        private readonly Lazy<Dictionary<TState, TState[]>> _lazyNextStates = new Lazy<Dictionary<TState, TState[]>>(() => new Dictionary<TState, TState[]>());
+        private readonly Lazy<Dictionary<TState, TState[]>> _lazyNextStates = new Lazy<Dictionary<TState, TState[]>>(() => new Dictionary<TState, TState[]>(new StateEqualityComparer<TState>()));
 
         private Dictionary<TState, TState[]> NextStates => _lazyNextStates.Value; 
         
@@ -43,5 +43,16 @@ namespace ZES.Infrastructure.Stochastics
         /// <param name="current">Current state</param>
         /// <returns>Possible states</returns>
         protected abstract TState[] GetStates(TState current);
+    }
+    
+    /// <inheritdoc />
+    public class StateEqualityComparer<TState> : IEqualityComparer<TState>
+        where TState : IMarkovState
+    {
+        /// <inheritdoc />
+        public bool Equals(TState x, TState y) => x.Equals(y);
+
+        /// <inheritdoc />
+        public int GetHashCode(TState obj) => obj.GetHashCode();
     }
 }

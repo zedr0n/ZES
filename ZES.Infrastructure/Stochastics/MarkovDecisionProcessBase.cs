@@ -1,3 +1,5 @@
+#define USE_PARALLEL
+
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -139,37 +141,43 @@ namespace ZES.Infrastructure.Stochastics
                 ValueFunctions[policy][iteration] = NextFunction();
 
             var function = ValueFunctions[policy][iteration];
-            var newStates = states.ToList();
 
-            // foreach (var state in newStates)
+            #if USE_PARALLEL
             Parallel.ForEach(
-                newStates,
-                new ParallelOptions { MaxDegreeOfParallelism = Configuration.ThreadsPerInstance / 2 },
+                states,
+                new ParallelOptions { MaxDegreeOfParallelism = Configuration.ThreadsPerInstance },
                 state =>
+            #else
+            foreach (var state in states)
+            #endif
+            {
+                var value = 0.0;
+                var action = policy[state];
+                if (action != null)
                 {
-                    var value = 0.0;
-                    var action = policy[state];
-                    if (action != null)
+                    var expectation = 0.0;
+                    foreach (var nextState in action[state])
                     {
-                        var expectation = 0.0;
-                        foreach (var nextState in action[state])
+                        var probability = action[state, nextState];
+                        if (probability != 0)
                         {
-                            var probability = action[state, nextState];
-                            if (probability != 0)
-                            {
-                                expectation += probability * previousFunction[nextState];
-                                foreach (var reward in Rewards)
-                                    expectation += probability * reward[state, nextState, action];
-                            }
+                            expectation += probability * previousFunction[nextState];
+                            foreach (var reward in Rewards)
+                                expectation += probability * reward[state, nextState, action];
                         }
-                        
-                        value += expectation;
                     }
+                        
+                    value += expectation;
+                }
 
-                    // function.Add(state, value);
-                    lock (function)
-                        function.Add(state, value);
+                // function.Add(state, value);
+                lock (function)
+                    function.Add(state, value);
+#if USE_PARALLEL    
                 });
+#else
+            }
+#endif
         }
 
         private double Iterate(IPolicy<TState> iPolicy)   

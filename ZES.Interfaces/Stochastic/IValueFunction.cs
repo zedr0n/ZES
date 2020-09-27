@@ -1,5 +1,4 @@
 using System;
-using System.Collections;
 
 namespace ZES.Interfaces.Stochastic
 {
@@ -14,7 +13,7 @@ namespace ZES.Interfaces.Stochastic
         /// Value corresponding to the state 
         /// </summary>
         /// <param name="s">State</param>
-        double this[TState s] { get; set; }
+        Value this[TState s] { get; set; }
 
         /// <summary>
         /// Check if the state was already computed
@@ -28,6 +27,6 @@ namespace ZES.Interfaces.Stochastic
         /// </summary>
         /// <param name="s">State</param>
         /// <param name="value">Corresponding value</param>
-        void Add(TState s, double value);
+        void Add(TState s, Value value);
     }
 }

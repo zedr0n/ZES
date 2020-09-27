@@ -14,9 +14,9 @@ namespace ZES.Infrastructure.Stochastics
         /// Function indexer
         /// </summary>
         /// <param name="s">State</param>
-        public double this[TState s]
+        public Value this[TState s]
         {
-            get => 0.0;
+            get => new Value(0.0, 0.0);
             set { } 
         }
 
@@ -24,6 +24,6 @@ namespace ZES.Infrastructure.Stochastics
         public bool HasState(TState state) => false;
 
         /// <inheritdoc />
-        public void Add(TState s, double value) { }
+        public void Add(TState s, Value value) { }
     }
 }

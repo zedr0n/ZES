@@ -33,7 +33,7 @@ namespace ZES.Infrastructure.Stochastics
         /// Gets or sets the log service
         /// </summary>
         public ILog Log { get; set; }
-        
+
         /// <summary>
         /// Gets or sets reward set for the process
         /// </summary>
@@ -52,27 +52,36 @@ namespace ZES.Infrastructure.Stochastics
         /// <inheritdoc />
         public double GetOptimalValue(IPolicy<TState> policy, double tolerance = 0.0001)
         {
-            return GetOptimalValue(policy as IDeterministicPolicy<TState>, tolerance);
+            return GetOptimalValue(policy as IDeterministicPolicy<TState>, tolerance).Mean;
         }
-        
+
+        /// <inheritdoc />
+        public Value GetOptimalValueAndVariance(IPolicy<TState> policy, double tolerance = 0.0001)
+        {
+            var val = GetOptimalValue(policy as IDeterministicPolicy<TState>, tolerance);
+            var variance = Math.Sqrt(val.Variance - (val.Mean * val.Mean));
+            var ret = new Value(val.Mean, variance);
+            return ret;
+        }
+
         /// <summary>
         /// Value function constructor
         /// </summary>
         /// <returns>Associated value function for next iteration</returns>
         protected abstract IValueFunction<TState> NextFunction();
 
-        private double GetOptimalValue(IDeterministicPolicy<TState> policy, double tolerance = 1e-4)
+        private Value GetOptimalValue(IDeterministicPolicy<TState> policy, double tolerance = 1e-4)
         {
             Initialize(policy);
-            var prevValue = 0.0;
+            var prevValue = new Value(0.0, 0.0);
             var value = Iterate(policy);
             var change = double.MaxValue;
-            while ((change > tolerance || change == 0 || value == 0) && _iteration < _maxIterations && StateSpace[_iteration].Count > 0)
+            while ((change > tolerance || change == 0 || value.Mean == 0) && _iteration < _maxIterations && StateSpace[_iteration].Count > 0)
             {
-                Log?.Info($"Iteration {_iteration} : {prevValue} -> {value} \t {value - prevValue}");
+                Log?.Info($"Iteration {_iteration} : {prevValue} -> {value} \t {value.Mean - prevValue.Mean}");
                 prevValue = value;
                 value = Iterate(policy);
-                change = Math.Abs(value - prevValue);
+                change = Math.Abs(value.Mean - prevValue.Mean);
             }
 
             return value;
@@ -151,22 +160,27 @@ namespace ZES.Infrastructure.Stochastics
             foreach (var state in states)
             #endif
             {
-                var value = 0.0;
+                var value = new Value(0.0, 0.0);
                 var action = policy[state];
                 if (action != null)
                 {
-                    var expectation = 0.0;
+                    var expectation = new Value(0.0, 0.0);
                     foreach (var nextState in action[state])
                     {
                         var probability = action[state, nextState];
-                        if (probability != 0)
-                        {
-                            expectation += probability * previousFunction[nextState];
-                            foreach (var reward in Rewards)
-                                expectation += probability * reward[state, nextState, action];
-                        }
-                    }
+                        if (probability == 0) 
+                            continue;
                         
+                        var totalReward = 0.0;
+                        foreach (var reward in Rewards)
+                            totalReward += reward[state, nextState, action];
+
+                        var prevValue = previousFunction[nextState];
+                            
+                        var rewardValue = new Value(totalReward + prevValue.Mean, prevValue.Variance + (totalReward * totalReward) + (2 * prevValue.Mean * totalReward));
+                        expectation += probability * rewardValue;
+                    }
+
                     value += expectation;
                 }
 
@@ -180,7 +194,7 @@ namespace ZES.Infrastructure.Stochastics
 #endif
         }
 
-        private double Iterate(IPolicy<TState> iPolicy)   
+        private Value Iterate(IPolicy<TState> iPolicy)   
         {
             _iteration++;
             var policy = iPolicy as IDeterministicPolicy<TState>;

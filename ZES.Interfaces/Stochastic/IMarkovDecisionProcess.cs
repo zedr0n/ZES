@@ -14,5 +14,13 @@ namespace ZES.Interfaces.Stochastic
         /// <param name="tolerance">Target tolerance</param>
         /// <returns>Optimal value</returns>
         double GetOptimalValue(IPolicy<TState> policy, double tolerance = 1e-4);
+        
+        /// <summary>
+        /// Get the optimal value for the evaluated policy
+        /// </summary>
+        /// <param name="policy">used policy</param>
+        /// <param name="tolerance">Target tolerance</param>
+        /// <returns>Optimal value</returns>
+        Value GetOptimalValueAndVariance(IPolicy<TState> policy, double tolerance = 1e-4);
     }
 }

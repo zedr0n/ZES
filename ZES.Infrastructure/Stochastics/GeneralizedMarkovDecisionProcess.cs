@@ -54,7 +54,13 @@ namespace ZES.Infrastructure.Stochastics
         {
             return GetOptimalValue(policy as IGeneralizedPolicy<TState>);
         }
-        
+
+        /// <inheritdoc />
+        public Value GetOptimalValueAndVariance(IPolicy<TState> policy, double tolerance = 0.0001)
+        {
+            throw new NotImplementedException();
+        }
+
         /// <summary>
         /// Value function constructor
         /// </summary>
@@ -64,18 +70,18 @@ namespace ZES.Infrastructure.Stochastics
         private double GetOptimalValue(IGeneralizedPolicy<TState> policy, double tolerance = 1e-4)
         {
             Initialize(policy);
-            var prevValue = 0.0;
+            var prevValue = new Value(0.0, 0.0);
             var value = Iterate(policy);
             var change = double.MaxValue;
-            while ((change > tolerance || change == 0 || value == 0) && _iteration < _maxIterations && StateSpace[_iteration].Count > 0)
+            while ((change > tolerance || change == 0 || value.Mean == 0) && _iteration < _maxIterations && StateSpace[_iteration].Count > 0)
             {
-                Log?.Info($"Iteration {_iteration} : {prevValue} -> {value} \t {value - prevValue}");
+                Log?.Info($"Iteration {_iteration} : {prevValue} -> {value} \t {value.Mean - prevValue.Mean}");
                 prevValue = value;
                 value = Iterate(policy);
-                change = Math.Abs(value - prevValue);
+                change = Math.Abs(value.Mean - prevValue.Mean);
             }
 
-            return value;
+            return value.Mean;
         }
 
         /// <summary>
@@ -127,14 +133,14 @@ namespace ZES.Infrastructure.Stochastics
 
             foreach (var state in states)
             {
-                var value = 0.0;
+                var value = new Value(0.0, 0.0);
                 foreach (var action in Actions)
                 {
                    if (policy[action, state] == 0)
                        continue;
 
-                   var expectation = 0.0;
-                   var expectedReward = 0.0;
+                   var expectation = new Value(0.0, 0.0);
+                   var expectedReward = new Value(0.0, 0.0);
                    foreach (var nextState in action[state])
                    {
                        var probability = action[state, nextState];
@@ -143,7 +149,12 @@ namespace ZES.Infrastructure.Stochastics
                        
                        expectation += probability * previousFunction[nextState];
                        foreach (var reward in Rewards)
-                           expectedReward += probability * reward[state, nextState, action];
+                       { 
+                           var dReward = reward[state, nextState, action]; 
+                           var rewardValue = new Value(dReward, dReward * dReward);
+
+                           expectedReward += probability * rewardValue;
+                       }
                    }
 
                    value += policy[action, state] * (expectedReward + expectation);
@@ -153,7 +164,7 @@ namespace ZES.Infrastructure.Stochastics
             }   
         }
 
-        private double Iterate(IGeneralizedPolicy<TState> policy)   
+        private Value Iterate(IGeneralizedPolicy<TState> policy)   
         {
             _iteration++;
             

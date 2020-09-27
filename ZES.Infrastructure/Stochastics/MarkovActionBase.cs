@@ -37,6 +37,9 @@ namespace ZES.Infrastructure.Stochastics
         /// <inheritdoc />
         public virtual double this[TState from, TState to] => this[from].Contains(to) ? 1.0 : 0.0;
         
+        /// <inheritdoc />
+        public virtual double Reward(TState from, TState to) => 0.0;
+
         /// <summary>
         /// Generate the possible states using current action
         /// </summary>

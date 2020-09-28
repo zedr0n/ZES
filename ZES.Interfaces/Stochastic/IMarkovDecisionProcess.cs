@@ -1,3 +1,5 @@
+using System.Collections.Generic;
+
 namespace ZES.Interfaces.Stochastic
 {
     /// <summary>
@@ -7,6 +9,11 @@ namespace ZES.Interfaces.Stochastic
     public interface IMarkovDecisionProcess<TState>
         where TState : IMarkovState
     {
+        /// <summary>
+        /// Gets or sets reward set for the process
+        /// </summary>
+        List<IActionReward<TState>> Rewards { get; set; }
+
         /// <summary>
         /// Get the optimal value for the evaluated policy
         /// </summary>

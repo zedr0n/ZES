@@ -33,14 +33,14 @@ namespace ZES.Infrastructure.Stochastics
         public ILog Log { get; set; }
         
         /// <summary>
+        /// Gets or sets reward set for the process
+        /// </summary>
+        public List<IActionReward<TState>> Rewards { get; set; }
+        
+        /// <summary>
         /// Gets or sets set of possible actions for the process
         /// </summary>
         protected List<IMarkovAction<TState>> Actions { get; set; }
-        
-        /// <summary>
-        /// Gets or sets reward set for the process
-        /// </summary>
-        protected List<IActionReward<TState>> Rewards { get; set; }
         
         private Dictionary<IGeneralizedPolicy<TState>, Dictionary<int, IValueFunction<TState>>> ValueFunctions { get; } = new Dictionary<IGeneralizedPolicy<TState>, Dictionary<int, IValueFunction<TState>>>();
         

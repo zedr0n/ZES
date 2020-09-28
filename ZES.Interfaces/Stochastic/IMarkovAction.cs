@@ -21,13 +21,5 @@ namespace ZES.Interfaces.Stochastic
         /// <param name="from">Source state</param>
         /// <param name="to">Target state</param>
         double this[TState from, TState to] { get; }
-
-        /// <summary>
-        /// Reward value for the action from state <paramref name="from"/> to state <paramref name="to"/>
-        /// </summary>
-        /// <param name="from">Source state</param>
-        /// <param name="to">Target state</param>
-        /// <returns>Reward</returns>
-        double Reward(TState from, TState to);
     }
 }

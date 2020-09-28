@@ -37,7 +37,7 @@ namespace ZES.Infrastructure.Stochastics
         /// <summary>
         /// Gets or sets reward set for the process
         /// </summary>
-        protected List<IActionReward<TState>> Rewards { get; set; }
+        public List<IActionReward<TState>> Rewards { get; set; }
         
         private Dictionary<IPolicy<TState>, Dictionary<int, IValueFunction<TState>>> ValueFunctions { get; } = new Dictionary<IPolicy<TState>, Dictionary<int, IValueFunction<TState>>>();
         

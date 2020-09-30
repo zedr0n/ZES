@@ -1,10 +1,12 @@
+using System;
+
 namespace ZES.Interfaces.Stochastic
 {
     /// <summary>
     /// Deterministic policy for markov decision processes
     /// </summary>
     /// <typeparam name="TState">State space type</typeparam>
-    public interface IDeterministicPolicy<TState> : IPolicy<TState>
+    public interface IDeterministicPolicy<TState> : IPolicy<TState>, ICloneable
         where TState : IMarkovState
     {
         /// <summary>

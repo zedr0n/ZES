@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Linq;
 using ZES.Interfaces.Stochastic;
 
 namespace ZES.Infrastructure.Stochastics
@@ -29,7 +30,7 @@ namespace ZES.Infrastructure.Stochastics
         public bool IsModified { get; set; } = true;
 
         /// <inheritdoc />
-        public TState[] Modifications { get; } = null;
+        public TState[] Modifications => _actions.Keys.ToArray();
 
         /// <inheritdoc />
         public IMarkovAction<TState> this[TState state]
@@ -75,6 +76,12 @@ namespace ZES.Infrastructure.Stochastics
             actions = _basePolicy.GetAllowedActions(state);
             _allActions[state] = actions;
             return actions;
+        }
+
+        /// <inheritdoc />
+        public object Clone()
+        {
+            throw new System.NotImplementedException();
         }
     }
 }

@@ -38,7 +38,7 @@ namespace ZES.Infrastructure.Stochastics
             {
                 if (_actions.TryGetValue(state, out var action))
                     return action;
-                return null;
+                return _basePolicy[state];
             }
             set => _actions[state] = value;
         }

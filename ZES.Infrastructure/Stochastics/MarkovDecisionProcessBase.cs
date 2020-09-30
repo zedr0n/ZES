@@ -87,7 +87,7 @@ namespace ZES.Infrastructure.Stochastics
         {
             var policy = new OptimalPolicy<TState>(basePolicy);
             optimalPolicy = policy;
-            return GetOptimalValue(policy, tolerance).Mean;
+            return GetOptimalValue(policy, tolerance, true).Mean;
         }
 
         /// <inheritdoc />
@@ -246,12 +246,12 @@ namespace ZES.Infrastructure.Stochastics
             while ( states.Count > 0);
         }
 
-        private Value GetOptimalValue(IDeterministicPolicy<TState> policy, double tolerance = 1e-4)
+        private Value GetOptimalValue(IDeterministicPolicy<TState> policy, double tolerance = 1e-4, bool ignoreZeroChange = false)
         {
             Initialize(policy);
             var value = new Value(0.0, 0.0);
             var change = double.MaxValue;
-            while ((change > tolerance || change == 0 || value.Mean == 0) && _iteration < _maxIterations && StateSpace[_iteration].Count > 0)
+            while ((change > tolerance || ( change == 0 && !ignoreZeroChange) || value.Mean == 0) && _iteration < _maxIterations && StateSpace[_iteration].Count > 0)
             {
                 var prevValue = value;
                 value = Iterate(policy);

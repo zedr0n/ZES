@@ -95,12 +95,13 @@ namespace ZES.Infrastructure.Stochastics
              var value = GetOptimalValue(policy, tolerance);
             
              optimalPolicy = policy = PolicyIteration(policy);
-             var outputStates = policy.GetAllowedActions(_initialState).Where(a => a != null)
-                 .SelectMany(a => a[_initialState]).ToArray();
+             var outputStates = new List<TState> { _initialState };
+             outputStates.AddRange(policy.GetAllowedActions(_initialState).Where(a => a != null)
+                 .SelectMany(a => a[_initialState]));
              while (policy.IsModified)
              {
                  node = Policies.AddAfter(node, policy);
-                 var nextValue = GetOptimalValue(policy, tolerance, false, outputStates);
+                 var nextValue = GetOptimalValue(policy, tolerance, false, outputStates.ToArray());
                  Log?.Info($"{value.Mean}->{nextValue.Mean} at variance {Math.Sqrt(value.Variance - (value.Mean * value.Mean))}->{Math.Sqrt(nextValue.Variance - nextValue.Mean * nextValue.Mean)} with {policy.Modifications.Length} modifications");
                  if (nextValue.Mean - (tolerance * 100) < value.Mean)
                  {

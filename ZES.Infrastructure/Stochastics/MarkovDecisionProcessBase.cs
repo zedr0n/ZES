@@ -83,25 +83,25 @@ namespace ZES.Infrastructure.Stochastics
         /// <param name="basePolicy">Starting policy</param>
         /// <param name="optimalPolicy">Resulting optimal policy</param>
         /// <param name="tolerance">Convergence tolerance</param>
-        /// <param name="outputStates">States to evaluate</param>
         /// <returns>Optimal value</returns>
         public double GetOptimalValueViaPolicyIteration(
             IDeterministicPolicy<TState> basePolicy, 
             out IDeterministicPolicy<TState> optimalPolicy, 
-            double tolerance = 0.0001,
-            TState[] outputStates = null)
+            double tolerance = 0.0001)
         {
              _tolerance = tolerance;
              var node = Policies.AddFirst(basePolicy);
              var policy = basePolicy;
-             var value = GetOptimalValue(policy, tolerance, false, outputStates);
+             var value = GetOptimalValue(policy, tolerance);
             
              optimalPolicy = policy = PolicyIteration(policy);
+             var outputStates = policy.GetAllowedActions(_initialState).Where(a => a != null)
+                 .SelectMany(a => a[_initialState]).ToArray();
              while (policy.IsModified)
              {
                  node = Policies.AddAfter(node, policy);
                  var nextValue = GetOptimalValue(policy, tolerance, false, outputStates);
-                 Log?.Info($"{value.Mean}->{nextValue.Mean} at variance {Math.Sqrt(value.Variance)}->{Math.Sqrt(nextValue.Variance)} with {policy.Modifications.Length} modifications");
+                 Log?.Info($"{value.Mean}->{nextValue.Mean} at variance {Math.Sqrt(value.Variance - (value.Mean * value.Mean))}->{Math.Sqrt(nextValue.Variance - nextValue.Mean * nextValue.Mean)} with {policy.Modifications.Length} modifications");
                  if (nextValue.Mean - (tolerance * 100) < value.Mean)
                  {
                      value = nextValue;
@@ -118,7 +118,7 @@ namespace ZES.Infrastructure.Stochastics
                  Policies.Remove(node.Previous);
              }
 
-             GetOptimalValue(policy, tolerance, false, outputStates);
+             GetOptimalValue(policy, tolerance);
              optimalPolicy = (IDeterministicPolicy<TState>)basePolicy.Clone();
              foreach (var state in AllStateSpace)
                  optimalPolicy[state] = policy[state];

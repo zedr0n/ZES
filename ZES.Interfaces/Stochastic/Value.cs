@@ -107,6 +107,9 @@ namespace ZES.Interfaces.Stochastic
         }
 
         /// <inheritdoc />
+        public override string ToString() => $"{Mean}";
+
+        /// <inheritdoc />
         public override int GetHashCode()
         {
             unchecked

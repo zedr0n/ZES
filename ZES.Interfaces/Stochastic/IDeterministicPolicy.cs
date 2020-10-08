@@ -26,6 +26,13 @@ namespace ZES.Interfaces.Stochastic
         IMarkovAction<TState> this[TState state] { get; set; }
 
         /// <summary>
+        /// Optimal action has been computed for this state
+        /// </summary>
+        /// <param name="state">State</param>
+        /// <returns>True if optimal has been computed</returns>
+        bool HasOptimal(TState state);
+        
+        /// <summary>
         /// Enumerates all actions available from state
         /// </summary>
         /// <param name="state">Current state</param>

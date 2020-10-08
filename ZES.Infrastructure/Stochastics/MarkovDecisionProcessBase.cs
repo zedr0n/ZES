@@ -29,6 +29,16 @@ namespace ZES.Infrastructure.Stochastics
             Rewards = new List<IActionReward<TState>>();
             new Dictionary<TState, HashSet<TState>>();
         }
+
+        /// <summary>
+        /// Gets or sets a value indicating whether to log the iteration process 
+        /// </summary>
+        public bool LogIterations { get; set; } = false;
+        
+        /// <summary>
+        /// Gets or sets a value indicating whether to use the full state space reachable from initial state
+        /// </summary>
+        public bool UseReachableStateSpace { get; set; } = false;
         
         /// <summary>
         /// Gets or sets the log service
@@ -85,15 +95,13 @@ namespace ZES.Infrastructure.Stochastics
              var node = Policies.AddFirst(basePolicy);
              var policy = basePolicy;
              var value = GetOptimalValue(policy, tolerance, false, outputStates);
-             
-             ReachableStates = GetReachableStateSpace(basePolicy, _initialState);
-
+            
              optimalPolicy = policy = PolicyIteration(policy);
              while (policy.IsModified)
              {
                  node = Policies.AddAfter(node, policy);
                  var nextValue = GetOptimalValue(policy, tolerance, false, outputStates);
-                 Log?.Info($"{value.Mean}->{nextValue.Mean} at variance {value.Variance}->{nextValue.Variance} with {policy.Modifications.Length} modifications");
+                 Log?.Info($"{value.Mean}->{nextValue.Mean} at variance {Math.Sqrt(value.Variance)}->{Math.Sqrt(nextValue.Variance)} with {policy.Modifications.Length} modifications");
                  if (nextValue.Mean - (tolerance * 100) < value.Mean)
                  {
                      value = nextValue;
@@ -102,8 +110,12 @@ namespace ZES.Infrastructure.Stochastics
 
                  value = nextValue;
                  policy = PolicyIteration(policy);
-                 if (node.Previous != null)
-                     Policies.Remove(node.Previous);
+                 if (node.Previous == null) 
+                     continue;
+                 
+                 ValueFunctions[node.Previous.Value].Clear();
+                 ValueFunctions.Remove(node.Previous.Value);
+                 Policies.Remove(node.Previous);
              }
 
              GetOptimalValue(policy, tolerance, false, outputStates);
@@ -183,7 +195,7 @@ namespace ZES.Infrastructure.Stochastics
             dict[initialState] = 1.0;
 
             var it = 0;
-            while (maxProba > tol && states.Count > 0 && it < _iteration)
+            while (maxProba > tol && states.Count > 0)
             {
                 maxProba = 0.0;
                 var allowedStates = new HashSet<TState>();
@@ -246,6 +258,8 @@ namespace ZES.Infrastructure.Stochastics
             var iterations = ValueFunctions[policy].Count - 1;
             var valueFunction = ValueFunctions[policy][iterations];
             var allowedActions = policy.GetAllowedActions(state).Where(a => a != null);
+
+            var prevPolicy = Policies.Find(policy)?.Previous?.Value;
             
             var nextStates = new HashSet<TState>();
             foreach (var action in allowedActions)
@@ -260,8 +274,12 @@ namespace ZES.Infrastructure.Stochastics
             {
                 var set = new HashSet<TState>();
                 valueFunction = ValueFunctions[policy][iterations];
+                
                 foreach (var nextState in nextStates)
                 {
+                    if (!UseReachableStateSpace && !policy.HasOptimal(nextState) && prevPolicy != null)
+                        policy[nextState] = GetOptimalActionEx(prevPolicy, nextState);
+                    
                     var action = policy[nextState];
                     if (action == null)
                         continue;
@@ -372,8 +390,96 @@ namespace ZES.Infrastructure.Stochastics
             return expectation;
         }
 
+        private IDeterministicPolicy<TState> PartialPolicyIteration(IDeterministicPolicy<TState> policy)
+        {
+            var nextPolicy = (IDeterministicPolicy<TState>)policy.Clone();
+            var dict = new Dictionary<TState, double> { [_initialState] = 1.0 };
+            var allStates = new HashSet<TState> { _initialState };
+
+            // {0} -> A{0}
+            var nextStates = new HashSet<TState>();
+            nextPolicy[_initialState] = GetOptimalActionEx(policy, _initialState);
+            foreach (var action in policy.GetAllowedActions(_initialState).Where(a => a != null))
+            {
+                var states = action[_initialState].ToImmutableHashSet();
+                foreach (var state in states)
+                {
+                    dict[state] = action[_initialState, state];
+                    var optimalAction = GetOptimalActionEx(policy, state);
+                    if (optimalAction == null) 
+                        continue;
+                    nextPolicy[state] = optimalAction;
+                }
+                
+                nextStates.UnionWith(states);
+                allStates.UnionWith(states);
+            }
+
+            var tol = 1e-5;
+            var maxProba = 1.0;
+            var logStep = 0.2;
+            var scale = -1 / Math.Log(tol, 10);
+
+            Log?.Info("Calculating optimal actions...");
+            var prevMaxProba = 1.0;
+            while (maxProba > tol)
+            {
+                maxProba = 0.0;
+                var nextNextStates = new HashSet<TState>();
+                foreach (var state in nextStates)
+                {
+                    var optimalAction = GetOptimalActionEx(policy, state);
+                    if (optimalAction != null) 
+                        nextPolicy[state] = optimalAction;
+
+                    var stateProba = dict[state];
+                    if (stateProba > maxProba)
+                        maxProba = stateProba;
+                    
+                    var action = nextPolicy[state];
+                    if (action == null)
+                        continue;
+
+                    var actionStates = action[state].ToImmutableHashSet();
+                    foreach (var nextState in actionStates)
+                    {
+                        var p = action[state, nextState];
+                       
+                        if (dict.TryGetValue(nextState, out var current))
+                            dict[nextState] = Math.Max(current, stateProba * p);
+                        else
+                            dict.Add(nextState, stateProba * p);
+                    }
+
+                    nextNextStates.UnionWith(actionStates);
+                }
+                
+                if (Math.Log(prevMaxProba, 10) - Math.Log(maxProba, 10) > logStep)
+                {
+                    Log?.Info(
+                        $"{Math.Truncate(Math.Min(-Math.Log(maxProba, 10) * scale, 1) * 10000) / 100}%");
+                    prevMaxProba = maxProba;
+                }
+
+                nextStates.Clear();
+                foreach (var state in nextNextStates)
+                {
+                    if (allStates.Add(state))
+                        nextStates.Add(state);
+                }
+            }
+            
+            return nextPolicy;
+        }
+        
         private IDeterministicPolicy<TState> PolicyIteration(IDeterministicPolicy<TState> policy)
         {
+            if (!UseReachableStateSpace)
+                return PartialPolicyIteration(policy);
+
+            if (ReachableStates == null)
+                ReachableStates = GetReachableStateSpace(policy, _initialState);
+            
             var nextPolicy = (IDeterministicPolicy<TState>)policy.Clone();
             
             var progress = 0.0;
@@ -383,7 +489,7 @@ namespace ZES.Infrastructure.Stochastics
             Log?.Info("Calculating optimal actions...");
             foreach (var state in ReachableStates.Keys)
             {
-                var optimalAction = GetOptimalActionEx(policy, state);
+                var optimalAction = GetOptimalActionEx(policy, state); 
                 if (optimalAction != null)
                     nextPolicy[state] = optimalAction;
                 if ( (progress / logStep) - Math.Truncate(progress / logStep) < step / logStep )
@@ -411,9 +517,10 @@ namespace ZES.Infrastructure.Stochastics
                     diff[i] = nextValues[i] + ((-1) * values[i]);
                 change = Norm(diff);
                 
-                values = nextValues;
+                if (LogIterations)
+                    Log?.Info($"Iteration {_iteration} : {values[0].Mean} -> {nextValues[0].Mean} \t {change}");
                 
-                // Log?.Info($"Iteration {_iteration} : {prevValue.Mean} -> {value.Mean} \t {value.Mean - prevValue.Mean}");
+                values = nextValues;
             }
 
             return values[0];
@@ -427,26 +534,17 @@ namespace ZES.Infrastructure.Stochastics
             var previousLayer = StateSpace[_iteration - 1];
             if (StateSpace.ContainsKey(_iteration))
                 return;
-            var isOptimalPolicy = policy is OptimalPolicy<TState>;
             var layer = new HashSet<TState>();
             var distinctLayer = new List<TState>();
-            var actions = new IMarkovAction<TState>[1];
             var nextStates = new HashSet<TState>();
 
             foreach (var state in previousLayer)
             {
-                if (isOptimalPolicy)
-                    actions = policy.GetAllowedActions(state);
-                else 
-                    actions[0] = policy[state];
+                var action = policy[state];
+                if (action == null)
+                    continue;
 
-                foreach (var action in actions)
-                {
-                    if (action == null)
-                        continue;
-                    
-                    nextStates.UnionWith(action[state]);
-                }
+                nextStates.UnionWith(action[state]);
             }
             
             foreach (var nextState in nextStates)
@@ -484,56 +582,6 @@ namespace ZES.Infrastructure.Stochastics
                 { 0, new ZeroValueFunction<TState>() },
             };
             _iteration = 0;
-        }
-
-        private void ComputeValueFunctionParallel(int iteration, IDeterministicPolicy<TState> policy, IEnumerable<TState> states)
-        {
-            if (!ValueFunctions[policy].TryGetValue(iteration - 1, out var previousFunction))
-                throw new InvalidOperationException("Previous function not available");
-
-            if (!ValueFunctions[policy].ContainsKey(iteration))
-                ValueFunctions[policy][iteration] = NextFunction();
-
-            var function = ValueFunctions[policy][iteration];
-            var isOptimalPolicy = policy is OptimalPolicy<TState>;
-
-            Parallel.ForEach(
-                states,
-                new ParallelOptions { MaxDegreeOfParallelism = Configuration.ThreadsPerInstance },
-                state =>
-            {
-                var actions = new IMarkovAction<TState>[1];
-                if (isOptimalPolicy)
-                    actions = policy.GetAllowedActions(state);
-                else
-                    actions[0] = policy[state];
-                
-                var optimalValue = new Value(actions.Any(a => a != null) ? double.MinValue : 0.0, 0.0);
-                IMarkovAction<TState> optimalAction = null;
-               
-                foreach (var action in actions)
-                {
-                    if (action == null) 
-                        continue;
-
-                    var expectation = GetExpectation(action, state, previousFunction);
-                    lock (function)
-                    {
-                        if (expectation.Mean >= optimalValue.Mean)
-                        {
-                            optimalValue = new Value(expectation.Mean, expectation.Variance);
-                            optimalAction = action;
-                        }
-                    }
-                }
-
-                lock (function)
-                {
-                    function.Add(state, optimalValue);
-                    if (isOptimalPolicy && optimalAction != null)
-                        policy[state] = optimalAction;
-                } 
-            });
         }
 
         private void ComputeValueFunction(int iteration, IDeterministicPolicy<TState> policy, IEnumerable<TState> states)

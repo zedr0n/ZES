@@ -27,6 +27,8 @@ using ZES.Utils;
 using BranchManager = ZES.Infrastructure.Branching.BranchManager;
 using ILog = ZES.Interfaces.ILog;
 
+#pragma warning disable CS1998
+
 namespace ZES
 {
     /// <inheritdoc />

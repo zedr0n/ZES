@@ -15,7 +15,6 @@ namespace ZES.Infrastructure.Stochastics
         private readonly int _maxIterations;
         private readonly TState _initialState;
         private int _iteration;
-        private double _tolerance;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="MarkovDecisionProcessBase{TState}"/> class.
@@ -27,13 +26,19 @@ namespace ZES.Infrastructure.Stochastics
             _initialState = initialState;
             _maxIterations = maxIterations;
             Rewards = new List<IActionReward<TState>>();
-            new Dictionary<TState, HashSet<TState>>();
         }
 
+        public Dictionary<TState, double> Changes { get; } = new Dictionary<TState, double>(); 
+        
         /// <summary>
         /// Gets or sets a value indicating whether to log the iteration process 
         /// </summary>
         public bool LogIterations { get; set; } = false;
+
+        /// <summary>
+        /// Gets or sets a value indicating whether to log the progress
+        /// </summary>
+        public bool LogProgress { get; set; } = true;
         
         /// <summary>
         /// Gets or sets a value indicating whether to use the full state space reachable from initial state
@@ -46,6 +51,16 @@ namespace ZES.Infrastructure.Stochastics
         public ILog Log { get; set; }
 
         /// <summary>
+        /// Gets or sets the minimum state probability to handle
+        /// </summary>
+        public double MinProbability { get; set; } = 1e-5;
+
+        /// <summary>
+        /// Gets or sets termination criteria for optimal policy iteration
+        /// </summary>
+        public double RelativeOptimalTolerance { get; set; } = 0;
+
+        /// <summary>
         /// Gets or sets reward set for the process
         /// </summary>
         public List<IActionReward<TState>> Rewards { get; set; }
@@ -53,7 +68,7 @@ namespace ZES.Infrastructure.Stochastics
         private LinkedList<IDeterministicPolicy<TState>> Policies { get; } = new LinkedList<IDeterministicPolicy<TState>>();
         private Dictionary<IPolicy<TState>, Dictionary<int, IValueFunction<TState>>> ValueFunctions { get; } = new Dictionary<IPolicy<TState>, Dictionary<int, IValueFunction<TState>>>();
         private Dictionary<TState, double> ReachableStates { get; set; }
-        
+
         /// <summary>
         /// Gets or sets the state space categorized by the distance from the initial state
         /// </summary>
@@ -89,9 +104,8 @@ namespace ZES.Infrastructure.Stochastics
             out IDeterministicPolicy<TState> optimalPolicy, 
             double tolerance = 0.0001)
         {
-             _tolerance = tolerance;
+             var policy = (IDeterministicPolicy<TState>)basePolicy.Clone();
              var node = Policies.AddFirst(basePolicy);
-             var policy = basePolicy;
              var value = GetOptimalValue(policy, tolerance);
             
              optimalPolicy = policy = PolicyIteration(policy);
@@ -101,9 +115,10 @@ namespace ZES.Infrastructure.Stochastics
              while (policy.IsModified)
              {
                  node = Policies.AddAfter(node, policy);
-                 var nextValue = GetOptimalValue(policy, tolerance, false, outputStates.ToArray());
-                 Log?.Info($"{value.Mean}->{nextValue.Mean} at variance {Math.Sqrt(value.Variance - (value.Mean * value.Mean))}->{Math.Sqrt(nextValue.Variance - nextValue.Mean * nextValue.Mean)} with {policy.Modifications.Length} modifications");
-                 if (nextValue.Mean - (tolerance * 100) < value.Mean)
+                 var nextValue = GetOptimalValue(policy, tolerance, false, outputStates.Distinct().ToArray());
+                 if (LogProgress)
+                     Log?.Info($"{value.Mean}->{nextValue.Mean} at variance {Math.Sqrt(value.Variance - (value.Mean * value.Mean))}->{Math.Sqrt(nextValue.Variance - (nextValue.Mean * nextValue.Mean))} with {policy.Modifications.Length} modifications");
+                 if ( (nextValue.Mean - (tolerance * 100) < value.Mean) || Math.Abs(value.Mean / nextValue.Mean) < 1 + RelativeOptimalTolerance )
                  {
                      value = nextValue;
                      break;
@@ -119,11 +134,14 @@ namespace ZES.Infrastructure.Stochastics
                  Policies.Remove(node.Previous);
              }
 
-             GetOptimalValue(policy, tolerance);
+             value = GetOptimalValue(policy, tolerance);
              optimalPolicy = (IDeterministicPolicy<TState>)basePolicy.Clone();
              foreach (var state in AllStateSpace)
                  optimalPolicy[state] = policy[state];
-             
+
+             ValueFunctions.Clear();
+             Policies.Clear();
+
              return value.Mean;
         }
 
@@ -188,7 +206,7 @@ namespace ZES.Infrastructure.Stochastics
         private Dictionary<TState, double> GetReachableStateSpace(IDeterministicPolicy<TState> policy, TState initialState)
         {
             var dict = new Dictionary<TState, double>();
-            var tol = 1e-5;
+            var tol = MinProbability;
             var maxProba = 1.0;
             var allStates = new HashSet<TState>();
             var states = new HashSet<TState> { initialState };
@@ -304,8 +322,9 @@ namespace ZES.Infrastructure.Stochastics
             var lastValueFunction = ValueFunctions[policy][iterations];
             var argmax = policy[state];
             var value = new Value(double.MinValue, 0.0);
+            var baseValue = value;
             if (lastValueFunction.HasState(state))
-                value = lastValueFunction[state];
+                baseValue = value = lastValueFunction[state];
 
             var deps = GetGreedyDependencies(policy, state);
             for (var i = 1; i <= iterations; ++i)
@@ -328,6 +347,10 @@ namespace ZES.Infrastructure.Stochastics
                 value = new Value(expectation.Mean, expectation.Variance);
                 argmax = action;
             }
+
+            if (baseValue.Mean != double.MinValue && value.Mean != baseValue.Mean)
+                Changes[state] = value.Mean - baseValue.Mean;
+                // Log.Info($"Improvement for state {state} {argmax} >> {policy[state]} : {value.Mean - baseValue.Mean}");
 
             return argmax;
         }
@@ -365,7 +388,7 @@ namespace ZES.Infrastructure.Stochastics
                 value = new Value(expectation.Mean, expectation.Variance);
                 argmax = action;
             }
-
+            
             return argmax;
         }
 
@@ -416,12 +439,13 @@ namespace ZES.Infrastructure.Stochastics
                 allStates.UnionWith(states);
             }
 
-            var tol = 1e-5;
+            var tol = MinProbability;
             var maxProba = 1.0;
-            var logStep = 0.2;
+            var logStep = 0.3;
             var scale = -1 / Math.Log(tol, 10);
 
-            Log?.Info("Calculating optimal actions...");
+            if (LogProgress)
+                Log?.Info("Calculating optimal actions...");
             var prevMaxProba = 1.0;
             while (maxProba > tol)
             {
@@ -455,7 +479,7 @@ namespace ZES.Infrastructure.Stochastics
                     nextNextStates.UnionWith(actionStates);
                 }
                 
-                if (Math.Log(prevMaxProba, 10) - Math.Log(maxProba, 10) > logStep)
+                if (Math.Log(prevMaxProba, 10) - Math.Log(maxProba, 10) > logStep && LogProgress)
                 {
                     Log?.Info(
                         $"{Math.Truncate(Math.Min(-Math.Log(maxProba, 10) * scale, 1) * 10000) / 100}%");
@@ -503,7 +527,6 @@ namespace ZES.Infrastructure.Stochastics
 
         private Value GetOptimalValue(IDeterministicPolicy<TState> policy, double tolerance = 1e-4, bool ignoreZeroChange = false, TState[] outputStates = null)
         {
-            _tolerance = tolerance;
             if (outputStates == null)
                 outputStates = new[] { _initialState };
             Initialize(policy, outputStates);

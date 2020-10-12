@@ -15,6 +15,11 @@ namespace ZES.Interfaces.Stochastic
         List<IActionReward<TState>> Rewards { get; set; }
 
         /// <summary>
+        /// Gets the set of improvement values
+        /// </summary>
+        Dictionary<TState, double> Changes { get; }
+
+        /// <summary>
         /// Get the optimal value for the evaluated policy
         /// </summary>
         /// <param name="policy">Policy to use</param>

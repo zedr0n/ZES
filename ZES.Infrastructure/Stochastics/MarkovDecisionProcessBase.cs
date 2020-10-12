@@ -28,6 +28,7 @@ namespace ZES.Infrastructure.Stochastics
             Rewards = new List<IActionReward<TState>>();
         }
 
+        /// <inheritdoc />
         public Dictionary<TState, double> Changes { get; } = new Dictionary<TState, double>(); 
         
         /// <summary>
@@ -118,7 +119,8 @@ namespace ZES.Infrastructure.Stochastics
                  var nextValue = GetOptimalValue(policy, tolerance, false, outputStates.Distinct().ToArray());
                  if (LogProgress)
                      Log?.Info($"{value.Mean}->{nextValue.Mean} at variance {Math.Sqrt(value.Variance - (value.Mean * value.Mean))}->{Math.Sqrt(nextValue.Variance - (nextValue.Mean * nextValue.Mean))} with {policy.Modifications.Length} modifications");
-                 if ( (nextValue.Mean - (tolerance * 100) < value.Mean) || Math.Abs(value.Mean / nextValue.Mean) < 1 + RelativeOptimalTolerance )
+                 var ratio = value.Mean > 0 ? nextValue.Mean / value.Mean : value.Mean / nextValue.Mean; 
+                 if ( (nextValue.Mean - (tolerance * 100) < value.Mean) || Math.Abs(ratio) < 1 + RelativeOptimalTolerance )
                  {
                      value = nextValue;
                      break;
@@ -350,7 +352,6 @@ namespace ZES.Infrastructure.Stochastics
 
             if (baseValue.Mean != double.MinValue && value.Mean != baseValue.Mean)
                 Changes[state] = value.Mean - baseValue.Mean;
-                // Log.Info($"Improvement for state {state} {argmax} >> {policy[state]} : {value.Mean - baseValue.Mean}");
 
             return argmax;
         }

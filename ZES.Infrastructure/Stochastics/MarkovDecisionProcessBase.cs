@@ -560,6 +560,12 @@ namespace ZES.Infrastructure.Stochastics
             if (StateSpace.ContainsKey(_iteration))
                 return;
             var layer = new HashSet<TState>();
+            if (_iteration > 2)
+            {
+                layer = StateSpace[_iteration - 2];
+                layer.Clear();
+            }
+
             var distinctLayer = new List<TState>();
             var nextStates = new HashSet<TState>();
 

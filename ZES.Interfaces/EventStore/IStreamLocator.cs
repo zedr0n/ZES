@@ -23,21 +23,6 @@ namespace ZES.Interfaces.EventStore
         /// <returns>Stream with given id</returns>
         IStream Find<T>(string id, string timeline = "master")
             where T : IEventSourced;
-        
-        /// <summary>
-        /// Extract and cache the stream details for event sourced instance
-        /// </summary>
-        /// <param name="es">saga or aggregate</param>
-        /// <param name="timeline">timeline id</param>
-        /// <returns>Stream corresponding to the aggregate root</returns>
-        IStream GetOrAdd(IEventSourced es, string timeline = "master");
-        
-        /// <summary>
-        /// Extract and cache the stream details for the target stream
-        /// </summary>
-        /// <param name="stream">Target stream</param>
-        /// <returns>Cached instance of stream</returns>
-        IStream GetOrAdd(IStream stream);
 
         /// <summary>
         /// Gets the current version of the stream
@@ -72,5 +57,13 @@ namespace ZES.Interfaces.EventStore
         /// <returns>List of all streams</returns>
         IEnumerable<IStream> ListStreams<T>(string branchId)
             where T : IEventSourced;
+
+        /// <summary>
+        /// Create an empty stream descriptor from the event sourced
+        /// </summary>
+        /// <param name="es">Event sourced instance</param>
+        /// <param name="timeline">Target timeline</param>
+        /// <returns>Stream descriptor</returns>
+        IStream CreateEmpty(IEventSourced es, string timeline = "");
     }
 }

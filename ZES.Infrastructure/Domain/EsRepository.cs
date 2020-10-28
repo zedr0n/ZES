@@ -62,7 +62,7 @@ namespace ZES.Infrastructure.Domain
             if (events.Count == 0)
                 return;
 
-            var stream = _streams.GetOrAdd(es, _timeline.Id);
+            var stream = _streams.Find<T>(es.Id, _timeline.Id) ?? _streams.CreateEmpty(es, _timeline.Id); // _streams.GetOrAdd(es, _timeline.Id);
             if (stream.Version >= 0 && es.Version - events.Count < stream.Version)
                 throw new InvalidOperationException($"Stream ( {stream.Key}@{stream.Version} ) is ahead of aggregate root ( {es.Version - events.Count} )");
 

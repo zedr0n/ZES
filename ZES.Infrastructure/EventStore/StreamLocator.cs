@@ -59,10 +59,8 @@ namespace ZES.Infrastructure.EventStore
         public IEnumerable<IStream> ListStreams<T>(string branchId)
             where T : IEventSourced
         {
-            if (typeof(T).Name == nameof(ISaga))
-                return _streams.Where(s => s.Key.StartsWith(branchId) && s.Value.IsSaga).Select(s => s.Value);
-            else
-                return _streams.Where(s => s.Key.StartsWith(branchId) && !s.Value.IsSaga).Select(s => s.Value);
+            var isSaga = typeof(T).Name == nameof(ISaga);
+            return _streams.Where(s => s.Key.StartsWith(branchId) && s.Value.IsSaga == isSaga).Select(s => s.Value);
         }
 
         /// <inheritdoc />
@@ -87,17 +85,9 @@ namespace ZES.Infrastructure.EventStore
         }
 
         /// <inheritdoc />
-        public IStream GetOrAdd(IEventSourced es, string timeline = "master")
-        {
-            if (es == null)
-                return default(IStream);
+        public IStream CreateEmpty(IEventSourced es, string timeline = "") => new Stream(es, timeline);
 
-            var stream = new Stream(es.Id, es.GetType().Name, ExpectedVersion.NoStream, timeline);
-            return _streams.GetOrAdd(stream.Key, stream);
-        }
-
-        /// <inheritdoc />
-        public IStream GetOrAdd(IStream stream)
+        private IStream GetOrAdd(IStream stream)
         {
             if (stream.Key.StartsWith("$$"))
                 return null;
@@ -115,7 +105,7 @@ namespace ZES.Infrastructure.EventStore
         
         private void Restart()
         {
-            // _log.Trace(string.Empty, this);
+            _streams.Clear();
             _subscription?.Dispose();
             _subscription = _eventStore.ListStreams()
                 .Concat(_sagaStore.ListStreams())

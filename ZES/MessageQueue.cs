@@ -1,4 +1,6 @@
 using System;
+using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.Reactive.Linq;
 using System.Reactive.Subjects;
 using System.Threading.Tasks;
@@ -17,7 +19,7 @@ namespace ZES
         private readonly ITimeline _timeline;
         private readonly Subject<IEvent> _messages = new Subject<IEvent>();
         private readonly Subject<IAlert> _alerts = new Subject<IAlert>();
-        private readonly UncompletedMessagesHolder _messagesHolder; 
+        private readonly ConcurrentDictionary<string, UncompletedMessagesSingleHolder> _messagesHolderDict;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="MessageQueue"/> class.
@@ -28,21 +30,23 @@ namespace ZES
         {
             _log = log;
             _timeline = timeline;
-            _messagesHolder = new UncompletedMessagesHolder();
+            _messagesHolderDict = new ConcurrentDictionary<string, UncompletedMessagesSingleHolder>();
         }
 
         /// <inheritdoc />
-        public IObservable<int> UncompletedMessages => _messagesHolder.UncompletedMessages(_timeline.Id);
+        public IObservable<int> UncompletedMessages =>
+            _messagesHolderDict.GetOrAdd(_timeline.Id, s => new UncompletedMessagesSingleHolder())
+                .UncompletedMessages(); 
 
         /// <inheritdoc />
         public IObservable<IEvent> Messages => _messages.AsObservable();
 
         /// <inheritdoc />
         public IObservable<IAlert> Alerts => _alerts.AsObservable();
-        
+
         /// <inheritdoc />
         public IObservable<int> UncompletedMessagesOnBranch(string branchId) =>
-            _messagesHolder.UncompletedMessages(branchId);
+            _messagesHolderDict.GetOrAdd(branchId, s => new UncompletedMessagesSingleHolder()).UncompletedMessages();
 
         /// <inheritdoc />
         public void Alert(IAlert alert)
@@ -61,17 +65,18 @@ namespace ZES
         /// <inheritdoc />
         public async Task CompleteMessage(IMessage message)
         {
-            await await _messagesHolder.UpdateState(b =>
+            var messagesHolder =
+                _messagesHolderDict.GetOrAdd(message.Timeline, s => new UncompletedMessagesSingleHolder());
+            await await messagesHolder.UpdateState(b =>
             {
                 if (message.GetType().IsClosedTypeOf(typeof(RetroactiveCommand<>)))
                     return b;
-                
-                if (!b.Count.TryGetValue(message.Timeline, out var count))
+
+                b.Count--;
+                if (b.Count < 0)
                     throw new InvalidOperationException($"Message {message.Timeline}:{message.GetType()} completed before being produced");
 
-                count--;
-                b.Count[message.Timeline] = count;
-                _log.Debug($"Uncompleted messages : {count}, removed {message.Timeline}:{message.GetType().Name}");
+                _log.Debug($"Uncompleted messages : {b.Count}, removed {message.Timeline}:{message.GetType().Name}");
 
                 return b;
             });
@@ -80,17 +85,16 @@ namespace ZES
         /// <inheritdoc />
         public async Task UncompleteMessage(IMessage message)
         {
-            await await _messagesHolder.UpdateState(b =>
+            var messagesHolder =
+                _messagesHolderDict.GetOrAdd(message.Timeline, s => new UncompletedMessagesSingleHolder());
+            await await messagesHolder.UpdateState(b =>
             {
                 if (message.GetType().IsClosedTypeOf(typeof(RetroactiveCommand<>)))
                     return b;
-                    
-                if (!b.Count.TryGetValue(message.Timeline, out var count))
-                    count = 0;
 
-                count++;
-                b.Count[message.Timeline] = count;
-                _log.Debug($"Uncompleted messages : {count}, added {message.Timeline}:{message.GetType().Name}");
+                b.Timeline = message.Timeline;
+                b.Count++;
+                _log.Debug($"Uncompleted messages : {b.Count}, added {message.Timeline}:{message.GetType().Name}");
 
                 return b;
             });

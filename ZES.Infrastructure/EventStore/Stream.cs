@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using SqlStreamStore.Streams;
 using ZES.Infrastructure.Domain;
+using ZES.Interfaces;
 using ZES.Interfaces.EventStore;
 
 namespace ZES.Infrastructure.EventStore
@@ -47,6 +48,16 @@ namespace ZES.Infrastructure.EventStore
             Id = tokens[2];
             Version = version;
             Parent = parent;
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="Stream"/> class.
+        /// </summary>
+        /// <param name="es">Event sourced instance</param>
+        /// <param name="timeline">Target timeline</param>
+        public Stream(IEventSourced es, string timeline = "") 
+            : this(es.Id, es.GetType().Name, ExpectedVersion.NoStream, timeline)
+        {
         }
 
         /// <inheritdoc />

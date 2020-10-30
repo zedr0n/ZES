@@ -182,18 +182,23 @@ namespace ZES.Infrastructure.EventStore
             if (Timeline == timeline)
                 return new Stream(Key, version, Parent);
 
+            var parentVersion = version >= Version ? Version : version;
+            if (parentVersion < 0)
+                parentVersion = ExpectedVersion.EmptyStream;
+
             var stream = new Stream(
                 Key,
-                version,
-                new Stream(Key, version) { SnapshotVersion = SnapshotVersion <= version ? SnapshotVersion : 0 })
+                version)
             {
                 SnapshotVersion = SnapshotVersion <= version ? SnapshotVersion : 0,
                 Timeline = timeline,
             };
-            
-            if (version == ExpectedVersion.EmptyStream)
-                stream.Parent = new Stream(stream.Key, version);
 
+            stream.Parent = new Stream(Key, parentVersion, Parent)
+            {
+                SnapshotVersion = SnapshotVersion <= version ? SnapshotVersion : 0,
+            };
+            
             return stream;
         }
 

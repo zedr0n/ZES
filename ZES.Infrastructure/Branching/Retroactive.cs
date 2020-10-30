@@ -69,10 +69,17 @@ namespace ZES.Infrastructure.Branching
         /// <inheritdoc />
         public async Task TrimStream(IStream stream, int version)
         {
-            if (version <= ExpectedVersion.EmptyStream || version >= stream.Version)
+            if (stream == null)
                 return;
             
             var store = GetStore(stream);
+
+            if (version == ExpectedVersion.EmptyStream)
+                await store.DeleteStream(stream);
+            
+            if (version <= ExpectedVersion.EmptyStream || version >= stream.Version)
+                return;
+
             await store.TrimStream(stream, version);
             await _graph.TrimStream(stream.Key, version);
         }

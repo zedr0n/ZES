@@ -19,6 +19,15 @@ namespace ZES
         }
 
         /// <summary>
+        /// Is retroactive execution active
+        /// </summary>
+        /// <returns>Retroactive flag</returns>
+        public IObservable<bool> RetroactiveExecution()
+        {
+            return Project(x => x.RetroactiveId != default);
+        }
+
+        /// <summary>
         /// Held state
         /// </summary>
         public struct State
@@ -28,10 +37,12 @@ namespace ZES
             /// </summary>
             /// <param name="timeline">Timeline</param>
             /// <param name="count">Number of uncomplete messages</param>
-            public State(string timeline, int count)
+            /// <param name="retroactiveId">Retroactive command id being executed</param>
+            public State(string timeline, int count, Guid retroactiveId = default)
             {
                 Timeline = timeline;
                 Count = count;
+                RetroactiveId = retroactiveId;
             }
 
             /// <summary>
@@ -42,7 +53,12 @@ namespace ZES
             /// <summary>
             /// Gets the number of uncompleted messages
             /// </summary>
-            public int Count { get; } 
+            public int Count { get; }
+            
+            /// <summary>
+            /// Gets the current retroactive id being executed
+            /// </summary>
+            public Guid RetroactiveId { get; }
         }
 
         /// <inheritdoc />
@@ -52,6 +68,11 @@ namespace ZES
             /// Gets or sets the number of uncompleted messages on the branch 
             /// </summary>
             public int Count { get; set; }
+
+            /// <summary>
+            /// Gets or sets the current retroactive command id being executed
+            /// </summary>
+            public Guid RetroactiveId { get; set; }
             
             /// <summary>
             /// Gets or sets the associated timeline
@@ -63,12 +84,13 @@ namespace ZES
             {
                 Count = state.Count;
                 Timeline = state.Timeline;
+                RetroactiveId = state.RetroactiveId;
             }
 
             /// <inheritdoc />
             public State Build()
             {
-                return new State(Timeline, Count); 
+                return new State(Timeline, Count, RetroactiveId); 
             }
 
             /// <inheritdoc />

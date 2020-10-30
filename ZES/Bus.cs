@@ -8,9 +8,12 @@ using Gridsum.DataflowEx;
 using SimpleInjector;
 using ZES.Infrastructure;
 using ZES.Infrastructure.Alerts;
+using ZES.Infrastructure.Domain;
 using ZES.Interfaces;
 using ZES.Interfaces.Domain;
 using ZES.Interfaces.Pipes;
+
+#pragma warning disable CS4014
 
 namespace ZES
 {
@@ -44,6 +47,8 @@ namespace ZES
         public async Task<Task> CommandAsync(ICommand command)
         {
             command.Timeline = _timeline.Id;
+            if (command.GetType().IsClosedTypeOf(typeof(RetroactiveCommand<>)))
+                await _messageQueue.RetroactiveExecution.FirstAsync(b => b == false).Timeout(Configuration.Timeout);
             await _messageQueue.UncompleteMessage(command);
             var tracked = new Tracked<ICommand>(command);
             var dispatcher = _dispatchers.GetOrAdd(_timeline.Id, CreateDispatcher);

@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Linq;
 using System.Reactive.Concurrency;
 using System.Reactive.Linq;
 using System.Reactive.Subjects;
@@ -24,19 +25,22 @@ namespace ZES.Infrastructure.Projections
         where TState : new()
     {
         private readonly Lazy<Task> _start;
+        private readonly IStreamLocator _streamLocator;
         private int _parallel;
-        
+
         /// <summary>
         /// Initializes a new instance of the <see cref="ProjectionBase{TState}"/> class.
         /// </summary>
         /// <param name="eventStore">Event store service</param>
         /// <param name="log">Log service</param>
         /// <param name="timeline">Timeline service</param>
-        public ProjectionBase(IEventStore<IAggregate> eventStore, ILog log, ITimeline timeline)
+        /// <param name="streamLocator">Stream locator</param>
+        public ProjectionBase(IEventStore<IAggregate> eventStore, ILog log, ITimeline timeline, IStreamLocator streamLocator)
         {
             EventStore = eventStore;
             Log = log;
             Timeline = timeline;
+            _streamLocator = streamLocator;
             CancellationSource = new RepeatableCancellationTokenSource();
             _start = new Lazy<Task>(() => Task.Run(Start));
             var options = new DataflowOptions { RecommendedParallelismIfMultiThreaded = 1 };
@@ -211,7 +215,8 @@ namespace ZES.Infrastructure.Projections
                 .SubscribeOn(Scheduler.Default)
                 .Subscribe(liveDispatcher.InputBlock.AsObserver());
 
-            EventStore.ListStreams(Timeline.Id, StreamIdPredicate, CancellationToken)
+            // EventStore.ListStreams(Timeline.Id, StreamIdPredicate, CancellationToken)
+            _streamLocator.ListStreams(Timeline.Id).Where(s => !s.IsSaga && StreamIdPredicate(s.Key)).ToObservable()
                 .TakeWhile(_ => !CancellationSource.IsCancellationRequested)
                 .Where(Predicate)
                 .Select(s => new Tracked<IStream>(s, CancellationToken))

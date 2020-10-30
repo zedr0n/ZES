@@ -18,12 +18,14 @@ namespace ZES.Infrastructure.Projections
         /// <param name="log">Application log</param>
         /// <param name="iProjection">Original projection</param>
         /// <param name="timeline">Active branch</param>
+        /// <param name="streamLocator">Stream locator</param>
         public HistoricalProjection(
             IEventStore<IAggregate> eventStore,
             ILog log,
             IProjection<TState> iProjection,
-            ITimeline timeline)
-            : base(eventStore, log, timeline)
+            ITimeline timeline,
+            IStreamLocator streamLocator)
+            : base(eventStore, log, timeline, streamLocator)
         {
             var projection = (ProjectionBase<TState>)iProjection;
             Predicate = projection.Predicate;

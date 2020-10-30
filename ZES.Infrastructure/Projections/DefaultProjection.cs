@@ -18,9 +18,10 @@ namespace ZES.Infrastructure.Projections
         /// <param name="log">Log service</param>
         /// <param name="timeline">Branch</param>
         /// <param name="messageQueue">Message queue</param>
+        /// <param name="streamLocator">Stream locator</param>
         /// <param name="handlers">Event handlers</param>
-        public DefaultProjection(IEventStore<IAggregate> eventStore, ILog log, ITimeline timeline, IMessageQueue messageQueue, IEnumerable<IProjectionHandler<TState>> handlers)
-            : base(eventStore, log, timeline, messageQueue)
+        public DefaultProjection(IEventStore<IAggregate> eventStore, ILog log, ITimeline timeline, IMessageQueue messageQueue, IStreamLocator streamLocator, IEnumerable<IProjectionHandler<TState>> handlers)
+            : base(eventStore, log, timeline, messageQueue, streamLocator)
         {
             State = new TState();
             foreach (var h in handlers)

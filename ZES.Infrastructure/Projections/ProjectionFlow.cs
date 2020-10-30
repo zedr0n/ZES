@@ -63,8 +63,6 @@ namespace ZES.Infrastructure.Projections
 
             if (version < s.Version)
             {
-                _log?.Debug($"{s.Key}@{s.Version} <- {version}", $"{Parents.Select(p => p.Name).Aggregate((a, n) => a + n)}->{Name}");
-                    
                 var origVersion = version;
                 await _eventStore.ReadStream<IEvent>(s, version + 1)
                     .TakeWhile(_ => !_token.IsCancellationRequested)
@@ -76,7 +74,9 @@ namespace ZES.Infrastructure.Projections
                     })
                     .Timeout(Configuration.Timeout)
                     .LastOrDefaultAsync();
-                    
+
+                _log?.Debug($"{s.Key}@{s.Version} <- {version}", $"{Parents.Select(p => p.Name).Aggregate((a, n) => a + n)}->{Name}");
+
                 if (!_versions.TryUpdate(s.Key, version, origVersion))
                     throw new InvalidOperationException("Failed updating concurrent versions of projections");
             }

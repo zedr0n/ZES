@@ -5,6 +5,8 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.DependencyInjection;
 using ZES.Tests.Domain;
 
+#pragma warning disable CS0618
+
 namespace ZES.GraphQL.AspNetCore
 {
     public class Startup

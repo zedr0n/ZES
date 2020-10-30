@@ -31,6 +31,11 @@ namespace ZES.Interfaces.Pipes
         IObservable<int> UncompletedMessages { get; }
 
         /// <summary>
+        /// Gets the flag indicating whether retroactive execution is active
+        /// </summary>
+        IObservable<bool> RetroactiveExecution { get; }
+
+        /// <summary>
         /// Submit the event to the message queue
         /// </summary>
         /// <param name="e">Event instance</param>

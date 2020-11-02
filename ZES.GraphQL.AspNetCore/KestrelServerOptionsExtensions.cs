@@ -6,12 +6,19 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Server.Kestrel.Core;
 using Microsoft.Extensions.DependencyInjection;
 
-#pragma warning disable CS01618
+#pragma warning disable CS0618
 
 namespace ZES.GraphQL.AspNetCore
 {
+    /// <summary>
+    /// Endpoint extensions class
+    /// </summary>
     public static class KestrelServerOptionsExtensions
     {
+        /// <summary>
+        /// Add the certificates for the https endpoints
+        /// </summary>
+        /// <param name="options">Input options</param>
         public static void ConfigureEndpoints(this KestrelServerOptions options)
         {
             var environment = options.ApplicationServices.GetRequiredService<IHostingEnvironment>();

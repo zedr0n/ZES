@@ -6,6 +6,16 @@ import Progress from './Progress';
 import { request } from 'graphql-request';
 import RangeInput from "./RangeInput";
 
+declare global {
+  interface Window { 
+    server: string; 
+    period: number;
+  }
+}
+
+window.server = "https://localhost:5001";
+window.period = 1000;
+
 export interface AppProps {
   title: string;
   isOfficeInitialized: boolean;
@@ -13,41 +23,47 @@ export interface AppProps {
 
 export interface AppState {
   listItems: HeroListItem[];
+  branch: string,
 }
 
 export default class App extends React.Component<AppProps, AppState> {
   constructor(props, context) {
     super(props, context);
     this.state = {
-      listItems: []
+      listItems: [],
+      branch: ""
     };
   }
-
+  
   componentDidMount() {
     this.setState({
-      listItems: [ /*
-        {
-          icon: 'Ribbon',
-          primaryText: 'Achieve more with Office integration'
-        },
-        {
-          icon: 'Unlock',
-          primaryText: 'Unlock features and functionality'
-        },
-        {
-          icon: 'Design',
-          primaryText: 'Create and visualize like a pro'
-        }*/
-      ]
+      listItems: [ ],
+      branch: "" 
     });
   }
 
-  rootClick = async() => {
+  ExcelDateToJSDate = (serial : number) => {
+    var utc_days  = Math.floor(serial - 25569);
+    var utc_value = utc_days * 86400;
+    var date_info = new Date(utc_value * 1000);
+
+    var fractional_day = serial - Math.floor(serial) + 0.0000001;
+
+    var total_seconds = Math.floor(86400 * fractional_day);
+
+    var seconds = total_seconds % 60;
+
+    total_seconds -= seconds;
+
+    var hours = Math.floor(total_seconds / (60 * 60));
+    var minutes = Math.floor(total_seconds / 60) % 60;
+
+    return new Date(date_info.getFullYear(), date_info.getMonth(), date_info.getDate(), hours, minutes, seconds);
+  }
+  
+  doRange = async(fn : (data : Excel.Range) => Promise<void>) => {
     try{
       await Excel.run(async context => {
-        /**
-         * Insert your Excel code here
-         */
         const range = context.workbook.getSelectedRange();
 
         // Read the range address
@@ -55,81 +71,32 @@ export default class App extends React.Component<AppProps, AppState> {
         range.load("values");
 
         await context.sync();
-        
+
         try {
-          var data = range.values;
-          var rInput = new RangeInput(data);
-          
-          var names : any[];
-          if (data.length == 1 && data[0].length == 1)
-              names = data[0];
-          else
-              names = rInput.getByHeader("Name");
-          
-          if (names != undefined) {
-            for( var n of names)
-            {
-              const mutation = `mutation {
-                createRoot(name: "${n}" ) 
-              }`;
-              await request('https://localhost:5001', mutation);
-            }
-          }
-          else {
-            console.error("Name header not found!")
-          }
-          
-              
-        }
-        catch (error) {
+          await fn(range);
+        } catch (error) {
           range.values[0][0] = JSON.stringify(error.message, undefined, 2);
           console.error(error);
         }
-        
+
         await context.sync();
-      })
-    } 
-    catch (error) {console.error(error);}
+      });
+    }
+    catch(e) { console.error(e); }
   }
   
-  click = async () => {
-    try {
-      await Excel.run(async context => {
-        /**
-         * Insert your Excel code here
-         */
-        const range = context.workbook.getSelectedRange();
-
-        // Read the range address
-        range.load("address");
-
-        // query graphQL
-
-        const query = `{
-          statsQuery { numberOfRoots }
-        }`;
-
-        // process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0";
-        try{
-          const data = await request('https://localhost:5001', query);
-          range.values = data.statsQuery.numberOfRoots; //JSON.stringify(data, undefined, 2);
-        }
-        catch(error){
-          range.values[0][0] = JSON.stringify(error.message, undefined, 2); 
-        }
-        
-        // Update the fill color
-        
-        // range.format.fill.color = "yellow";
-
-        await context.sync();
-        console.log(`The range address was ${range.address}.`);
-      });
-    } catch (error) {
-      console.error(error);
-    }
+  activeBranch = async() => 
+  {
+    await this.doRange(this.activeBranchEx);
   }
-
+  
+  activeBranchEx = async() =>
+  {
+    const query = "query { activeBranch }";
+    let data : any = await request(window.server, query)
+    this.setState( { branch : data.activeBranch.toString() });
+  }
+  
   render() {
     const {
       title,
@@ -145,12 +112,19 @@ export default class App extends React.Component<AppProps, AppState> {
         />
       );
     }
-
+    
+    if (this.state.branch == "") {
+      // @ts-ignore
+      this.activeBranchEx();
+    }
+    
+    // @ts-ignore
+    //window.branch = "Test";
+    
     return (
       <div className='ms-welcome'>
         <Header logo='assets/logo-filled.png' title={this.props.title} message='Welcome' />
-        <HeroList message='' items={this.state.listItems}>
-          <Button className='ms-root__action' buttonType={ButtonType.hero} iconProps={{ iconName: 'ChevronRight' }} onClick={this.rootClick}>Create root</Button>
+        <HeroList message={this.state.branch} items={this.state.listItems}>
         </HeroList>
       </div>
     );

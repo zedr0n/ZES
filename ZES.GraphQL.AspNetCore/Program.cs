@@ -13,6 +13,7 @@ namespace ZES.GraphQL.AspNetCore
         public static IWebHostBuilder CreateWebHostBuilder(string[] args) =>
             WebHost.CreateDefaultBuilder(args)
                 .UseStartup<Startup>()
+                .UseKestrel(options => options.ConfigureEndpoints())
                 .UseUrls("http://localhost:5000", "https://localhost:5001");
     }
 }

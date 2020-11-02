@@ -11,7 +11,6 @@ module.exports = async (env, options) => {
   const config = {
     devtool: "source-map",
     entry: {
-      functions: "./src/functions/functions.ts",
       polyfill: "@babel/polyfill",
       vendor: [
         'react',
@@ -21,7 +20,7 @@ module.exports = async (env, options) => {
     ],
     taskpane: [
         'react-hot-loader/patch',
-        './src/taskpane/index.tsx',
+        './src/taskpane/index.tsx'
     ],
     commands: './src/commands/commands.ts'
     },
@@ -72,14 +71,9 @@ module.exports = async (env, options) => {
         input: "./src/functions/functions.ts"
       }),
       new HtmlWebpackPlugin({
-        filename: "functions.html",
-        template: "./src/functions/functions.html",
-        chunks: ["polyfill", "functions"]
-      }),
-      new HtmlWebpackPlugin({
         filename: "taskpane.html",
-        template: "./src/taskpane/taskpane.html",
-        chunks: ["polyfill", "taskpane"]
+          template: './src/taskpane/taskpane.html',
+          chunks: ['taskpane', 'vendor', 'polyfills', 'functions']
       }),
       new CopyWebpackPlugin([
         {
@@ -88,11 +82,6 @@ module.exports = async (env, options) => {
         }
       ]),
       new ExtractTextPlugin('[name].[hash].css'),
-      new HtmlWebpackPlugin({
-        filename: "taskpane.html",
-          template: './src/taskpane/taskpane.html',
-          chunks: ['taskpane', 'vendor', 'polyfills']
-      }),
       new HtmlWebpackPlugin({
           filename: "commands.html",
           template: "./src/commands/commands.html",
@@ -104,10 +93,7 @@ module.exports = async (env, options) => {
               ignore: ['*.scss'],
               to: 'assets',
           }
-      ]),
-      new webpack.ProvidePlugin({
-        Promise: ["es6-promise", "Promise"]
-      })
+      ])
     ],
     devServer: {
       headers: {

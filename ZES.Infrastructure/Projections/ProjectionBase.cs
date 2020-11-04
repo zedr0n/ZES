@@ -216,7 +216,8 @@ namespace ZES.Infrastructure.Projections
                 .Subscribe(liveDispatcher.InputBlock.AsObserver());
 
             // EventStore.ListStreams(Timeline.Id, StreamIdPredicate, CancellationToken)
-            _streamLocator.ListStreams(Timeline.Id).Where(s => !s.IsSaga && StreamIdPredicate(s.Key)).ToObservable()
+            var streams = await _streamLocator.ListStreams(Timeline.Id);
+            streams.Where(s => !s.IsSaga && StreamIdPredicate(s.Key)).ToObservable()
                 .TakeWhile(_ => !CancellationSource.IsCancellationRequested)
                 .Where(Predicate)
                 .Select(s => new Tracked<IStream>(s, CancellationToken))

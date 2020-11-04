@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Threading.Tasks;
 
 namespace ZES.Interfaces.EventStore
 {
@@ -8,11 +9,9 @@ namespace ZES.Interfaces.EventStore
     public interface IStreamLocator
     {
         /// <summary>
-        /// Get the stream with the given key
+        /// Gets the task indicating whether cold stream population has been completed
         /// </summary>
-        /// <param name="key">Stream key</param>
-        /// <returns>Stream with given id</returns>
-        IStream Find(string key);
+        Task Ready { get; }
 
         /// <summary>
         /// Get the stream with the given id
@@ -21,7 +20,7 @@ namespace ZES.Interfaces.EventStore
         /// <param name="id">event sourced instance id</param>
         /// <param name="timeline">timeline id</param>
         /// <returns>Stream with given id</returns>
-        IStream Find<T>(string id, string timeline = "master")
+        Task<IStream> Find<T>(string id, string timeline = "master")
             where T : IEventSourced;
 
         /// <summary>
@@ -32,7 +31,7 @@ namespace ZES.Interfaces.EventStore
         /// </remarks>
         /// <param name="stream">Steam</param>
         /// <returns>Current version of the stream</returns>
-        IStream Find(IStream stream);
+        Task<IStream> Find(IStream stream);
 
         /// <summary>
         /// Find the branched stream in specified timeline if any
@@ -40,14 +39,14 @@ namespace ZES.Interfaces.EventStore
         /// <param name="stream">Stream descriptor</param>
         /// <param name="timeline">Branch id</param>
         /// <returns>Stream descriptor in the the specified timeline</returns>
-        IStream FindBranched(IStream stream, string timeline);
+        Task<IStream> FindBranched(IStream stream, string timeline);
 
         /// <summary>
         /// List all streams of the branch
         /// </summary>
         /// <param name="branchId">Branch id</param>
         /// <returns>List of all streams</returns>
-        IEnumerable<IStream> ListStreams(string branchId);
+        Task<IEnumerable<IStream>> ListStreams(string branchId);
 
         /// <summary>
         /// List all streams of the branch
@@ -55,7 +54,7 @@ namespace ZES.Interfaces.EventStore
         /// <typeparam name="T">Event sourced type</typeparam>
         /// <param name="branchId">Branch id</param>
         /// <returns>List of all streams</returns>
-        IEnumerable<IStream> ListStreams<T>(string branchId)
+        Task<IEnumerable<IStream>> ListStreams<T>(string branchId)
             where T : IEventSourced;
 
         /// <summary>

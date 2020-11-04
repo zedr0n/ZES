@@ -3,6 +3,8 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reactive.Linq;
+using System.Reactive.Threading.Tasks;
+using System.Threading.Tasks;
 using SqlStreamStore.Streams;
 using ZES.Infrastructure.Alerts;
 using ZES.Interfaces;
@@ -18,8 +20,8 @@ namespace ZES.Infrastructure.EventStore
         private readonly ConcurrentDictionary<string, IStream> _streams = new ConcurrentDictionary<string, IStream>();
         private readonly IEventStore<IAggregate> _eventStore;
         private readonly IEventStore<ISaga> _sagaStore;
-        private readonly ILog _log;
         private IDisposable _subscription;
+        private Task _ready;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="StreamLocator"/> class.
@@ -27,59 +29,67 @@ namespace ZES.Infrastructure.EventStore
         /// <param name="eventStore">Event store</param>
         /// <param name="sagaStore">Saga store</param>
         /// <param name="messageQueue">Message queue</param>
-        /// <param name="log">Application log</param>
         public StreamLocator(
             IEventStore<IAggregate> eventStore,
             IEventStore<ISaga> sagaStore,
-            IMessageQueue messageQueue,
-            ILog log)
+            IMessageQueue messageQueue)
         {
             _eventStore = eventStore;
-            _log = log;
             _sagaStore = sagaStore;
 
-            // messageQueue.Alerts.OfType<OnTimelineChange>().Subscribe(e => Restart());
-            messageQueue.Alerts.OfType<PullCompleted>().Subscribe(e => Restart());
-            Restart();
+            messageQueue.Alerts.OfType<PullCompleted>().Subscribe(e => Repopulate());
+            Repopulate();
         }
 
         /// <inheritdoc />
-        public IStream Find(string key)
+        public Task Ready
         {
-            return _streams.ContainsKey(key) ? _streams[key] : null;
+            get
+            {
+                if (_ready == null)
+                    _ready = _eventStore.ListStreams().Concat(_sagaStore.ListStreams()).Select(GetOrAdd).LastOrDefaultAsync().ToTask();
+
+                return _ready;
+            }
+            private set => _ready = value;
         }
 
         /// <inheritdoc />
-        public IEnumerable<IStream> ListStreams(string branchId)
+        public async Task<IEnumerable<IStream>> ListStreams(string branchId)
         {
+            await Ready;
             return _streams.Where(s => s.Key.StartsWith(branchId)).Select(s => s.Value);
         }
 
         /// <inheritdoc />
-        public IEnumerable<IStream> ListStreams<T>(string branchId)
+        public async Task<IEnumerable<IStream>> ListStreams<T>(string branchId)
             where T : IEventSourced
         {
+            await Ready;
             var isSaga = typeof(T).Name == nameof(ISaga);
             return _streams.Where(s => s.Key.StartsWith(branchId) && s.Value.IsSaga == isSaga).Select(s => s.Value);
         }
 
         /// <inheritdoc />
-        public IStream Find<T>(string id, string timeline = "master")
+        public async Task<IStream> Find<T>(string id, string timeline = "master")
             where T : IEventSourced
         {
+            await Ready;
             var aStream = new Stream(id, typeof(T).Name, ExpectedVersion.NoStream, timeline);
             return _streams.TryGetValue(aStream.Key, out var stream) ? stream : default(IStream); 
         }
 
         /// <inheritdoc />
-        public IStream Find(IStream stream)
+        public async Task<IStream> Find(IStream stream)
         {
+            await Ready;
             return _streams.TryGetValue(stream.Key, out var outStream) ? outStream : stream;  
         }
 
         /// <inheritdoc />
-        public IStream FindBranched(IStream stream, string timeline)
+        public async Task<IStream> FindBranched(IStream stream, string timeline)
         {
+            await Ready;
             var aStream = new Stream(stream.Id, stream.Type, ExpectedVersion.NoStream, timeline);
             return _streams.TryGetValue(aStream.Key, out var theStream) ? theStream : default(IStream);
         }
@@ -101,6 +111,15 @@ namespace ZES.Infrastructure.EventStore
             var cStream = _streams.GetOrAdd(stream.Key, stream);
             cStream.Version = stream.Version;
             return cStream;
+        }
+
+        private async Task Repopulate()
+        {
+            _streams.Clear();
+            _subscription?.Dispose();
+            Ready = null;
+            _subscription = _eventStore.Streams.Merge(_sagaStore.Streams).Subscribe(s => GetOrAdd(s)); 
+            await Ready;
         }
         
         private void Restart()

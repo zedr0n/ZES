@@ -145,7 +145,7 @@ namespace ZES.Infrastructure.Branching
             _log.StopWatch.Start("GetChanges.Read");
             foreach (var c in changes)
             {
-                var stream = _streamLocator.FindBranched(c.Key, branch);
+                var stream = await _streamLocator.FindBranched(c.Key, branch);
                 var e = await _eventStore.ReadStream<IEvent>(stream, stream.Version - c.Value + 1, c.Value).ToList();
 
                 dict[c.Key] = e;
@@ -173,7 +173,7 @@ namespace ZES.Infrastructure.Branching
                 var version = c.Key.Version + 1;
                 
                 var store = GetStore(stream);
-                var liveStream = _streamLocator.FindBranched(stream, currentBranch);
+                var liveStream = await _streamLocator.FindBranched(stream, currentBranch);
 
                 IList<IEvent> laterEvents = new List<IEvent>();
 
@@ -183,7 +183,7 @@ namespace ZES.Infrastructure.Branching
 
                 var enumerable = events.ToList();
 
-                var newStream = _streamLocator.FindBranched(stream, branch.Id) ?? stream.Branch(branch.Id, ExpectedVersion.EmptyStream);
+                var newStream = await _streamLocator.FindBranched(stream, branch.Id) ?? stream.Branch(branch.Id, ExpectedVersion.EmptyStream);
                 var invalidStreamEvents = (await Append(newStream, version, enumerable.Concat(laterEvents))).ToList();
                 invalidEvents.AddRange(invalidStreamEvents);
             }
@@ -193,7 +193,7 @@ namespace ZES.Infrastructure.Branching
             {
                 foreach (var k in changes.Keys)
                 {
-                    var liveStream = _streamLocator.FindBranched(k, currentBranch);
+                    var liveStream = await _streamLocator.FindBranched(k, currentBranch);
                     await TrimStream(liveStream, k.Version);
                 }
                 
@@ -255,7 +255,7 @@ namespace ZES.Infrastructure.Branching
             
             var store = GetStore(stream);
             var currentBranch = _manager.ActiveBranch;
-            var liveStream = _streamLocator.FindBranched(stream, currentBranch);
+            var liveStream = await _streamLocator.FindBranched(stream, currentBranch);
  
             if (liveStream == null || liveStream.Version < version)
                 return new List<IEvent> { new Event() };
@@ -273,7 +273,7 @@ namespace ZES.Infrastructure.Branching
             var tempStreamId = $"{stream.Timeline}-{stream.Id}-{version}";
             var branch = await _manager.Branch(tempStreamId, time);
 
-            var newStream = _streamLocator.FindBranched(stream, branch.Id);
+            var newStream = await _streamLocator.FindBranched(stream, branch.Id);
             if (newStream == null)
                 throw new InvalidOperationException($"Stream {tempStreamId}:{stream.Type}:{stream.Id} not found!");
 
@@ -296,7 +296,7 @@ namespace ZES.Infrastructure.Branching
             var store = GetStore(stream);
             var origVersion = version;
             var currentBranch = _manager.ActiveBranch;
-            var liveStream = _streamLocator.FindBranched(stream, currentBranch);
+            var liveStream = await _streamLocator.FindBranched(stream, currentBranch);
 
             IList<IEvent> laterEvents = new List<IEvent>();
 
@@ -325,7 +325,7 @@ namespace ZES.Infrastructure.Branching
             var tempStreamId = $"{stream.Timeline}-{stream.Id}-{version}";
             var branch = await _manager.Branch(tempStreamId, time);
 
-            var newStream = _streamLocator.FindBranched(stream, branch.Id);
+            var newStream = await _streamLocator.FindBranched(stream, branch.Id);
             if (newStream == null)
                 throw new InvalidOperationException($"Stream {tempStreamId}:{stream.Type}:{stream.Id} not found!");
 

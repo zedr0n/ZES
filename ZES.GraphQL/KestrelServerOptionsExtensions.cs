@@ -8,7 +8,7 @@ using Microsoft.Extensions.DependencyInjection;
 
 #pragma warning disable CS0618
 
-namespace ZES.GraphQL.AspNetCore
+namespace ZES.GraphQL
 {
     /// <summary>
     /// Endpoint extensions class
@@ -82,7 +82,7 @@ namespace ZES.GraphQL.AspNetCore
         {
             if (config.StoreName != null && config.StoreLocation != null)
             {
-                using (var store = new X509Store(config.StoreName, Enum.Parse<StoreLocation>(config.StoreLocation)))
+                using (var store = new X509Store(config.StoreName, (StoreLocation)Enum.Parse(typeof(StoreLocation), config.StoreLocation)))
                 {
                     store.Open(OpenFlags.ReadOnly);
                     var certificate = store.Certificates.Find(

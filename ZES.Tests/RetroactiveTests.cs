@@ -56,12 +56,12 @@ namespace ZES.Tests
             await await bus.CommandAsync(new UpdateRoot("Root"));
             await bus.IsTrue(new RootInfoQuery("Root"), c => c.CreatedAt < c.UpdatedAt);
             
-            var stream = streamLocator.Find<Root>("Root");
+            var stream = await streamLocator.Find<Root>("Root");
             await retroactive.TrimStream(stream, 0);
             messageQueue.Alert(new InvalidateProjections());
             await bus.IsTrue(new RootInfoQuery("Root"), c => c.CreatedAt == c.UpdatedAt);
 
-            stream = streamLocator.Find<Root>("Root");
+            stream = await streamLocator.Find<Root>("Root");
             Assert.Equal(0, stream.Version);
         }
 
@@ -100,7 +100,7 @@ namespace ZES.Tests
 
             await bus.Equal(new RootInfoQuery("Root"), r => r.NumberOfUpdates, 2);
             
-            var stream = locator.Find<Root>("Root");
+            var stream = await locator.Find<Root>("Root");
             var canDelete = await retroactive.TryDelete(stream, 3);
             Assert.False(canDelete);
             
@@ -141,12 +141,12 @@ namespace ZES.Tests
 
             await manager.Branch("test", timestamp);
             await await bus.CommandAsync(new UpdateRoot("Root"));
-            var stream = streamLocator.Find<Root>("Root", timeline.Id);
+            var stream = await streamLocator.Find<Root>("Root", timeline.Id);
 
             var e = await eventStore.ReadStream<IEvent>(stream, 0).LastAsync();
 
             manager.Reset();
-            stream = streamLocator.Find<Root>("Root", timeline.Id);
+            stream = await streamLocator.Find<Root>("Root", timeline.Id);
 
             await retroactive.TryInsertIntoStream(stream, 1, new[] { e });
 
@@ -179,13 +179,13 @@ namespace ZES.Tests
             manager.Reset();
             await manager.Branch("test", timestamp);
             await await bus.CommandAsync(new UpdateRoot("Root"));
-            var stream = streamLocator.Find<Root>("Root", branch.Id);
+            var stream = await streamLocator.Find<Root>("Root", branch.Id);
 
             var e = await eventStore.ReadStream<IEvent>(stream, 0).LastAsync();
 
             manager.Reset();
             await manager.Branch("test0");
-            stream = streamLocator.Find<Root>("Root", branch.Id);
+            stream = await streamLocator.Find<Root>("Root", branch.Id);
             await retroactive.TryInsertIntoStream(stream, 1, new[] { e });
             
             await graph.Serialise(nameof(CanInsertIntoStreamMultipleBranch) + "-test0");

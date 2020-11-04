@@ -62,7 +62,7 @@ namespace ZES.Infrastructure.Domain
             if (events.Count == 0)
                 return;
 
-            var stream = _streams.Find<T>(es.Id, _timeline.Id) ?? _streams.CreateEmpty(es, _timeline.Id); // _streams.GetOrAdd(es, _timeline.Id);
+            var stream = await _streams.Find<T>(es.Id, _timeline.Id) ?? _streams.CreateEmpty(es, _timeline.Id); // _streams.GetOrAdd(es, _timeline.Id);
             if (stream.Version >= 0 && es.Version - events.Count < stream.Version)
                 throw new InvalidOperationException($"Stream ( {stream.Key}@{stream.Version} ) is ahead of aggregate root ( {es.Version - events.Count} )");
 
@@ -98,7 +98,7 @@ namespace ZES.Infrastructure.Domain
         public async Task<T> Find<T>(string id, bool computeHash = false)
             where T : class, TEventSourced, new()
         {
-            var stream = _streams.Find<T>(id, _timeline.Id);
+            var stream = await _streams.Find<T>(id, _timeline.Id);
             if (stream == null)
                 return null;
             TEventSourced es;
@@ -124,7 +124,7 @@ namespace ZES.Infrastructure.Domain
         public async Task<bool> IsValid<T>(string id)
             where T : class, TEventSourced, new()
         {
-            var stream = _streams.Find<T>(id, _timeline.Id);
+            var stream = await _streams.Find<T>(id, _timeline.Id);
             if (stream == null)
                 return true;
 
@@ -140,7 +140,7 @@ namespace ZES.Infrastructure.Domain
         public async Task<int> LastValidVersion<T>(string id) 
             where T : class, TEventSourced, new()
         {
-            var stream = _streams.Find<T>(id, _timeline.Id);
+            var stream = await _streams.Find<T>(id, _timeline.Id);
             if (stream == null)
                 return ExpectedVersion.NoStream;
 
@@ -156,7 +156,7 @@ namespace ZES.Infrastructure.Domain
         public async Task<IEnumerable<IEvent>> FindInvalidEvents<T>(string id) 
             where T : class, TEventSourced, new()
         {
-            var stream = _streams.Find<T>(id, _timeline.Id);
+            var stream = await _streams.Find<T>(id, _timeline.Id);
             if (stream == null)
                 return null;
             

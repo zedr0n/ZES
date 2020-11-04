@@ -233,7 +233,7 @@ namespace ZES.Infrastructure.Branching
             var store = GetStore<T>();
             
             // var streams = await store.ListStreams(branchId).ToList();
-            var streams = _streamLocator.ListStreams<T>(branchId).ToList();
+            var streams = await _streamLocator.ListStreams<T>(branchId);
             foreach (var s in streams)
             {
                 await store.DeleteStream(s);
@@ -248,7 +248,8 @@ namespace ZES.Infrastructure.Branching
         private async Task StoreChanges(string branchId, ConcurrentDictionary<IStream, int> changes)
         {
             var flow = new ChangesFlow(_activeTimeline, changes);
-            _streamLocator.ListStreams(branchId).Subscribe(flow.InputBlock.AsObserver());
+            var streams = await _streamLocator.ListStreams(branchId);
+            streams.Subscribe(flow.InputBlock.AsObserver());
 
             try
             {
@@ -271,7 +272,6 @@ namespace ZES.Infrastructure.Branching
             try
             {
                 await flow.CompletionTask;
-                return;
             }
             catch (Exception e)
             {
@@ -287,14 +287,14 @@ namespace ZES.Infrastructure.Branching
 
             // store.ListStreams(branchId).Subscribe(mergeFlow.InputBlock.AsObserver());
             IEnumerable<IStream> streams; 
-            var branchStreams = _streamLocator.ListStreams<T>(branchId);
+            var branchStreams = await _streamLocator.ListStreams<T>(branchId);
             if (includeNewStreams)
             {
                 streams = branchStreams;
             }
             else
             {
-                var currentStreams = _streamLocator.ListStreams<T>(_activeTimeline.Id);
+                var currentStreams = await _streamLocator.ListStreams<T>(_activeTimeline.Id);
                 streams = branchStreams.Intersect(currentStreams, new Stream.BranchComparer()).ToList();
             }
             
@@ -336,8 +336,8 @@ namespace ZES.Infrastructure.Branching
             var cloneFlow = new CloneFlow<T>(timeline, time, store);
             
             // store.ListStreams(_activeTimeline.Id)
-            _streamLocator.ListStreams<T>(_activeTimeline.Id)
-                .Where(s => keys == null || keys.Contains(s.Key))
+            var streams = await _streamLocator.ListStreams<T>(_activeTimeline.Id);
+            streams.Where(s => keys == null || keys.Contains(s.Key))
                 .Subscribe(cloneFlow.InputBlock.AsObserver());
 
             try
@@ -405,7 +405,7 @@ namespace ZES.Infrastructure.Branching
                         var parent = s.Parent;
                         while (parent != null && parent.Version > ExpectedVersion.EmptyStream)
                         {
-                            parentStream = streamLocator.Find(parent);
+                            parentStream = await streamLocator.Find(parent);
                             version = parentStream.Version;
 
                             if (currentBranch != null &&

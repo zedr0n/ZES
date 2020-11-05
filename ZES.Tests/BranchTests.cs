@@ -95,6 +95,26 @@ namespace ZES.Tests
         }
 
         [Fact]
+        public async void CanQueryTimeline()
+        {
+            var container = CreateContainer();
+            var bus = container.GetInstance<IBus>();
+            var manager = container.GetInstance<IBranchManager>();
+
+            await await bus.CommandAsync(new CreateRoot("Root"));
+            await bus.Equal(new StatsQuery(), s => s.NumberOfRoots, 1);
+
+            await manager.Branch("Branch");
+            await await bus.CommandAsync(new CreateRoot("OtherRoot"));
+            await bus.Equal(new StatsQuery(), s => s.NumberOfRoots, 2);
+
+            manager.Reset();
+            
+            await bus.Equal(new StatsQuery(), s => s.NumberOfRoots, 1);
+            await bus.Equal(new StatsQuery { Timeline = "Branch" }, s => s.NumberOfRoots, 2);
+        }
+
+        [Fact]
         public async void CanMergeHistory()
         {
             var container = CreateContainer();

@@ -27,19 +27,20 @@ namespace ZES.Infrastructure.Projections
         private readonly Lazy<Task> _start;
         private readonly IStreamLocator _streamLocator;
         private int _parallel;
+        private string _timeline;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ProjectionBase{TState}"/> class.
         /// </summary>
         /// <param name="eventStore">Event store service</param>
         /// <param name="log">Log service</param>
-        /// <param name="timeline">Timeline service</param>
+        /// <param name="activeTimeline">Timeline service</param>
         /// <param name="streamLocator">Stream locator</param>
-        public ProjectionBase(IEventStore<IAggregate> eventStore, ILog log, ITimeline timeline, IStreamLocator streamLocator)
+        public ProjectionBase(IEventStore<IAggregate> eventStore, ILog log, ITimeline activeTimeline, IStreamLocator streamLocator)
         {
             EventStore = eventStore;
             Log = log;
-            Timeline = timeline;
+            ActiveTimeline = activeTimeline;
             _streamLocator = streamLocator;
             CancellationSource = new RepeatableCancellationTokenSource();
             _start = new Lazy<Task>(() => Task.Run(Start));
@@ -65,6 +66,13 @@ namespace ZES.Infrastructure.Projections
 
         /// <inheritdoc />
         public Guid Guid { get; } = Guid.NewGuid();
+
+        /// <inheritdoc/>
+        public string Timeline
+        {
+            get => _timeline ?? ActiveTimeline.Id;
+            set => _timeline = value;
+        }
 
         /// <inheritdoc />
         public virtual Func<string, bool> StreamIdPredicate { get; set; } = s => true;
@@ -117,7 +125,7 @@ namespace ZES.Infrastructure.Projections
         /// <summary>
         /// Gets current timeline
         /// </summary>
-        protected ITimeline Timeline { get; }
+        protected ITimeline ActiveTimeline { get; }
 
         /// <summary>
         /// Gets observable representing the projection status
@@ -210,13 +218,14 @@ namespace ZES.Infrastructure.Projections
             
             EventStore.Streams
                 .TakeWhile(_ => !CancellationSource.IsCancellationRequested)
+                .Where(s => s.Timeline == Timeline) 
                 .Where(Predicate)
                 .Select(s => new Tracked<IStream>(s, CancellationToken))
                 .SubscribeOn(Scheduler.Default)
                 .Subscribe(liveDispatcher.InputBlock.AsObserver());
 
             // EventStore.ListStreams(Timeline.Id, StreamIdPredicate, CancellationToken)
-            var streams = await _streamLocator.ListStreams(Timeline.Id);
+            var streams = await _streamLocator.ListStreams(Timeline);
             streams.Where(s => !s.IsSaga && StreamIdPredicate(s.Key)).ToObservable()
                 .TakeWhile(_ => !CancellationSource.IsCancellationRequested)
                 .Where(Predicate)

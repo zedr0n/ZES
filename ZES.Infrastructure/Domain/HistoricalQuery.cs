@@ -22,5 +22,8 @@ namespace ZES.Infrastructure.Domain
 
         /// <inheritdoc />
         public TQuery Query { get; }
+
+        /// <inheritdoc />
+        public string Timeline { get; set; } = string.Empty;
     }
 }

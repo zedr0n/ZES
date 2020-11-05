@@ -1,3 +1,4 @@
+using System.Threading.Tasks;
 using ZES.Interfaces.Domain;
 
 namespace ZES.Infrastructure.Domain
@@ -29,7 +30,15 @@ namespace ZES.Infrastructure.Domain
         {
             return Handle(projection as IProjection<TState>, query);
         }
-        
+
+        /// <inheritdoc />
+        protected override Task<TResult> HandleAsync(TQuery query)
+        {
+            if (query.Timeline != string.Empty)
+                Projection = Manager.GetProjection<TState>(timeline: query.Timeline);
+            return base.HandleAsync(query);
+        }
+
         /// <summary>
         /// Strongly-typed handler
         /// </summary>

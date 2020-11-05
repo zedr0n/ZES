@@ -20,11 +20,11 @@ namespace ZES.Infrastructure.Projections
         /// </summary>
         /// <param name="eventStore">Event store service</param>
         /// <param name="log">Log service</param>
-        /// <param name="timeline">Timeline service</param>
+        /// <param name="activeTimeline">Timeline service</param>
         /// <param name="messageQueue">Message queue service</param>
         /// <param name="streamLocator">Stream locator</param>
-        public GlobalProjection(IEventStore<IAggregate> eventStore, ILog log, ITimeline timeline, IMessageQueue messageQueue, IStreamLocator streamLocator)
-            : base(eventStore, log, timeline, streamLocator)
+        public GlobalProjection(IEventStore<IAggregate> eventStore, ILog log, ITimeline activeTimeline, IMessageQueue messageQueue, IStreamLocator streamLocator)
+            : base(eventStore, log, activeTimeline, streamLocator)
         {
             InvalidateSubscription = new LazySubscription(() =>
                 messageQueue.Alerts.OfType<InvalidateProjections>()

@@ -24,13 +24,13 @@ namespace ZES
         }
 
         /// <inheritdoc />
-        public IProjection<TState> GetProjection<TState>(string id = "")
+        public IProjection<TState> GetProjection<TState>(string id = "", string timeline = "")
             where TState : IState
         {
-            var descriptor = new Descriptor<TState>(id);
+            var descriptor = new Descriptor<TState>(id, timeline);
             var projection = _projections.GetOrAdd(
                 descriptor,
-                d => CreateProjection<TState>(id)) as IProjection<TState>;
+                d => CreateProjection<TState>(id, timeline)) as IProjection<TState>;
 
             return projection;
         }
@@ -50,7 +50,7 @@ namespace ZES
             return historicalProjection;
         }
 
-        private IProjection<TState> CreateProjection<TState>(string id)
+        private IProjection<TState> CreateProjection<TState>(string id, string timeline)
             where TState : IState
         {
             id = id.Replace(' '.ToString(), "_");
@@ -64,26 +64,31 @@ namespace ZES
                 p.StreamIdPredicate = s => s.Contains(id);
             }
 
+            if (timeline != string.Empty)
+                p.Timeline = timeline;
+
             return p;
         }
         
         private abstract class Descriptor : ValueObject
         {
-            protected Descriptor(string streamId)
+            protected Descriptor(string streamId, string timeline)
             {
                 StreamId = streamId;
+                Timeline = timeline;
             }
 
             public abstract Type StateType { get; }
             public string StreamId { get; }
+            public string Timeline { get; }
         }
 
         /// <inheritdoc />
         private class Descriptor<TState> : Descriptor
             where TState : IState
         {
-            public Descriptor(string streamId = "") 
-                : base(streamId)
+            public Descriptor(string streamId = "", string timeline = "") 
+                : base(streamId, timeline)
             {
             }
             
@@ -93,6 +98,7 @@ namespace ZES
             protected override IEnumerable<object> GetAtomicValues()
             {
                 yield return StreamId;
+                yield return Timeline;
             }
         }
     }

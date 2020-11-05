@@ -4,12 +4,18 @@ namespace ZES.Interfaces.Domain
     /// CQRS Query
     /// </summary>
     public interface IQuery { }
-    
+
     /// <summary>
     /// CQRS Query
     /// </summary>
     /// <typeparam name="TResult">Query result type</typeparam>
-    public interface IQuery<TResult> : IQuery { }
+    public interface IQuery<TResult> : IQuery
+    {
+        /// <summary>
+        /// Gets or sets the timeline to query
+        /// </summary>
+        string Timeline { get; set; }
+    }
     
     /// <summary>
     /// Historical derivative of underlying query

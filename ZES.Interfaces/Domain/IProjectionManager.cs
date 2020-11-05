@@ -9,9 +9,10 @@ namespace ZES.Interfaces.Domain
         /// Get the projection instance
         /// </summary>
         /// <param name="id">Stream id</param>
+        /// <param name="timeline">Timeline to query</param>
         /// <typeparam name="TState">State type</typeparam>
         /// <returns>Projection instance</returns>
-        IProjection<TState> GetProjection<TState>(string id = "")
+        IProjection<TState> GetProjection<TState>(string id = "", string timeline = "")
             where TState : IState;
 
         /// <summary>

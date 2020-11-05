@@ -61,6 +61,11 @@ namespace ZES.Interfaces.Domain
         /// Gets the projection identifier 
         /// </summary>
         Guid Guid { get; }
+        
+        /// <summary>
+        /// Gets or sets the projection timeline
+        /// </summary>
+        string Timeline { get; set; }
 
         /*
         /// <summary>

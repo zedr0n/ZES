@@ -49,7 +49,7 @@ namespace ZES.Infrastructure.Projections
             Build = new BuildFlow(options, this);
 
             StatusSubject.Where(s => s != Sleeping)
-                .Subscribe(s => Log?.Info($"{GetType().GetFriendlyName()} : {s.ToString()}"));
+                .Subscribe(s => Log?.Info($"[{Timeline}]{GetType().GetFriendlyName()} : {s.ToString()}"));
         }
 
         /// <inheritdoc />

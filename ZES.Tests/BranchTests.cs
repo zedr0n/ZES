@@ -112,6 +112,8 @@ namespace ZES.Tests
             
             await bus.Equal(new StatsQuery(), s => s.NumberOfRoots, 1);
             await bus.Equal(new StatsQuery { Timeline = "Branch" }, s => s.NumberOfRoots, 2);
+            await bus.Equal(new StatsQuery { Timeline = "Test" }, s => s.NumberOfRoots, 0);
+            await bus.Equal(new StatsQuery { Timeline = BranchManager.Master }, s => s.NumberOfRoots, 1);
         }
 
         [Fact]

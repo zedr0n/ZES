@@ -75,7 +75,7 @@ namespace ZES.Tests
             var command = new CreateRoot("Root");
             await await bus.CommandAsync(command);
             await await bus.CommandAsync(command);
-            Assert.Equal(typeof(InvalidOperationException).Name, error.ErrorType); 
+            Assert.Equal(nameof(InvalidOperationException), error.ErrorType); 
             Assert.Contains("ahead", error.Message);
             Assert.NotNull(error.Timestamp);
         }

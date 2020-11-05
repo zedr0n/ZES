@@ -192,6 +192,7 @@ namespace ZES.Utils
                     typeof(HistoricalProjection<>).MakeGenericType(tState),
                     Lifestyle.Transient,
                     x => !x.Handled);
+                
                 // var lifestyle = tState.GetInterfaces().Contains(typeof(ISingleState)) ? Lifestyle.Transient : Lifestyle.Singleton;
                 var lifestyle = Lifestyle.Transient;
                 c.RegisterConditional(projectionInterface, p, lifestyle, x => !x.Handled);
@@ -213,6 +214,7 @@ namespace ZES.Utils
                     typeof(HistoricalProjection<>).MakeGenericType(tState),
                     Lifestyle.Transient,
                     x => !x.Handled);
+                
                 // var lifestyle = tState.GetInterfaces().Contains(typeof(ISingleState)) ? Lifestyle.Transient : Lifestyle.Singleton;
                 var lifestyle = Lifestyle.Transient;
                 c.RegisterConditional(projectionInterface, projection, lifestyle, x => !x.Handled);

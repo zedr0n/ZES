@@ -6,16 +6,19 @@ using Xunit.Abstractions;
 using ZES.Infrastructure.Alerts;
 using ZES.Infrastructure.Branching;
 using ZES.Infrastructure.Domain;
+using ZES.Infrastructure.Stochastics;
 using ZES.Interfaces;
 using ZES.Interfaces.Branching;
 using ZES.Interfaces.Causality;
 using ZES.Interfaces.Domain;
 using ZES.Interfaces.EventStore;
 using ZES.Interfaces.Pipes;
+using ZES.Interfaces.Stochastic;
 using ZES.Tests.Domain;
 using ZES.Tests.Domain.Commands;
 using ZES.Tests.Domain.Queries;
 using ZES.Tests.Domain.Sagas;
+using ZES.Tests.Domain.Stochastics;
 using static ZES.Interfaces.FastForwardResult;
 using static ZES.Utils.ObservableExtensions;
 
@@ -494,6 +497,22 @@ namespace ZES.Tests
             var root = await repository.Find<Root>(id);
             Assert.Equal(3, root.Version);
             Assert.Equal(2, root.SnapshotVersion);
+        }
+
+        [Fact]
+        public void CanDoRecordAction()
+        {
+            var container = CreateContainer(new List<Action<Container>> { c => c.UseLocalStore() });
+            var bus = container.GetInstance<IBus>();
+            var manager = container.GetInstance<IBranchManager>();
+            var process = new MarkovDecisionProcessBase<BranchState>(new BranchState(BranchManager.Master), 100)
+            {
+                Rewards = new List<IActionReward<BranchState>> { new RecordReward(bus) },
+            };
+            var policy = new RecordPolicy(bus, manager);
+            var result = process.GetOptimalValue(policy);
+            
+            Assert.Equal(10, result);
         }
     }
 }

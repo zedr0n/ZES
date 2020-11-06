@@ -9,7 +9,7 @@ using ZES.Interfaces.Stochastic;
 namespace ZES.Infrastructure.Stochastics
 {
     /// <inheritdoc />
-    public abstract class MarkovDecisionProcessBase<TState> : IMarkovDecisionProcess<TState>
+    public class MarkovDecisionProcessBase<TState> : IMarkovDecisionProcess<TState>
         where TState : IMarkovState, IEquatable<TState>
     {
         private readonly int _maxIterations;
@@ -21,13 +21,18 @@ namespace ZES.Infrastructure.Stochastics
         /// </summary>
         /// <param name="initialState">Starting state</param>
         /// <param name="maxIterations">Maximum number of iterations</param>
-        protected MarkovDecisionProcessBase(TState initialState, int maxIterations)
+        public MarkovDecisionProcessBase(TState initialState, int maxIterations)
         {
             _initialState = initialState;
             _maxIterations = maxIterations;
             Rewards = new List<IActionReward<TState>>();
         }
 
+        /// <summary>
+        /// Gets or sets future state discount factor
+        /// </summary>
+        public double Discount { get; set; } = 1.0;
+        
         /// <inheritdoc />
         public Dictionary<TState, double> Changes { get; } = new Dictionary<TState, double>(); 
         
@@ -151,7 +156,7 @@ namespace ZES.Infrastructure.Stochastics
         /// Value function constructor
         /// </summary>
         /// <returns>Associated value function for next iteration</returns>
-        protected abstract IValueFunction<TState> NextFunction();
+        protected virtual IValueFunction<TState> NextFunction() => new ValueFunction<TState>();
 
         private static double Norm(IReadOnlyCollection<Value> values)
         {
@@ -408,7 +413,7 @@ namespace ZES.Infrastructure.Stochastics
 
                 var prevValue = previousFunction[nextState];
 
-                var rewardValue = new Value(totalReward + prevValue.Mean, prevValue.Variance + (totalReward * totalReward) + (2 * prevValue.Mean * totalReward));
+                var rewardValue = new Value(totalReward + (Discount * prevValue.Mean), prevValue.Variance + (totalReward * totalReward) + (2 * Discount * prevValue.Mean * totalReward));
                 expectation += probability * rewardValue;
             }
 

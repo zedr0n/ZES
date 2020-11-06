@@ -63,6 +63,21 @@ namespace ZES.Tests
         }
 
         [Fact]
+        public async void CanCalculateTotalRecord()
+        {
+            var container = CreateContainer();
+            var bus = container.GetInstance<IBus>();
+
+            await await bus.CommandAsync(new CreateRecord("Root"));
+
+            await await bus.CommandAsync(new AddRecord("Root", 1));
+            await bus.Equal(new TotalRecordQuery(), r => r.Total, 1.0);
+
+            await await bus.CommandAsync(new AddRecord("Root", 2));
+            await bus.Equal(new TotalRecordQuery(), r => r.Total, 3.0);
+        }
+
+        [Fact]
         public async void CannotSaveTwice()
         {
             var container = CreateContainer();

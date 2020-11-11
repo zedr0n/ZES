@@ -1,4 +1,5 @@
 using SqlStreamStore.Streams;
+using ZES.Infrastructure.EventStore;
 using ZES.Interfaces;
 using ZES.Interfaces.Serialization;
 
@@ -21,6 +22,16 @@ namespace ZES.Infrastructure.Utils
             
             // return new NewStreamMessage(e.MessageId, e.MessageType, serializer.Serialize(e), serializer.EncodeMetadata(e));
             return new NewStreamMessage(e.MessageId, e.MessageType, eventJson, metadataJson);
+        }
+
+        /// <summary>
+        /// Get the aggregate root id for the event
+        /// </summary>
+        /// <param name="e">Event instance</param>
+        /// <returns>Aggregate root id</returns>
+        public static string AggregateRootId(this IEvent e)
+        {
+            return new Stream(e.Stream).Id;
         }
     }
 }

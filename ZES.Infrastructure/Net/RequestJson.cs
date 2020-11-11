@@ -1,3 +1,4 @@
+using Newtonsoft.Json;
 using ZES.Infrastructure.Domain;
 using ZES.Interfaces.Domain;
 using ZES.Interfaces.Net;
@@ -14,16 +15,24 @@ namespace ZES.Infrastructure.Net
         /// </summary>
         /// <param name="requestorId">Request correlation id</param>
         /// <param name="url">Target url</param>
-        public RequestJson(string requestorId, string url) 
-            : base(requestorId)
+        public RequestJson(string requestorId, string url)
         {
+            RequestorId = requestorId;
             Url = url;
         }
-        
+       
+        /// <summary>
+        /// Gets or sets the requestor id
+        /// </summary>
+        public string RequestorId { get; set; }
+
         /// <summary>
         /// Gets or sets the target url
         /// </summary>
         public string Url { get; set; }
+
+        /// <inheritdoc />
+        public override string Target => RequestorId;
     }
 
     /// <summary>

@@ -15,10 +15,14 @@
        get; 
        set;
     }  
-    public AddRecord(string target, double recordValue) : base(target) 
+    public AddRecord(string target, double recordValue)
     {
+      RecordId = target;
       RecordValue = recordValue;
     }
+    
+    public string RecordId { get; set; }
+    public override string Target => RecordId;
   }
 }
 

@@ -23,7 +23,7 @@ namespace ZES.Tests.Domain
 
         public void Root(double recordValue, long timestamp)
         {
-            When(new RootRecorded(Id, recordValue) { Timestamp = timestamp });
+            When(new RootRecorded(recordValue) { Timestamp = timestamp });
         }
 
         private void ApplyEvent(RecordCreated e)

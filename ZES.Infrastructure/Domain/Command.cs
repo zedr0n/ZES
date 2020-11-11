@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using Newtonsoft.Json;
 using ZES.Interfaces.Domain;
 
 namespace ZES.Infrastructure.Domain
@@ -15,18 +16,9 @@ namespace ZES.Infrastructure.Domain
             MessageId = Guid.NewGuid();
         }
 
-        /// <summary>
-        /// Initializes a new instance of the <see cref="Command"/> class.
-        /// </summary>
-        /// <param name="target">Target aggregate identifier</param>
-        protected Command(string target)
-            : this()
-        {
-            Target = target;
-        }
-
         /// <inheritdoc />
-        public string Target { get; set; }
+        [JsonIgnore]
+        public virtual string Target { get; set; }
 
         /// <inheritdoc />
         public string EventType { get; set; }

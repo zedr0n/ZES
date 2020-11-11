@@ -43,7 +43,7 @@ namespace ZES.Tests.Domain
 
         public void Update()
         {
-            When(new RootUpdated(Id));
+            When(new RootUpdated());
         }
 
         public void AddDetails(string[] details)

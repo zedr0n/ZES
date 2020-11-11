@@ -10,9 +10,13 @@
     public CreateRoot() 
     {
     }  
-    public CreateRoot(string target) : base(target) 
+    public CreateRoot(string target)
     {
+        this.target = target;
     }
+    
+    public string target { get; set; }
+    public override string Target => target;
   }
 }
 

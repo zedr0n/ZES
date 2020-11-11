@@ -14,10 +14,15 @@
     {
        get;
     }  
-    public AddRootDetails(string target, string[] details) : base(target) 
+    public AddRootDetails(string target, string[] details)
     {
+      RootId = target;
       Details = details;
     }
+
+    public string RootId { get; set; }
+
+    public override string Target => RootId;
   }
 }
 

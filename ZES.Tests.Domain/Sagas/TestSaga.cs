@@ -1,5 +1,6 @@
 using System;
 using ZES.Infrastructure.Domain;
+using ZES.Infrastructure.Utils;
 using ZES.Interfaces;
 using ZES.Tests.Domain.Commands;
 using ZES.Tests.Domain.Events;
@@ -15,8 +16,8 @@ namespace ZES.Tests.Domain.Sagas
         /// </summary>
         public TestSaga()
         {
-            Register<RootCreated>(e => e.RootId, Trigger.Create, e => _rootId = e.RootId);
-            Register<RootUpdated>(e => e.RootId, Trigger.Update);
+            Register<RootCreated>(e => e.AggregateRootId(), Trigger.Create, e => _rootId = e.AggregateRootId());
+            Register<RootUpdated>(e => e.AggregateRootId(), Trigger.Update);
             RegisterOnSnapshot<Root>();
             Register<TestSagaSnapshotEvent>(e => e.Id, e => _rootId = e.Id);
         }

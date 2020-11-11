@@ -24,13 +24,10 @@ namespace ZES.GraphQL
             if (constructor == null)
                 return null;
 
-            var props = command.GetType().GetProperties(BindingFlags.DeclaredOnly | BindingFlags.Public | BindingFlags.Instance);
+            var props = command.GetType().GetProperties(BindingFlags.DeclaredOnly | BindingFlags.Public | BindingFlags.Instance).Where(p => !p.GetGetMethod().IsVirtual);
 
-            var allParams = props
-                .Select(p => $"{p.Name.ToLowerFirst()} : {BackQuote(p)}{p.GetValue(command)}{BackQuote(p)}")
-                .Aggregate(string.Empty, (current, param) => current + $", {param}");
+            var allParams = string.Join(",", props.Select(p => $"{p.Name.ToLowerFirst()} : {BackQuote(p)}{p.GetValue(command)}{BackQuote(p)}"));
             
-            st.Add(MultiCommand.TargetField, command.Target);
             st.Add(MultiCommand.ParamsField, allParams);
             return st.Render();
         }
@@ -78,9 +75,8 @@ namespace ZES.GraphQL
         {
             public static string NameField { get; } = "command";
             public static string ParamsField { get; } = "fields";
-            public static string TargetField { get; } = "value";
             public static string Template => 
-                $@"mutation {{ <{NameField}>Ex( command : {{ target : ""<{TargetField}>""<{ParamsField}> }} ) }}";
+                $@"mutation {{ <{NameField}>Ex( command : {{ <{ParamsField}> }} ) }}";
         }
         
         private static class MultiQuery

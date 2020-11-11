@@ -14,8 +14,16 @@ namespace ZES.Infrastructure.Domain
         /// </summary>
         /// <param name="target">Aggregate id</param>
         public CreateSnapshot(string target)
-            : base(target)
         {
+            SnapshotRootId = target;
         }
+        
+        /// <summary>
+        /// Gets or sets the snapshot root id
+        /// </summary>
+        public string SnapshotRootId { get; set; }
+
+        /// <inheritdoc />
+        public override string Target => SnapshotRootId;
     }
 }

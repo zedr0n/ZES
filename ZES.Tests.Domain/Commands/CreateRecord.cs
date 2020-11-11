@@ -10,9 +10,13 @@
     public CreateRecord() 
     {
     }  
-    public CreateRecord(string target) : base(target) 
+    public CreateRecord(string target)
     {
+        RecordId = target;
     }
+    
+    public string RecordId { get; set; }
+    public override string Target => RecordId;
   }
 }
 

@@ -10,9 +10,13 @@
     public UpdateRoot() 
     {
     }  
-    public UpdateRoot(string target) : base(target) 
+    public UpdateRoot(string target)
     {
+        RootId = target;
     }
+    
+    public string RootId { get; set; }
+    public override string Target => RootId;
   }
 }
 

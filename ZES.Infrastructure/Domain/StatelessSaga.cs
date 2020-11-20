@@ -53,7 +53,7 @@ namespace ZES.Infrastructure.Domain
         protected void Register<TEvent>(Func<TEvent, string> sagaId, TTrigger t, Action<TEvent> action = null)
             where TEvent : class, IEvent
         {
-            RegisterIf(sagaId, t, e => true, action);
+            RegisterIf(sagaId, e => t, e => true, action);
         }
         
         /// <summary>
@@ -63,10 +63,25 @@ namespace ZES.Infrastructure.Domain
         /// </summary>
         /// <param name="sagaId">Id of saga handling this event</param>
         /// <param name="t">Trigger value</param>
+        /// <param name="action">Event handler</param>
+        /// <typeparam name="TEvent">Handled event type</typeparam>
+        protected void Register<TEvent>(Func<TEvent, string> sagaId, Func<TEvent, TTrigger> t, Action<TEvent> action = null)
+            where TEvent : class, IEvent
+        {
+            RegisterIf(sagaId, t, e => true, action);
+        }
+        
+        /// <summary>
+        /// Associate the event with the specified trigger, saga id resolver
+        /// and handle using the provided action
+        /// <para> - Actions normally deal with saga state and can be null </para>
+        /// </summary>
+        /// <param name="sagaId">Id of saga handling this event</param>
+        /// <param name="triggerFunc">Trigger value</param>
         /// <param name="predicate">Event predicate</param>
         /// <param name="action">Event handler</param>
         /// <typeparam name="TEvent">Handled event type</typeparam>
-        protected void RegisterIf<TEvent>(Func<TEvent, string> sagaId, TTrigger t, Func<TEvent, bool> predicate, Action<TEvent> action = null)
+        protected void RegisterIf<TEvent>(Func<TEvent, string> sagaId, Func<TEvent, TTrigger> triggerFunc, Func<TEvent, bool> predicate, Action<TEvent> action = null)
             where TEvent : class, IEvent
         {
             void Handler(TEvent e)
@@ -79,6 +94,7 @@ namespace ZES.Infrastructure.Domain
                 }
                 
                 action?.Invoke(e);
+                var t = triggerFunc(e);
                 if (t == null) 
                     return;
                 

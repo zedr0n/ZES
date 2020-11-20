@@ -13,12 +13,20 @@ namespace ZES.Interfaces
         Guid CommandId { get; }
 
         /// <summary>
-        /// Gets or sets gets originating stream key
+        /// Gets or sets stream key
+        /// </summary>
+        /// <value>
+        /// Current stream key
+        /// </value>
+        string Stream { get; set; }
+
+        /// <summary>
+        /// Gets or sets originating stream key
         /// </summary>
         /// <value>
         /// Originating stream key
         /// </value>
-        string Stream { get; set; }
+        string OriginatingStream { get; set; }
     }
 
     /// <summary>

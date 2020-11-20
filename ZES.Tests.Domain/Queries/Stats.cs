@@ -7,7 +7,11 @@ namespace ZES.Tests.Domain.Queries
     {
         private int _numberOfRoots;
 
-        public int NumberOfRoots => _numberOfRoots;
+        public int NumberOfRoots
+        {
+            get => _numberOfRoots;
+            set => _numberOfRoots = value;
+        }
 
         public void Increment()
         {

@@ -7,8 +7,7 @@ namespace ZES.Tests.Domain.Queries
     {
         public override Stats Handle(RootCreated e, Stats state)
         {
-            state.Increment();
-            return state;
+            return new Stats { NumberOfRoots = state.NumberOfRoots + 1 };
         }
     }
 }

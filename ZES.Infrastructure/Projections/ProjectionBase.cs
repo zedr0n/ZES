@@ -24,6 +24,8 @@ namespace ZES.Infrastructure.Projections
     public abstract class ProjectionBase<TState> : IProjection<TState>
         where TState : new()
     {
+        private readonly ActionBlock<IEvent> _updateStateBlock;
+
         private readonly Lazy<Task> _start;
         private readonly IStreamLocator _streamLocator;
         private int _parallel;
@@ -46,6 +48,7 @@ namespace ZES.Infrastructure.Projections
             _start = new Lazy<Task>(() => Task.Run(Start));
             var options = new DataflowOptions { RecommendedParallelismIfMultiThreaded = 1 };
 
+            _updateStateBlock = new ActionBlock<IEvent>(UpdateState, new ExecutionDataflowBlockOptions { MaxDegreeOfParallelism = 1 });
             Build = new BuildFlow(options, this);
 
             StatusSubject.Where(s => s != Sleeping)
@@ -157,18 +160,8 @@ namespace ZES.Infrastructure.Projections
             if (CancellationSource.IsCancellationRequested || e == null)
                 return;
 
-            // Log.Trace($"Stream {e.Stream}@{e.Version}", this);
-            if (!Handlers.TryGetValue(e.GetType(), out var handler))
-                return;
-
-            // do not project the future events
-            if (e.Timestamp > Latest)
-                return;
             Interlocked.Increment(ref _parallel);
-
-            State = handler(e, State);
-            Log.Debug($"{e.Stream}@{e.Version}:{_parallel}", this);
-            Interlocked.Decrement(ref _parallel);
+            _updateStateBlock.Post(e);
         }
 
         /// <summary>
@@ -283,6 +276,20 @@ namespace ZES.Infrastructure.Projections
         protected void Register(Type tEvent, Func<IEvent, TState, TState> when)
         {
             Handlers.Add(tEvent, (m, s) => when(m as IEvent, s));
+        }
+
+        private void UpdateState(IEvent e)
+        {
+            if (!Handlers.TryGetValue(e.GetType(), out var handler))
+                return;
+
+            // do not project the future events
+            if (e.Timestamp > Latest)
+                return;
+
+            State = handler(e, State);
+            Interlocked.Decrement(ref _parallel);
+            Log.Info($"{e.Stream}@{e.Version}:{_parallel}", this); 
         }
         
         /// <summary>

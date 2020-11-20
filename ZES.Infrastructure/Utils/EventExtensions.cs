@@ -31,7 +31,8 @@ namespace ZES.Infrastructure.Utils
         /// <returns>Aggregate root id</returns>
         public static string AggregateRootId(this IEvent e)
         {
-            return new Stream(e.Stream).Id;
+            var stream = e.OriginatingStream ?? e.Stream;
+            return new Stream(stream).Id;
         }
     }
 }

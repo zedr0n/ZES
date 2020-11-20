@@ -10,17 +10,22 @@ namespace ZES.Tests.Domain.Queries
         
         public RootInfo Handle(RootCreated e, RootInfo state)
         {
-            state.CreatedAt = e.Timestamp;
-            state.UpdatedAt = state.CreatedAt;
-            state.RootId = e.RootId;
-            return state;
+            return new RootInfo
+            {
+                CreatedAt = e.Timestamp,
+                UpdatedAt = e.Timestamp,
+                RootId = e.RootId,
+            };
         }
         
         public RootInfo Handle(RootUpdated e, RootInfo state)
         {
-            state.NumberOfUpdates++;
-            state.UpdatedAt = e.Timestamp;
-            return state;
+            return new RootInfo
+            {
+                CreatedAt = state.CreatedAt,
+                UpdatedAt = e.Timestamp,
+                NumberOfUpdates = state.NumberOfUpdates + 1,
+            };
         }
     }
 }

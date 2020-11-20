@@ -66,9 +66,9 @@ namespace ZES.Infrastructure.Projections
                 var origVersion = version;
                 await _eventStore.ReadStream<IEvent>(s, version + 1)
                     .TakeWhile(_ => !_token.IsCancellationRequested)
-                    .Select(e =>
+                    .Select(async e =>
                     {
-                        _projection.When(e);
+                        await _projection.When(e);
                         version++;
                         return true;
                     })

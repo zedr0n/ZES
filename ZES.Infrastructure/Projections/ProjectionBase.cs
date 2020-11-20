@@ -155,13 +155,16 @@ namespace ZES.Infrastructure.Projections
         /// Projection message processor
         /// </summary>
         /// <param name="e">Message to process</param>
-        public void When(IEvent e)
+        /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
+        public Task When(IEvent e)
         {
             if (CancellationSource.IsCancellationRequested || e == null)
-                return;
+                return Task.CompletedTask;
 
+            var tracked = new Tracked<IEvent>(e);
             Interlocked.Increment(ref _parallel);
             _updateStateBlock.Post(e);
+            return tracked.Task;
         }
 
         /// <summary>

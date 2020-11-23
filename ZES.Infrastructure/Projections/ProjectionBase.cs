@@ -24,12 +24,11 @@ namespace ZES.Infrastructure.Projections
     public abstract class ProjectionBase<TState> : IProjection<TState>
         where TState : new()
     {
-        private readonly ActionBlock<IEvent> _updateStateBlock;
-
         private readonly Lazy<Task> _start;
         private readonly IStreamLocator _streamLocator;
         private int _parallel;
         private string _timeline;
+        private ActionBlock<Tracked<IEvent>> _updateStateBlock;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ProjectionBase{TState}"/> class.
@@ -48,7 +47,6 @@ namespace ZES.Infrastructure.Projections
             _start = new Lazy<Task>(() => Task.Run(Start));
             var options = new DataflowOptions { RecommendedParallelismIfMultiThreaded = 1 };
 
-            _updateStateBlock = new ActionBlock<IEvent>(UpdateState, new ExecutionDataflowBlockOptions { MaxDegreeOfParallelism = 1 });
             Build = new BuildFlow(options, this);
 
             StatusSubject.Where(s => s != Sleeping)
@@ -163,7 +161,7 @@ namespace ZES.Infrastructure.Projections
 
             var tracked = new Tracked<IEvent>(e);
             Interlocked.Increment(ref _parallel);
-            _updateStateBlock.Post(e);
+            _updateStateBlock.Post(tracked);
             return tracked.Task;
         }
 
@@ -183,7 +181,8 @@ namespace ZES.Infrastructure.Projections
         protected virtual async Task Rebuild()
         {
             StatusSubject.OnNext(Building);
-            
+            _updateStateBlock = new ActionBlock<Tracked<IEvent>>(UpdateState, new ExecutionDataflowBlockOptions { MaxDegreeOfParallelism = 1 });
+
             CancellationSource.Dispose();
             Versions.Clear();
             lock (State)
@@ -281,18 +280,19 @@ namespace ZES.Infrastructure.Projections
             Handlers.Add(tEvent, (m, s) => when(m as IEvent, s));
         }
 
-        private void UpdateState(IEvent e)
+        private void UpdateState(Tracked<IEvent> tracked)
         {
-            if (!Handlers.TryGetValue(e.GetType(), out var handler))
-                return;
-
+            var e = tracked.Value;
+            
             // do not project the future events
-            if (e.Timestamp > Latest)
-                return;
+            if (Handlers.TryGetValue(e.GetType(), out var handler) && e.Timestamp <= Latest)
+            {
+                State = handler(e, State);
+                Log.Info($"{e.Stream}@{e.Version}:{_parallel}", this);
+            }
 
-            State = handler(e, State);
             Interlocked.Decrement(ref _parallel);
-            Log.Info($"{e.Stream}@{e.Version}:{_parallel}", this); 
+            tracked.Complete();
         }
         
         /// <summary>

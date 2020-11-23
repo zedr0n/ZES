@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.Linq;
 using System.Reactive.Linq;
 using System.Threading;
@@ -64,17 +65,15 @@ namespace ZES.Infrastructure.Projections
             if (version < s.Version)
             {
                 var origVersion = version;
-                await _eventStore.ReadStream<IEvent>(s, version + 1)
+                var t = await _eventStore.ReadStream<IEvent>(s, version + 1)
                     .TakeWhile(_ => !_token.IsCancellationRequested)
-                    .Select(async e =>
-                    {
-                        await _projection.When(e);
-                        version++;
-                        return true;
-                    })
+                    .Select(e => _projection.When(e))
+                    .ToList()
                     .Timeout(Configuration.Timeout)
                     .LastOrDefaultAsync();
 
+                version += t.Count;
+                await Task.WhenAll(t);
                 _log?.Debug($"{s.Key}@{s.Version} <- {version}", $"{Parents.Select(p => p.Name).Aggregate((a, n) => a + n)}->{Name}");
 
                 if (!_versions.TryUpdate(s.Key, version, origVersion))

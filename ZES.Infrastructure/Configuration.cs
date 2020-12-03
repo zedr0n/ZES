@@ -18,8 +18,6 @@ namespace ZES.Infrastructure
             "GridSum",
             "InMemoryStreamStore",
             "Common",
-            "CompleteMessage",
-            "UncompleteMessage",
         };
 
         /// <summary>

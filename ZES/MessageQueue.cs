@@ -81,7 +81,7 @@ namespace ZES
                         throw new InvalidOperationException("Retroactive command completed before being executed");
                     b.RetroactiveId = default;
                     
-                    _log.Debug($"Completed retroactive command {message.Timeline}:{message.GetType().GetFriendlyName()} [{message.MessageId}] ({message.Timestamp.ToDateString()})");
+                    _log.Info($"Completed retroactive command {message.Timeline}:{message.GetType().GetFriendlyName()} [{message.MessageId}] ({message.Timestamp.ToDateString()})");
                     return b;
                 }
 
@@ -89,7 +89,7 @@ namespace ZES
                 if (b.Count < 0)
                     throw new InvalidOperationException($"Message {message.Timeline}:{message.GetType()} completed before being produced");
 
-                _log.Debug($"Uncompleted messages : {b.Count}, removed {message.Timeline}:{message.GetType().GetFriendlyName()}");
+                _log.Info($"Uncompleted messages : {b.Count}, removed {message.Timeline}:{message.GetType().GetFriendlyName()}");
 
                 return b;
             });
@@ -106,13 +106,13 @@ namespace ZES
                 {
                     b.RetroactiveId = message.MessageId;
                     
-                    _log.Debug($"Started retroactive execution {message.Timeline}:{message.GetType().GetFriendlyName()} [{message.MessageId}] ({message.Timestamp.ToDateString()})");
+                    _log.Info($"Started retroactive execution {message.Timeline}:{message.GetType().GetFriendlyName()} [{message.MessageId}] ({message.Timestamp.ToDateString()})");
                     return b;
                 }
 
                 b.Timeline = message.Timeline;
                 b.Count++;
-                _log.Debug($"Uncompleted messages : {b.Count}, added {message.Timeline}:{message.GetType().GetFriendlyName()}");
+                _log.Info($"Uncompleted messages : {b.Count}, added {message.Timeline}:{message.GetType().GetFriendlyName()}");
 
                 return b;
             });

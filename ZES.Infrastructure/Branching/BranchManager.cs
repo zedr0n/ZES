@@ -134,7 +134,7 @@ namespace ZES.Infrastructure.Branching
             // update current timeline
             _activeTimeline.Set(timeline);
             
-            _log.Trace($"Switched to {branchId} branch");
+            _log.Debug($"Switched to {branchId} branch");
 
             /* rebuild all projections
              _messageQueue.Alert(new Alerts.InvalidateProjections());*/
@@ -238,7 +238,7 @@ namespace ZES.Infrastructure.Branching
             {
                 await store.DeleteStream(s);
                 if (s.Version != s.Parent?.Version)
-                    _log.Trace($"Deleted {typeof(T).Name} stream {s.Key}");
+                    _log.Debug($"Deleted {typeof(T).Name} stream {s.Key}");
                 await _graph.DeleteStream(s.Key);
             }
             

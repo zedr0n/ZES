@@ -106,8 +106,14 @@ namespace ZES
                 _messagesHolderDict.GetOrAdd(message.Timeline, s => new UncompletedMessagesSingleHolder());
             await await messagesHolder.UpdateState(b =>
             {
-                if (message.GetType().IsClosedTypeOf(typeof(RetroactiveCommand<>)) && b.RetroactiveId == default)
+                if (message.GetType().IsClosedTypeOf(typeof(RetroactiveCommand<>)))
                 {
+                    if (b.RetroactiveId != default)
+                    {
+                        _log.Error($"Retroactive command still executing : {message.Timeline}:{message.GetType().GetFriendlyName()} [{message.MessageId}] ({message.Timestamp.ToDateString()})");
+                        throw new InvalidOperationException("Retroactive command started before completing the previous one");
+                    }
+
                     b.RetroactiveId = message.MessageId;
                     
                     _log.Info($"Started retroactive execution {message.Timeline}:{message.GetType().GetFriendlyName()} [{message.MessageId}] ({message.Timestamp.ToDateString()})");

@@ -78,7 +78,11 @@ namespace ZES
                 if (message.GetType().IsClosedTypeOf(typeof(RetroactiveCommand<>)))
                 {
                     if (b.RetroactiveId != message.MessageId)
+                    {
+                        _log.Error($"Retroactive command {message.GetType().GetFriendlyName()} completed before being executed");
                         throw new InvalidOperationException("Retroactive command completed before being executed");
+                    }
+
                     b.RetroactiveId = default;
                     
                     _log.Info($"Completed retroactive command {message.Timeline}:{message.GetType().GetFriendlyName()} [{message.MessageId}] ({message.Timestamp.ToDateString()})");
@@ -89,7 +93,7 @@ namespace ZES
                 if (b.Count < 0)
                     throw new InvalidOperationException($"Message {message.Timeline}:{message.GetType()} completed before being produced");
 
-                _log.Info($"Uncompleted messages : {b.Count}, removed {message.Timeline}:{message.GetType().GetFriendlyName()}");
+                _log.Debug($"Uncompleted messages : {b.Count}, removed {message.Timeline}:{message.GetType().GetFriendlyName()}");
 
                 return b;
             });
@@ -112,7 +116,7 @@ namespace ZES
 
                 b.Timeline = message.Timeline;
                 b.Count++;
-                _log.Info($"Uncompleted messages : {b.Count}, added {message.Timeline}:{message.GetType().GetFriendlyName()}");
+                _log.Debug($"Uncompleted messages : {b.Count}, added {message.Timeline}:{message.GetType().GetFriendlyName()}");
 
                 return b;
             });

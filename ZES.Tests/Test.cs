@@ -44,11 +44,13 @@ namespace ZES.Tests
             if (Configuration.LogEnabled("InMemoryStreamStore"))
                 TestOutputHelpers.AddTestOutputHelper(outputHelper, "InMemoryStreamStore", false);   
             
-            Logging.NLog.Enable(config);
+            Logging.NLog.Enable(config, LogEnabled);
             
             LogManager.Configuration = config;
             _logger = outputHelper.GetNLogLogger();
         }
+
+        protected virtual string LogEnabled => default;
         
         protected virtual IEnumerable<Type> Configs { get; } = null;
 

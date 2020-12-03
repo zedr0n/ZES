@@ -295,7 +295,7 @@ namespace ZES.Infrastructure.Projections
             if (Handlers.TryGetValue(e.GetType(), out var handler) && e.Timestamp <= Latest)
             {
                 State = handler(e, State);
-                Log.Trace($"{e.Stream}@{e.Version}:{_parallel}", this);
+                Log.Debug($"{e.Stream}@{e.Version}[{_parallel}]", this);
             }
 
             Interlocked.Decrement(ref _parallel);

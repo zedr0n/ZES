@@ -56,21 +56,22 @@ namespace ZES.Logging
         /// Enable log levels according to environment variables
         /// </summary>
         /// <param name="config">logging configuration</param>
-        public static void Enable(LoggingConfiguration config)
+        /// <param name="logEnabled">force enable logs</param>
+        public static void Enable(LoggingConfiguration config, string logEnabled = default)
         {
             foreach (var target in config.AllTargets)
             {
-                if (Environment.GetEnvironmentVariable("TRACE") == "1")
+                if (Environment.GetEnvironmentVariable("TRACE") == "1" || (logEnabled?.Contains("TRACE") ?? false))
                     config.AddRuleForOneLevel(LogLevel.Trace, target);
-                if (Environment.GetEnvironmentVariable("DEBUG") == "1")
+                if (Environment.GetEnvironmentVariable("DEBUG") == "1" || (logEnabled?.Contains("DEBUG") ?? false))
                     config.AddRuleForOneLevel(LogLevel.Debug, target);
-                if (Environment.GetEnvironmentVariable("ERROR") == "1")
+                if (Environment.GetEnvironmentVariable("ERROR") == "1" || (logEnabled?.Contains("ERROR") ?? false))
                     config.AddRuleForOneLevel(LogLevel.Error, target);
-                if (Environment.GetEnvironmentVariable("INFO") == "1")
+                if (Environment.GetEnvironmentVariable("INFO") == "1" || (logEnabled?.Contains("INFO") ?? false))
                     config.AddRuleForOneLevel(LogLevel.Info, target);
-                if (Environment.GetEnvironmentVariable("WARN") == "1")
+                if (Environment.GetEnvironmentVariable("WARN") == "1" || (logEnabled?.Contains("WARN") ?? false))
                     config.AddRuleForOneLevel(LogLevel.Warn, target);
-                if (Environment.GetEnvironmentVariable("FATAL") == "1")
+                if (Environment.GetEnvironmentVariable("FATAL") == "1" || (logEnabled?.Contains("FATAL") ?? false))
                     config.AddRuleForOneLevel(LogLevel.Fatal, target);
             }
         }

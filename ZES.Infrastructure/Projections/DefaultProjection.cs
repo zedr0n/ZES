@@ -43,11 +43,14 @@ namespace ZES.Infrastructure.Projections
                     var tEvent = method.GetParameters().First().ParameterType;
                     if (tEvent != typeof(IEvent) && !tEvents.Contains(tEvent))
                     {
-                        // tEvents.Add(tEvent);
+                        // MethodInfo.Invoke >> EfficientInvoker.Invoke >> dynamic keyword
+                        tEvents.Add(tEvent);
+                       
                         // var func = method.CreateDelegate(typeof(Func<,,,>).MakeGenericType(h.GetType(), tEvent, typeof(TState), typeof(TState)));
-                        var invoker = EfficientInvoker.ForMethodInfo(h.GetType(), method);
-                        if (invoker != null)
-                            Register(tEvent, (e, state) => (TState)invoker.Invoke(h, e, state));
+                        // var invoker = EfficientInvoker.ForMethodInfo(h.GetType(), method);
+                        // if (invoker != null)
+                        //    Register(tEvent, (e, state) => (TState)invoker.Invoke(h, e, state));
+                        // Register(tEvent, (e, state) => (TState)method.Invoke(h, new object[] { e, state }));
                     }
                 }
                 

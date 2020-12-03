@@ -160,6 +160,7 @@ namespace ZES.Infrastructure.Projections
                 return Task.CompletedTask;
 
             var tracked = new Tracked<IEvent>(e);
+            CancellationToken.Register(() => tracked.Complete());
             Interlocked.Increment(ref _parallel);
             _updateStateBlock.Post(tracked);
             return tracked.Task;
@@ -282,13 +283,19 @@ namespace ZES.Infrastructure.Projections
 
         private void UpdateState(Tracked<IEvent> tracked)
         {
+            if (tracked.Task.IsCompleted)
+            {
+                Interlocked.Decrement(ref _parallel);
+                return;
+            }
+
             var e = tracked.Value;
             
             // do not project the future events
             if (Handlers.TryGetValue(e.GetType(), out var handler) && e.Timestamp <= Latest)
             {
                 State = handler(e, State);
-                Log.Info($"{e.Stream}@{e.Version}:{_parallel}", this);
+                Log.Trace($"{e.Stream}@{e.Version}:{_parallel}", this);
             }
 
             Interlocked.Decrement(ref _parallel);

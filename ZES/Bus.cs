@@ -22,6 +22,7 @@ namespace ZES
     {
         private readonly Container _container;
         private readonly ConcurrentDictionary<string, CommandDispatcher> _dispatchers = new ConcurrentDictionary<string, CommandDispatcher>();
+        private readonly ConcurrentDictionary<Type, IQueryHandler> _queryHandlers = new ConcurrentDictionary<Type, IQueryHandler>();
         private readonly ILog _log;
         private readonly ITimeline _timeline;
         private readonly IMessageQueue _messageQueue;
@@ -62,8 +63,9 @@ namespace ZES
         public async Task<TResult> QueryAsync<TResult>(IQuery<TResult> query)
         {
             var handlerType = typeof(IQueryHandler<,>).MakeGenericType(query.GetType(), typeof(TResult));
-                
-            var handler = (IQueryHandler)GetInstance(handlerType);
+
+            // var handler = (IQueryHandler)GetInstance(handlerType);
+            var handler = _queryHandlers.GetOrAdd(handlerType, t => (IQueryHandler)GetInstance(t));
             if (handler != null)
                 return (TResult)await handler.HandleAsync(query);
 

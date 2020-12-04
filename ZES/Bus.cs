@@ -47,9 +47,9 @@ namespace ZES
         /// <inheritdoc />
         public async Task<Task> CommandAsync(ICommand command)
         {
-            command.Timeline = _timeline.Id;
             if (command.GetType().IsClosedTypeOf(typeof(RetroactiveCommand<>)))
                 await _messageQueue.RetroactiveExecution.FirstAsync(b => b == false).Timeout(Configuration.Timeout);
+            command.Timeline = _timeline.Id;
             await _messageQueue.UncompleteMessage(command);
             var tracked = new Tracked<ICommand>(command);
             var dispatcher = _dispatchers.GetOrAdd(_timeline.Id, CreateDispatcher);

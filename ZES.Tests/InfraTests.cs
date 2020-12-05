@@ -83,6 +83,7 @@ namespace ZES.Tests
             var container = CreateContainer();
             var bus = container.GetInstance<IBus>();
             var errorLog = container.GetInstance<IErrorLog>();
+            var commandLog = container.GetInstance<ICommandLog>();
 
             IError error = null;
             errorLog.Observable.Subscribe(e => error = e);
@@ -93,6 +94,9 @@ namespace ZES.Tests
             Assert.Equal(nameof(InvalidOperationException), error.ErrorType); 
             Assert.Contains("ahead", error.Message);
             Assert.NotNull(error.Timestamp);
+
+            var failedCommands = await commandLog.FailedCommands.FirstAsync();
+            Assert.Single(failedCommands);
         }
 
         [Fact]

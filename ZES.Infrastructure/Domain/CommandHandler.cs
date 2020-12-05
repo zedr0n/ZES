@@ -75,6 +75,8 @@ namespace ZES.Infrastructure.Domain
                     // throw tException;
                     await _branchManager.Branch(timeline);
                 }
+
+                await _commandLog.AddFailedCommand(command);
             }
         }
     }

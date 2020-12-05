@@ -1,3 +1,5 @@
+using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 
 namespace ZES.Interfaces.Domain
@@ -7,6 +9,13 @@ namespace ZES.Interfaces.Domain
     /// </summary>
     public interface ICommandLog
     {
+        /// <summary>
+        /// Record command failing
+        /// </summary>
+        /// <param name="command">Failed command</param>
+        /// <returns>Task representing the record operation</returns>
+        Task AddFailedCommand(ICommand command);
+        
         /// <summary>
         /// Append the command to the log
         /// </summary>
@@ -27,5 +36,7 @@ namespace ZES.Interfaces.Domain
         /// <param name="branchId">Branch id</param>
         /// <returns>Completes when branch is deleted</returns>
         Task DeleteBranch(string branchId);
+
+        IObservable<HashSet<ICommand>> FailedCommands { get; }
     }
 }

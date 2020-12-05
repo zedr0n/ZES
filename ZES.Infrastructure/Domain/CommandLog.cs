@@ -1,4 +1,7 @@
 using System;
+using System.Collections.Concurrent;
+using System.Collections.Generic;
+using System.Linq;
 using System.Reactive.Linq;
 using System.Threading.Tasks;
 using SqlStreamStore;
@@ -19,6 +22,8 @@ namespace ZES.Infrastructure.Domain
         private readonly ITimeline _timeline;
         private readonly ILog _log;
 
+        private readonly ConcurrentDictionary<string, FailedCommandsSingleHolder> _failedCommandsSingleHolders;
+
         /// <summary>
         /// Initializes a new instance of the <see cref="CommandLog"/> class.
         /// </summary>
@@ -32,7 +37,12 @@ namespace ZES.Infrastructure.Domain
             _serializer = serializer;
             _timeline = timeline;
             _log = log;
+            _failedCommandsSingleHolders = new ConcurrentDictionary<string, FailedCommandsSingleHolder>();
         }
+
+        /// <inheritdoc />
+        public IObservable<HashSet<ICommand>> FailedCommands =>
+            _failedCommandsSingleHolders.GetOrAdd(_timeline.Id, s => new FailedCommandsSingleHolder()).FailedCommands();
 
         /// <inheritdoc />
         public async Task<ICommand> GetCommand(IEvent e)
@@ -45,12 +55,37 @@ namespace ZES.Infrastructure.Domain
         }
 
         /// <inheritdoc />
+        public async Task AddFailedCommand(ICommand command)
+        {
+            var holder = _failedCommandsSingleHolders.GetOrAdd(command.Timeline, b => new FailedCommandsSingleHolder());
+            await await holder.UpdateState(b =>
+            {
+                b.Timeline = command.Timeline;
+                b.Commands.Add(command);
+                return b;
+            });
+        }
+
+        /// <inheritdoc />
         public async Task AppendCommand(ICommand command)
         {
             var message = Encode(command);
             LogCommands(message);
             
             await _streamStore.AppendToStream(Key(command.EventType), ExpectedVersion.Any, message);
+
+            // resolve the command if failed
+            var holder = _failedCommandsSingleHolders.GetOrAdd(command.Timeline, b => new FailedCommandsSingleHolder());
+            var failedCommands = await holder.FailedCommands().FirstAsync();
+            if (failedCommands.Count == 0)
+                return;
+            
+            await await holder.UpdateState(b =>
+            {
+                b.Timeline = command.Timeline;
+                b.Commands.RemoveWhere(c => c.MessageId == message.MessageId);
+                return b;
+            });
         }
 
         /// <inheritdoc />

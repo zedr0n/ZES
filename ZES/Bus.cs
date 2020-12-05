@@ -53,9 +53,13 @@ namespace ZES
         {
             await await CommandAsync(command);
             var failedCommands = await _commandLog.FailedCommands.FirstAsync();
-            if (failedCommands.Any(c => c.MessageId == command.MessageId))
-                await await CommandAsync(command);
+            if (failedCommands.All(c => c.MessageId != command.MessageId))
+                return true;
+            
+            _log.Warn($"Retrying command {command.GetType().GetFriendlyName()}");
+            await await CommandAsync(command);
             failedCommands = await _commandLog.FailedCommands.FirstAsync();
+
             return failedCommands.Any(c => c.MessageId == command.MessageId);
         }
         

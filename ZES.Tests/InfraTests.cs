@@ -90,7 +90,7 @@ namespace ZES.Tests
             
             var command = new CreateRoot("Root");
             await await bus.CommandAsync(command);
-            await await bus.CommandAsync(command);
+            await bus.CommandWithRetryAsync(command);
             Assert.Equal(nameof(InvalidOperationException), error.ErrorType); 
             Assert.Contains("ahead", error.Message);
             Assert.NotNull(error.Timestamp);

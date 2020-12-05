@@ -29,7 +29,8 @@ namespace ZES.Interfaces.Pipes
         /// Run command via bus with a single retry
         /// </summary>
         /// <param name="command">Command to run</param>
+        /// <param name="nRetries">Number of retries</param>
         /// <returns>True if command succeeded</returns>
-        Task<bool> CommandWithRetryAsync(ICommand command);
+        Task<bool> Command(ICommand command, int nRetries = 0);
     }
 }

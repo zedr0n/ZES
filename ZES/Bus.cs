@@ -49,16 +49,19 @@ namespace ZES
         }
 
         /// <inheritdoc />
-        public async Task<bool> CommandWithRetryAsync(ICommand command)
+        public async Task<bool> Command(ICommand command, int nRetries = 0)
         {
             await await CommandAsync(command);
             var failedCommands = await _commandLog.FailedCommands.FirstAsync();
-            if (failedCommands.All(c => c.MessageId != command.MessageId))
-                return true;
+            while (nRetries-- > 0)
+            {
+                if (failedCommands.All(c => c.MessageId != command.MessageId))
+                    return true;
             
-            _log.Warn($"Retrying command {command.GetType().GetFriendlyName()}");
-            await await CommandAsync(command);
-            failedCommands = await _commandLog.FailedCommands.FirstAsync();
+                _log.Warn($"Retrying command {command.GetType().GetFriendlyName()}");
+                await await CommandAsync(command);
+                failedCommands = await _commandLog.FailedCommands.FirstAsync();
+            }
 
             return failedCommands.Any(c => c.MessageId == command.MessageId);
         }

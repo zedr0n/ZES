@@ -55,8 +55,8 @@ namespace ZES
             var dispatcher = _dispatchers.GetOrAdd(_timeline.Id, CreateDispatcher);
             await dispatcher.SendAsync(tracked);
 
-            tracked.Task.ContinueWith(_ => _messageQueue.CompleteMessage(command));
-            return tracked.Task;
+            // return tracked.Task;
+            return tracked.Task.ContinueWith(_ => _messageQueue.CompleteMessage(command));
         }
 
         /// <inheritdoc />

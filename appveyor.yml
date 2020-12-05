@@ -14,12 +14,13 @@ build:
   verbosity: minimal
   publish_nuget: true             # package projects with .nuspec files and push to artifacts
 test_script:
-  - cmd: dotnet test --no-build --filter InfraTests ZES.Tests\ZES.Tests.csproj
-  - cmd: dotnet test --no-build --filter BranchTests ZES.Tests\ZES.Tests.csproj
-  - cmd: dotnet test --no-build --filter SchemaTests ZES.Tests\ZES.Tests.csproj
-  - cmd: dotnet test --no-build --filter FuncTests ZES.Tests\ZES.Tests.csproj
-  - cmd: dotnet test --no-build --filter RetroactiveTests ZES.Tests\ZES.Tests.csproj
-  - cmd: dotnet test --no-build --filter IntegrationTests ZES.Tests\ZES.Tests.csproj
+#  - cmd: dotnet test --no-build --filter InfraTests ZES.Tests\ZES.Tests.csproj
+#  - cmd: dotnet test --no-build --filter BranchTests ZES.Tests\ZES.Tests.csproj
+#  - cmd: dotnet test --no-build --filter SchemaTests ZES.Tests\ZES.Tests.csproj
+#  - cmd: dotnet test --no-build --filter FuncTests ZES.Tests\ZES.Tests.csproj
+#  - cmd: dotnet test --no-build --filter RetroactiveTests ZES.Tests\ZES.Tests.csproj
+#  - cmd: dotnet test --no-build --filter IntegrationTests ZES.Tests\ZES.Tests.csproj
+  - cmd: dotnet test --no-build 
 on_failure:
   # Cache node modules, and refresh if package.json changes
 cache:

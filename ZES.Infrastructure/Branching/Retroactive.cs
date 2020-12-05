@@ -136,8 +136,7 @@ namespace ZES.Infrastructure.Branching
             var handler = _commandRegistry.GetHandler(copy);
             if (handler == null)
                 throw new InvalidOperationException($"No handler found for command {command.GetType().Name}");
-            if (!await handler.Handle(copy).Timeout())
-                throw new TimeoutException();
+            await handler.Handle(copy);
             
             await _manager.Branch(activeBranch);
             

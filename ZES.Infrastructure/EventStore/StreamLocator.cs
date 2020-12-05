@@ -38,6 +38,7 @@ namespace ZES.Infrastructure.EventStore
             _sagaStore = sagaStore;
 
             messageQueue.Alerts.OfType<PullCompleted>().Subscribe(e => Repopulate());
+            messageQueue.Alerts.OfType<BranchDeleted>().Subscribe(e => _streams.TryRemove(e.BranchId, out _));
             Repopulate();
         }
 

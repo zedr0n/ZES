@@ -115,7 +115,9 @@ namespace ZES.Infrastructure.Branching
             if (!newBranch && deleteExisting)
             {
                 await DeleteBranch(branchId);
-                branchId = branchId + "+";
+                
+                // branchId = branchId + "!";
+                newBranch = true;
             }
 
             var timeline = _branches.GetOrAdd(branchId, b => Timeline.New(branchId, time));

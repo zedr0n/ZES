@@ -113,8 +113,11 @@ namespace ZES.Infrastructure.Branching
             _log.StopWatch.Stop("Branch.Wait");
             var newBranch = !_branches.ContainsKey(branchId); // && branchId != Master;
             if (!newBranch && deleteExisting)
+            {
                 await DeleteBranch(branchId);
-            
+                branchId = branchId + "+";
+            }
+
             var timeline = _branches.GetOrAdd(branchId, b => Timeline.New(branchId, time));
             if (time != null && timeline.Now != time.Value)
             {

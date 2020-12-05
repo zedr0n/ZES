@@ -35,14 +35,14 @@ namespace ZES.Infrastructure.Domain
                 throw new ArgumentNullException(typeof(TCommand).GetFriendlyName());
             
             var root = await _repository.Find<TRoot>(command.Target, ComputeHash);
+            
+            if (root == null)
+                throw new ArgumentNullException(typeof(TRoot).GetFriendlyName());
             if (command.Timestamp < root.Timestamp)
             {
                 throw new InvalidOperationException(
                     $"{typeof(TCommand).Name} command ({command.Timestamp.ToDateString()}) updating the past of the aggregate {typeof(TRoot).Name}:{command.Target} ({root.Timestamp.ToDateString()}) ");
             }
-
-            if (root == null)
-                throw new ArgumentNullException(); 
             
             Act(root, command);
             

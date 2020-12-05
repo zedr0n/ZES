@@ -85,7 +85,7 @@ namespace ZES
 
                     b.RetroactiveId = default;
                     
-                    _log.Info($"Completed retroactive command {message.Timeline}:{message.GetType().GetFriendlyName()} [{message.MessageId}] ({message.Timestamp.ToDateString()})");
+                    _log.Debug($"Completed retroactive command {message.Timeline}:{message.GetType().GetFriendlyName()} [{message.MessageId}] ({message.Timestamp.ToDateString()})");
                     return b;
                 }
 
@@ -116,7 +116,7 @@ namespace ZES
 
                     b.RetroactiveId = message.MessageId;
                     
-                    _log.Info($"Started retroactive execution {message.Timeline}:{message.GetType().GetFriendlyName()} [{message.MessageId}] ({message.Timestamp.ToDateString()})");
+                    _log.Debug($"Started retroactive execution {message.Timeline}:{message.GetType().GetFriendlyName()} [{message.MessageId}] ({message.Timestamp.ToDateString()})");
                     return b;
                 }
 

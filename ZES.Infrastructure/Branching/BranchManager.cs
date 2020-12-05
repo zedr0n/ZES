@@ -141,7 +141,7 @@ namespace ZES.Infrastructure.Branching
             // update current timeline
             _activeTimeline.Set(timeline);
             
-            _log.Info($"Switched to {branchId} branch");
+            _log.Trace($"Switched to {branchId} branch");
 
             /* rebuild all projections
              _messageQueue.Alert(new Alerts.InvalidateProjections());*/

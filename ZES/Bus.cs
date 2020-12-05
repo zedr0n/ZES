@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Concurrent;
+using System.Linq;
 using System.Reactive.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -26,6 +27,7 @@ namespace ZES
         private readonly ILog _log;
         private readonly ITimeline _timeline;
         private readonly IMessageQueue _messageQueue;
+        private readonly ICommandLog _commandLog;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="Bus"/> class.
@@ -34,14 +36,27 @@ namespace ZES
         /// <param name="log">Application log</param>
         /// <param name="timeline">Timeline</param>
         /// <param name="messageQueue">Message queue</param>
-        public Bus(Container container, ILog log, ITimeline timeline, IMessageQueue messageQueue)
+        /// <param name="commandLog">Command log</param>
+        public Bus(Container container, ILog log, ITimeline timeline, IMessageQueue messageQueue, ICommandLog commandLog)
         {
             _container = container;
             _log = log;
             _timeline = timeline;
             _messageQueue = messageQueue;
+            _commandLog = commandLog;
 
             messageQueue.Alerts.OfType<BranchDeleted>().Subscribe(e => DeleteDispatcher(e.BranchId));
+        }
+
+        /// <inheritdoc />
+        public async Task<bool> CommandWithRetryAsync(ICommand command)
+        {
+            await await CommandAsync(command);
+            var failedCommands = await _commandLog.FailedCommands.FirstAsync();
+            if (failedCommands.Any(c => c.MessageId == command.MessageId))
+                await await CommandAsync(command);
+            failedCommands = await _commandLog.FailedCommands.FirstAsync();
+            return failedCommands.Any(c => c.MessageId == command.MessageId);
         }
         
         /// <inheritdoc />

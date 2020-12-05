@@ -10,6 +10,11 @@ namespace ZES.Interfaces.Domain
     public interface ICommandLog
     {
         /// <summary>
+        /// Gets the failed commands
+        /// </summary>
+        IObservable<HashSet<ICommand>> FailedCommands { get; }
+        
+        /// <summary>
         /// Record command failing
         /// </summary>
         /// <param name="command">Failed command</param>
@@ -36,7 +41,5 @@ namespace ZES.Interfaces.Domain
         /// <param name="branchId">Branch id</param>
         /// <returns>Completes when branch is deleted</returns>
         Task DeleteBranch(string branchId);
-
-        IObservable<HashSet<ICommand>> FailedCommands { get; }
     }
 }

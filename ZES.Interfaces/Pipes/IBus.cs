@@ -24,5 +24,12 @@ namespace ZES.Interfaces.Pipes
         /// <typeparam name="TResult">Query result type</typeparam>
         /// <returns>Task representing the asynchronous query processing</returns>
         Task<TResult> QueryAsync<TResult>(IQuery<TResult> query);
+
+        /// <summary>
+        /// Run command via bus with a single retry
+        /// </summary>
+        /// <param name="command">Command to run</param>
+        /// <returns>True if command succeeded</returns>
+        Task<bool> CommandWithRetryAsync(ICommand command);
     }
 }

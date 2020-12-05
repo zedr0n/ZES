@@ -199,9 +199,16 @@ namespace ZES.Infrastructure.Projections
                 try
                 {
                     if (!rebuildDispatcher.CompletionTask.IsFaulted)
-                        await rebuildDispatcher.SignalAndWaitForCompletionAsync().Timeout();
+                    {
+                        if (!await rebuildDispatcher.SignalAndWaitForCompletionAsync().Timeout())
+                            throw new TimeoutException();
+                    }
+
                     if (!liveDispatcher.CompletionTask.IsFaulted)
-                        await liveDispatcher.SignalAndWaitForCompletionAsync().Timeout();
+                    {
+                        if (!await liveDispatcher.SignalAndWaitForCompletionAsync().Timeout())
+                            throw new TimeoutException();
+                    }
                 }
                 catch (Exception e)
                 {

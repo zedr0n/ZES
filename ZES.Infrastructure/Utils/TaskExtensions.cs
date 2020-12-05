@@ -34,21 +34,16 @@ namespace ZES.Infrastructure.Utils
         /// </summary>
         /// <param name="task">Task to execute</param>
         /// <param name="timeout">Explicit timeout duration</param>
-        /// <param name="timeoutAction">Clean up action on timeout</param>
         /// <returns>Completed task or timeout </returns>
         /// <exception cref="TimeoutException">Throws if execution of task takes longer than timeout</exception>
-        public static async Task Timeout(this Task task, TimeSpan timeout = default, Action timeoutAction = null)
+        public static async Task<bool> Timeout(this Task task, TimeSpan timeout = default)
         {
             if (timeout == default)
                 timeout = Configuration.Timeout;
             
             var delay = Task.Delay(timeout);
-            var completedTask = await Task.WhenAny(task, delay);
-            if (completedTask.Id == task.Id)
-            {
-                timeoutAction?.Invoke();
-                throw new TimeoutException();
-            }
+            await Task.WhenAny(task, delay);
+            return !delay.IsCompleted;
         }
 
         /// <summary>
@@ -58,12 +53,11 @@ namespace ZES.Infrastructure.Utils
         /// <param name="token">Complete the task on cancellation token</param>
         /// <returns>Completed task or timeout </returns>
         /// <exception cref="TimeoutException">Throws if execution of task takes longer than timeout</exception>
-        public static async Task Timeout(this Task task, CancellationToken token)
+        public static async Task<bool> Timeout(this Task task, CancellationToken token)
         {
             var delay = Task.Delay(Configuration.Timeout, token);
-            var completedTask = await Task.WhenAny(task, delay);
-            if (completedTask.Id == delay.Id && !token.IsCancellationRequested)
-                throw new TimeoutException();
+            await Task.WhenAny(task, delay);
+            return !delay.IsCompleted || token.IsCancellationRequested;
         }
 
         /// <summary>

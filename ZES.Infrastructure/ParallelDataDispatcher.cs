@@ -123,7 +123,8 @@ namespace ZES.Infrastructure
                 if (input is ITracked tracked)
                 {
                     // _token.Register(tracked.Complete);
-                    await tracked.Completed.Timeout();
+                    if (!await tracked.Completed.Timeout())
+                        throw new TimeoutException();
                 }
             }
             catch (Exception e)

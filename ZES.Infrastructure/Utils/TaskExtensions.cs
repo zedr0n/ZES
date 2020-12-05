@@ -39,9 +39,12 @@ namespace ZES.Infrastructure.Utils
         /// <exception cref="TimeoutException">Throws if execution of task takes longer than timeout</exception>
         public static async Task Timeout(this Task task, TimeSpan timeout = default, Action timeoutAction = null)
         {
-            var delay = Task.Delay(Configuration.Timeout);
-            await await Task.WhenAny(task, delay);
-            if (delay.IsCompleted)
+            if (timeout == default)
+                timeout = Configuration.Timeout;
+            
+            var delay = Task.Delay(timeout);
+            var completedTask = await Task.WhenAny(task, delay);
+            if (completedTask.Id == task.Id)
             {
                 timeoutAction?.Invoke();
                 throw new TimeoutException();
@@ -58,8 +61,8 @@ namespace ZES.Infrastructure.Utils
         public static async Task Timeout(this Task task, CancellationToken token)
         {
             var delay = Task.Delay(Configuration.Timeout, token);
-            await Task.WhenAny(task, delay);
-            if (delay.IsCompleted && !token.IsCancellationRequested)
+            var completedTask = await Task.WhenAny(task, delay);
+            if (completedTask.Id == delay.Id && !token.IsCancellationRequested)
                 throw new TimeoutException();
         }
 

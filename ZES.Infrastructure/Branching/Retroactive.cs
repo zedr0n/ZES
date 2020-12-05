@@ -5,6 +5,7 @@ using System.Reactive.Linq;
 using System.Threading.Tasks;
 using SqlStreamStore.Streams;
 using ZES.Infrastructure.Domain;
+using ZES.Infrastructure.Utils;
 using ZES.Interfaces;
 using ZES.Interfaces.Branching;
 using ZES.Interfaces.Causality;
@@ -135,7 +136,7 @@ namespace ZES.Infrastructure.Branching
             var handler = _commandRegistry.GetHandler(copy);
             if (handler == null)
                 throw new InvalidOperationException($"No handler found for command {command.GetType().Name}");
-            await handler.Handle(copy);
+            await handler.Handle(copy).Timeout();
             
             await _manager.Branch(activeBranch);
             

@@ -34,15 +34,18 @@ namespace ZES.Infrastructure.Utils
         /// </summary>
         /// <param name="task">Task to execute</param>
         /// <param name="timeout">Explicit timeout duration</param>
+        /// <param name="timeoutAction">Clean up action on timeout</param>
         /// <returns>Completed task or timeout </returns>
         /// <exception cref="TimeoutException">Throws if execution of task takes longer than timeout</exception>
-        public static async Task Timeout(this Task task, TimeSpan timeout = default)
+        public static async Task Timeout(this Task task, TimeSpan timeout = default, Action timeoutAction = null)
         {
-            var obs = Observable.Timer(timeout == default(TimeSpan) ? Configuration.Timeout : timeout).Publish().RefCount();
-            var timeoutTask = obs.ToTask();
-            await await Task.WhenAny(task, timeoutTask);
-            if (timeoutTask.IsCompleted)
+            var delay = Task.Delay(Configuration.Timeout);
+            await await Task.WhenAny(task, delay);
+            if (delay.IsCompleted)
+            {
+                timeoutAction?.Invoke();
                 throw new TimeoutException();
+            }
         }
 
         /// <summary>

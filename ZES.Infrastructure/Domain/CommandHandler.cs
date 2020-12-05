@@ -1,6 +1,7 @@
 using System;
 using System.Threading.Tasks;
 using ZES.Interfaces;
+using ZES.Interfaces.Branching;
 using ZES.Interfaces.Domain;
 
 namespace ZES.Infrastructure.Domain
@@ -17,6 +18,7 @@ namespace ZES.Infrastructure.Domain
         private readonly ILog _log;
         private readonly IErrorLog _errorLog;
         private readonly ITimeline _timeline;
+        private readonly IBranchManager _branchManager;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="CommandHandler{T}"/> class.
@@ -26,13 +28,15 @@ namespace ZES.Infrastructure.Domain
         /// <param name="timeline">Active timeline</param>
         /// <param name="commandLog">Command log</param>
         /// <param name="errorLog">Error log</param>
-        public CommandHandler(ICommandHandler<T> handler, ILog log, ITimeline timeline, ICommandLog commandLog, IErrorLog errorLog)
+        /// <param name="branchManager">Branch manager</param>
+        public CommandHandler(ICommandHandler<T> handler, ILog log, ITimeline timeline, ICommandLog commandLog, IErrorLog errorLog, IBranchManager branchManager)
         {
             _handler = handler;
             _log = log;
             _timeline = timeline;
             _commandLog = commandLog;
             _errorLog = errorLog;
+            _branchManager = branchManager;
         }
 
         /// <inheritdoc />
@@ -48,9 +52,10 @@ namespace ZES.Infrastructure.Domain
         public async Task Handle(T command)
         {
             _log.Trace($"{_handler.GetType().Name}.Handle({command.GetType().Name})");
+            var timeline = _timeline.Id;
             if (command.Timestamp == default(long))
                 command.Timestamp = _timeline.Now;
-            command.Timeline = _timeline.Id;
+            command.Timeline = timeline;
 
             try
             {
@@ -60,6 +65,16 @@ namespace ZES.Infrastructure.Domain
             catch (Exception e)
             {
                 _errorLog.Add(e);
+                
+                // check that we didn't end up on wrong timeline
+                if (_timeline.Id != timeline)
+                {
+                    var tException = new InvalidOperationException($"Execution started on {timeline} but ended on {_timeline.Id}");
+                    _errorLog.Add(tException);
+                    
+                    // throw tException;
+                    await _branchManager.Branch(timeline);
+                }
             }
         }
     }

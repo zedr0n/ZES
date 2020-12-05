@@ -1,6 +1,7 @@
 using System;
 using System.Linq;
 using System.Threading.Tasks;
+using Gridsum.DataflowEx;
 using ZES.Infrastructure.Utils;
 using ZES.Interfaces.Domain;
 
@@ -30,6 +31,9 @@ namespace ZES.Infrastructure.Domain
         /// <inheritdoc />
         public async Task Handle(TCommand command)
         {
+            if (command == null)
+                throw new ArgumentNullException(typeof(TCommand).GetFriendlyName());
+            
             var root = await _repository.Find<TRoot>(command.Target, ComputeHash);
             if (command.Timestamp < root.Timestamp)
             {

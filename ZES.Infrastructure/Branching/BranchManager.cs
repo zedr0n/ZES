@@ -99,7 +99,7 @@ namespace ZES.Infrastructure.Branching
         }
 
         /// <inheritdoc />
-        public async Task<ITimeline> Branch(string branchId, long? time = null, IEnumerable<string> keys = null)
+        public async Task<ITimeline> Branch(string branchId, long? time = null, IEnumerable<string> keys = null, bool deleteExisting = false)
         {
             _log.StopWatch.Start("Branch");
             if (_activeTimeline.Id == branchId)
@@ -112,6 +112,8 @@ namespace ZES.Infrastructure.Branching
             await _messageQueue.UncompletedMessages.FirstAsync(s => s == 0).Timeout(Configuration.Timeout);
             _log.StopWatch.Stop("Branch.Wait");
             var newBranch = !_branches.ContainsKey(branchId); // && branchId != Master;
+            if (!newBranch && deleteExisting)
+                await DeleteBranch(branchId);
             
             var timeline = _branches.GetOrAdd(branchId, b => Timeline.New(branchId, time));
             if (time != null && timeline.Now != time.Value)

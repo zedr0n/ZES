@@ -30,8 +30,9 @@ namespace ZES.Interfaces.Branching
         /// <param name="branchId">Branch unique identifier</param>
         /// <param name="time">Timestamp to branch at</param>
         /// <param name="keys">Specific streams to branch</param>
+        /// <param name="deleteExisting">Delete branch if exists</param>
         /// <returns>Task representing the newly branched timeline</returns>
-        Task<ITimeline> Branch(string branchId, long? time = null, IEnumerable<string> keys = null);
+        Task<ITimeline> Branch(string branchId, long? time = null, IEnumerable<string> keys = null, bool deleteExisting = false);
 
         /// <summary>
         /// Merges the timeline into master

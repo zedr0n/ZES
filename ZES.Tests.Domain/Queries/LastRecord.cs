@@ -1,3 +1,4 @@
+using NodaTime;
 using ZES.Interfaces.Domain;
 
 namespace ZES.Tests.Domain.Queries
@@ -7,7 +8,7 @@ namespace ZES.Tests.Domain.Queries
         public LastRecord() { }
         
         public string Id { get; }
-        public long TimeStamp { get; set; } = long.MinValue;
+        public Instant TimeStamp { get; set; } = Instant.MinValue;
         public double Value { get; set; } = -1;
     }
 }

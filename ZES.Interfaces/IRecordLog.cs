@@ -1,4 +1,5 @@
 using System.Threading.Tasks;
+using NodaTime;
 
 namespace ZES.Interfaces
 {
@@ -12,7 +13,7 @@ namespace ZES.Interfaces
         /// </summary>
         /// <param name="mutation">Mutation to record</param>
         /// <param name="timestamp">Timestamp</param>
-        void AddMutation(string mutation, long timestamp = default);
+        void AddMutation(string mutation, Instant timestamp = default);
         
         /// <summary>
         /// Record query with result into the log

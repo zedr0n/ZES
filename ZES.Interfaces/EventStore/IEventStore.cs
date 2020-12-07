@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
+using NodaTime;
 
 namespace ZES.Interfaces.EventStore
 {
@@ -26,7 +27,7 @@ namespace ZES.Interfaces.EventStore
         /// <param name="stream">Stream descriptor</param>
         /// <param name="timestamp">Up to time</param>
         /// <returns>The last version before timestamp</returns>
-        Task<int> GetVersion(IStream stream, long timestamp);
+        Task<int> GetVersion(IStream stream, Instant timestamp);
         
         /// <summary>
         /// Append events to stream

@@ -1,4 +1,6 @@
 using System;
+using NodaTime;
+using NodaTime.Extensions;
 using ZES.Interfaces;
 
 namespace ZES.Infrastructure.Branching
@@ -6,7 +8,7 @@ namespace ZES.Infrastructure.Branching
     /// <inheritdoc />
     public class Timeline : ITimeline
     {
-        private long? _now;
+        private Instant _now;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="Timeline"/> class.
@@ -20,20 +22,20 @@ namespace ZES.Infrastructure.Branching
         /// </summary>
         /// <param name="id">Branch id</param>
         /// <param name="time">Fixed time or null for live</param>
-        private Timeline(string id, long? time = null)
+        private Timeline(string id, Instant time = default)
         {
             Id = id;
             _now = time;
         }
 
         /// <inheritdoc />
-        public bool Live => _now == null;
+        public bool Live => _now == default;
         
         /// <inheritdoc />
         public string Id { get; set; } = BranchManager.Master;
 
         /// <inheritdoc />
-        public long Now => _now ?? DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+        public Instant Now => _now != default ? _now : DateTimeOffset.UtcNow.ToInstant();
 
         /// <summary>
         /// Create new timeline 
@@ -41,7 +43,7 @@ namespace ZES.Infrastructure.Branching
         /// <param name="id">Timeline id</param>
         /// <param name="time">Null for live or time for fixed timeline</param>
         /// <returns>New timeline</returns>
-        public static Timeline New(string id, long? time = null) => new Timeline(id, time);    
+        public static Timeline New(string id, Instant time = default) => new Timeline(id, time);    
         
         /// <inheritdoc />
         public void Set(ITimeline rhs)
@@ -55,7 +57,7 @@ namespace ZES.Infrastructure.Branching
         }
 
         /// <inheritdoc />
-        public void Warp(long time)
+        public void Warp(Instant time)
         {
             if (Id == BranchManager.Master)
                 return;

@@ -6,6 +6,9 @@ using System.Threading.Tasks;
 using JsonDiffPatchDotNet;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using NodaTime;
+using NodaTime.Serialization.JsonNet;
+using NodaTime.TimeZones;
 using ZES.Infrastructure.Utils;
 using ZES.Interfaces;
 
@@ -29,12 +32,12 @@ namespace ZES.Infrastructure
             _timeline = timeline;
             _log = log;
 
-            _logFile = new Lazy<string>(() => $"ZES_{_timeline.Now.ToDateString("yyyyMMddHHmmss")}.json");
+            _logFile = new Lazy<string>(() => $"ZES_{_timeline.Now.ToString("yyyyMMddHHmmss", null)}.json");
             _scenario = new Lazy<Scenario>();
         }
 
         /// <inheritdoc />
-        public void AddMutation(string mutation, long timestamp = default)
+        public void AddMutation(string mutation, Instant timestamp = default)
         {
             if (timestamp == default)
                 timestamp = _timeline.Now;
@@ -50,7 +53,10 @@ namespace ZES.Infrastructure
         /// <inheritdoc />
         public async Task Flush(string logFile = null)
         {
-            var s = JsonConvert.SerializeObject(_scenario.Value, Formatting.Indented);
+            var s = JsonConvert.SerializeObject(
+                _scenario.Value, 
+                Formatting.Indented, 
+                new JsonSerializerSettings().ConfigureForNodaTime(new DateTimeZoneCache(new BclDateTimeZoneSource())));
             using (var outputFile = new StreamWriter(logFile ?? _logFile.Value))
             {
                 await outputFile.WriteLineAsync(s);
@@ -98,7 +104,7 @@ namespace ZES.Infrastructure
                 s = await inputFile.ReadToEndAsync();
             }
 
-            var scenario = JsonConvert.DeserializeObject<Scenario>(s);
+            var scenario = JsonConvert.DeserializeObject<Scenario>(s, new JsonSerializerSettings().ConfigureForNodaTime(new DateTimeZoneCache(new BclDateTimeZoneSource())));
             return scenario;
         }
 
@@ -132,7 +138,7 @@ namespace ZES.Infrastructure
             /// </summary>
             /// <param name="mutation">Mutation to add</param>
             /// <param name="timestamp">Mutation time</param>
-            public void AddMutation(string mutation, long timestamp)
+            public void AddMutation(string mutation, Instant timestamp)
             {
                 Requests.Add(new Mutation(mutation, timestamp));
             }
@@ -155,7 +161,7 @@ namespace ZES.Infrastructure
                 /// </summary>
                 /// <param name="graphQl">GraphQl string</param>
                 /// <param name="timestamp">Mutation timestamp</param>
-                public Mutation(string graphQl, long timestamp)
+                public Mutation(string graphQl, Instant timestamp)
                 {
                     GraphQl = graphQl;
                     Timestamp = timestamp;
@@ -165,7 +171,7 @@ namespace ZES.Infrastructure
                 public string GraphQl { get; }
 
                 /// <inheritdoc />
-                public long Timestamp { get; }
+                public Instant Timestamp { get; }
             }
 
             /// <inheritdoc />

@@ -1,9 +1,12 @@
+using System;
 using System.Linq;
 using HotChocolate;
 using HotChocolate.Execution;
 using HotChocolate.Execution.Instrumentation;
 using HotChocolate.Language;
 using Microsoft.Extensions.DiagnosticAdapter;
+using NodaTime;
+using NodaTime.Text;
 using ZES.Interfaces;
 
 #pragma warning disable 1591
@@ -68,7 +71,9 @@ namespace ZES.GraphQL
                     .SelectMany(d => d.SelectionSet.Selections)
                     .OfType<FieldNode>().SelectMany(s => s.Arguments);
                 var timestampStr = (string)arguments.SingleOrDefault(x => x.Name.Value == "timestamp")?.Value?.Value;
-                long.TryParse(timestampStr, out var timestamp);
+                var timestamp = default(Instant);
+                if (timestampStr != null && !InstantPattern.ExtendedIso.Parse(timestampStr).Success)
+                    timestamp = InstantPattern.General.Parse(timestampStr).Value;
                 _recordLog.AddMutation(query, timestamp);
             }
         }

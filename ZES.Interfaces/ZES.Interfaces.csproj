@@ -11,6 +11,7 @@
     </PropertyGroup>
 
     <ItemGroup>
+      <PackageReference Include="NodaTime" Version="3.0.3" />
       <PackageReference Include="StyleCop.Analyzers" Version="1.1.118" />
     </ItemGroup>
 

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reactive.Linq;
 using System.Threading.Tasks;
+using NodaTime;
 using SqlStreamStore.Streams;
 using ZES.Infrastructure.Domain;
 using ZES.Infrastructure.Utils;
@@ -23,7 +24,6 @@ namespace ZES.Infrastructure.Branching
         private readonly IBranchManager _manager;
         private readonly IGraph _graph;
         private readonly IStreamLocator _streamLocator;
-        private readonly IMessageQueue _messageQueue;
         private readonly ILog _log;
         private readonly ICommandRegistry _commandRegistry;
 
@@ -49,7 +49,6 @@ namespace ZES.Infrastructure.Branching
             IGraph graph,
             IBranchManager manager,
             IStreamLocator streamLocator,
-            IMessageQueue messageQueue,
             IEsRepository<IAggregate> repository,
             IEsRepository<ISaga> sagaRepository,
             ILog log, 
@@ -59,7 +58,6 @@ namespace ZES.Infrastructure.Branching
             _graph = graph;
             _manager = manager;
             _streamLocator = streamLocator;
-            _messageQueue = messageQueue;
             _sagaStore = sagaStore;
             _repository = repository;
             _sagaRepository = sagaRepository;
@@ -123,10 +121,10 @@ namespace ZES.Infrastructure.Branching
         }
 
         /// <inheritdoc />
-        public async Task<Dictionary<IStream, IEnumerable<IEvent>>> GetChanges(ICommand command, long time)
+        public async Task<Dictionary<IStream, IEnumerable<IEvent>>> GetChanges(ICommand command, Instant time)
         {
             var activeBranch = _manager.ActiveBranch;
-            var branch = $"{command.GetType().Name}-{time}";
+            var branch = $"{command.GetType().Name}-{time.ToUnixTimeMilliseconds()}";
 
             var timeline = await _manager.Branch(branch, time, deleteExisting: true);
             branch = timeline.Id;
@@ -160,10 +158,10 @@ namespace ZES.Infrastructure.Branching
         }
         
         /// <inheritdoc />
-        public async Task<List<IEvent>> TryInsert(Dictionary<IStream, IEnumerable<IEvent>> changes, long time)
+        public async Task<List<IEvent>> TryInsert(Dictionary<IStream, IEnumerable<IEvent>> changes, Instant time)
         {
             var currentBranch = _manager.ActiveBranch;
-            var tempStreamId = $"{currentBranch}-{time}";
+            var tempStreamId = $"{currentBranch}-{time.ToUnixTimeMilliseconds()}";
             var branch = await _manager.Branch(tempStreamId, time, changes.Keys.Select(k => k.Key));
 
             var invalidEvents = new List<IEvent>();
@@ -208,7 +206,7 @@ namespace ZES.Infrastructure.Branching
         
         private async Task<bool> RollbackCommand(ICommand c)
         {
-            var time = c.Timestamp - 1;
+            var time = c.Timestamp - Duration.FromMilliseconds(1);
             var changes = await GetChanges(c, time);
             var canDelete = true;
             foreach (var change in changes)
@@ -318,7 +316,7 @@ namespace ZES.Infrastructure.Branching
             }
 
             var enumerable = events.ToList();
-            var time = default(long);
+            var time = default(Instant);
             if (version > 0)
                 time = (await store.ReadStream<IEvent>(stream, version - 1, 1).SingleAsync()).Timestamp;
             else

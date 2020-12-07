@@ -9,6 +9,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Threading.Tasks.Dataflow;
 using Gridsum.DataflowEx;
+using NodaTime;
 using ZES.Infrastructure.Alerts;
 using ZES.Infrastructure.Utils;
 using ZES.Interfaces;
@@ -121,7 +122,7 @@ namespace ZES.Infrastructure.Projections
         /// <summary>
         /// Gets projection timestamp
         /// </summary>
-        protected virtual long Latest => long.MaxValue;
+        protected virtual Instant Latest => Instant.MaxValue;
 
         /// <summary>
         /// Gets current timeline

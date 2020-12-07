@@ -1,3 +1,5 @@
+using NodaTime;
+
 namespace ZES.Interfaces
 {
     /// <summary>
@@ -27,6 +29,6 @@ namespace ZES.Interfaces
         /// <value>
         /// Error timestamp
         /// </value>
-        long? Timestamp { get; }
+        Instant Timestamp { get; }
     }
 }

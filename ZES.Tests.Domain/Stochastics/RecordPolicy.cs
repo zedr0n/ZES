@@ -19,29 +19,20 @@ namespace ZES.Tests.Domain.Stochastics
             _manager = manager;
         }
 
+        /// <inheritdoc/>
         protected override MarkovPolicy<BranchState> Copy()
         {
             throw new System.NotImplementedException();
         }
 
-        protected override IMarkovAction<BranchState>[] GetAllActions(BranchState state)
-        {
-            throw new System.NotImplementedException();
-        }
-
+        /// <inheritdoc/>
         protected override IMarkovAction<BranchState> GetAction(BranchState state)
         {
             var total = _bus.QueryAsync(new TotalRecordQuery() { Timeline = state.Timeline }).Result.Total;
             if (total >= 10)
                 return null;
 
-            if (_actions.TryGetValue(state.Timeline, out var action)) 
-                return action;
-            
-            action = new RecordAction(_manager, _bus);
-            _actions[state.Timeline] = action;
-
-            return action;
+            return new RecordAction(_manager, _bus);
         }
     }
 }

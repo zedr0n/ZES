@@ -1,3 +1,5 @@
+using NodaTime;
+
 namespace ZES.Interfaces.Domain
 {
     /// <summary>
@@ -8,7 +10,7 @@ namespace ZES.Interfaces.Domain
         /// <summary>
         /// Gets or sets latest timestamp 
         /// </summary>
-        long Timestamp { get; set; }
+        Instant Timestamp { get; set; }
     }
 
     /// <summary>

@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using NodaTime;
 using ZES.Infrastructure.Domain;
 using ZES.Interfaces.Domain;
 using ZES.Tests.Domain.Events;
@@ -19,9 +20,9 @@ namespace ZES.Tests.Domain
             When(new RecordCreated(rootId));
         }
         
-        public Dictionary<long, double> Values { get; } = new Dictionary<long, double>();
+        public Dictionary<Instant, double> Values { get; } = new Dictionary<Instant, double>();
 
-        public void Root(double recordValue, long timestamp)
+        public void Root(double recordValue, Instant timestamp)
         {
             When(new RootRecorded(recordValue) { Timestamp = timestamp });
         }

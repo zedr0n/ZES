@@ -10,7 +10,10 @@ using HotChocolate.Execution.Instrumentation;
 using HotChocolate.Stitching;
 using HotChocolate.Subscriptions;
 using HotChocolate.Types;
+using HotChocolate.Utilities;
 using Microsoft.Extensions.DependencyInjection;
+using NodaTime;
+using NodaTime.Text;
 using ZES.Interfaces;
 using ZES.Interfaces.Branching;
 using ZES.Interfaces.Causality;
@@ -125,14 +128,17 @@ namespace ZES.GraphQL
             _services.AddSingleton(typeof(IRecordLog), _recordLog);
             _services.AddSingleton(typeof(IRemote), _remote);
             _services.AddDiagnosticObserver(_observer);
+            // _services.AddTypeConverter<string, Instant>(from => InstantPattern.ExtendedIso.Parse(from).Value);
+            // _services.AddTypeConverter<Instant, string>(from => InstantPattern.ExtendedIso.Format(from));
 
             _services.AddInMemorySubscriptionProvider();
-            
+
             var baseSchema = Schema.Create(c =>
             {
                 c.RegisterExtendedScalarTypes();
                 
                 // c.Use(Middleware());
+                c.RegisterType<InstantType>();
                 c.RegisterQueryType(typeof(BaseQueries));
                 c.RegisterMutationType(typeof(BaseMutations));
                 c.RegisterSubscriptionType<SubscriptionType>();
@@ -143,7 +149,8 @@ namespace ZES.GraphQL
                 .Select(t => Schema.Create(c =>            
             {
                 c.RegisterExtendedScalarTypes();
-                
+                c.RegisterType<InstantType>();
+
                 // c.Use(Middleware(t.Item1, t.Item2));
                 if (t.Item1 != null)
                     c.RegisterQueryType(typeof(ObjectType<>).MakeGenericType(t.Item1));
@@ -164,6 +171,7 @@ namespace ZES.GraphQL
 
             void AggregateSchemas(IStitchingBuilder b)
             {
+                b.AddSchemaConfiguration(c => c.RegisterType<InstantType>());
                 b.AddSchema("Base", baseSchema);
                 
                 var i = 0;

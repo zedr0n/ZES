@@ -1,3 +1,5 @@
+using NodaTime;
+
 namespace ZES.Interfaces.Domain
 {
     /// <summary>
@@ -32,7 +34,7 @@ namespace ZES.Interfaces.Domain
         /// <value>
         /// Historical timestamp
         /// </value>
-        long Timestamp { get; }
+        Instant Timestamp { get; }
 
         /// <summary>
         /// Gets underlying query

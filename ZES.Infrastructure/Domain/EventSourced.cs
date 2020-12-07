@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using NodaTime;
 using ZES.Interfaces;
 
 namespace ZES.Infrastructure.Domain
@@ -41,7 +42,7 @@ namespace ZES.Infrastructure.Domain
         public int Version { get; protected set; } = -1;
 
         /// <inheritdoc />
-        public long Timestamp { get; private set; }
+        public Instant Timestamp { get; private set; }
 
         /// <summary>
         /// Gets or sets the last snapshot version
@@ -94,7 +95,7 @@ namespace ZES.Infrastructure.Domain
         }
 
         /// <inheritdoc />
-        public void TimestampEvents(long timestamp)
+        public void TimestampEvents(Instant timestamp)
         {
             lock (_changes)
             {

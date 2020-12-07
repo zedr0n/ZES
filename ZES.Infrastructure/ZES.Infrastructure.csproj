@@ -17,6 +17,7 @@
       <PackageReference Include="Jil" Version="2.17.0" />
       <PackageReference Include="JsonDiffPatch.Net" Version="2.1.0" />
       <PackageReference Include="Newtonsoft.Json" Version="12.0.1" />
+      <PackageReference Include="NodaTime.Serialization.JsonNet" Version="3.0.0" />
       <PackageReference Include="QuickGraph.NETStandard" Version="3.8.0" />
       <PackageReference Include="SqlStreamStore" Version="1.2.1-alpha.2" />
       <PackageReference Include="Stateless" Version="3.0.0" />

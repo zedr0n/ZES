@@ -1,4 +1,5 @@
 using System;
+using NodaTime;
 using ZES.Interfaces;
 
 namespace ZES.Infrastructure.Domain
@@ -26,7 +27,7 @@ namespace ZES.Infrastructure.Domain
         public Guid AncestorId { get; set; }
 
         /// <inheritdoc />
-        public long Timestamp { get; set; }
+        public Instant Timestamp { get; set; }
 
         /// <inheritdoc />
         public string Timeline { get; set; }

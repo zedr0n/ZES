@@ -1,3 +1,4 @@
+using HotChocolate;
 using HotChocolate.Types;
 using ZES.Interfaces.Domain;
 

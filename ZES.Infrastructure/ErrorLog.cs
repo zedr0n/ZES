@@ -2,6 +2,8 @@ using System;
 using System.Reactive.Linq;
 using System.Reactive.Subjects;
 using System.Threading.Tasks;
+using NodaTime;
+using NodaTime.Extensions;
 using ZES.Interfaces;
 
 namespace ZES.Infrastructure
@@ -66,7 +68,7 @@ namespace ZES.Infrastructure
             {
                 Message = error.Message;
                 ErrorType = error.GetType().Name;
-                Timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+                Timestamp = DateTimeOffset.UtcNow.ToInstant();
             }
 
             /// <inheritdoc />
@@ -76,7 +78,7 @@ namespace ZES.Infrastructure
             public string Message { get; set; }
 
             /// <inheritdoc />
-            public long? Timestamp { get; set; }
+            public Instant Timestamp { get; set; }
         }
     }
 }

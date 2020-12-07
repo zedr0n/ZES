@@ -41,7 +41,7 @@ namespace ZES.Infrastructure.Domain
             if (command.Timestamp < root.Timestamp)
             {
                 throw new InvalidOperationException(
-                    $"{typeof(TCommand).Name} command ({command.Timestamp.ToDateString()}) updating the past of the aggregate {typeof(TRoot).Name}:{command.Target} ({root.Timestamp.ToDateString()}) ");
+                    $"{typeof(TCommand).Name} command ({command.Timestamp}) updating the past of the aggregate {typeof(TRoot).Name}:{command.Target} ({root.Timestamp}) ");
             }
             
             Act(root, command);

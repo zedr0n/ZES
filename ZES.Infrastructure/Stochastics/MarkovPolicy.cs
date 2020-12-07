@@ -9,8 +9,9 @@ namespace ZES.Infrastructure.Stochastics
         where TState : IMarkovState
     {
         private readonly HashSet<TState> _optimals = new HashSet<TState>();
+        private readonly Dictionary<TState, IMarkovAction<TState>> _actions = new Dictionary<TState, IMarkovAction<TState>>();
         private Dictionary<TState, IMarkovAction<TState>> _modifications = new Dictionary<TState, IMarkovAction<TState>>();
-        private Dictionary<TState, IMarkovAction<TState>[]> _actions = new Dictionary<TState, IMarkovAction<TState>[]>();
+        private Dictionary<TState, IMarkovAction<TState>[]> _allActions = new Dictionary<TState, IMarkovAction<TState>[]>();
 
         /// <inheritdoc />
         public bool IsModified { get; set; }
@@ -26,7 +27,12 @@ namespace ZES.Infrastructure.Stochastics
                 if (_modifications.TryGetValue(state, out var action))
                     return action;
 
-                return GetAction(state);
+                if (_actions.TryGetValue(state, out action))
+                    return action;
+
+                action = GetAction(state);
+                _actions[state] = action;
+                return action;
             }
             set
             {
@@ -49,7 +55,7 @@ namespace ZES.Infrastructure.Stochastics
         public object Clone()
         {
             var clone = Copy();
-            clone._actions = _actions;
+            clone._allActions = _allActions;
             clone._modifications = new Dictionary<TState, IMarkovAction<TState>>(_modifications);
             return clone;
         }
@@ -66,11 +72,11 @@ namespace ZES.Infrastructure.Stochastics
         /// <inheritdoc />
         public IMarkovAction<TState>[] GetAllowedActions(TState state)
         {
-            if (_actions.TryGetValue(state, out var actions)) 
+            if (_allActions.TryGetValue(state, out var actions)) 
                 return actions;
             
             actions = GetAllActions(state);
-            _actions.Add(state, actions);
+            _allActions.Add(state, actions);
             return actions;
         }
 
@@ -85,7 +91,7 @@ namespace ZES.Infrastructure.Stochastics
         /// </summary>
         /// <param name="state">Current state</param>
         /// <returns>Set of all possible actions</returns>
-        protected abstract IMarkovAction<TState>[] GetAllActions(TState state);
+        protected virtual IMarkovAction<TState>[] GetAllActions(TState state) => new[] { GetAction(state) };
 
         /// <summary>
         /// Calculate the action implied by the policy for the specified state

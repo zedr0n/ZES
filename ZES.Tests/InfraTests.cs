@@ -4,6 +4,8 @@ using System.Diagnostics;
 using System.Linq;
 using System.Reactive.Linq;
 using System.Threading;
+using NodaTime;
+using NodaTime.Extensions;
 using SimpleInjector;
 using Xunit;
 using Xunit.Abstractions;
@@ -127,7 +129,7 @@ namespace ZES.Tests
             var command = new CreateRoot("Root");
             await bus.CommandAsync(command); 
             
-            await bus.IsTrue(new RootInfoQuery("Root"), c => c?.CreatedAt != 0);
+            await bus.IsTrue(new RootInfoQuery("Root"), c => c?.CreatedAt != default);
         }
 
         [Fact]
@@ -161,7 +163,7 @@ namespace ZES.Tests
             var command = new CreateRoot("UpdateRoot.Root"); 
             await await bus.CommandAsync(command);
 
-            var createdAt = (await bus.QueryUntil(new RootInfoQuery("UpdateRoot.Root"), r => r.CreatedAt > 0)).CreatedAt;
+            var createdAt = (await bus.QueryUntil(new RootInfoQuery("UpdateRoot.Root"), r => r.CreatedAt != default)).CreatedAt;
             
             var updateCommand = new UpdateRoot("UpdateRoot.Root");
             await await bus.CommandAsync(updateCommand);
@@ -214,12 +216,12 @@ namespace ZES.Tests
             var record = new CreateRecord("Root");
             await await bus.CommandAsync(record);
 
-            var time = (DateTimeOffset)DateTime.Now.AddMinutes(10); // (DateTimeOffset)new DateTime(2019, 1, 1, 0, 0, 0, DateTimeKind.Utc); 
+            var time = DateTime.UtcNow.ToInstant() + Duration.FromMinutes(10); // (DateTimeOffset)new DateTime(2019, 1, 1, 0, 0, 0, DateTimeKind.Utc); 
             
-            var command = new AddRecord("Root", 1) { Timestamp = time.ToUnixTimeMilliseconds() };
+            var command = new AddRecord("Root", 1) { Timestamp = time };
             await await bus.CommandAsync(command);
-            
-            await bus.IsTrue(new LastRecordQuery("Root"), c => c.TimeStamp == time.ToUnixTimeMilliseconds());
+
+            await bus.Equal(new LastRecordQuery("Root"), c => c.TimeStamp, time);
         }
         
         [Fact]
@@ -237,10 +239,10 @@ namespace ZES.Tests
             var statsQuery = new StatsQuery();
             var now = timeline.Now;
             
-            var historicalQuery = new HistoricalQuery<StatsQuery, Stats>(statsQuery, 0);
+            var historicalQuery = new HistoricalQuery<StatsQuery, Stats>(statsQuery, default);
             await bus.IsTrue(historicalQuery, s => s.NumberOfRoots == 0);
             
-            var liveQuery = new HistoricalQuery<StatsQuery, Stats>(statsQuery, DateTimeOffset.UtcNow.ToUnixTimeMilliseconds());
+            var liveQuery = new HistoricalQuery<StatsQuery, Stats>(statsQuery, DateTimeOffset.UtcNow.ToInstant());
             await bus.IsTrue(liveQuery, s => s.NumberOfRoots == 2);
 
             await await bus.CommandAsync(new UpdateRoot("HistoricalRoot"));            
@@ -249,11 +251,11 @@ namespace ZES.Tests
             await bus.IsTrue(new RootInfoQuery("HistoricalRoot"), i => i.UpdatedAt > i.CreatedAt);
 
             historicalInfo =
-                new HistoricalQuery<RootInfoQuery, RootInfo>(new RootInfoQuery("HistoricalRoot"), DateTimeOffset.UtcNow.ToUnixTimeMilliseconds());
+                new HistoricalQuery<RootInfoQuery, RootInfo>(new RootInfoQuery("HistoricalRoot"), DateTimeOffset.UtcNow.ToInstant());
             await bus.IsTrue(historicalInfo, i => i.UpdatedAt > i.CreatedAt);
             
             historicalInfo =
-                new HistoricalQuery<RootInfoQuery, RootInfo>(new RootInfoQuery("TempRoot"), DateTimeOffset.UtcNow.ToUnixTimeMilliseconds());
+                new HistoricalQuery<RootInfoQuery, RootInfo>(new RootInfoQuery("TempRoot"), DateTimeOffset.UtcNow.ToInstant());
             await bus.IsTrue(historicalInfo, i => i.UpdatedAt == i.CreatedAt);
         }
 
@@ -289,7 +291,7 @@ namespace ZES.Tests
 
             await bus.IsTrue(new RootInfoQuery("RootCopy"), r => r.UpdatedAt >= r.CreatedAt);
             
-            await bus.IsTrue(new RootInfoQuery("RootCopy"), r => r.CreatedAt > 0);
+            await bus.IsTrue(new RootInfoQuery("RootCopy"), r => r.CreatedAt != default);
             await bus.IsTrue(new RootInfoQuery("RootCopy"), r => r.UpdatedAt == r.CreatedAt);
 
             var graph = container.GetInstance<IGraph>();
@@ -344,7 +346,7 @@ namespace ZES.Tests
             }
             
             var query = new RootInfoQuery("Root1");
-            await bus.QueryUntil(query, c => c.CreatedAt > 0);
+            await bus.QueryUntil(query, c => c.CreatedAt != default);
             messageQueue.Alert(new InvalidateProjections());
 
             var statsQuery = new StatsQuery();

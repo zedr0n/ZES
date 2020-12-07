@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using NodaTime;
 using ZES.Interfaces.EventStore;
 
 namespace ZES.Interfaces.Branching
@@ -32,7 +33,7 @@ namespace ZES.Interfaces.Branching
         /// <param name="keys">Specific streams to branch</param>
         /// <param name="deleteExisting">Delete branch if exists</param>
         /// <returns>Task representing the newly branched timeline</returns>
-        Task<ITimeline> Branch(string branchId, long? time = null, IEnumerable<string> keys = null, bool deleteExisting = false);
+        Task<ITimeline> Branch(string branchId, Instant time = default, IEnumerable<string> keys = null, bool deleteExisting = false);
 
         /// <summary>
         /// Merges the timeline into master

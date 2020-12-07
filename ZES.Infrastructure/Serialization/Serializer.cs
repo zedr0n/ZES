@@ -7,6 +7,10 @@ using System.Runtime.Serialization;
 using System.Text;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using NodaTime;
+using NodaTime.Serialization.JsonNet;
+using NodaTime.Text;
+using NodaTime.TimeZones;
 using SqlStreamStore.Streams;
 using ZES.Infrastructure.Domain;
 using ZES.Interfaces;
@@ -43,7 +47,7 @@ namespace ZES.Infrastructure.Serialization
                 TypeNameAssemblyFormatHandling = TypeNameAssemblyFormatHandling.Simple,
                 Converters = new List<JsonConverter>(),
                 DateParseHandling = DateParseHandling.None,
-            });
+            }).ConfigureForNodaTime(new DateTimeZoneCache(new BclDateTimeZoneSource()));
 #if USE_JSON            
             _simpleSerializer = JsonSerializer.Create(new JsonSerializerSettings
             {
@@ -119,7 +123,7 @@ namespace ZES.Infrastructure.Serialization
         {
             using (var reader = new StringReader(payload))
             {
-                var jsonReader = new JsonTextReader(reader);
+                var jsonReader = new JsonTextReader(reader) { DateParseHandling = DateParseHandling.None };
 
                 try
                 {
@@ -224,7 +228,7 @@ namespace ZES.Infrastructure.Serialization
                 return null;
 #if USE_EXPLICIT
             
-            var reader = new JsonTextReader(new StringReader(json));
+            var reader = new JsonTextReader(new StringReader(json)) { DateParseHandling = DateParseHandling.None };
             
             var currentProperty = string.Empty;
             var key = string.Empty;
@@ -346,7 +350,7 @@ namespace ZES.Infrastructure.Serialization
             writer.WriteValue(e.AncestorId);
             
             writer.WritePropertyName(nameof(IEventMetadata.Timestamp));
-            writer.WriteValue(e.Timestamp);
+            writer.WriteValue(InstantPattern.ExtendedIso.Format(e.Timestamp));
             
             writer.WritePropertyName(nameof(IEventMetadata.Version));
             writer.WriteValue(version);
@@ -401,7 +405,7 @@ namespace ZES.Infrastructure.Serialization
         public IEventMetadata DecodeMetadata(string json)
         {
 #if USE_EXPLICIT
-            var reader = new JsonTextReader(new StringReader(json));
+            var reader = new JsonTextReader(new StringReader(json)) { DateParseHandling = DateParseHandling.None };
             
             var metadata = new EventMetadata();
             var currentProperty = string.Empty;
@@ -421,8 +425,8 @@ namespace ZES.Infrastructure.Serialization
                     case JsonToken.String when currentProperty == nameof(IEventMetadata.MessageId):
                         metadata.MessageId = Guid.Parse(reader.Value.ToString());
                         break;
-                    case JsonToken.Integer when currentProperty == nameof(IEventMetadata.Timestamp):
-                        metadata.Timestamp = (long)reader.Value;
+                    case JsonToken.String when currentProperty == nameof(IEventMetadata.Timestamp):
+                        metadata.Timestamp = InstantPattern.ExtendedIso.Parse((string)reader.Value).Value;
                         break;
                     case JsonToken.Integer when currentProperty == nameof(IEventMetadata.Version):
                         metadata.Version = (int)(long)reader.Value;
@@ -539,7 +543,7 @@ namespace ZES.Infrastructure.Serialization
             writer.WriteValue(e.AncestorId);
             
             writer.WritePropertyName(nameof(IEventMetadata.Timestamp));
-            writer.WriteValue(e.Timestamp);
+            writer.WriteValue(InstantPattern.ExtendedIso.Format(e.Timestamp));
             
             writer.WritePropertyName(nameof(IEventMetadata.Timeline));
             writer.WriteValue(e.Timeline);
@@ -622,7 +626,7 @@ namespace ZES.Infrastructure.Serialization
             if (payload == null)
                 return null;
 
-            var reader = new JsonTextReader(new StringReader(payload));
+            var reader = new JsonTextReader(new StringReader(payload)) { DateParseHandling = DateParseHandling.None };
 
             var deserializer = _serializationRegistry.GetDeserializer(payload);
             if (deserializer == null)
@@ -646,8 +650,11 @@ namespace ZES.Infrastructure.Serialization
                     case JsonToken.String when currentProperty == nameof(Message.AncestorId):
                         e.AncestorId = Guid.Parse(reader.Value.ToString());
                         break;
-                    case JsonToken.Integer when currentProperty == nameof(Message.Timestamp):
-                        e.Timestamp = (long)reader.Value;
+                    case JsonToken.String when currentProperty == nameof(Message.Timestamp):
+                        e.Timestamp = InstantPattern.ExtendedIso.Parse(reader.Value.ToString()).Value;
+                        break;
+                    case JsonToken.Date when currentProperty == nameof(Message.Timestamp):
+                        e.Timestamp = InstantPattern.ExtendedIso.Parse(reader.Value.ToString()).Value;
                         break;
                     case JsonToken.Integer when currentProperty == nameof(EventMetadata.Version):
                         e.Version = (int)(long)reader.Value;

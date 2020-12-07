@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Reactive.Linq;
+using NodaTime;
 using SimpleInjector;
 using Xunit;
 using Xunit.Abstractions;
@@ -74,8 +75,8 @@ namespace ZES.Tests
             var graph = container.GetInstance<IGraph>();
             
             var timestamp = timeline.Now;
-            var lastTime = timestamp + (60 * 1000);
-            var midTime = (timestamp + lastTime) / 2;
+            var lastTime = timestamp + Duration.FromSeconds(60);
+            var midTime = timestamp + ((lastTime - timestamp ) / 2);
 
             await await bus.CommandAsync(new CreateRoot("Root"));
             await await bus.CommandAsync(new RetroactiveCommand<UpdateRoot>(new UpdateRoot("Root"), lastTime));
@@ -134,7 +135,7 @@ namespace ZES.Tests
             await await bus.CommandAsync(new CreateRoot("Root"));
             
             var timestamp = timeline.Now;
-            var lastTime = timestamp + (60 * 1000);
+            var lastTime = timestamp + Duration.FromSeconds(60);
 
             await await bus.CommandAsync(new RetroactiveCommand<UpdateRoot>(new UpdateRoot("Root"), lastTime));
             await bus.Equal(new RootInfoQuery("Root"), r => r.UpdatedAt, lastTime);
@@ -172,7 +173,7 @@ namespace ZES.Tests
             var timestamp = timeline.Now;
 
             var branch = await manager.Branch("test0");
-            var lastTime = timestamp + (1000 * 60);
+            var lastTime = timestamp + Duration.FromSeconds(60); 
             branch.Warp(lastTime);
             await await bus.CommandAsync(new UpdateRoot("Root"));
 
@@ -213,8 +214,8 @@ namespace ZES.Tests
             var messageQueue = container.GetInstance<IMessageQueue>();
             
             var timestamp = timeline.Now;
-            var lastTime = timestamp + (60 * 1000);
-            var midTime = (timestamp + lastTime) / 2;
+            var lastTime = timestamp + Duration.FromSeconds(60);
+            var midTime = timestamp + ((lastTime - timestamp) / 2);
  
             await await bus.CommandAsync(new CreateRoot("Root"));
             await bus.IsTrue(new RootInfoQuery("RootCopy"), info => info.CreatedAt < midTime);
@@ -227,9 +228,9 @@ namespace ZES.Tests
             await bus.Equal(new RootInfoQuery("LastRootCopy"), r => r.CreatedAt, lastTime);
 
             await await bus.CommandAsync(
-                new RetroactiveCommand<UpdateRoot>(new UpdateRoot("LastRoot"), lastTime + 1000));
+                new RetroactiveCommand<UpdateRoot>(new UpdateRoot("LastRoot"), lastTime + Duration.FromSeconds(1)));
             
-            await bus.Equal(new HistoricalQuery<RootInfoQuery, RootInfo>(new RootInfoQuery("LastRoot"), lastTime + 1000), r => r.UpdatedAt, lastTime + 1000);
+            await bus.Equal(new HistoricalQuery<RootInfoQuery, RootInfo>(new RootInfoQuery("LastRoot"), lastTime + Duration.FromSeconds(1)), r => r.UpdatedAt, lastTime + Duration.FromSeconds(1));
             
             await await bus.CommandAsync(new RetroactiveCommand<CreateRoot>(new CreateRoot("MidRoot"), midTime));
             messageQueue.Alert(new InvalidateProjections());

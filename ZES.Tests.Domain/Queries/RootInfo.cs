@@ -1,3 +1,4 @@
+using NodaTime;
 using ZES.Interfaces.Domain;
 
 namespace ZES.Tests.Domain.Queries
@@ -8,7 +9,7 @@ namespace ZES.Tests.Domain.Queries
         {
         }
         
-        public RootInfo(string id, long createdAt, long updatedAt, int numberOfUpdates)
+        public RootInfo(string id, Instant createdAt, Instant updatedAt, int numberOfUpdates)
         {
             RootId = id;
             CreatedAt = createdAt;
@@ -17,8 +18,8 @@ namespace ZES.Tests.Domain.Queries
         }
         
         public string RootId { get; set; }
-        public long CreatedAt { get; set; }
-        public long UpdatedAt { get; set; }
+        public Instant CreatedAt { get; set; }
+        public Instant UpdatedAt { get; set; }
         public int NumberOfUpdates { get; set; }
     }
 }

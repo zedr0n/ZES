@@ -1,3 +1,5 @@
+using NodaTime;
+
 namespace ZES.Interfaces
 {
     /// <summary>
@@ -19,7 +21,7 @@ namespace ZES.Interfaces
         /// <value>
         /// Current time in the timeline
         /// </value>
-        long Now { get; }
+        Instant Now { get; }
 
         /// <summary>
         /// Gets a value indicating whether whether it's a fixed timeline
@@ -39,6 +41,6 @@ namespace ZES.Interfaces
         /// Warp to time
         /// </summary>
         /// <param name="time">Time to warp to</param>
-        void Warp(long time);
+        void Warp(Instant time);
     }
 }

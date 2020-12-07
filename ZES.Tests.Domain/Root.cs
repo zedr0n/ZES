@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Linq;
+using NodaTime;
 using ZES.Infrastructure.Domain;
 using ZES.Interfaces;
 using ZES.Interfaces.Domain;
@@ -39,7 +40,7 @@ namespace ZES.Tests.Domain
 
         public List<string> Details { get; set; }
         
-        public long UpdatedAt { get; private set; }
+        public Instant UpdatedAt { get; private set; }
 
         public void Update()
         {
@@ -81,13 +82,13 @@ namespace ZES.Tests.Domain
             /// Initializes a new instance of the <see cref="SnapshotEvent"/> class.
             /// </summary>
             /// <param name="updatedAt">Updated at property</param>
-            public SnapshotEvent(long updatedAt, string rootId)
+            public SnapshotEvent(Instant updatedAt, string rootId)
             {
                 UpdatedAt = updatedAt;
                 Id = rootId;
             }
 
-            public long UpdatedAt { get; }
+            public Instant UpdatedAt { get; }
             public string Id { get; set; }
         }
     }

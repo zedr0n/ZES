@@ -10,6 +10,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Threading.Tasks.Dataflow;
 using Gridsum.DataflowEx;
+using NodaTime;
 using SqlStreamStore;
 using SqlStreamStore.Streams;
 using ZES.Infrastructure.Utils;
@@ -32,7 +33,7 @@ namespace ZES.Infrastructure.EventStore
         private readonly ILog _log;
 
         private readonly bool _isDomainStore;
-        private readonly ConcurrentDictionary<string, ConcurrentDictionary<int, long>> _versions = new ConcurrentDictionary<string, ConcurrentDictionary<int, long>>();
+        private readonly ConcurrentDictionary<string, ConcurrentDictionary<int, Instant>> _versions = new ConcurrentDictionary<string, ConcurrentDictionary<int, Instant>>();
         private readonly ConcurrentDictionary<Guid, IEvent> _cache = new ConcurrentDictionary<Guid, IEvent>();
 
         /// <summary>
@@ -115,7 +116,7 @@ namespace ZES.Infrastructure.EventStore
         }
 
         /// <inheritdoc />
-        public async Task<int> GetVersion(IStream stream, long timestamp)
+        public async Task<int> GetVersion(IStream stream, Instant timestamp)
         {
             if (_versions.TryGetValue(stream.Key, out var versions))
             {
@@ -166,7 +167,7 @@ namespace ZES.Infrastructure.EventStore
                     metadataJson: _serializer.EncodeStreamMetadata(stream)); // JExtensions.JStreamMetadata(stream));
 
                 // await _graph.AddStreamMetadata(stream);
-                var dict = _versions.GetOrAdd(stream.Key, new ConcurrentDictionary<int, long>());
+                var dict = _versions.GetOrAdd(stream.Key, new ConcurrentDictionary<int, Instant>());
                 foreach (var e in events ?? new List<IEvent>())
                     dict[e.Version] = e.Timestamp;
                 var s = stream.Parent;
@@ -202,7 +203,7 @@ namespace ZES.Infrastructure.EventStore
             foreach (var e in events.Reverse())
                 await _streamStore.DeleteMessage(stream.Key, e.MessageId);
            
-            var dict = _versions.GetOrAdd(stream.Key, new ConcurrentDictionary<int, long>());
+            var dict = _versions.GetOrAdd(stream.Key, new ConcurrentDictionary<int, Instant>());
             foreach (var e in events)
                 dict.TryRemove(e.Version, out _);
             

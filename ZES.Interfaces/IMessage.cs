@@ -1,4 +1,5 @@
 using System;
+using NodaTime;
 
 namespace ZES.Interfaces
 {
@@ -29,7 +30,7 @@ namespace ZES.Interfaces
         /// <value>
         /// Event unix epoch timestamp
         /// </value>
-        long Timestamp { get; set; }
+        Instant Timestamp { get; set; }
         
         /// <summary>
         /// Gets or sets the corresponding message timeline

@@ -32,7 +32,7 @@ namespace ZES.Infrastructure.Stochastics
             unchecked
             {
                 var hashCode = (int)2166136261;
-                hashCode = hashCode ^ Timeline.GetHashCode();
+                hashCode ^= Timeline.GetHashCode();
                 return hashCode;
             }
         }

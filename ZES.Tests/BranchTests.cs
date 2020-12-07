@@ -1,5 +1,8 @@
 using System;
 using System.Collections.Generic;
+using System.Text.RegularExpressions;
+using NodaTime;
+using NodaTime.Extensions;
 using SimpleInjector;
 using Xunit;
 using Xunit.Abstractions;
@@ -131,10 +134,10 @@ namespace ZES.Tests
             await await bus.CommandAsync(new AddRecord("Root", 1));
             await bus.IsTrue(new LastRecordQuery("Root"), r => (int)r.Value == 1);
 
-            var then = ((DateTimeOffset)new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc)).ToUnixTimeMilliseconds(); 
+            var then = new DateTime(1970, 1, 1, 12, 0, 0, DateTimeKind.Utc).ToInstant(); 
             await manager.Branch("Branch", then);
             queue.Alert(new InvalidateProjections());
-            await bus.IsTrue(new LastRecordQuery("Root"), r => (int)r.Value == -1);
+            await bus.Equal(new LastRecordQuery("Root"), r => r.Value, -1);
             
             await await bus.CommandAsync(new CreateRecord("InitialRoot"));
             await await bus.CommandAsync(new AddRecord("InitialRoot", 10));
@@ -178,10 +181,10 @@ namespace ZES.Tests
            
             Assert.Equal("Root", root.Id);
 
-            await bus.IsTrue(new RootInfoQuery("Root"), r => r.CreatedAt > 0 && r.CreatedAt == r.UpdatedAt);
+            await bus.IsTrue(new RootInfoQuery("Root"), r => r.CreatedAt != default && r.CreatedAt == r.UpdatedAt);
 
             await await bus.CommandAsync(new CreateRoot("TestRoot"));
-            await bus.IsTrue(new RootInfoQuery("TestRoot"), r => r.CreatedAt > 0);
+            await bus.IsTrue(new RootInfoQuery("TestRoot"), r => r.CreatedAt != default);
             
             Assert.NotNull(locator.Find<TestSaga>("Root"));
 
@@ -191,8 +194,8 @@ namespace ZES.Tests
 
             await manager.Branch("test");
             queue.Alert(new InvalidateProjections());
-            await bus.IsTrue(new RootInfoQuery("TestRoot"), r => r.CreatedAt > 0);
-            await bus.IsTrue(new RootInfoQuery("Root"), r => r.CreatedAt > 0 && r.CreatedAt == r.UpdatedAt);
+            await bus.IsTrue(new RootInfoQuery("TestRoot"), r => r.CreatedAt != default);
+            await bus.IsTrue(new RootInfoQuery("Root"), r => r.CreatedAt != default && r.CreatedAt == r.UpdatedAt);
 
             var graph = container.GetInstance<IGraph>();
             await graph.Serialise();
@@ -295,7 +298,7 @@ namespace ZES.Tests
             Assert.Equal("master", timeline.Id);
            
             var timeTraveller = container.GetInstance<IBranchManager>();
-            await timeTraveller.Branch("test", 0);
+            await timeTraveller.Branch("test", Instant.MinValue);
                      
             Assert.Equal("test", timeline.Id);
 

@@ -1,5 +1,6 @@
 using System.Linq;
 using HotChocolate.Execution;
+using NodaTime;
 using Xunit;
 using Xunit.Abstractions;
 using ZES.GraphQL;
@@ -78,7 +79,7 @@ namespace ZES.Tests
             dynamic rootInfoDict = rootInfoResult?.Data.SingleOrDefault().Value;
             log.Info(rootInfoDict);
             Assert.NotNull(rootInfoDict);
-            Assert.NotEqual(0, rootInfoDict["createdAt"]);
+            Assert.NotEqual(default(Instant), rootInfoDict["createdAt"]);
 
             query = generator.Query(new StatsQuery());  
             var statsResult = await executor.ExecuteAsync(query) as IReadOnlyQueryResult;
@@ -134,10 +135,10 @@ namespace ZES.Tests
             var executor = schemaProvider.Build();
 
             var command = generator.Mutation(new CreateRoot("Root"));
-            executor.Execute(command);
+            await executor.ExecuteAsync(command);
             
             var query = generator.Query(new StatsQuery());
-            executor.Execute(query); 
+            await executor.ExecuteAsync(query); 
  
             var recordLog = container.GetInstance<IRecordLog>();
             var logFile = $"{nameof(CanReplayLog)}.json";

@@ -7,6 +7,8 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Threading.Tasks.Dataflow;
 using Gridsum.DataflowEx;
+using NodaTime;
+using NodaTime.Extensions;
 using SqlStreamStore.Streams;
 using ZES.Infrastructure.Alerts;
 using ZES.Infrastructure.Domain;
@@ -99,7 +101,7 @@ namespace ZES.Infrastructure.Branching
         }
 
         /// <inheritdoc />
-        public async Task<ITimeline> Branch(string branchId, long? time = null, IEnumerable<string> keys = null, bool deleteExisting = false)
+        public async Task<ITimeline> Branch(string branchId, Instant time = default, IEnumerable<string> keys = null, bool deleteExisting = false)
         {
             _log.StopWatch.Start("Branch");
             if (_activeTimeline.Id == branchId)
@@ -121,7 +123,7 @@ namespace ZES.Infrastructure.Branching
             }
 
             var timeline = _branches.GetOrAdd(branchId, b => Timeline.New(branchId, time));
-            if (time != null && timeline.Now != time.Value)
+            if (time != default && timeline.Now != time)
             {
                 _log.Errors.Add(new InvalidOperationException($"Branch {branchId} already exists!"));
                 return null;
@@ -132,8 +134,8 @@ namespace ZES.Infrastructure.Branching
             // copy the events
             if (newBranch)
             {
-                await Clone<IAggregate>(branchId, time ?? DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(), keys);
-                await Clone<ISaga>(branchId, time ?? DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(), keys);
+                await Clone<IAggregate>(branchId, time != default ? time : DateTimeOffset.UtcNow.ToInstant(), keys);
+                await Clone<ISaga>(branchId, time != default ? time : DateTimeOffset.UtcNow.ToInstant(), keys);
             }
 
             _log.StopWatch.Stop("Branch.Clone");
@@ -336,7 +338,7 @@ namespace ZES.Infrastructure.Branching
         // full clone of event store
         // can become really expensive
         // TODO: use links to event ids?
-        private async Task Clone<T>(string timeline, long time, IEnumerable<string> keys = null)
+        private async Task Clone<T>(string timeline, Instant time, IEnumerable<string> keys = null)
             where T : IEventSourced
         {
             var store = GetStore<T>();
@@ -480,7 +482,7 @@ namespace ZES.Infrastructure.Branching
             private readonly ActionBlock<IStream> _inputBlock;
             private int _numberOfStreams;
             
-            public CloneFlow(string timeline, long time, IEventStore<T> eventStore) 
+            public CloneFlow(string timeline, Instant time, IEventStore<T> eventStore) 
                 : base(Configuration.DataflowOptions)
             {
                 _inputBlock = new ActionBlock<IStream>(

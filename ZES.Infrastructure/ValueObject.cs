@@ -43,9 +43,12 @@ namespace ZES.Infrastructure
         /// <inheritdoc />
         public override int GetHashCode()
         {
-            return GetAtomicValues()
-                .Select(x => x != null ? x.GetHashCode() : 0)
-                .Aggregate((x, y) => x ^ y);
+            unchecked
+            {
+                return GetAtomicValues()
+                    .Select(x => x != null ? x.GetHashCode() : 0)
+                    .Aggregate((int)2166136261, (x, y) => (x * 16777619) ^ y);
+            }
         }
         
         /// <summary>

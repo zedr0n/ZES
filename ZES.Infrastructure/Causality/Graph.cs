@@ -260,7 +260,7 @@ namespace ZES.Infrastructure.Causality
             var metadata = _serializer.DecodeMetadata(m.JsonMetadata);
 
             var streamVertex = await AddStream(m.StreamId); 
-            var vertex = new EventVertex(m.MessageId, metadata.AncestorId, metadata.MessageType, m.StreamId, metadata.Version, metadata.Timestamp);
+            var vertex = new EventVertex(m.MessageId, metadata.AncestorId, metadata.MessageType, m.StreamId, metadata.Version, metadata.Timestamp.ToUnixTimeMilliseconds());
             _graph.AddVertex(vertex);
 
             var previousInStream = _graph.Vertices.OfType<EventVertex>().SingleOrDefault(s =>
@@ -288,7 +288,7 @@ namespace ZES.Infrastructure.Causality
         {
             var metadata = _serializer.DecodeMetadata(m.JsonMetadata);
 
-            var vertex = new CommandVertex(metadata.MessageId, metadata.AncestorId, metadata.MessageType, m.StreamId, metadata.Timestamp);
+            var vertex = new CommandVertex(metadata.MessageId, metadata.AncestorId, metadata.MessageType, m.StreamId, metadata.Timestamp.ToUnixTimeMilliseconds());
             _graph.AddVertex(vertex);
 
             var dependents = _graph.Vertices.OfType<CausalityVertex>().Where(v => v.AncestorId == m.MessageId);

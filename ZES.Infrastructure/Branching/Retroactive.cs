@@ -127,8 +127,7 @@ namespace ZES.Infrastructure.Branching
             var activeBranch = _manager.ActiveBranch;
             var branch = $"{command.GetType().Name}-{time.ToUnixTimeMilliseconds()}";
 
-            var timeline = await _manager.Branch(branch, time, deleteExisting: true);
-            branch = timeline.Id;
+            await _manager.Branch(branch, time, deleteExisting: true);
 
             var copy = command;
             copy.Timeline = branch;

@@ -25,13 +25,13 @@ namespace ZES.Infrastructure.Domain
         private readonly IStreamLocator _streams;
         private readonly ITimeline _timeline;
         private readonly IBus _bus;
-        private readonly IMessageQueue _messageQueue;
         private readonly IEsRegistry _registry;
+        private readonly ILog _log;
 
         private readonly ConcurrentDictionary<string, TEventSourced> _cache = new ConcurrentDictionary<string, TEventSourced>();
         
-        private readonly ConcurrentDictionary<string, Func<string, Task<IEnumerable<IEvent>>>> _delegates = new ConcurrentDictionary<string, Func<string, Task<IEnumerable<IEvent>>>>(); 
-        
+        private readonly ConcurrentDictionary<string, Func<string, Task<IEnumerable<IEvent>>>> _delegates = new ConcurrentDictionary<string, Func<string, Task<IEnumerable<IEvent>>>>();
+
         /// <summary>
         /// Initializes a new instance of the <see cref="EsRepository{I}"/> class.
         /// </summary>
@@ -39,16 +39,16 @@ namespace ZES.Infrastructure.Domain
         /// <param name="streams">Stream locator</param>
         /// <param name="timeline">Active timeline tracker</param>
         /// <param name="bus">Message bus</param>
-        /// <param name="messageQueue">Message queue</param>
         /// <param name="registry">Event sourced registry</param>
-        public EsRepository(IEventStore<TEventSourced> eventStore, IStreamLocator streams, ITimeline timeline, IBus bus, IMessageQueue messageQueue, IEsRegistry registry)
+        /// <param name="log">Log service</param>
+        public EsRepository(IEventStore<TEventSourced> eventStore, IStreamLocator streams, ITimeline timeline, IBus bus, IEsRegistry registry, ILog log)
         {
             _eventStore = eventStore;
             _streams = streams;
             _timeline = timeline;
             _bus = bus;
-            _messageQueue = messageQueue;
             _registry = registry;
+            _log = log;
         }
 
         /// <inheritdoc />
@@ -116,7 +116,10 @@ namespace ZES.Infrastructure.Domain
                 return null;
             es = EventSourced.Create<T>(id, start - 1);
             es.LoadFrom<T>(events, computeHash);
-
+            
+            if (stream.Version > es.Version)
+                _log.Warn($"Loaded aggregate version {es.Version} from snapshot {start} with {events.Count} events is inconsistent with the stream {stream}");
+            
             return es as T;
         }
 

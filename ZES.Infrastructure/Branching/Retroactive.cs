@@ -170,14 +170,15 @@ namespace ZES.Infrastructure.Branching
         {
             var currentBranch = _manager.ActiveBranch;
             var tempStreamId = $"{currentBranch}-{time.ToUnixTimeMilliseconds()}";
-            var branch = await _manager.Branch(tempStreamId, time, changes.Keys.Select(k => k.Key));
+            await _manager.Branch(tempStreamId, time, changes.Keys.Select(k => k.Key), true);
 
             var invalidEvents = new List<IEvent>();
 
             foreach (var c in changes)
             {
                 var stream = c.Key;
-                var events = c.Value;
+                var events = c.Value.ToList();
+
                 var version = c.Key.Version + 1;
                 
                 var store = GetStore(stream);
@@ -189,10 +190,9 @@ namespace ZES.Infrastructure.Branching
                 if (liveStream != null)
                     laterEvents = await store.ReadStream<IEvent>(liveStream, version).Where(e => !(e is ISnapshotEvent)).ToList();
 
-                var enumerable = events.ToList();
-
-                var newStream = await _streamLocator.FindBranched(stream, branch.Id) ?? stream.Branch(branch.Id, ExpectedVersion.EmptyStream);
-                var invalidStreamEvents = (await Append(newStream, version, enumerable.Concat(laterEvents))).ToList();
+                var newStream = await _streamLocator.FindBranched(stream, tempStreamId) ?? stream.Branch(tempStreamId, ExpectedVersion.EmptyStream);
+                _log.Info($"Inserting {events.Count} events into {newStream.Key}");
+                var invalidStreamEvents = (await Append(newStream, version, events.Concat(laterEvents))).ToList();
                 invalidEvents.AddRange(invalidStreamEvents);
             }
             

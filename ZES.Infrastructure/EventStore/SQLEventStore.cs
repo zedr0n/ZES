@@ -218,7 +218,7 @@ namespace ZES.Infrastructure.EventStore
                     dict.TryRemove(e.Version, out _);
             }
             
-            _log.Info($"Deleted {events.Count} {(events.Count > 1 ? "events" : "event")} from {stream.Key}");
+            _log.Info($"Deleted {events.Count} {(events.Count > 1 ? "events" : "event")} from {stream.Key}@{stream.Version}");
 
             stream.Version = version;
             stream.AddDeleted(events.Count);

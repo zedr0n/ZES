@@ -82,6 +82,14 @@ namespace ZES.Infrastructure.Branching
 
             await store.TrimStream(stream, version);
             await _graph.TrimStream(stream.Key, version);
+            
+            // validate the trim operation
+            var liveStream = await _streamLocator.FindBranched(stream, stream.Timeline);
+            if (liveStream.Version > version)
+                _log.Error($"TrimStream failed : {liveStream.Key} has events after {version}");
+            
+            if (liveStream.Version != stream.Version)
+                _log.Warn($"Stream update inconsistent: {liveStream.Version} != {stream.Version}");
         }
 
         /// <inheritdoc />

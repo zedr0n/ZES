@@ -117,9 +117,6 @@ namespace ZES.Infrastructure.Domain
             es = EventSourced.Create<T>(id, start - 1);
             es.LoadFrom<T>(events, computeHash);
             
-            if (stream.Version > es.Version)
-                _log.Warn($"Loaded aggregate version {es.Version} from snapshot {start} with {events.Count} events is inconsistent with the stream {stream}");
-            
             return es as T;
         }
 

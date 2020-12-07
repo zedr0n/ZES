@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 using Gridsum.DataflowEx;
 
 namespace ZES.Infrastructure
@@ -18,6 +19,7 @@ namespace ZES.Infrastructure
             "GridSum",
             "InMemoryStreamStore",
             "Common",
+            "Message",
         };
 
         /// <summary>
@@ -99,10 +101,11 @@ namespace ZES.Infrastructure
         /// <returns>True if log is enabled for category</returns>
         public static bool LogEnabled(string name)
         {
-            if (!Variables.Contains(name))
+            if (!Variables.Any(v => name.ToUpper().Contains(v.ToUpper())))
                 return true;
 
-            var env = Environment.GetEnvironmentVariable(name.ToUpper());
+            var n = Variables.First(v => name.ToUpper().Contains(v.ToUpper()));
+            var env = Environment.GetEnvironmentVariable(n.ToUpper());
             return env != null && env != 0.ToString();
         }
     }

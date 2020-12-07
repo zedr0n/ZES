@@ -33,6 +33,7 @@ namespace ZES.Infrastructure.EventStore
         private readonly ILog _log;
 
         private readonly bool _isDomainStore;
+        private readonly bool _useVersionCache;
         private readonly ConcurrentDictionary<string, ConcurrentDictionary<int, Instant>> _versions = new ConcurrentDictionary<string, ConcurrentDictionary<int, Instant>>();
         private readonly ConcurrentDictionary<Guid, IEvent> _cache = new ConcurrentDictionary<Guid, IEvent>();
 
@@ -45,6 +46,10 @@ namespace ZES.Infrastructure.EventStore
         /// <param name="log">Application log</param>
         public SqlEventStore(IStreamStore streamStore, ISerializer<IEvent> serializer, IMessageQueue messageQueue, ILog log)
         {
+            _useVersionCache = true;
+            if (Environment.GetEnvironmentVariable("USEVERSIONCACHE") == "0")
+                _useVersionCache = false;
+            
             _streamStore = streamStore;
             _serializer = serializer;
             _messageQueue = messageQueue;
@@ -118,7 +123,7 @@ namespace ZES.Infrastructure.EventStore
         /// <inheritdoc />
         public async Task<int> GetVersion(IStream stream, Instant timestamp)
         {
-            if (_versions.TryGetValue(stream.Key, out var versions))
+            if (_useVersionCache && _versions.TryGetValue(stream.Key, out var versions))
             {
                 if (!versions.Any(v => v.Value <= timestamp))
                     return ExpectedVersion.NoStream;

@@ -213,7 +213,7 @@ namespace ZES.Infrastructure.Branching
             {
                 foreach (var e in change.Value)
                 {
-                    _log.Warn($"Rolling back {change.Key}:{e.GetType().GetFriendlyName()} with timestamp {e.Timestamp.ToDateString()}");
+                    _log.Warn($"Rolling back {change.Key}:{e.GetType().GetFriendlyName()} with version {e.Version} at {e.Timestamp.ToDateString()}");
                     canDelete &= !(await ValidateDelete(change.Key, e.Version)).Any();
                 }
             }

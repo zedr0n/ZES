@@ -35,7 +35,7 @@ namespace ZES.Infrastructure.Branching
         public string Id { get; set; } = BranchManager.Master;
 
         /// <inheritdoc />
-        public Instant Now => _now != default ? _now : DateTimeOffset.UtcNow.ToInstant();
+        public Instant Now => _now != default ? _now : SystemClock.Instance.GetCurrentInstant();
 
         /// <summary>
         /// Create new timeline 

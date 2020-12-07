@@ -1,8 +1,10 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Reactive.Linq;
 using System.Threading.Tasks;
+using Gridsum.DataflowEx;
 using NodaTime;
 using SqlStreamStore.Streams;
 using ZES.Infrastructure.Domain;
@@ -210,13 +212,17 @@ namespace ZES.Infrastructure.Branching
             var canDelete = true;
             foreach (var change in changes)
             {
+                _log.Warn($"Rolling back {c.GetType().GetFriendlyName()} with timestamp {c.Timestamp.ToString("yyyy'-'MM'-'dd'T'HH':'mm':'ss'.'fff'Z'", CultureInfo.CurrentCulture)}");
                 foreach (var e in change.Value)
                     canDelete &= !(await ValidateDelete(change.Key, e.Version)).Any();
             }
 
             if (!canDelete)
+            {
+                _log.Error($"Cannot rollback command {c.GetType()}");
                 return false;
-                
+            }
+
             foreach (var change in changes)
             {
                 foreach (var e in change.Value)

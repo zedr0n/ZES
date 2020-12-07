@@ -134,8 +134,8 @@ namespace ZES.Infrastructure.Branching
             // copy the events
             if (newBranch)
             {
-                await Clone<IAggregate>(branchId, time != default ? time : DateTimeOffset.UtcNow.ToInstant(), keys);
-                await Clone<ISaga>(branchId, time != default ? time : DateTimeOffset.UtcNow.ToInstant(), keys);
+                await Clone<IAggregate>(branchId, time != default ? time : SystemClock.Instance.GetCurrentInstant(), keys);
+                await Clone<ISaga>(branchId, time != default ? time : SystemClock.Instance.GetCurrentInstant(), keys);
             }
 
             _log.StopWatch.Stop("Branch.Clone");

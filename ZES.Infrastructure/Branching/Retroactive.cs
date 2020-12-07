@@ -207,14 +207,16 @@ namespace ZES.Infrastructure.Branching
         
         private async Task<bool> RollbackCommand(ICommand c)
         {
-            var time = c.Timestamp - Duration.FromMilliseconds(10);
+            var time = c.Timestamp - Duration.FromMilliseconds(1);
             var changes = await GetChanges(c, time);
             var canDelete = true;
             foreach (var change in changes)
             {
-                _log.Warn($"Rolling back {c.GetType().GetFriendlyName()} with timestamp {c.Timestamp.ToString("yyyy'-'MM'-'dd'T'HH':'mm':'ss'.'fff'Z'", CultureInfo.CurrentCulture)}");
                 foreach (var e in change.Value)
+                {
+                    _log.Warn($"Rolling back {change.Key}:{e.GetType().GetFriendlyName()} with timestamp {e.Timestamp.ToString("yyyy'-'MM'-'dd'T'HH':'mm':'ss'.'fff'Z'", CultureInfo.CurrentCulture)}");
                     canDelete &= !(await ValidateDelete(change.Key, e.Version)).Any();
+                }
             }
 
             if (!canDelete)

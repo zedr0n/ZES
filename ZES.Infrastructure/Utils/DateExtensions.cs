@@ -37,7 +37,7 @@ namespace ZES.Infrastructure.Utils
         /// <returns>Date string</returns>
         public static string ToDateString(this Instant time)
         {
-            return time.ToString("yyyy'-'MM'-'dd'T'HH':'mm':'ss'.'fff'Z'", CultureInfo.CurrentCulture);
+            return $"{time.ToString("yyyy'-'MM'-'dd'T'HH':'mm':'ss'.'fff'Z'", CultureInfo.CurrentCulture)}({time.ToUnixTimeMilliseconds()})";
         }
     }
 }

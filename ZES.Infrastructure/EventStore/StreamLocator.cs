@@ -108,10 +108,11 @@ namespace ZES.Infrastructure.EventStore
 
         private IStream GetOrAdd(Tracked<IStream> tracked)
         {
-            _processing.Add(tracked);
             var stream = tracked.Value;
             if (stream.Key.StartsWith("$$"))
                 return null;
+            
+            _processing.Add(tracked);
 
             if (stream.Version == ExpectedVersion.NoStream)
             {

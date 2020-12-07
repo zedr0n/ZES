@@ -191,7 +191,7 @@ namespace ZES.Infrastructure.Branching
                     laterEvents = await store.ReadStream<IEvent>(liveStream, version).Where(e => !(e is ISnapshotEvent)).ToList();
 
                 var newStream = await _streamLocator.FindBranched(stream, tempStreamId) ?? stream.Branch(tempStreamId, ExpectedVersion.EmptyStream);
-                _log.Info($"Inserting {events.Count} events into {newStream.Key}");
+                _log.Info($"Inserting events ({version}..{events.Count + version}) into {newStream.Key}");
                 var invalidStreamEvents = (await Append(newStream, version, events.Concat(laterEvents))).ToList();
                 invalidEvents.AddRange(invalidStreamEvents);
             }

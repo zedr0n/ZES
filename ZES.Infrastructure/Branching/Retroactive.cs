@@ -38,7 +38,6 @@ namespace ZES.Infrastructure.Branching
         /// <param name="graph">Graph</param>
         /// <param name="manager">Branch manager</param>
         /// <param name="streamLocator">Stream locator</param>
-        /// <param name="messageQueue">Message queue</param>
         /// <param name="repository">Aggregate repository</param>
         /// <param name="sagaRepository">Saga repository</param>
         /// <param name="log">Log service</param>

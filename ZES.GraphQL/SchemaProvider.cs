@@ -128,8 +128,6 @@ namespace ZES.GraphQL
             _services.AddSingleton(typeof(IRecordLog), _recordLog);
             _services.AddSingleton(typeof(IRemote), _remote);
             _services.AddDiagnosticObserver(_observer);
-            // _services.AddTypeConverter<string, Instant>(from => InstantPattern.ExtendedIso.Parse(from).Value);
-            // _services.AddTypeConverter<Instant, string>(from => InstantPattern.ExtendedIso.Format(from));
 
             _services.AddInMemorySubscriptionProvider();
 

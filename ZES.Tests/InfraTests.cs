@@ -95,7 +95,7 @@ namespace ZES.Tests
             await bus.Command(command, 2);
             Assert.Equal(nameof(InvalidOperationException), error.ErrorType); 
             Assert.Contains("ahead", error.Message);
-            Assert.NotNull(error.Timestamp);
+            Assert.NotEqual(default, error.Timestamp);
 
             var failedCommands = await commandLog.FailedCommands.FirstAsync();
             Assert.Single(failedCommands);

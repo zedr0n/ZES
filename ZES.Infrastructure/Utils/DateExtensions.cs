@@ -1,4 +1,6 @@
 using System;
+using System.Globalization;
+using NodaTime;
 
 namespace ZES.Infrastructure.Utils
 {
@@ -26,6 +28,16 @@ namespace ZES.Infrastructure.Utils
         public static string ToDateString(this long time, string format)
         {
             return DateTimeOffset.FromUnixTimeMilliseconds(time).DateTime.ToString(format);
+        }
+
+        /// <summary>
+        /// Converts timestamp to date string 
+        /// </summary>
+        /// <param name="time">Timestamp</param>
+        /// <returns>Date string</returns>
+        public static string ToDateString(this Instant time)
+        {
+            return time.ToString("yyyy'-'MM'-'dd'T'HH':'mm':'ss'.'fff'Z'", CultureInfo.CurrentCulture);
         }
     }
 }

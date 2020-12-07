@@ -214,7 +214,7 @@ namespace ZES.Infrastructure.Branching
             {
                 foreach (var e in change.Value)
                 {
-                    _log.Warn($"Rolling back {change.Key}:{e.GetType().GetFriendlyName()} with timestamp {e.Timestamp.ToString("yyyy'-'MM'-'dd'T'HH':'mm':'ss'.'fff'Z'", CultureInfo.CurrentCulture)}");
+                    _log.Warn($"Rolling back {change.Key}:{e.GetType().GetFriendlyName()} with timestamp {e.Timestamp.ToDateString()}");
                     canDelete &= !(await ValidateDelete(change.Key, e.Version)).Any();
                 }
             }

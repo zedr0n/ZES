@@ -2,7 +2,9 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Gridsum.DataflowEx;
 using ZES.Infrastructure.Alerts;
+using ZES.Infrastructure.Utils;
 using ZES.Interfaces;
 using ZES.Interfaces.Branching;
 using ZES.Interfaces.Domain;
@@ -55,9 +57,12 @@ namespace ZES.Infrastructure.Domain
                 var commands = await RollbackEvents(invalidEvents);
                 changes = await _retroactive.GetChanges(iCommand.Command, time);
                 await _retroactive.TryInsert(changes, time);
-                
+
                 foreach (var c in commands)
+                {
+                    _log.Warn($"Replaying command {c.GetType().GetFriendlyName()} with timestamp {c.Timestamp.ToDateString()}");
                     await _retroactive.ReplayCommand(c);
+                }
             }
 
             await _commandLog.AppendCommand(iCommand.Command);

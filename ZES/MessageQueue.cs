@@ -85,7 +85,7 @@ namespace ZES
 
                     b.RetroactiveId = default;
                     
-                    _log.Debug($"Completed retroactive command {message.Timeline}:{message.GetType().GetFriendlyName()} [{message.MessageId}] ({message.Timestamp})");
+                    _log.Debug($"Completed retroactive command {message.Timeline}:{message.GetType().GetFriendlyName()} [{message.MessageId}] ({message.Timestamp.ToDateString()})");
                     return b;
                 }
 
@@ -110,13 +110,13 @@ namespace ZES
                 {
                     if (b.RetroactiveId != default)
                     {
-                        _log.Error($"Retroactive command still executing : {message.Timeline}:{message.GetType().GetFriendlyName()} [{message.MessageId}] ({message.Timestamp})");
+                        _log.Error($"Retroactive command still executing : {message.Timeline}:{message.GetType().GetFriendlyName()} [{message.MessageId}] ({message.Timestamp.ToDateString()})");
                         throw new InvalidOperationException("Retroactive command started before completing the previous one");
                     }
 
                     b.RetroactiveId = message.MessageId;
                     
-                    _log.Debug($"Started retroactive execution {message.Timeline}:{message.GetType().GetFriendlyName()} [{message.MessageId}] ({message.Timestamp})");
+                    _log.Debug($"Started retroactive execution {message.Timeline}:{message.GetType().GetFriendlyName()} [{message.MessageId}] ({message.Timestamp.ToDateString()})");
                     return b;
                 }
 

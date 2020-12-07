@@ -172,17 +172,20 @@ namespace ZES.Infrastructure.EventStore
                     metadataJson: _serializer.EncodeStreamMetadata(stream)); // JExtensions.JStreamMetadata(stream));
 
                 // await _graph.AddStreamMetadata(stream);
-                var dict = _versions.GetOrAdd(stream.Key, new ConcurrentDictionary<int, Instant>());
-                foreach (var e in events ?? new List<IEvent>())
-                    dict[e.Version] = e.Timestamp;
-                var s = stream.Parent;
-                while (s != null)
+                if (_useVersionCache)
                 {
-                    if (!_versions.TryGetValue(s.Key, out var d))
-                        break;
-                    foreach (var k in d.Keys)
-                        dict[k] = d[k];
-                    s = s.Parent;
+                    var dict = _versions.GetOrAdd(stream.Key, new ConcurrentDictionary<int, Instant>());
+                    foreach (var e in events ?? new List<IEvent>())
+                        dict[e.Version] = e.Timestamp;
+                    var s = stream.Parent;
+                    while (s != null)
+                    {
+                        if (!_versions.TryGetValue(s.Key, out var d))
+                            break;
+                        foreach (var k in d.Keys)
+                            dict[k] = d[k];
+                        s = s.Parent;
+                    }
                 }
 
                 _streams.OnNext(stream); 
@@ -207,12 +210,15 @@ namespace ZES.Infrastructure.EventStore
             var events = await ReadStream<IEvent>(stream, version + 1).ToList();
             foreach (var e in events.Reverse())
                 await _streamStore.DeleteMessage(stream.Key, e.MessageId);
-           
-            var dict = _versions.GetOrAdd(stream.Key, new ConcurrentDictionary<int, Instant>());
-            foreach (var e in events)
-                dict.TryRemove(e.Version, out _);
+
+            if (_useVersionCache)
+            {
+                var dict = _versions.GetOrAdd(stream.Key, new ConcurrentDictionary<int, Instant>());
+                foreach (var e in events)
+                    dict.TryRemove(e.Version, out _);
+            }
             
-            _log.Debug($"Deleted {events.Count} {(events.Count > 1 ? "events" : "event")} from {stream.Key}");
+            _log.Info($"Deleted {events.Count} {(events.Count > 1 ? "events" : "event")} from {stream.Key}");
 
             stream.Version = version;
             stream.AddDeleted(events.Count);

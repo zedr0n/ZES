@@ -19,7 +19,6 @@ namespace ZES.Infrastructure.EventStore
     public class StreamLocator : IStreamLocator
     {
         private readonly ConcurrentDictionary<string, IStream> _streams = new ConcurrentDictionary<string, IStream>();
-        private readonly ConcurrentBag<Tracked<IStream>> _processing = new ConcurrentBag<Tracked<IStream>>();
         private readonly IEventStore<IAggregate> _eventStore;
         private readonly IEventStore<ISaga> _sagaStore;
         private IDisposable _subscription;
@@ -49,16 +48,9 @@ namespace ZES.Infrastructure.EventStore
             get
             {
                 if (_ready == null)
-                    _ready = _eventStore.ListStreams().Select(s => new Tracked<IStream>(s)).Concat(_sagaStore.ListStreams().Select(s => new Tracked<IStream>(s))).Select(GetOrAdd).LastOrDefaultAsync().ToTask();
+                    _ready = _eventStore.ListStreams().Concat(_sagaStore.ListStreams()).Select(GetOrAdd).LastOrDefaultAsync().ToTask();
 
-                var tasks = new List<Task> { _ready };
-                while (!_processing.IsEmpty)
-                {
-                    if (_processing.TryTake(out var tracked))
-                        tasks.Add(tracked.Task);
-                }
-                
-                return Task.WhenAll(tasks);
+                return _ready;
             }
             private set => _ready = value;
         }
@@ -85,7 +77,7 @@ namespace ZES.Infrastructure.EventStore
         {
             await Ready;
             var aStream = new Stream(id, typeof(T).Name, ExpectedVersion.NoStream, timeline);
-            return _streams.TryGetValue(aStream.Key, out var stream) ? stream : default(IStream); 
+            return _streams.TryGetValue(aStream.Key, out var stream) ? stream : default; 
         }
 
         /// <inheritdoc />
@@ -100,30 +92,25 @@ namespace ZES.Infrastructure.EventStore
         {
             await Ready;
             var aStream = new Stream(stream.Id, stream.Type, ExpectedVersion.NoStream, timeline);
-            return _streams.TryGetValue(aStream.Key, out var theStream) ? theStream : default(IStream);
+            return _streams.TryGetValue(aStream.Key, out var theStream) ? theStream : default;
         }
 
         /// <inheritdoc />
         public IStream CreateEmpty(IEventSourced es, string timeline = "") => new Stream(es, timeline);
 
-        private IStream GetOrAdd(Tracked<IStream> tracked)
+        private IStream GetOrAdd(IStream stream)
         {
-            var stream = tracked.Value;
             if (stream.Key.StartsWith("$$"))
                 return null;
-            
-            _processing.Add(tracked);
 
             if (stream.Version == ExpectedVersion.NoStream)
             {
                 _streams.TryRemove(stream.Key, out _);
-                tracked.Complete();
                 return null;
             }
             
             var cStream = _streams.GetOrAdd(stream.Key, stream);
             cStream.Version = stream.Version;
-            tracked.Complete();
             return cStream;
         }
 
@@ -132,7 +119,7 @@ namespace ZES.Infrastructure.EventStore
             _streams.Clear();
             _subscription?.Dispose();
             Ready = null;
-            _subscription = _eventStore.Streams.Select(s => new Tracked<IStream>(s)).Merge(_sagaStore.Streams.Select(s => new Tracked<IStream>(s))).Subscribe(s => GetOrAdd(s)); 
+            _subscription = _eventStore.Streams.Merge(_sagaStore.Streams).Subscribe(s => GetOrAdd(s)); 
             await Ready;
         }
     }

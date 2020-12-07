@@ -82,14 +82,6 @@ namespace ZES.Infrastructure.Branching
 
             await store.TrimStream(stream, version);
             await _graph.TrimStream(stream.Key, version);
-            
-            // validate the trim operation
-            var liveStream = await _streamLocator.FindBranched(stream, stream.Timeline);
-            if (liveStream.Version > version)
-                _log.Error($"TrimStream failed : {liveStream.Key} has events after {version}");
-            
-            if (liveStream.Version != stream.Version)
-                _log.Warn($"Stream update inconsistent: {liveStream.Version} != {stream.Version}");
         }
 
         /// <inheritdoc />
@@ -191,7 +183,7 @@ namespace ZES.Infrastructure.Branching
                     laterEvents = await store.ReadStream<IEvent>(liveStream, version).Where(e => !(e is ISnapshotEvent)).ToList();
 
                 var newStream = await _streamLocator.FindBranched(stream, tempStreamId) ?? stream.Branch(tempStreamId, ExpectedVersion.EmptyStream);
-                _log.Info($"Inserting events ({version}..{events.Count + version}) into {newStream.Key}");
+                _log.Debug($"Inserting events ({version}..{events.Count + version}) into {newStream.Key}");
                 var invalidStreamEvents = (await Append(newStream, version, events.Concat(laterEvents))).ToList();
                 invalidEvents.AddRange(invalidStreamEvents);
             }
@@ -221,7 +213,7 @@ namespace ZES.Infrastructure.Branching
             {
                 foreach (var e in change.Value)
                 {
-                    _log.Info($"Rolling back {change.Key}:{e.GetType().GetFriendlyName()} with version {e.Version} at {e.Timestamp.ToDateString()}");
+                    _log.Debug($"Rolling back {change.Key}:{e.GetType().GetFriendlyName()} with version {e.Version} at {e.Timestamp.ToDateString()}");
                     canDelete &= !(await ValidateDelete(change.Key, e.Version)).Any();
                 }
             }

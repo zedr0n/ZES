@@ -316,7 +316,7 @@ namespace ZES.Infrastructure.Branching
 
                 var mergeResult = mergeFlow.Result;
                 if (mergeResult.NumberOfStreams > 0)
-                    _log.Info($"Merged {mergeResult.NumberOfStreams} streams, {mergeResult.NumberOfEvents} events from {branchId} into {_activeTimeline.Id} [{typeof(T).Name}]");
+                    _log.Debug($"Merged {mergeResult.NumberOfStreams} streams, {mergeResult.NumberOfEvents} events from {branchId} into {_activeTimeline.Id} [{typeof(T).Name}]");
                 return mergeResult;
             }
             catch (Exception e)

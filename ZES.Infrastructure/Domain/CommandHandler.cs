@@ -51,7 +51,7 @@ namespace ZES.Infrastructure.Domain
         /// </summary>
         public async Task Handle(T command)
         {
-            _log.Trace($"{_handler.GetType().Name}.Handle({command.GetType().Name})");
+            _log.Trace($"{command.GetType().Name}", this);
             var timeline = _timeline.Id;
             if (command.Timestamp == default)
                 command.Timestamp = _timeline.Now;

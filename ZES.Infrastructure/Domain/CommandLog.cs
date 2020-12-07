@@ -100,7 +100,7 @@ namespace ZES.Infrastructure.Domain
                         continue;
 
                     await _streamStore.DeleteStream(s);
-                    _log.Trace($"Deleted {nameof(ICommand)} stream {s}");
+                    _log.Debug($"Deleted {nameof(ICommand)} stream {s}");
                 }
                 
                 page = await page.Next();

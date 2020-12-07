@@ -106,7 +106,7 @@ namespace ZES.Infrastructure
         private async Task Dispatch(TIn input)
         {
             Interlocked.Increment(ref _parallelCount);
-            Log?.Debug($"Parallel {typeof(TIn).GetFriendlyName()} count : {_parallelCount}", (_declaringType ?? GetType().DeclaringType)?.GetFriendlyName());
+            Log?.Trace($"{(input is Tracked<IEvent> trackedEvent ? trackedEvent.Value.GetType().GetFriendlyName() : input.GetType().GetFriendlyName())}", (_declaringType ?? GetType().DeclaringType)?.GetFriendlyName());
 
             var key = _dispatchFunc(input);
             if (key == null)

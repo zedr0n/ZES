@@ -143,7 +143,7 @@ namespace ZES.Infrastructure.Branching
             // update current timeline
             _activeTimeline.Set(timeline);
             
-            _log.Trace($"Switched to {branchId} branch");
+            _log.Debug($"Switched to {branchId} branch");
 
             /* rebuild all projections
              _messageQueue.Alert(new Alerts.InvalidateProjections());*/
@@ -353,7 +353,7 @@ namespace ZES.Infrastructure.Branching
             {
                 await cloneFlow.CompletionTask;
                 if (cloneFlow.NumberOfStreams > 0)
-                    _log.Trace($"{cloneFlow.NumberOfStreams} {typeof(T).Name} streams cloned to {timeline}");
+                    _log.Debug($"{cloneFlow.NumberOfStreams} {typeof(T).Name} streams cloned to {timeline}");
             }
             catch (Exception e)
             {

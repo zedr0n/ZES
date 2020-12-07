@@ -205,7 +205,7 @@ namespace ZES.Infrastructure.Branching
         
         private async Task<bool> RollbackCommand(ICommand c)
         {
-            var time = c.Timestamp - Duration.FromMilliseconds(1);
+            var time = c.Timestamp - Duration.FromMilliseconds(10);
             var changes = await GetChanges(c, time);
             var canDelete = true;
             foreach (var change in changes)

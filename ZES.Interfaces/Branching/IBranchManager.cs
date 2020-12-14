@@ -40,7 +40,7 @@ namespace ZES.Interfaces.Branching
         /// <param name="branchId">Branch to merge</param>
         /// <param name="includeNewStreams">Whether to create new streams which don't exist on current branch</param>
         /// <returns>Completes when merge is completed</returns>
-        Task Merge(string branchId, bool includeNewStreams = true);
+        Task<bool> Merge(string branchId, bool includeNewStreams = true);
 
         /// <summary>
         /// Reset the timeline

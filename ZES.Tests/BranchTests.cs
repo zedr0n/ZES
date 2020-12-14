@@ -394,6 +394,32 @@ namespace ZES.Tests
         }
 
         [Fact]
+        public async void CanCancelMerge()
+        {
+            var container = CreateContainer(new List<Action<Container>> { c => c.UseLocalStore() });
+            var bus = container.GetInstance<IBus>();
+            var manager = container.GetInstance<IBranchManager>();
+            var repository = container.GetInstance<IEsRepository<IAggregate>>();
+            
+            await bus.Command(new CreateRoot("Root"));
+            await manager.Branch("test");
+            await bus.Command(new UpdateRoot("Root"));
+            await bus.Command(new CreateRoot("OtherRoot"));
+
+            var otherRoot = await repository.Find<Root>("OtherRoot");
+            Assert.NotNull(otherRoot);
+
+            manager.Reset();
+
+            await bus.Command(new UpdateRoot("Root"));
+            var mergeResult = await manager.Merge("test");
+            Assert.False(mergeResult);
+
+            otherRoot = await repository.Find<Root>("OtherRoot");
+            Assert.Null(otherRoot);
+        }
+
+        [Fact]
         public async void CanPushBranch()
         {
             var container = CreateContainer(new List<Action<Container>> { c => c.UseLocalStore() });

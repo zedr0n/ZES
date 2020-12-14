@@ -176,18 +176,18 @@ namespace ZES.Infrastructure.Branching
         }
         
         /// <inheritdoc />
-        public async Task Merge(string branchId, bool includeNewStreams = true)
+        public async Task<bool> Merge(string branchId, bool includeNewStreams = true)
         {
             if (!_branches.TryGetValue(branchId, out var branch))
             {
                 _log.Warn($"Branch {branchId} does not exist", this);
-                return;
+                return false;
             }
 
             if (_activeTimeline.Id == branchId)
             {
                 _log.Warn($"Cannot merge branch into itself", this);
-                return;
+                return false;
             }
 
             /*if (!branch.Live)
@@ -198,7 +198,12 @@ namespace ZES.Infrastructure.Branching
 
             var aggrResult = await MergeStore<IAggregate>(branchId, includeNewStreams);
             var sagaResult = await MergeStore<ISaga>(branchId, includeNewStreams);
-            
+
+            if (aggrResult == null || sagaResult == null)
+                return false;
+
+            return true;
+
             /*var mergeFlow = new MergeFlow(_activeTimeline, _eventStore, _streamLocator);
 
             _eventStore.ListStreams(branchId).Subscribe(mergeFlow.InputBlock.AsObserver());
@@ -215,7 +220,7 @@ namespace ZES.Infrastructure.Branching
             {
                 _log.Errors.Add(e);
             }*/
-            
+
             // rebuild all projections
             // _messageQueue.Alert(new Alerts.InvalidateProjections());
         }
@@ -292,14 +297,13 @@ namespace ZES.Infrastructure.Branching
             where T : IEventSourced
         {
             var store = GetStore<T>();
-            var mergeFlow = new MergeFlow<T>(_activeTimeline, store, _streamLocator);
 
             // store.ListStreams(branchId).Subscribe(mergeFlow.InputBlock.AsObserver());
             IEnumerable<IStream> streams; 
             var branchStreams = await _streamLocator.ListStreams<T>(branchId);
             if (includeNewStreams)
             {
-                streams = branchStreams;
+                streams = branchStreams.ToList();
             }
             else
             {
@@ -307,10 +311,17 @@ namespace ZES.Infrastructure.Branching
                 streams = branchStreams.Intersect(currentStreams, new Stream.BranchComparer()).ToList();
             }
             
-            streams.Subscribe(mergeFlow.InputBlock.AsObserver());
-            
             try
             {
+                // check any errors on the merge
+                var mergeFlow = new MergeFlow<T>(_activeTimeline, store, _streamLocator, false);
+                streams.Subscribe(mergeFlow.InputBlock.AsObserver());
+                await mergeFlow.CompletionTask;
+                mergeFlow.Complete();
+
+                // actually do the merge
+                mergeFlow = new MergeFlow<T>(_activeTimeline, store, _streamLocator, true);
+                streams.Subscribe(mergeFlow.InputBlock.AsObserver());
                 await mergeFlow.CompletionTask;
                 mergeFlow.Complete();
 
@@ -403,7 +414,7 @@ namespace ZES.Infrastructure.Branching
             private int _numberOfEvents;
             private int _numberOfStreams;
             
-            public MergeFlow(ITimeline currentBranch, IEventStore<T> eventStore, IStreamLocator streamLocator) 
+            public MergeFlow(ITimeline currentBranch, IEventStore<T> eventStore, IStreamLocator streamLocator, bool doMerge) 
                 : base(Configuration.DataflowOptions)
             {
                 _inputBlock = new ActionBlock<IStream>(
@@ -443,6 +454,9 @@ namespace ZES.Infrastructure.Branching
 
                             parent = parent.Parent;
                         }
+
+                        if (!doMerge)
+                            return;
 
                         Interlocked.Increment(ref _numberOfStreams);
 

@@ -15,17 +15,11 @@ namespace ZES.Interfaces
         /// <summary>
         /// Gets or sets stream key
         /// </summary>
-        /// <value>
-        /// Current stream key
-        /// </value>
         string Stream { get; set; }
 
         /// <summary>
         /// Gets or sets originating stream key
         /// </summary>
-        /// <value>
-        /// Originating stream key
-        /// </value>
         string OriginatingStream { get; set; }
     }
 

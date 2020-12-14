@@ -11,9 +11,6 @@ namespace ZES.Interfaces
         /// <summary>
         /// Gets event sourced id 
         /// </summary>
-        /// <value>
-        /// Unique string identifier
-        /// </value>
         string Id { get; }
         
         /// <summary>
@@ -34,9 +31,6 @@ namespace ZES.Interfaces
         /// <summary>
         /// Gets event sourced version ( for optimistic concurrency )
         /// </summary>
-        /// <value>
-        /// Event sourced version 
-        /// </value>
         int Version { get; }
 
         /// <summary>

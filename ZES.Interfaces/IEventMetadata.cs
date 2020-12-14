@@ -8,17 +8,11 @@ namespace ZES.Interfaces
         /// <summary>
         /// Gets event type
         /// </summary>
-        /// <value>
-        /// Event type of the message
-        /// </value>
         string MessageType { get; }
         
         /// <summary>
         /// Gets or sets gets event version in appropriate stream
         /// </summary>
-        /// <value>
-        /// Event version in appropriate stream
-        /// </value>
         int Version { get; set; }
 
         /// <summary>

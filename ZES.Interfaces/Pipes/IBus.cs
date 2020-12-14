@@ -26,7 +26,7 @@ namespace ZES.Interfaces.Pipes
         Task<TResult> QueryAsync<TResult>(IQuery<TResult> query);
 
         /// <summary>
-        /// Run command via bus with a single retry
+        /// Run command via bus with <paramref name="nRetries"/> number of attempts
         /// </summary>
         /// <param name="command">Command to run</param>
         /// <param name="nRetries">Number of retries</param>

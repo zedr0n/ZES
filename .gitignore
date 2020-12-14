@@ -8,6 +8,8 @@ lib/
 data/
 dist/
 ZES.Taskpane/
+_build/
+doxyxml/
 
 # User-specific files
 *.suo

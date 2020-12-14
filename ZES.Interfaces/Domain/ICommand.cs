@@ -8,9 +8,6 @@ namespace ZES.Interfaces.Domain
         /// <summary>
         /// Gets aggregate target id
         /// </summary>
-        /// <value>
-        /// Aggregate target id
-        /// </value>
         string Target { get; }
 
         /// <summary>

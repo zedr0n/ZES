@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using ZES.Infrastructure.Utils;
 using ZES.Interfaces;
 using ZES.Interfaces.Domain;
 
@@ -64,7 +65,7 @@ namespace ZES.Infrastructure.Domain
         /// <typeparam name="TRoot">Aggregate type</typeparam>
         protected void RegisterOnSnapshot<TRoot>()
         {
-            Register<ISnapshotEvent<TRoot>>(e => e.Id, _ =>
+            Register<ISnapshotEvent<TRoot>>(e => e.AggregateRootId(), _ =>
             {
                 // version needs to be decremented as the aggregate event is ignored
                 Version--;

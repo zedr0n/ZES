@@ -24,25 +24,16 @@ namespace ZES.Interfaces
         /// <summary>
         /// Gets or sets number of streams updated during sync
         /// </summary>
-        /// <value>
-        /// Number of streams updated during sync
-        /// </value>
         public int NumberOfStreams { get; set; }
 
         /// <summary>
         /// Gets or sets the number of objects updated during sync
         /// </summary>
-        /// <value>
-        /// The number of objects updated during sync
-        /// </value>
         public int NumberOfMessages { get; set; }
 
         /// <summary>
         /// Gets or sets sync result status 
         /// </summary>
-        /// <value>
-        /// Sync result status 
-        /// </value>
         public Status ResultStatus { get; set; } = Status.Failed;
     }
 }

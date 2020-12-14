@@ -8,7 +8,6 @@ namespace ZES.Interfaces.Branching
 {
     /// <summary>
     /// Timeline manager
-    /// ( currently supports clone ) 
     /// </summary>
     public interface IBranchManager
     {
@@ -36,11 +35,11 @@ namespace ZES.Interfaces.Branching
         Task<ITimeline> Branch(string branchId, Instant time = default, IEnumerable<string> keys = null, bool deleteExisting = false);
 
         /// <summary>
-        /// Merges the timeline into master
+        /// Merges the timeline into active timeline
         /// </summary>
         /// <param name="branchId">Branch to merge</param>
         /// <param name="includeNewStreams">Whether to create new streams which don't exist on current branch</param>
-        /// <returns>Master timeline</returns>
+        /// <returns>Completes when merge is completed</returns>
         Task Merge(string branchId, bool includeNewStreams = true);
 
         /// <summary>

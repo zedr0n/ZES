@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using SimpleInjector;
+using ZES.Infrastructure;
 using ZES.Infrastructure.Domain;
 using ZES.Infrastructure.Net;
 using ZES.Infrastructure.Projections;
@@ -155,6 +156,8 @@ namespace ZES.Utils
                     historicalHandler = typeof(HistoricalSingleQueryHandler<,,>).MakeGenericType(q, result, tState);
 
                 var lifestyle = isSingle ? Lifestyle.Transient : Lifestyle.Singleton; 
+                if (handler.GetCustomAttribute<TransientAttribute>() != null)
+                    lifestyle = Lifestyle.Transient;
                 
                 c.RegisterConditional(iQueryHandler, handler, lifestyle, x => !x.Handled);
                 c.RegisterConditional(iHistoricalQueryHandler, historicalHandler, Lifestyle.Transient, x => !x.Handled);

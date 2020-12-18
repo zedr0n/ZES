@@ -429,9 +429,12 @@ namespace ZES.Tests
             await await bus.CommandAsync(new CreateRoot("Root"));
             await await bus.CommandAsync(new UpdateRoot("Root"));
             await await bus.CommandAsync(new CreateSnapshot<Root>("Root"));
+            await await bus.CommandAsync(new UpdateRoot("Root"));
 
             var root = await repository.Find<Root>("Root");
             Assert.Equal(2, root.SnapshotVersion);
+
+            await bus.QueryUntil(new RootInfoQuery("Root"), r => r != null && r.UpdatedAt > r.CreatedAt);
         }
 
         [Fact]

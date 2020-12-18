@@ -149,9 +149,13 @@ namespace ZES.Infrastructure.EventStore
 
             var version = result.CurrentVersion - stream.DeletedCount;
             var snapshotVersion = stream.SnapshotVersion;
+            var snapshotTimestamp = stream.SnapshotTimestamp;
             var snapshotEvent = events?.LastOrDefault(e => e is ISnapshotEvent);
             if (snapshotEvent != default && snapshotEvent.Version > snapshotVersion)
+            {
                 snapshotVersion = snapshotEvent.Version;
+                snapshotTimestamp = snapshotEvent.Timestamp;
+            }
 
             if (stream.Parent != null)
                 version += stream.Parent.Version + 1;
@@ -160,7 +164,10 @@ namespace ZES.Infrastructure.EventStore
             {
                 stream.Version = version;
                 if (snapshotVersion > stream.SnapshotVersion)
+                {
                     stream.SnapshotVersion = snapshotVersion;
+                    stream.SnapshotTimestamp = snapshotTimestamp;
+                }
 
                 var metaVersion = (await _streamStore.GetStreamMetadata(stream.Key)).MetadataStreamVersion;
                 if (metaVersion == ExpectedVersion.EmptyStream)

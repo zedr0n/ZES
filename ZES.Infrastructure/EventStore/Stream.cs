@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using NodaTime;
 using SqlStreamStore.Streams;
 using ZES.Infrastructure.Domain;
 using ZES.Interfaces;
@@ -77,6 +78,9 @@ namespace ZES.Infrastructure.EventStore
         }
 
         /// <inheritdoc />
+        public Instant SnapshotTimestamp { get; set; }
+
+        /// <inheritdoc />
         public int SnapshotVersion { get; set; }
 
         /// <inheritdoc />
@@ -113,6 +117,7 @@ namespace ZES.Infrastructure.EventStore
         /// <inheritdoc />
         public IStream Copy() => new Stream(Key, Version, Parent)
         {
+            SnapshotTimestamp = SnapshotTimestamp,
             SnapshotVersion = SnapshotVersion,
             DeletedCount = DeletedCount,
         };
@@ -190,12 +195,14 @@ namespace ZES.Infrastructure.EventStore
                 Key,
                 version)
             {
+                SnapshotTimestamp = SnapshotVersion <= version ? SnapshotTimestamp : Instant.MinValue,
                 SnapshotVersion = SnapshotVersion <= version ? SnapshotVersion : 0,
                 Timeline = timeline,
             };
 
             stream.Parent = new Stream(Key, parentVersion, Parent)
             {
+                SnapshotTimestamp = SnapshotVersion <= version ? SnapshotTimestamp : Instant.MinValue,
                 SnapshotVersion = SnapshotVersion <= version ? SnapshotVersion : 0,
             };
             

@@ -113,16 +113,16 @@ namespace ZES.Infrastructure.Projections
         /// Gets or sets gets log service 
         /// </summary>
         public ILog Log { get; set; }
-
+        
+        /// <summary>
+        /// Gets projection timestamp
+        /// </summary>
+        public virtual Instant Latest => Instant.MaxValue;
+        
         /// <summary>
         /// Gets build flow instance
         /// </summary>
         protected BuildFlow Build { get; }
-
-        /// <summary>
-        /// Gets projection timestamp
-        /// </summary>
-        protected virtual Instant Latest => Instant.MaxValue;
 
         /// <summary>
         /// Gets current timeline

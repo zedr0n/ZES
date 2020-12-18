@@ -55,7 +55,13 @@ namespace ZES.Infrastructure.Projections
                 return;
 
             var version = _versions.GetOrAdd(s.Key, ExpectedVersion.EmptyStream);
+            var origVersion = version;
 
+            // read from latest snapshot
+            var snapshotVersion = s.SnapshotVersion;
+            if (version < snapshotVersion && _projection.Latest > s.SnapshotTimestamp)
+                version = snapshotVersion - 1;
+            
             if (s.Version <= ExpectedVersion.EmptyStream)
                 s.Version = 0;
 
@@ -64,7 +70,6 @@ namespace ZES.Infrastructure.Projections
 
             if (version < s.Version)
             {
-                var origVersion = version;
                 var t = await _eventStore.ReadStream<IEvent>(s, version + 1)
                     .TakeWhile(_ => !_token.IsCancellationRequested)
                     .Select(e => _projection.When(e))

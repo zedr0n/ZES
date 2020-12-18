@@ -38,6 +38,6 @@ namespace ZES.Infrastructure.Projections
         public Instant Timestamp { get; set; }
         
         /// <inheritdoc />
-        protected override Instant Latest => Timestamp;
+        public override Instant Latest => Timestamp;
     }
 }

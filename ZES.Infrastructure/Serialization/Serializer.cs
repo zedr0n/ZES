@@ -166,6 +166,9 @@ namespace ZES.Infrastructure.Serialization
                 jsonWriter.WritePropertyName(nameof(IStream.SnapshotVersion));
                 jsonWriter.WriteValue(stream.SnapshotVersion);
                 
+                jsonWriter.WritePropertyName(nameof(IStream.SnapshotTimestamp));
+                jsonWriter.WriteValue(InstantPattern.ExtendedIso.Format(stream.SnapshotTimestamp));
+                
                 if (stream.Parent != null)
                 {
                     jsonWriter.WritePropertyName($"Parent{nameof(IStream.Key)}");
@@ -176,6 +179,9 @@ namespace ZES.Infrastructure.Serialization
                     
                     jsonWriter.WritePropertyName($"Parent{nameof(IStream.SnapshotVersion)}");
                     jsonWriter.WriteValue(stream.Parent.SnapshotVersion);
+                    
+                    jsonWriter.WritePropertyName($"Parent{nameof(IStream.SnapshotTimestamp)}");
+                    jsonWriter.WriteValue(InstantPattern.ExtendedIso.Format(stream.Parent.SnapshotTimestamp));
                 }
                 
                 jsonWriter.WriteEndObject();
@@ -233,10 +239,12 @@ namespace ZES.Infrastructure.Serialization
             var currentProperty = string.Empty;
             var key = string.Empty;
             var version = ExpectedVersion.EmptyStream;
-            var snapshotVersion = 0; 
+            var snapshotVersion = 0;
+            var snapshotTimestamp = Instant.MinValue;
             var parentKey = string.Empty;
             var parentVersion = ExpectedVersion.NoStream;
-            var parentSnapshotVersion = 0; 
+            var parentSnapshotVersion = 0;
+            var parentSnapshotTimestamp = Instant.MinValue;
             while (reader.Read())
             {
                 if (reader.Value == null)
@@ -262,15 +270,31 @@ namespace ZES.Infrastructure.Serialization
                     case JsonToken.Integer when currentProperty == nameof(IStream.SnapshotVersion):
                         snapshotVersion = (int)(long)reader.Value;
                         break;
+                    case JsonToken.String when currentProperty == nameof(IStream.SnapshotTimestamp):
+                        snapshotTimestamp = InstantPattern.ExtendedIso.Parse((string)reader.Value).Value;
+                        break;
                     case JsonToken.Integer when currentProperty == $"Parent{nameof(IStream.SnapshotVersion)}":
                         parentSnapshotVersion = (int)(long)reader.Value;
+                        break;
+                    case JsonToken.String when currentProperty == $"Parent{nameof(IStream.SnapshotTimestamp)}":
+                        parentSnapshotTimestamp = InstantPattern.ExtendedIso.Parse((string)reader.Value).Value;
                         break;
                 }
             }
             
-            var stream = new Stream(key, version) { SnapshotVersion = snapshotVersion };
+            var stream = new Stream(key, version)
+            {
+                SnapshotVersion = snapshotVersion,
+                SnapshotTimestamp = snapshotTimestamp,
+            };
             if (parentKey != string.Empty)
-                stream.Parent = new Stream(parentKey, parentVersion) { SnapshotVersion = parentSnapshotVersion };
+            {
+                stream.Parent = new Stream(parentKey, parentVersion)
+                {
+                    SnapshotVersion = parentSnapshotVersion,
+                    SnapshotTimestamp = parentSnapshotTimestamp,
+                };
+            }
 
             return stream;
 

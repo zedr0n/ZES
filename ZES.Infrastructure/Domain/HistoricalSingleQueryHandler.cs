@@ -20,10 +20,10 @@ namespace ZES.Infrastructure.Domain
         }
 
         /// <inheritdoc />
-        protected override Task<TResult> HandleAsync(HistoricalQuery<TQuery, TResult> query)
+        protected override Task<TResult> Handle(HistoricalQuery<TQuery, TResult> query)
         {
             Projection = Manager.GetHistoricalProjection<TResult>(query.Query.Id);
-            return base.HandleAsync(query);
+            return base.Handle(query);
         }
     }
 }

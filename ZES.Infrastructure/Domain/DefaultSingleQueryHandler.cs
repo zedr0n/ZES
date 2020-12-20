@@ -18,10 +18,10 @@ namespace ZES.Infrastructure.Domain
         }
 
         /// <inheritdoc />
-        protected override async Task<TResult> HandleAsync(TQuery query)
+        protected override async Task<TResult> Handle(TQuery query)
         {
             Projection = Manager.GetProjection<TResult>(query.Id); 
-            return await base.HandleAsync(query);
+            return await base.Handle(query);
         }
     }
 }

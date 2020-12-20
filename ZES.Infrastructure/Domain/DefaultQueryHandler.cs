@@ -1,3 +1,4 @@
+using System.Threading.Tasks;
 using ZES.Interfaces.Domain;
 
 namespace ZES.Infrastructure.Domain
@@ -17,7 +18,7 @@ namespace ZES.Infrastructure.Domain
         }
 
         /// <inheritdoc />
-        protected override TResult Handle(IProjection<TResult> projection, TQuery query)
+        protected async override Task<TResult> Handle(IProjection<TResult> projection, TQuery query)
             => projection?.State;
     }
 }

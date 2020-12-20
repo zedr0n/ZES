@@ -30,7 +30,7 @@ namespace ZES.Infrastructure.Domain
         /// <param name="query">CQRS query</param>
         /// <returns>Query result</returns>
         /// <exception cref="NotImplementedException">Base unimplemented method</exception>
-        public virtual TResult Handle(IProjection projection, TQuery query)
+        public async virtual Task<TResult> Handle(IProjection projection, TQuery query)
         {
             throw new NotImplementedException();
         }
@@ -52,7 +52,7 @@ namespace ZES.Infrastructure.Domain
         /// <returns>Task representing the asynchronous query processing</returns>
         public async Task<TResult> HandleAsync(IQuery<TResult> query)
         {
-            return await HandleAsync(query as TQuery);
+            return await Handle(query as TQuery);
         }
 
         /// <summary>
@@ -60,10 +60,10 @@ namespace ZES.Infrastructure.Domain
         /// </summary>
         /// <param name="query">Typed query</param>
         /// <returns>Task from synchronous result</returns>
-        protected virtual async Task<TResult> HandleAsync(TQuery query)
+        protected virtual async Task<TResult> Handle(TQuery query)
         {
             await Projection.Ready;
-            return Handle(Projection, query);
+            return await Handle(Projection, query);
         }
     }
 }

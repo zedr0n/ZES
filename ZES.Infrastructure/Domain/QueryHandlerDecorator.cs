@@ -37,7 +37,7 @@ namespace ZES.Infrastructure.Domain
         /// </summary>
         /// <param name="query">Typed query</param>
         /// <returns>Task representing the result of asynchronous query processing </returns>
-        protected override async Task<TResult> HandleAsync(TQuery query)
+        protected override async Task<TResult> Handle(TQuery query)
         {
             try
             {

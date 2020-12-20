@@ -26,17 +26,17 @@ namespace ZES.Infrastructure.Domain
         protected IProjectionManager Manager { get; }
 
         /// <inheritdoc />
-        public override TResult Handle(IProjection projection, TQuery query)
+        public override async Task<TResult> Handle(IProjection projection, TQuery query)
         {
-            return Handle(projection as IProjection<TState>, query);
+            return await Handle(projection as IProjection<TState>, query);
         }
 
         /// <inheritdoc />
-        protected override Task<TResult> HandleAsync(TQuery query)
+        protected override Task<TResult> Handle(TQuery query)
         {
             if (query.Timeline != string.Empty)
                 Projection = Manager.GetProjection<TState>(timeline: query.Timeline);
-            return base.HandleAsync(query);
+            return base.Handle(query);
         }
 
         /// <summary>
@@ -45,6 +45,6 @@ namespace ZES.Infrastructure.Domain
         /// <param name="projection">Project</param>
         /// <param name="query">Query</param>
         /// <returns>Query result</returns>
-        protected abstract TResult Handle(IProjection<TState> projection, TQuery query);
+        protected abstract Task<TResult> Handle(IProjection<TState> projection, TQuery query);
     }
 }

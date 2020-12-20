@@ -35,18 +35,18 @@ namespace ZES.Infrastructure.Domain
         /// </summary>
         /// <param name="query">Historical query</param>
         /// <returns>Task representing the asynchronous execution of historical query</returns>
-        protected override async Task<TResult> HandleAsync(HistoricalQuery<TQuery, TResult> query)
+        protected override async Task<TResult> Handle(HistoricalQuery<TQuery, TResult> query)
         {
             var projection = Manager.GetHistoricalProjection<TState>();
             projection.Predicate = Projection.Predicate;
             projection.Timestamp = query.Timestamp;
             await projection.Ready;
             
-            return (_handler as QueryHandler<TQuery, TResult>)?.Handle(projection, query.Query);
+            return await (_handler as QueryHandler<TQuery, TResult>)?.Handle(projection, query.Query);
         }
 
         /// <inheritdoc />
-        protected override TResult Handle(IProjection<TState> projection, HistoricalQuery<TQuery, TResult> query)
+        protected override Task<TResult> Handle(IProjection<TState> projection, HistoricalQuery<TQuery, TResult> query)
         {
             throw new System.NotImplementedException();
         }

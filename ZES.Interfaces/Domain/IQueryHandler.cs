@@ -12,7 +12,7 @@ namespace ZES.Interfaces.Domain
         /// </summary>
         /// <param name="query"> Query object </param>
         /// <returns>Query result</returns>
-        Task<object> HandleAsync(IQuery query);
+        Task<object> Handle(IQuery query);
     }
 
     /// <summary>
@@ -29,6 +29,6 @@ namespace ZES.Interfaces.Domain
         /// </summary>
         /// <param name="query"> Query object </param>
         /// <returns>Query result</returns>
-        Task<TResult> HandleAsync(IQuery<TResult> query);
+        Task<TResult> Handle(IQuery<TResult> query);
     }
 } 

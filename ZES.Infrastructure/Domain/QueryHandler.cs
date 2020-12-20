@@ -40,9 +40,9 @@ namespace ZES.Infrastructure.Domain
         /// </summary>
         /// <param name="query">Query type</param>
         /// <returns>Task representing the asynchronous query processing</returns>
-        public async Task<object> HandleAsync(IQuery query)
+        public async Task<object> Handle(IQuery query)
         {
-            return await HandleAsync(query as IQuery<TResult>);
+            return await Handle(query as IQuery<TResult>);
         }
 
         /// <summary>
@@ -50,7 +50,7 @@ namespace ZES.Infrastructure.Domain
         /// </summary>
         /// <param name="query">Query type</param>
         /// <returns>Task representing the asynchronous query processing</returns>
-        public async Task<TResult> HandleAsync(IQuery<TResult> query)
+        public async Task<TResult> Handle(IQuery<TResult> query)
         {
             return await Handle(query as TQuery);
         }

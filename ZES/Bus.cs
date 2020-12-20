@@ -89,7 +89,7 @@ namespace ZES
             // var handler = (IQueryHandler)GetInstance(handlerType);
             var handler = _queryHandlers.GetOrAdd(handlerType, t => (IQueryHandler)GetInstance(t));
             if (handler != null)
-                return (TResult)await handler.HandleAsync(query);
+                return (TResult)await handler.Handle(query);
 
             return default(TResult);            
         }

@@ -41,7 +41,7 @@ namespace ZES.Infrastructure.Domain
         {
             try
             {
-                return await _handler.HandleAsync(query);
+                return await _handler.Handle(query);
             }
             catch (Exception e)
             {

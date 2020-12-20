@@ -95,7 +95,7 @@ namespace ZES.Infrastructure.Domain
             foreach (var s in commands.Keys)
             {
                 if (!await _retroactive.RollbackCommands(commands[s]))
-                    throw new InvalidOperationException($"Cannot rollback command {commands[s].GetType().Namespace}");
+                    throw new InvalidOperationException($"Cannot rollback command {commands[s].GetType().GetFriendlyName()}");
             }
 
             return commands.Values.SelectMany(v => v).OrderBy(v => v.Timestamp);

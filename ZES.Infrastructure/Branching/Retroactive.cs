@@ -211,10 +211,23 @@ namespace ZES.Infrastructure.Branching
             var canDelete = true;
             foreach (var change in changes)
             {
-                foreach (var e in change.Value)
+                var eventsToDelete = new List<Guid>();
+                foreach (var e in change.Value.OrderByDescending(x => x.Version))
                 {
                     _log.Debug($"Rolling back {change.Key}:{e.GetType().GetFriendlyName()} with version {e.Version} at {e.Timestamp.ToDateString()}");
-                    canDelete &= !(await ValidateDelete(change.Key, e.Version)).Any();
+                    var invalidEvents = (await ValidateDelete(change.Key, e.Version)).ToList();
+                    if (invalidEvents.Any(x => !eventsToDelete.Contains(x.MessageId)))
+                    {
+                        canDelete = false;
+                        _log.Warn($"Error rolling back {change.Key}:{e.GetType().GetFriendlyName()} with version {e.Version} with {invalidEvents.Count} invalid events");
+                        break;
+                    }
+
+                    var stream = change.Key;
+                    var store = GetStore(stream);
+                    var currentBranch = _manager.ActiveBranch;
+                    var liveStream = await _streamLocator.FindBranched(stream, currentBranch);
+                    eventsToDelete.Add((await store.ReadStream<IEventMetadata>(liveStream, e.Version, 1)).MessageId);
                 }
             }
 
@@ -226,7 +239,7 @@ namespace ZES.Infrastructure.Branching
 
             foreach (var change in changes)
             {
-                foreach (var e in change.Value)
+                foreach (var e in change.Value.OrderByDescending(x => x.Version))
                     await TryDelete(change.Key, e.Version);
             }
 
@@ -284,6 +297,9 @@ namespace ZES.Infrastructure.Branching
                 throw new InvalidOperationException($"Stream {tempStreamId}:{stream.Type}:{stream.Id} not found!");
 
             var invalidEvents = (await Append(newStream, version, laterEvents)).ToList();
+
+            foreach (var e in invalidEvents)
+                _log.Debug($"Invalid event {e.GetType().GetFriendlyName()} with version {e.Version} found in stream {newStream.Key}");    
             
             await _manager.Branch(currentBranch);
             if (doDelete && !invalidEvents.Any())

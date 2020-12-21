@@ -70,6 +70,9 @@ namespace ZES.Infrastructure.Domain
             await Handle((TCommand)command);
         }
 
+        /// <inheritdoc />
+        public bool CanHandle(ICommand command) => command is TCommand;
+
         /// <summary>
         /// Command action on the aggregate 
         /// </summary>

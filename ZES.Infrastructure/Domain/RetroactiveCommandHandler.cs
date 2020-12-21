@@ -77,6 +77,9 @@ namespace ZES.Infrastructure.Domain
             await Handle((RetroactiveCommand<TCommand>)command);
         }
 
+        /// <inheritdoc />
+        public bool CanHandle(ICommand command) => command is RetroactiveCommand<TCommand>;
+
         private async Task<IEnumerable<ICommand>> RollbackEvents(IEnumerable<IEvent> invalidEvents)
         {
             var commands = new Dictionary<string, List<ICommand>>();

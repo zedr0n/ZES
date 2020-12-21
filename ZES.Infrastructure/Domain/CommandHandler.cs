@@ -44,7 +44,10 @@ namespace ZES.Infrastructure.Domain
         {
             await Handle((T)command);
         }
-        
+
+        /// <inheritdoc />
+        public bool CanHandle(ICommand command) => _handler.CanHandle(command);
+
         /// <inheritdoc />
         /// <summary>
         /// Wrap the handler and redirect all exception to <see cref="IErrorLog"/>

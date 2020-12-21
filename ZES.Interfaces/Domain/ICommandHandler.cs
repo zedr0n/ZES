@@ -13,6 +13,13 @@ namespace ZES.Interfaces.Domain
         /// <param name="command">Command to handle</param>
         /// <returns>Task representing the asynchronous processing of the command</returns>
         Task Handle(ICommand command);
+
+        /// <summary>
+        /// Test if the handler can process the command
+        /// </summary>
+        /// <param name="command">Command to handle</param>
+        /// <returns>True if can process</returns>
+        bool CanHandle(ICommand command);
     }
     
     /// <summary>

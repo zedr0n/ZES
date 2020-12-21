@@ -47,6 +47,9 @@ namespace ZES.Infrastructure.Net
 
         /// <inheritdoc />
         public async Task Handle(ICommand command) => await Handle(command as RequestJson);
+
+        /// <inheritdoc />
+        public bool CanHandle(ICommand command) => command is RequestJson;
     }
 
     /// <summary>
@@ -94,7 +97,10 @@ namespace ZES.Infrastructure.Net
 
         /// <inheritdoc />
         public async Task Handle(ICommand command) => await Handle(command as RequestJson<T>);
-        
+
+        /// <inheritdoc />
+        public bool CanHandle(ICommand command) => command is RequestJson<T>;
+
         private void PostEvents(T response, ICommand command)
         {
             var events = _jsonHandler.Handle(response);

@@ -279,7 +279,7 @@ namespace ZES.Utils
             foreach (var command in commands)
             {
                 var iHandler = typeof(ICommandHandler<>).MakeGenericType(command);
-                var handler = assembly.GetTypesFromInterface(iHandler).SingleOrDefault();
+                var handler = assembly.GetTypesFromInterface(iHandler).FirstOrDefault();
                 if (handler == null)
                     return;
 
@@ -297,7 +297,12 @@ namespace ZES.Utils
                     {
                         var closedCommand = command.MakeGenericType(t);
                         var iClosedHandler = typeof(ICommandHandler<>).MakeGenericType(closedCommand);
-                        c.RegisterConditional(iClosedHandler, handler.MakeGenericType(t), Lifestyle.Singleton, x => !x.Handled);
+                        var closedHandler = handler.MakeGenericType(t);
+                        var baseType = closedCommand.BaseType;
+                            
+                        c.RegisterConditional(iClosedHandler, closedHandler, Lifestyle.Singleton, x => !x.Handled);
+                        if (baseType != null && !baseType.ContainsGenericParameters)
+                            c.Collection.Append(typeof(ICommandHandler<>).MakeGenericType(baseType), closedHandler);
 
                         var closedRetroactiveCommand = typeof(RetroactiveCommand<>).MakeGenericType(closedCommand); 
                         var iClosedRetroactiveCommandHandler = typeof(ICommandHandler<>).MakeGenericType(closedRetroactiveCommand);

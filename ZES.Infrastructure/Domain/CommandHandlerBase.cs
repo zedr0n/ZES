@@ -29,7 +29,7 @@ namespace ZES.Infrastructure.Domain
         protected bool ComputeHash { get; set; } = false;
 
         /// <inheritdoc />
-        public async Task Handle(TCommand command)
+        public virtual async Task Handle(TCommand command)
         {
             if (command == null)
                 throw new ArgumentNullException(typeof(TCommand).GetFriendlyName());

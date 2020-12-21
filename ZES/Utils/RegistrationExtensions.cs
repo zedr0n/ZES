@@ -263,7 +263,7 @@ namespace ZES.Utils
                 var handler = assembly.GetTypesFromInterface(iHandler).SingleOrDefault();
                 if (handler == null)
                     handler = typeof(DefaultJsonHandler<>).MakeGenericType(r);
-                
+
                 c.Register(iHandler, handler, Lifestyle.Singleton);
             } 
         }
@@ -275,8 +275,7 @@ namespace ZES.Utils
         /// <param name="assembly">Assembly containing the domain to register</param>
         public static void RegisterCommands(this Container c, Assembly assembly)
         {
-            var commands = assembly.GetTypesFromInterface(typeof(ICommand));
-            
+            var commands = assembly.GetTypesFromInterface(typeof(ICommand)).ToList();
             foreach (var command in commands)
             {
                 var iHandler = typeof(ICommandHandler<>).MakeGenericType(command);
@@ -286,12 +285,31 @@ namespace ZES.Utils
 
                 var iRetroactiveCommand = typeof(RetroactiveCommand<>).MakeGenericType(command);
                 var iRetroactiveCommandHandler = typeof(ICommandHandler<>).MakeGenericType(iRetroactiveCommand);
-
+                
                 var retroactiveCommandHandler =
                     typeof(RetroactiveCommandHandler<>).MakeGenericType(command);
 
-                c.RegisterConditional(iHandler, handler, Lifestyle.Singleton, x => !x.Handled);
-                c.RegisterConditional(iRetroactiveCommandHandler, retroactiveCommandHandler, Lifestyle.Singleton, x => !x.Handled);
+                if (command.ContainsGenericParameters)
+                {
+                    var type = command.GetGenericArguments().SingleOrDefault()?.GetInterfaces().SingleOrDefault();
+                    var allTypes = assembly.GetTypesFromInterface(type);
+                    foreach (var t in allTypes)
+                    {
+                        var closedCommand = command.MakeGenericType(t);
+                        var iClosedHandler = typeof(ICommandHandler<>).MakeGenericType(closedCommand);
+                        c.RegisterConditional(iClosedHandler, handler.MakeGenericType(t), Lifestyle.Singleton, x => !x.Handled);
+
+                        var closedRetroactiveCommand = typeof(RetroactiveCommand<>).MakeGenericType(closedCommand); 
+                        var iClosedRetroactiveCommandHandler = typeof(ICommandHandler<>).MakeGenericType(closedRetroactiveCommand);
+                        var closedRetroactiveCommandHandler = typeof(RetroactiveCommandHandler<>).MakeGenericType(closedCommand); 
+                        c.RegisterConditional(iClosedRetroactiveCommandHandler, closedRetroactiveCommandHandler, Lifestyle.Singleton, x => !x.Handled);
+                    }
+                }
+                else
+                {
+                    c.RegisterConditional(iHandler, handler, Lifestyle.Singleton, x => !x.Handled);
+                    c.RegisterConditional(iRetroactiveCommandHandler, retroactiveCommandHandler, Lifestyle.Singleton, x => !x.Handled);
+                }
             }
 
             var jsonResults = assembly.GetTypesFromInterface(typeof(IJsonResult));
@@ -310,7 +328,7 @@ namespace ZES.Utils
         private static IEnumerable<Type> GetTypesFromInterface(this Assembly assembly, Type t)
         {
             var types = assembly.GetTypes()
-                .Where(p => p.GetInterfaces().Contains(t));
+                .Where(p => p.GetInterfaces().Any(x => x.GUID == t.GUID && x.FullName == t.FullName));
             return types;
         }
 

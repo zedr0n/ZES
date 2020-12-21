@@ -174,7 +174,16 @@ namespace ZES.Infrastructure.Branching
 
             return new Dictionary<IStream, int>(changes);
         }
-        
+
+        /// <inheritdoc />
+        public Instant GetTime(string branchId)
+        {
+            if (!_branches.TryGetValue(branchId, out var timeline))
+                return Instant.MinValue;
+
+            return timeline.Now;
+        }
+
         /// <inheritdoc />
         public async Task<bool> Merge(string branchId, bool includeNewStreams = true)
         {

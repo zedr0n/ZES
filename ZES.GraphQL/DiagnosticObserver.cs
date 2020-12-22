@@ -70,9 +70,11 @@ namespace ZES.GraphQL
                 var arguments = context.Document.Definitions.OfType<OperationDefinitionNode>()
                     .SelectMany(d => d.SelectionSet.Selections)
                     .OfType<FieldNode>().SelectMany(s => s.Arguments);
-                var timestampStr = (string)arguments.SingleOrDefault(x => x.Name.Value == "timestamp")?.Value?.Value;
+                var timestampStr = (string)arguments.SingleOrDefault(x => x.Name.Value == "timestamp" || x.Name.Value == "date")?.Value?.Value;
                 var timestamp = default(Instant);
-                if (timestampStr != null && !InstantPattern.ExtendedIso.Parse(timestampStr).Success)
+                if (timestampStr != null && InstantPattern.ExtendedIso.Parse(timestampStr).Success)
+                    timestamp = InstantPattern.ExtendedIso.Parse(timestampStr).Value;
+                if (timestampStr != null && InstantPattern.General.Parse(timestampStr).Success)
                     timestamp = InstantPattern.General.Parse(timestampStr).Value;
                 _recordLog.AddMutation(query, timestamp);
             }

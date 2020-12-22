@@ -5,7 +5,6 @@ namespace ZES.Interfaces.Domain
     /// </summary>
     /// <typeparam name="TState">State type</typeparam>
     public interface ISingleQuery<TState> : IQuery<TState>
-        where TState : ISingleState
     {
         /// <summary>
         /// Gets the id of the underlying stream

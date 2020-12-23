@@ -7,7 +7,7 @@ namespace ZES.Infrastructure.Domain
     public class DefaultSingleQueryHandler<TQuery, TResult, TState> : DefaultQueryHandler<TQuery, TResult, TState>
         where TQuery : class, ISingleQuery<TResult> 
         where TResult : class
-        where TState : class, ISingleState
+        where TState : class, ISingleState, new()
     {
         /// <summary>
         /// Initializes a new instance of the <see cref="DefaultSingleQueryHandler{TQuery, TResult, TState}"/> class.
@@ -29,7 +29,7 @@ namespace ZES.Infrastructure.Domain
     /// <inheritdoc />
     public class DefaultSingleQueryHandler<TQuery, TResult> : DefaultSingleQueryHandler<TQuery, TResult, TResult> 
         where TQuery : class, ISingleQuery<TResult> 
-        where TResult : class, ISingleState
+        where TResult : class, ISingleState, new()
     {
         /// <summary>
         /// Initializes a new instance of the <see cref="DefaultSingleQueryHandler{TQuery,TResult}"/> class.

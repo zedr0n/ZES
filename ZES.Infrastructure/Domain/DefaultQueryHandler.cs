@@ -7,7 +7,7 @@ namespace ZES.Infrastructure.Domain
     public class DefaultQueryHandler<TQuery, TResult, TState> : QueryHandlerBase<TQuery, TResult, TState>
         where TQuery : class, IQuery<TResult> 
         where TResult : class
-        where TState : class, IState
+        where TState : class, IState, new()
     {
         /// <summary>
         /// Initializes a new instance of the <see cref="DefaultQueryHandler{TQuery, TResult, TState}"/> class.
@@ -26,7 +26,7 @@ namespace ZES.Infrastructure.Domain
     /// <inheritdoc />
     public class DefaultQueryHandler<TQuery, TResult> : DefaultQueryHandler<TQuery, TResult, TResult>
         where TQuery : class, IQuery<TResult> 
-        where TResult : class, IState
+        where TResult : class, IState, new()
     {
         /// <summary>
         /// Initializes a new instance of the <see cref="DefaultQueryHandler{TQuery,TResult}"/> class.

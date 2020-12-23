@@ -44,10 +44,10 @@ namespace ZES.Infrastructure.Domain
             {
                 var historicalProjection = Manager.GetHistoricalProjection<TState>();
                 historicalProjection.Timestamp = query.Timestamp;
-                historicalProjection.Predicate = predicate;
                 Projection = historicalProjection;
+                Projection.Predicate = predicate;
             }
-
+            
             return base.Handle(query);
         }
 

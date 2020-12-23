@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using SimpleInjector;
 using ZES.Interfaces;
 using ZES.Interfaces.Domain;
@@ -21,8 +22,11 @@ namespace ZES
             {
                 var dict = new Dictionary<string, Type>();
                 foreach (var es in container.GetAllInstances<IEventSourced>())
-                    dict.Add(es.GetType().Name, es.GetType());
-                
+                {
+                    if (!dict.ContainsKey(es.GetType().Name))
+                        dict.Add(es.GetType().Name, es.GetType());
+                }
+
                 return dict;
             });
         }

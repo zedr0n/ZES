@@ -11,6 +11,11 @@ namespace ZES.Interfaces.Domain
         /// Gets or sets the timeline to query
         /// </summary>
         string Timeline { get; set; }
+        
+        /// <summary>
+        /// Gets or sets the query timestamp
+        /// </summary>
+        Instant Timestamp { get; set; }
     }
 
     /// <summary>
@@ -28,14 +33,6 @@ namespace ZES.Interfaces.Domain
     /// <typeparam name="TResult">Query result type</typeparam>
     public interface IHistoricalQuery<out TQuery, TResult> : IQuery<TResult>
     {
-        /// <summary>
-        /// Gets time of the historical query
-        /// </summary>
-        /// <value>
-        /// Historical timestamp
-        /// </value>
-        Instant Timestamp { get; }
-
         /// <summary>
         /// Gets underlying query
         /// </summary>

@@ -38,6 +38,9 @@ namespace ZES.Infrastructure.Domain
                 e.AncestorId = command.MessageId;
             }
             
+            if (command.UseTimestamp)
+                root.TimestampEvents(command.Timestamp);
+
             await _repository.Save(root);
         }
 

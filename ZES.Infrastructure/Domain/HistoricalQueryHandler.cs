@@ -41,6 +41,7 @@ namespace ZES.Infrastructure.Domain
             projection.Predicate = Projection.Predicate;
             projection.Timestamp = query.Timestamp;
             await projection.Ready;
+            query.Query.Timestamp = query.Timestamp;
             
             return await (_handler as QueryHandler<TQuery, TResult>)?.Handle(projection, query.Query);
         }

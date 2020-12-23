@@ -74,8 +74,6 @@ namespace ZES.GraphQL
                 var timestamp = default(Instant);
                 if (timestampStr != null && InstantPattern.ExtendedIso.Parse(timestampStr).Success)
                     timestamp = InstantPattern.ExtendedIso.Parse(timestampStr).Value;
-                if (timestampStr != null && InstantPattern.General.Parse(timestampStr).Success)
-                    timestamp = InstantPattern.General.Parse(timestampStr).Value;
                 _recordLog.AddMutation(query, timestamp);
             }
         }

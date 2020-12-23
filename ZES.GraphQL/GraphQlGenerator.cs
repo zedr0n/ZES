@@ -42,10 +42,10 @@ namespace ZES.GraphQL
         {
             var constructor = query.GetType().GetConstructors().SingleOrDefault(c => c.GetParameters().Length > 0);
             var allParams = string.Empty;
+            var defaultTimestamp = query.Timestamp == default;
             if (constructor != null)
             {
-                var paramsProps = query.GetType().GetProperties(BindingFlags.Public | BindingFlags.Instance);
-            
+                var paramsProps = query.GetType().GetProperties(BindingFlags.Public | BindingFlags.Instance).Where(p => p.Name != nameof(IQuery.Timestamp) || !defaultTimestamp);
                 allParams = string.Join(",", paramsProps.Select(p => $"{p.Name.ToLowerFirst()} : {BackQuote(p)}{p.GetValue(query)}{BackQuote(p)}"));
             }
 

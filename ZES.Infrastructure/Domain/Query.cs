@@ -1,3 +1,4 @@
+using NodaTime;
 using ZES.Interfaces.Domain;
 
 namespace ZES.Infrastructure.Domain
@@ -7,5 +8,8 @@ namespace ZES.Infrastructure.Domain
     {
         /// <inheritdoc />
         public string Timeline { get; set; } = string.Empty;
+
+        /// <inheritdoc />
+        public Instant Timestamp { get; set; } = default;
     }
 }

@@ -20,6 +20,7 @@ using ZES.Interfaces.Causality;
 using ZES.Interfaces.Domain;
 using ZES.Interfaces.GraphQL;
 using ZES.Interfaces.Pipes;
+using IQuery = ZES.Interfaces.Domain.IQuery;
 
 namespace ZES.GraphQL
 {
@@ -37,6 +38,7 @@ namespace ZES.GraphQL
         private readonly IDiagnosticObserver _observer;
         private readonly IRecordLog _recordLog;
         private readonly IRemote _remote;
+        private readonly ITimeline _timeline;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="SchemaProvider"/> class.
@@ -52,7 +54,8 @@ namespace ZES.GraphQL
         /// <param name="observer">Diagnostic observer</param>
         /// <param name="recordLog">Record log</param>
         /// <param name="remote">Remote service</param>
-        public SchemaProvider(IBus bus, ILog log, IBranchManager manager, IEnumerable<IGraphQlMutation> mutations, IEnumerable<IGraphQlQuery> queries, IServiceCollection services, IGraph graph, IMessageQueue messageQueue, IDiagnosticObserver observer, IRecordLog recordLog, IRemote remote)
+        /// <param name="timeline">Timeline</param>
+        public SchemaProvider(IBus bus, ILog log, IBranchManager manager, IEnumerable<IGraphQlMutation> mutations, IEnumerable<IGraphQlQuery> queries, IServiceCollection services, IGraph graph, IMessageQueue messageQueue, IDiagnosticObserver observer, IRecordLog recordLog, IRemote remote, ITimeline timeline)
         {
             _bus = bus;
             _log = log;
@@ -65,6 +68,7 @@ namespace ZES.GraphQL
             _observer = observer;
             _recordLog = recordLog;
             _remote = remote;
+            _timeline = timeline;
 
             InitialiseServices();
         }
@@ -127,6 +131,7 @@ namespace ZES.GraphQL
             _services.AddSingleton(typeof(IMessageQueue), _messageQueue);
             _services.AddSingleton(typeof(IRecordLog), _recordLog);
             _services.AddSingleton(typeof(IRemote), _remote);
+            _services.AddSingleton(typeof(ITimeline), _timeline);
             _services.AddDiagnosticObserver(_observer);
 
             _services.AddInMemorySubscriptionProvider();
@@ -151,7 +156,17 @@ namespace ZES.GraphQL
 
                 // c.Use(Middleware(t.Item1, t.Item2));
                 if (t.Item1 != null)
+                {
+                    foreach (var p in t.Item1.GetMethods(BindingFlags.Public | BindingFlags.Instance |
+                                                         BindingFlags.DeclaredOnly))
+                    {
+                        var arg = p.GetParameters().FirstOrDefault()?.ParameterType;
+                        if (arg != null && arg.GetInterfaces().Contains(typeof(IQuery)))
+                            c.RegisterType(typeof(QueryType<>).MakeGenericType(arg));
+                    }
+
                     c.RegisterQueryType(typeof(ObjectType<>).MakeGenericType(t.Item1));
+                }
 
                 if (t.Item2 == null) 
                     return;

@@ -19,7 +19,7 @@ namespace ZES.Infrastructure.Domain
         }
 
         /// <inheritdoc />
-        public Instant Timestamp { get; }
+        public Instant Timestamp { get; set; }
 
         /// <inheritdoc />
         public TQuery Query { get; }

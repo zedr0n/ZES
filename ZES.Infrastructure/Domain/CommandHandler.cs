@@ -1,5 +1,6 @@
 using System;
 using System.Threading.Tasks;
+using Gridsum.DataflowEx;
 using ZES.Interfaces;
 using ZES.Interfaces.Branching;
 using ZES.Interfaces.Domain;
@@ -62,8 +63,10 @@ namespace ZES.Infrastructure.Domain
 
             try
             {
+                _log.Info($"Command {command.GetType().GetFriendlyName()} : {command.MessageId}");
                 await _handler.Handle(command);
-                await _commandLog.AppendCommand(command);
+                if (command.StoreInLog)
+                    await _commandLog.AppendCommand(command);
             }
             catch (Exception e)
             {

@@ -41,7 +41,7 @@ namespace ZES.Infrastructure.Domain
         {
             _log.StopWatch.Start($"{nameof(RetroactiveCommandHandler<TCommand>)}");
             iCommand.Command.Timestamp = iCommand.Timestamp;
-            iCommand.Command.ForceTimestamp();
+            iCommand.Command.UseTimestamp = true;
             var time = iCommand.Timestamp;
 
             _log.StopWatch.Start("GetChanges_1");

@@ -16,9 +16,14 @@ namespace ZES.Interfaces.Domain
         string EventType { get; }
 
         /// <summary>
-        /// Gets a value indicating whether to use timestamp for aggregate events
+        /// Gets or sets a value indicating whether to use timestamp for aggregate events
         /// </summary>
-        bool UseTimestamp { get; }
+        bool UseTimestamp { get; set; }
+        
+        /// <summary>
+        /// Gets or sets a value indicating whether to store the command in the log
+        /// </summary>
+        bool StoreInLog { get; set; }
     }
 
     /// <inheritdoc />

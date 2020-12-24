@@ -19,6 +19,7 @@ namespace ZES.Infrastructure.Net
         {
             RequestorId = requestorId;
             Url = url;
+            StoreInLog = false;
         }
        
         /// <summary>

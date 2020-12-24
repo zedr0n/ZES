@@ -24,16 +24,11 @@ namespace ZES.Infrastructure.Domain
         public string EventType { get; set; }
 
         /// <inheritdoc />
-        public bool UseTimestamp { get; private set; } = false;
-        
-        /// <summary>
-        /// Force timestamp on aggregate events
-        /// </summary>
-        public void ForceTimestamp()
-        {
-            UseTimestamp = true;
-        }
-        
+        public bool UseTimestamp { get; set; } = false;
+
+        /// <inheritdoc />
+        public bool StoreInLog { get; set; } = true;
+
         /// <inheritdoc />
         public class Comparer : IEqualityComparer<ICommand>
         {

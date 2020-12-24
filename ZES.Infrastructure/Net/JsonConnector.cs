@@ -40,8 +40,11 @@ namespace ZES.Infrastructure.Net
         {
             using (var w = new HttpClient())
             {
-                _log.Info($"Initiating json connection to {url}");
-                var task = _jsonData.GetOrAdd(url, s => new AsyncLazy<string>(() => w.GetStringAsync(url)));
+                var task = _jsonData.GetOrAdd(url, s => new AsyncLazy<string>(() =>
+                {
+                    _log.Info($"Initiating json connection to {url}");
+                    return w.GetStringAsync(url);
+                }));
                 var json = await task;
                 return string.IsNullOrEmpty(json) ? null : json;
             }

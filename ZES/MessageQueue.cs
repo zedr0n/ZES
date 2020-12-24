@@ -20,7 +20,7 @@ namespace ZES
         private readonly ILog _log;
         private readonly ITimeline _timeline;
         private readonly Subject<IEvent> _messages = new Subject<IEvent>();
-        private readonly Subject<IAlert> _alerts = new Subject<IAlert>();
+        private readonly BehaviorSubject<IAlert> _alerts = new BehaviorSubject<IAlert>(null);
         private readonly ConcurrentDictionary<string, UncompletedMessagesSingleHolder> _messagesHolderDict;
 
         /// <summary>

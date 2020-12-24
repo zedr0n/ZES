@@ -63,7 +63,6 @@ namespace ZES.Infrastructure.Domain
 
             try
             {
-                _log.Info($"Command {command.GetType().GetFriendlyName()} : {command.MessageId}");
                 await _handler.Handle(command);
                 if (command.StoreInLog)
                     await _commandLog.AppendCommand(command);

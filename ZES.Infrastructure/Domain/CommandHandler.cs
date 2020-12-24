@@ -1,6 +1,5 @@
 using System;
 using System.Threading.Tasks;
-using Gridsum.DataflowEx;
 using ZES.Interfaces;
 using ZES.Interfaces.Branching;
 using ZES.Interfaces.Domain;
@@ -57,7 +56,7 @@ namespace ZES.Infrastructure.Domain
         {
             _log.Trace($"{command.GetType().Name}", this);
             var timeline = _timeline.Id;
-            if (command.Timestamp == default)
+            if (!(command is IRetroactiveCommand) && command.Timestamp == default)
                 command.Timestamp = _timeline.Now;
             command.Timeline = timeline;
 

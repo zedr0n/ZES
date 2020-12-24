@@ -1,9 +1,13 @@
 using NodaTime;
+using ZES.Interfaces.Domain;
 
 namespace ZES.Infrastructure.Domain
 {
     /// <inheritdoc />
-    public class RetroactiveCommand<TCommand> : Command
+    public interface IRetroactiveCommand : ICommand { }
+
+    /// <inheritdoc cref="ZES.Infrastructure.Domain.Command" />
+    public class RetroactiveCommand<TCommand> : Command, IRetroactiveCommand
         where TCommand : Command
     {
         /// <summary>

@@ -1,6 +1,7 @@
 using System;
 using System.Globalization;
 using NodaTime;
+using NodaTime.Text;
 
 namespace ZES.Infrastructure.Utils
 {
@@ -9,6 +10,19 @@ namespace ZES.Infrastructure.Utils
     /// </summary>
     public static class DateExtensions
     {
+        /// <summary>
+        /// Convert string to instant
+        /// </summary>
+        /// <param name="date">Input date</param>
+        /// <returns>Parse result</returns>
+        public static ParseResult<Instant> ToInstant(this string date)
+        {
+            if (date == null)
+                return ParseResult<Instant>.ForValue(default);
+
+            return InstantPattern.ExtendedIso.Parse(date);
+        }
+        
         /// <summary>
         /// Converts timestamp to date string 
         /// </summary>

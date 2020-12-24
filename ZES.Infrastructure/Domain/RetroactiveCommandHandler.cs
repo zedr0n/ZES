@@ -20,6 +20,7 @@ namespace ZES.Infrastructure.Domain
         private readonly ICommandLog _commandLog;
         private readonly ILog _log;
         private readonly IMessageQueue _messageQueue;
+        private readonly ICommandHandler<TCommand> _handler;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="RetroactiveCommandHandler{TCommand}"/> class.
@@ -28,17 +29,26 @@ namespace ZES.Infrastructure.Domain
         /// <param name="commandLog">Command log</param>
         /// <param name="log">Application log</param>
         /// <param name="messageQueue">Message queue</param>
-        public RetroactiveCommandHandler(IRetroactive retroactive, ICommandLog commandLog, ILog log, IMessageQueue messageQueue) 
+        /// <param name="handler">Underlying command handler</param>
+        public RetroactiveCommandHandler(IRetroactive retroactive, ICommandLog commandLog, ILog log, IMessageQueue messageQueue, ICommandHandler<TCommand> handler) 
         {
             _retroactive = retroactive;
             _commandLog = commandLog;
             _log = log;
             _messageQueue = messageQueue;
+            _handler = handler;
         }
 
         /// <inheritdoc />
         public async Task Handle(RetroactiveCommand<TCommand> iCommand)
         {
+            if (iCommand.Timestamp == default)
+            {
+                iCommand.StoreInLog = false;
+                await _handler.Handle(iCommand.Command);
+                return;
+            }
+
             _log.StopWatch.Start($"{nameof(RetroactiveCommandHandler<TCommand>)}");
             iCommand.Command.Timestamp = iCommand.Timestamp;
             iCommand.Command.UseTimestamp = true;

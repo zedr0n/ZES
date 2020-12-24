@@ -11,7 +11,7 @@ namespace ZES.Infrastructure.Domain
         /// </summary>
         public Event()
         {
-            MessageType = GetType().Name;
+            MessageType = GetType().FullName;
         }
 
         /// <inheritdoc />

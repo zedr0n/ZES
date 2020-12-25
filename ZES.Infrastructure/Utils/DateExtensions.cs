@@ -17,7 +17,7 @@ namespace ZES.Infrastructure.Utils
         /// <returns>Parse result</returns>
         public static ParseResult<Instant> ToInstant(this string date)
         {
-            if (date == null)
+            if (string.IsNullOrEmpty(date))
                 return ParseResult<Instant>.ForValue(default);
 
             return InstantPattern.ExtendedIso.Parse(date);

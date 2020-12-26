@@ -57,7 +57,14 @@ namespace ZES.Infrastructure.Domain
             _log.StopWatch.Start("GetChanges_1");
             var changes = await _retroactive.GetChanges(iCommand.Command, time);
             _log.StopWatch.Stop("GetChanges_1");
-           
+
+            if (changes.Count == 0)
+            {
+                _log.StopWatch.Stop($"{nameof(RetroactiveCommandHandler<TCommand>)}");
+                iCommand.StoreInLog = false;
+                return;
+            }
+            
             _log.StopWatch.Start("TryInsert_1");
             var invalidEvents = await _retroactive.TryInsert(changes, time); 
             _log.StopWatch.Stop("TryInsert_1");

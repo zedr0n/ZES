@@ -1,4 +1,5 @@
 using System;
+using System.Reactive.Linq;
 using ZES.Interfaces;
 using ZES.Interfaces.Domain;
 using ZES.Interfaces.GraphQL;
@@ -34,10 +35,11 @@ namespace ZES.Infrastructure.GraphQl
         protected bool Resolve<TCommand>(TCommand command)
             where TCommand : ICommand
         {
+            var lastError = _log.Errors.Observable.FirstOrDefaultAsync().GetAwaiter().GetResult();
             var isError = false;
             _log.Errors.Observable.Subscribe(e =>
             {
-                if (e != null && e.ErrorType == nameof(InvalidOperationException))
+                if (e != null && e != lastError && e.ErrorType == nameof(InvalidOperationException))
                     isError = true;
             });
             

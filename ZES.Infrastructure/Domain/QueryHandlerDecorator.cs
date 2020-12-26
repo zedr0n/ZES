@@ -1,5 +1,7 @@
 using System;
 using System.Threading.Tasks;
+using System.Threading.Tasks.Dataflow;
+using Gridsum.DataflowEx;
 using ZES.Interfaces;
 using ZES.Interfaces.Domain;
 
@@ -17,6 +19,7 @@ namespace ZES.Infrastructure.Domain
     {
         private readonly IQueryHandler<TQuery, TResult> _handler;
         private readonly IErrorLog _errorLog;
+        private readonly QueryFlow _queryFlow;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="QueryHandlerDecorator{TQuery,TResult}"/> class.
@@ -27,6 +30,7 @@ namespace ZES.Infrastructure.Domain
         {
             _handler = handler;
             _errorLog = errorLog;
+            _queryFlow = new QueryFlow(this, Configuration.DataflowOptions);
         }
 
         /// <summary>
@@ -39,6 +43,13 @@ namespace ZES.Infrastructure.Domain
         /// <returns>Task representing the result of asynchronous query processing </returns>
         protected override async Task<TResult> Handle(TQuery query)
         {
+            var tracked = new TrackedResult<TQuery, TResult>(query);
+            await _queryFlow.SendAsync(tracked);
+            return await tracked.Task;
+        }
+
+        private async Task<TResult> HandleEx(TQuery query)
+        {
             try
             {
                 return await _handler.Handle(query);
@@ -48,6 +59,25 @@ namespace ZES.Infrastructure.Domain
                 _errorLog.Add(e);
                 return default(TResult);
             }
+        }
+        
+        private class QueryFlow : Dataflow<TrackedResult<TQuery, TResult>>
+        {
+            public QueryFlow(QueryHandlerDecorator<TQuery, TResult> handler, DataflowOptions dataflowOptions) 
+                : base(dataflowOptions)
+            {
+                var block = new ActionBlock<TrackedResult<TQuery, TResult>>(
+                    async q =>
+                    {
+                        var result = await handler.HandleEx(q.Value);
+                        q.SetResult(result);
+                    }, 
+                    new ExecutionDataflowBlockOptions { MaxDegreeOfParallelism = 1 });
+                RegisterChild(block);
+                InputBlock = block;
+            }
+
+            public override ITargetBlock<TrackedResult<TQuery, TResult>> InputBlock { get; }
         }
     }
 }

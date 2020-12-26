@@ -14,8 +14,6 @@ namespace ZES.Infrastructure.Domain
         where TResult : class
         where TState : IState, new()
     {
-        private readonly QueryFlow _queryFlow;
-        
         /// <summary>
         /// Initializes a new instance of the <see cref="QueryHandlerBase{TQuery,TResult,TState}"/> class.
         /// </summary>
@@ -24,7 +22,6 @@ namespace ZES.Infrastructure.Domain
         {
             Projection = manager.GetProjection<TState>();
             Manager = manager;
-            _queryFlow = new QueryFlow(this, Configuration.DataflowOptions);
         }
 
         /// <summary>
@@ -54,21 +51,6 @@ namespace ZES.Infrastructure.Domain
         /// <inheritdoc />
         protected override async Task<TResult> Handle(TQuery query)
         {
-            var tracked = new TrackedResult<TQuery, TResult>(query);
-            await _queryFlow.SendAsync(tracked);
-            return await tracked.Task;
-        }
-
-        /// <summary>
-        /// Strongly-typed handler
-        /// </summary>
-        /// <param name="projection">Project</param>
-        /// <param name="query">Query</param>
-        /// <returns>Query result</returns>
-        protected abstract Task<TResult> Handle(IProjection<TState> projection, TQuery query);
-
-        private async Task<TResult> HandleEx(TQuery query)
-        {
             var projection = Projection;
             if (query.Timeline != string.Empty)
             {
@@ -86,24 +68,13 @@ namespace ZES.Infrastructure.Domain
             await projection.Ready;
             return await Handle(projection, query);
         }
-        
-        private class QueryFlow : Dataflow<TrackedResult<TQuery, TResult>>
-        {
-            public QueryFlow(QueryHandlerBase<TQuery, TResult, TState> handler, DataflowOptions dataflowOptions) 
-                : base(dataflowOptions)
-            {
-                var block = new ActionBlock<TrackedResult<TQuery, TResult>>(
-                    async q =>
-                {
-                    var result = await handler.HandleEx(q.Value);
-                    q.SetResult(result);
-                }, 
-                    new ExecutionDataflowBlockOptions { MaxDegreeOfParallelism = 1 });
-                RegisterChild(block);
-                InputBlock = block;
-            }
 
-            public override ITargetBlock<TrackedResult<TQuery, TResult>> InputBlock { get; }
-        }
+        /// <summary>
+        /// Strongly-typed handler
+        /// </summary>
+        /// <param name="projection">Project</param>
+        /// <param name="query">Query</param>
+        /// <returns>Query result</returns>
+        protected abstract Task<TResult> Handle(IProjection<TState> projection, TQuery query);
     }
 }

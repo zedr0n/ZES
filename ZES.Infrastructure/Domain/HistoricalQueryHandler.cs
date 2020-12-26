@@ -37,13 +37,8 @@ namespace ZES.Infrastructure.Domain
         /// <returns>Task representing the asynchronous execution of historical query</returns>
         protected override async Task<TResult> Handle(HistoricalQuery<TQuery, TResult> query)
         {
-            var projection = Manager.GetHistoricalProjection<TState>();
-            projection.Predicate = Projection.Predicate;
-            projection.Timestamp = query.Timestamp;
-            await projection.Ready;
             query.Query.Timestamp = query.Timestamp;
-            
-            return await (_handler as QueryHandler<TQuery, TResult>)?.Handle(projection, query.Query);
+            return await _handler.Handle(query.Query);
         }
 
         /// <inheritdoc />

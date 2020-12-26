@@ -30,6 +30,9 @@ namespace ZES.Infrastructure.Domain
         public bool StoreInLog { get; set; } = true;
 
         /// <inheritdoc />
+        public bool Pure { get; set; }
+
+        /// <inheritdoc />
         public class Comparer : IEqualityComparer<ICommand>
         {
             /// <inheritdoc />

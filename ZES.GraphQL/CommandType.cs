@@ -18,6 +18,7 @@ namespace ZES.GraphQL
             descriptor.Field(t => t.UseTimestamp).Ignore();
             descriptor.Field(t => t.StoreInLog).Ignore();
             descriptor.Field(t => t.Target).Ignore();
+            descriptor.Field(t => t.Pure).Ignore();
             base.Configure(descriptor);
         }
     }

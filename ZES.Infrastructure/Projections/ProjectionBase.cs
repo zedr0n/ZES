@@ -5,6 +5,7 @@ using System.Linq;
 using System.Reactive.Concurrency;
 using System.Reactive.Linq;
 using System.Reactive.Subjects;
+using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Threading.Tasks.Dataflow;
@@ -51,7 +52,7 @@ namespace ZES.Infrastructure.Projections
             Build = new BuildFlow(options, this);
 
             StatusSubject.Where(s => s != Sleeping)
-                .Subscribe(s => Log?.Info($"[{Timeline}]{GetType().GetFriendlyName()} : {s.ToString()}"));
+                .Subscribe(s => Log?.Info($"[{Timeline}]{GetType().GetFriendlyName()}/{RuntimeHelpers.GetHashCode(this)}/ : {s.ToString()}"));
         }
 
         /// <inheritdoc />

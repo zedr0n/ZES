@@ -60,16 +60,19 @@ namespace ZES.GraphQL
         public void EndQueryExecute(IQueryContext context)
         {
             var query = context.Request.Query.ToString();
-            if (!query.Contains("mutation"))
+            var request = context.Document.Definitions.OfType<OperationDefinitionNode>()
+                .SingleOrDefault(o => o.Name?.Value == context.Request.OperationName);
+            if (request == default)
+                return;
+            
+            if (request.Operation == OperationType.Query)
             {
                 var vars = context.Request.VariableValues;
                 _recordLog.AddQuery(query, context.Result.ToJson());
             }
-            else if (!query.Contains("flush") && !query.Contains("Introspection"))
+            else if (request.Operation == OperationType.Mutation)
             {
-                var arguments = context.Document.Definitions.OfType<OperationDefinitionNode>()
-                    .SelectMany(d => d.SelectionSet.Selections)
-                    .OfType<FieldNode>().SelectMany(s => s.Arguments);
+                var arguments = request.SelectionSet.Selections.OfType<FieldNode>().SelectMany(s => s.Arguments);
                 var timestampStr = (string)arguments.SingleOrDefault(x => x.Name.Value == "timestamp" || x.Name.Value == "date")?.Value?.Value;
                 var timestamp = default(Instant);
                 if (timestampStr != null && InstantPattern.ExtendedIso.Parse(timestampStr).Success)

@@ -72,12 +72,16 @@ namespace ZES
             if (command.GetType().IsClosedTypeOf(typeof(RetroactiveCommand<>)))
                 await _messageQueue.RetroactiveExecution.FirstAsync(b => b == false).Timeout(Configuration.Timeout);
             command.Timeline = _timeline.Id;
-            await _messageQueue.UncompleteMessage(command);
+            if (!command.Pure)
+                await _messageQueue.UncompleteMessage(command);
             var tracked = new Tracked<ICommand>(command);
             var dispatcher = _dispatchers.GetOrAdd(_timeline.Id, CreateDispatcher);
             await dispatcher.SendAsync(tracked);
 
             // return tracked.Task;
+            if (command.Pure)
+                return tracked.Task;
+            
             return tracked.Task.ContinueWith(_ => _messageQueue.CompleteMessage(command));
         }
 

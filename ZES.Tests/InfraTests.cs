@@ -239,11 +239,11 @@ namespace ZES.Tests
             var statsQuery = new StatsQuery();
             var now = timeline.Now;
             
-            var historicalQuery = new HistoricalQuery<StatsQuery, Stats>(statsQuery, default);
-            await bus.IsTrue(historicalQuery, s => s.NumberOfRoots == 0);
+            var historicalQuery = new HistoricalQuery<StatsQuery, Stats>(statsQuery, default(Instant).PlusTicks(1));
+            await bus.Equal(historicalQuery, s => s.NumberOfRoots, 0);
             
             var liveQuery = new HistoricalQuery<StatsQuery, Stats>(statsQuery, DateTimeOffset.UtcNow.ToInstant());
-            await bus.IsTrue(liveQuery, s => s.NumberOfRoots == 2);
+            await bus.Equal(liveQuery, s => s.NumberOfRoots, 2);
 
             await await bus.CommandAsync(new UpdateRoot("HistoricalRoot"));            
             var historicalInfo = new HistoricalQuery<RootInfoQuery, RootInfo>(new RootInfoQuery("HistoricalRoot"), now);

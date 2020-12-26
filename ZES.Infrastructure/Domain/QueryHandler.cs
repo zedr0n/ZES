@@ -1,5 +1,5 @@
 using System;
-using System.Reactive.Linq;
+using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using ZES.Interfaces.Domain;
 
@@ -16,21 +16,13 @@ namespace ZES.Infrastructure.Domain
         where TResult : class
     {
         /// <summary>
-        /// Gets or sets gets the projection as common base interface
-        /// </summary>
-        /// <value>
-        /// The projection as common base interface
-        /// </value>
-        protected IProjection Projection { get; set; } = null;
-
-        /// <summary>
         /// Unimplemented 
         /// </summary>
         /// <param name="projection">Projection to use</param>
         /// <param name="query">CQRS query</param>
         /// <returns>Query result</returns>
         /// <exception cref="NotImplementedException">Base unimplemented method</exception>
-        public async virtual Task<TResult> Handle(IProjection projection, TQuery query)
+        public virtual Task<TResult> Handle(IProjection projection, TQuery query)
         {
             throw new NotImplementedException();
         }
@@ -60,10 +52,6 @@ namespace ZES.Infrastructure.Domain
         /// </summary>
         /// <param name="query">Typed query</param>
         /// <returns>Task from synchronous result</returns>
-        protected virtual async Task<TResult> Handle(TQuery query)
-        {
-            await Projection.Ready;
-            return await Handle(Projection, query);
-        }
+        protected abstract Task<TResult> Handle(TQuery query);
     }
 }

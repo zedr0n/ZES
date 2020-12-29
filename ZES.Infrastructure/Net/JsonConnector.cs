@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Concurrent;
 using System.Net.Http;
 using System.Threading;
@@ -14,10 +15,10 @@ namespace ZES.Infrastructure.Net
     {
         private readonly ConcurrentDictionary<string, AsyncLazy<string>> _jsonData =
             new ConcurrentDictionary<string, AsyncLazy<string>>(); 
-        private readonly ConnectorFlow _flow;
-
         private readonly ILog _log;
         
+        private ConnectorFlow _flow;
+
         /// <summary>
         /// Initializes a new instance of the <see cref="JsonConnector"/> class.
         /// </summary>
@@ -32,7 +33,17 @@ namespace ZES.Infrastructure.Net
         public async Task<Task<string>> SubmitRequest(string url, CancellationToken token = default)
         {
             var tracked = new TrackedResult<string, string>(url, token);
-            await _flow.SendAsync(tracked);
+            try
+            {
+                await _flow.SendAsync(tracked);
+            }
+            catch (Exception e)
+            {
+                _log.Errors.Add(e);
+                _flow = new ConnectorFlow(Configuration.DataflowOptions, this);
+                await _flow.SendAsync(tracked);
+            }
+            
             return tracked.Task;
         }
         

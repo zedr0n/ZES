@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Reactive.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
 using HotChocolate;
@@ -20,6 +21,7 @@ using ZES.Interfaces.Causality;
 using ZES.Interfaces.Domain;
 using ZES.Interfaces.GraphQL;
 using ZES.Interfaces.Pipes;
+using IError = HotChocolate.IError;
 using IQuery = ZES.Interfaces.Domain.IQuery;
 
 namespace ZES.GraphQL
@@ -186,7 +188,7 @@ namespace ZES.GraphQL
             {
                 b.AddSchemaConfiguration(c => c.RegisterType<InstantType>());
                 b.AddSchema("Base", baseSchema);
-                
+
                 var i = 0;
                 foreach (var s in domainSchemas)
                 {
@@ -195,7 +197,27 @@ namespace ZES.GraphQL
                 }
             }
            
-            _services.AddStitchedSchema(AggregateSchemas);
+            _services.AddStitchedSchema(AggregateSchemas).AddErrorFilter<ErrorFilter>();
+        }
+
+        private class ErrorFilter : IErrorFilter
+        {
+            private readonly ILog _log;
+
+            public ErrorFilter(ILog log)
+            {
+                _log = log;
+            }
+
+            public IError OnError(IError error)
+            {
+                var errorBuilder = new ErrorBuilder();
+                var lastError = _log.Errors.Observable.FirstOrDefaultAsync()?.GetAwaiter().GetResult();
+                errorBuilder.SetMessage(lastError?.Message ?? error.Exception?.Message ?? error.Message);
+                error = errorBuilder.Build();
+
+                return error;
+            }
         }
     }
 }

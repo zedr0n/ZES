@@ -32,6 +32,12 @@ namespace ZES.Infrastructure
             return GetEnumerator();
         }
 
+        /// <summary>
+        /// Get the underlying results as a list
+        /// </summary>
+        /// <returns>Results list</returns>
+        public List<T> AsList() => _list;
+
         /// <inheritdoc />
         public void Add(T item) => _list.Add(item);
 

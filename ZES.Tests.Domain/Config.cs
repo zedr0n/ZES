@@ -3,6 +3,7 @@ using SimpleInjector;
 using ZES.Infrastructure;
 using ZES.Infrastructure.GraphQl;
 using ZES.Interfaces;
+using ZES.Interfaces.Branching;
 using ZES.Interfaces.Pipes;
 using ZES.Tests.Domain.Commands;
 using ZES.Tests.Domain.Queries;
@@ -68,8 +69,8 @@ namespace ZES.Tests.Domain
         
         public class Mutations : GraphQlMutation
         {
-            public Mutations(IBus bus, ILog log)
-                : base(bus, log)
+            public Mutations(IBus bus, ILog log, IBranchManager manager)
+                : base(bus, log, manager)
             {
             }
 

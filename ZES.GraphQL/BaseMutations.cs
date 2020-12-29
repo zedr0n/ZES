@@ -27,7 +27,7 @@ namespace ZES.GraphQL
         /// <param name="recordLog">GraphQl record log</param>
         /// <param name="remote">Remote service</param>
         public BaseMutations(IBus bus, ILog log, IBranchManager manager, IGraph graph, IMessageQueue messageQueue, IRecordLog recordLog, IRemote remote) 
-            : base(bus, log)
+            : base(bus, log, manager)
         {
             _manager = manager;
             _graph = graph;

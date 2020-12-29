@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Reactive.Linq;
 using System.Threading.Tasks;
@@ -69,6 +70,9 @@ namespace ZES.Infrastructure.Domain
         /// <inheritdoc />
         public async Task AppendCommand(ICommand command)
         {
+            if (command.EventType == null && !Debugger.IsAttached)
+                return;
+            
             var message = Encode(command);
             LogCommands(message);
             

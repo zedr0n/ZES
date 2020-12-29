@@ -1,6 +1,8 @@
 using System.Threading.Tasks;
 using ZES.Interfaces.Domain;
 
+#pragma warning disable 1998
+
 namespace ZES.Infrastructure.Domain
 {
     /// <inheritdoc />
@@ -19,7 +21,7 @@ namespace ZES.Infrastructure.Domain
         }
 
         /// <inheritdoc />
-        protected async override Task<TResult> Handle(IProjection<TState> projection, TQuery query)
+        protected override async Task<TResult> Handle(IProjection<TState> projection, TQuery query)
             => projection?.State as TResult;
     }
 

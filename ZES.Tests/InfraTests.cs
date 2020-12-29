@@ -403,7 +403,7 @@ namespace ZES.Tests
             Assert.NotNull(res.JsonData); 
             Assert.Contains("13620.3618741461", res.JsonData);
         }
-        
+
         [Fact]
         public async void CanDeserializeRequestedJson()
         {

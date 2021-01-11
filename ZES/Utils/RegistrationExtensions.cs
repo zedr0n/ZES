@@ -279,7 +279,7 @@ namespace ZES.Utils
             foreach (var command in commands)
             {
                 var iHandler = typeof(ICommandHandler<>).MakeGenericType(command);
-                var handler = assembly.GetTypesFromInterface(iHandler).FirstOrDefault();
+                var handler = assembly.GetTypesFromInterface(iHandler).FirstOrDefault(t => !t.IsAbstract);
                 if (handler == null)
                     return;
 

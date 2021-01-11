@@ -12,6 +12,7 @@ using HotChocolate.Stitching;
 using HotChocolate.Subscriptions;
 using HotChocolate.Types;
 using HotChocolate.Utilities;
+using JetBrains.Annotations;
 using Microsoft.Extensions.DependencyInjection;
 using NodaTime;
 using NodaTime.Text;
@@ -79,22 +80,6 @@ namespace ZES.GraphQL
         public IQueryExecutor Build()
         {
             var provider = _services.BuildServiceProvider();
-            
-            /*var baseSchema = Schema.Create(c =>
-            {
-                c.RegisterServiceProvider(provider);
-                
-                c.RegisterExtendedScalarTypes();
-                // c.Use(Middleware());
-                c.RegisterQueryType(typeof(BaseQuery));
-                c.RegisterSubscriptionType<SubscriptionType>();
-            });
-
-            var executor = baseSchema.MakeExecutable();
-            var eventRegistry = provider.GetService<IEventRegistry>();
- 
-            */
-            
             var executor = provider.GetService<IQueryExecutor>();
             var sender = provider.GetService<IEventSender>();
 
@@ -142,7 +127,6 @@ namespace ZES.GraphQL
             {
                 c.RegisterExtendedScalarTypes();
                 
-                // c.Use(Middleware());
                 c.RegisterType<InstantType>();
                 c.RegisterQueryType(typeof(BaseQueries));
                 c.RegisterMutationType(typeof(BaseMutations));
@@ -156,7 +140,6 @@ namespace ZES.GraphQL
                 c.RegisterExtendedScalarTypes();
                 c.RegisterType<InstantType>();
 
-                // c.Use(Middleware(t.Item1, t.Item2));
                 if (t.Item1 != null)
                 {
                     foreach (var p in t.Item1.GetMethods(BindingFlags.Public | BindingFlags.Instance |
@@ -200,6 +183,7 @@ namespace ZES.GraphQL
             _services.AddStitchedSchema(AggregateSchemas).AddErrorFilter<ErrorFilter>();
         }
 
+        [UsedImplicitly]
         private class ErrorFilter : IErrorFilter
         {
             private readonly ILog _log;

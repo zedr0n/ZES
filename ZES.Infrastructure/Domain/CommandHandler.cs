@@ -63,7 +63,7 @@ namespace ZES.Infrastructure.Domain
             try
             {
                 await _handler.Handle(command);
-                if (command.StoreInLog)
+                if (command.StoreInLog && !command.Pure)
                     await _commandLog.AppendCommand(command);
             }
             catch (Exception e)

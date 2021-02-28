@@ -46,7 +46,14 @@ namespace ZES.Infrastructure.Net
             
             return tracked.Task;
         }
-        
+
+        /// <inheritdoc />
+        public async Task<bool> SetAsync(string url, string value)
+        {
+            var res = await _jsonData.GetOrAdd(url, new AsyncLazy<string>(() => value));
+            return res == value;
+        }
+
         private async Task<string> GetAsync(string url) 
         {
             using (var w = new HttpClient())

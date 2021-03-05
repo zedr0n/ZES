@@ -6,8 +6,6 @@ namespace ZES.Tests.Domain.Events
 {
     public class RootCreatedDeserializer : EventDeserializerBase<RootCreated>
     {
-        public override string EventType => nameof(RootCreated);
-
         public override void Switch(JsonTextReader reader, string currentProperty, RootCreated e)
         {
             switch (reader.TokenType)

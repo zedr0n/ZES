@@ -1,9 +1,12 @@
+// #define USE_MERGE_FOR_INSERT
+
 using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using System.Reactive.Linq;
 using System.Threading.Tasks;
+using System.Threading.Tasks.Dataflow;
 using Gridsum.DataflowEx;
 using NodaTime;
 using SqlStreamStore.Streams;
@@ -72,6 +75,8 @@ namespace ZES.Infrastructure.Branching
             if (stream == null)
                 return;
             
+            _log.StopWatch.Start("TrimStream");
+            
             var store = GetStore(stream);
 
             if (version == ExpectedVersion.EmptyStream)
@@ -82,6 +87,7 @@ namespace ZES.Infrastructure.Branching
 
             await store.TrimStream(stream, version);
             await _graph.TrimStream(stream.Key, version);
+            _log.StopWatch.Stop("TrimStream");
         }
 
         /// <inheritdoc />
@@ -162,10 +168,14 @@ namespace ZES.Infrastructure.Branching
         {
             var currentBranch = _manager.ActiveBranch;
             var tempStreamId = $"{currentBranch}-{time.ToUnixTimeMilliseconds()}";
+            _log.StopWatch.Start("TryInsert.Branch");
             await _manager.Branch(tempStreamId, time, changes.Keys.Select(k => k.Key), true);
+            _log.StopWatch.Stop("TryInsert.Branch");
 
             var invalidEvents = new List<IEvent>();
 
+            _log.StopWatch.Start("TryInsert.AppendChanges");
+            var allEvents = new Dictionary<IStream, List<IEvent>>();
             foreach (var c in changes)
             {
                 var stream = c.Key;
@@ -184,22 +194,45 @@ namespace ZES.Infrastructure.Branching
 
                 var newStream = await _streamLocator.FindBranched(stream, tempStreamId) ?? stream.Branch(tempStreamId, ExpectedVersion.EmptyStream);
                 _log.Debug($"Inserting events ({version}..{events.Count + version}) into {newStream.Key}");
-                var invalidStreamEvents = (await Append(newStream, version, events.Concat(laterEvents))).ToList();
+                var list = events.Concat(laterEvents).ToList();
+                allEvents[stream] = list;
+                var invalidStreamEvents = (await Append(newStream, version, list, laterEvents.Count > 0)).ToList();
                 invalidEvents.AddRange(invalidStreamEvents);
             }
             
+            _log.StopWatch.Stop("TryInsert.AppendChanges");
             await _manager.Branch(currentBranch);
+            _log.StopWatch.Start("TryInsert.Merge");
             if (!invalidEvents.Any())
             {
                 foreach (var k in changes.Keys)
                 {
                     var liveStream = await _streamLocator.FindBranched(k, currentBranch);
+                    _log.StopWatch.Start("TryInsert.TrimStream");
                     await TrimStream(liveStream, k.Version);
+                    _log.StopWatch.Stop("TryInsert.TrimStream");
+#if !USE_MERGE_FOR_INSERT
+                    liveStream = await _streamLocator.FindBranched(k, currentBranch) ?? k.Branch(currentBranch, ExpectedVersion.EmptyStream);
+
+                    var store = GetStore(liveStream);
+                    var events = allEvents[k];
+                    foreach (var e in events)
+                    {
+                        e.Stream = liveStream.Key;
+                        e.Timeline = liveStream.Timeline;
+                    }
+
+                    await store.AppendToStream(liveStream, events, false);
+#endif
                 }
-                
-                await _manager.Merge(tempStreamId);
+
+#if USE_MERGE_FOR_INSERT
+                await _manager.Merge(tempStreamId, true);
+#endif
             }
             
+            _log.StopWatch.Stop("TryInsert.Merge");
+
             await _manager.DeleteBranch(tempStreamId);
             return invalidEvents;
         }
@@ -246,12 +279,13 @@ namespace ZES.Infrastructure.Branching
             return true;
         }
 
-        private async Task<IEnumerable<IEvent>> Append(IStream stream, int version, IEnumerable<IEvent> events)
+        private async Task<IEnumerable<IEvent>> Append(IStream stream, int version, IEnumerable<IEvent> events, bool checkInvalidEvents = true)
         {
+            _log.StopWatch.Start(nameof(Append));
             var enumerable = events.ToList();
             if (enumerable.Count == 0)
                 return enumerable;
-            
+
             foreach (var e in enumerable)
             {
                 e.Version = version;
@@ -259,12 +293,19 @@ namespace ZES.Infrastructure.Branching
                 e.Stream = stream.Key;
                 version++;
             }
-
-            var store = GetStore(stream);
-            await store.AppendToStream(stream, enumerable, false);
             
+            var store = GetStore(stream);
+            _log.StopWatch.Start($"{nameof(Append)}.{nameof(store.AppendToStream)}");
+            await store.AppendToStream(stream, enumerable, false).ConfigureAwait(false);
+            _log.StopWatch.Stop($"{nameof(Append)}.{nameof(store.AppendToStream)}");
+
             // check if the resulting stream is valid
-            return await GetInvalidEvents(stream);
+            IEnumerable<IEvent> invalidEvents = null;
+            if (checkInvalidEvents)
+                invalidEvents = await GetInvalidEvents(stream);
+            
+            _log.StopWatch.Stop(nameof(Append));
+            return invalidEvents ?? new List<IEvent>();
         }
 
         private async Task<IEnumerable<IEvent>> Delete(IStream stream, int version, bool doDelete)
@@ -396,5 +437,46 @@ namespace ZES.Infrastructure.Branching
                 return _sagaRepository;
             return _repository;
         }
+
+        /*private class InsertFlow : Dataflow<IStream>
+        {
+            public InsertFlow(DataflowOptions dataflowOptions, IEventStore aggregateStore, IEventStore sagaStore, IStreamLocator streamLocator, string currentBranch, IReadOnlyDictionary<IStream, List<IEvent>> allEvents) 
+                : base(dataflowOptions)
+            {
+                var block = new ActionBlock<IStream>(
+                    async s =>
+                    {
+                        IEventStore store;
+                        var liveStream = await streamLocator.FindBranched(s, currentBranch);
+                        if (liveStream != null)
+                        {
+                            store = liveStream.IsSaga ? sagaStore : aggregateStore; 
+
+                            if (s.Version == ExpectedVersion.EmptyStream)
+                                await store.DeleteStream(liveStream);
+            
+                            if (s.Version > ExpectedVersion.EmptyStream && s.Version < liveStream.Version)
+                                await store.TrimStream(liveStream, s.Version);
+                        }
+
+                        liveStream = await streamLocator.FindBranched(s, currentBranch) ?? s.Branch(currentBranch, ExpectedVersion.EmptyStream);
+                        store = liveStream.IsSaga ? sagaStore : aggregateStore;
+
+                        var events = allEvents[s];
+                        foreach (var e in events)
+                        {
+                            e.Stream = liveStream.Key;
+                            e.Timeline = liveStream.Timeline;
+                        }
+
+                        await store.AppendToStream(liveStream, events, false);
+                    }, dataflowOptions.ToExecutionBlockOption(true));
+
+                InputBlock = block;
+                RegisterChild(block);
+            }
+
+            public override ITargetBlock<IStream> InputBlock { get; }
+        }*/
     }
 }

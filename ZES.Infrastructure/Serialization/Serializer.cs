@@ -24,6 +24,7 @@ namespace ZES.Infrastructure.Serialization
     public class Serializer<T> : ISerializer<T>
         where T : class
     {
+        private readonly ILog _log;
         private readonly JsonSerializer _serializer;
         private readonly IEventSerializationRegistry _serializationRegistry;
 #if USE_JSON        
@@ -35,9 +36,11 @@ namespace ZES.Infrastructure.Serialization
         /// <para> Uses <see cref="TypeNameHandling.All"/> for JSON serialisation </para>
         /// </summary>
         /// <param name="serializationRegistry">Deserializer collection</param>
-        public Serializer(IEventSerializationRegistry serializationRegistry)
+        /// <param name="log">Log service</param>
+        public Serializer(IEventSerializationRegistry serializationRegistry, ILog log)
         {
             _serializationRegistry = serializationRegistry;
+            _log = log;
             _serializer = JsonSerializer.Create(new JsonSerializerSettings
             {
                 // Allows deserializing to the actual runtime type
@@ -101,6 +104,7 @@ namespace ZES.Infrastructure.Serialization
         /// <inheritdoc />
         public void SerializeEventAndMetadata(T e, out string eventJson, out string metadataJson)
         {
+            _log.StopWatch.Start(nameof(SerializeEventAndMetadata));
             eventJson = null;
             metadataJson = null;
 
@@ -116,11 +120,14 @@ namespace ZES.Infrastructure.Serialization
             eventJson = Serialize(e);
             metadataJson = EncodeMetadata(e);
 #endif
+            _log.StopWatch.Stop(nameof(SerializeEventAndMetadata));
         }
 
         /// <inheritdoc />
         public T Deserialize(string payload)
         {
+            T result = null;
+            _log.StopWatch.Start(nameof(Deserialize));
             using (var reader = new StringReader(payload))
             {
                 var jsonReader = new JsonTextReader(reader) { DateParseHandling = DateParseHandling.None };
@@ -128,23 +135,24 @@ namespace ZES.Infrastructure.Serialization
                 try
                 {
 #if USE_EXPLICIT
-                    if (typeof(T) != typeof(IEvent)) 
-                        return _serializer.Deserialize<T>(jsonReader);
-                    
-                    var e = DeserializeEvent(payload);
-                    if (e != null)
-                        return e as T;
+                    if (typeof(T) != typeof(IEvent))
+                        result = _serializer.Deserialize<T>(jsonReader);
+                    else
+                        result = DeserializeEvent(payload) as T;
+
 #endif
-                    return _serializer.Deserialize<T>(jsonReader);
+                    if (result == null)
+                        result = _serializer.Deserialize<T>(jsonReader);
                 }
                 catch (Exception e)
                 {
                     // Wrap in a standard .NET exception.
                     if (e is JsonSerializationException)
                         throw new SerializationException(e.Message, e);
-                    
-                    return null;
                 }
+
+                _log.StopWatch.Stop(nameof(Deserialize));
+                return result;
             }
         }
 
@@ -428,6 +436,7 @@ namespace ZES.Infrastructure.Serialization
         /// </example>
         public IEventMetadata DecodeMetadata(string json)
         {
+            _log.StopWatch.Start(nameof(DecodeMetadata));
 #if USE_EXPLICIT
             var reader = new JsonTextReader(new StringReader(json)) { DateParseHandling = DateParseHandling.None };
             
@@ -467,6 +476,7 @@ namespace ZES.Infrastructure.Serialization
                 }
             }
 
+            _log.StopWatch.Stop(nameof(DecodeMetadata));
             return metadata;
 #elif USE_JOBJECT
             var jarray = JObject.Parse(json);
@@ -647,6 +657,7 @@ namespace ZES.Infrastructure.Serialization
         
         private Event DeserializeEvent(string payload)
         {
+            _log.StopWatch.Start(nameof(DeserializeEvent)); 
             if (payload == null)
                 return null;
 
@@ -703,6 +714,7 @@ namespace ZES.Infrastructure.Serialization
                 deserializer.Switch(reader, currentProperty, e);
             }
 
+            _log.StopWatch.Stop(nameof(DeserializeEvent));
             return e;
         }
         #endif

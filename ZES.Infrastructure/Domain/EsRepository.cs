@@ -156,6 +156,7 @@ namespace ZES.Infrastructure.Domain
         public async Task<IEnumerable<IEvent>> FindInvalidEvents<T>(string id) 
             where T : class, TEventSourced, new()
         {
+            _log.StopWatch.Start(nameof(FindInvalidEvents));
             var stream = await _streams.Find<T>(id, _timeline.Id);
             if (stream == null)
                 return null;
@@ -165,7 +166,8 @@ namespace ZES.Infrastructure.Domain
             var events = await _eventStore.ReadStream<IEvent>(stream, start).ToList();
             var es = EventSourced.Create<T>(id, start - 1);
             es.LoadFrom<T>(events, true);
-
+            
+            _log.StopWatch.Stop(nameof(FindInvalidEvents));
             return es.GetInvalidEvents();
         }
 

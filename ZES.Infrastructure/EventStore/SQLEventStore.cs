@@ -142,7 +142,13 @@ namespace ZES.Infrastructure.EventStore
         {
             var events = enumerable as IList<IEvent> ?? enumerable?.ToList();
 
-            var streamMessages = events?.Select(_serializer.Encode).ToArray() ?? new NewStreamMessage[] { };
+            var streamMessages = new NewStreamMessage[] { };
+            if (events != null)
+            {
+                var encodeFlow = new EncodeFlow(Configuration.DataflowOptions, _serializer);
+                events.ToObservable().Subscribe(encodeFlow.InputBlock.AsObserver());
+                streamMessages = await encodeFlow.OutputBlock.AsObservable().ToArray();
+            }
            
             var result = await _streamStore.AppendToStream(stream.Key, stream.AppendPosition(), streamMessages);
             LogEvents(streamMessages);
@@ -246,15 +252,21 @@ namespace ZES.Infrastructure.EventStore
                 _log.StopWatch.Stop("ReadSingleStream");
                 return;
             }
-            
+           
+            _log.StopWatch.Start("ReadSingleStream.ReadStreamForwards");
             var page = await _streamStore.ReadStreamForwards(stream.Key, position, Configuration.BatchSize);
+            _log.StopWatch.Stop("ReadSingleStream.ReadStreamForwards");
             while (page.Messages.Length > 0 && count > 0)
             {
                 if (typeof(T) == typeof(IEvent))
                 {
+                    _log.StopWatch.Start("ReadSingleStream.Deserialize");
                     var dataflow = new DeserializeEventFlow(Configuration.DataflowOptions, _serializer, _cache);
                     page.Messages.Take(count).ToList().ToObservable().Subscribe(dataflow.InputBlock.AsObserver());
                     var events = await dataflow.OutputBlock.AsObservable().ToList();
+                    _log.StopWatch.Stop("ReadSingleStream.Deserialize");
+                    
+                    _log.StopWatch.Stop("ReadSingleStream");
                     foreach (var e in events.OrderBy(e => e.Version))
                     {
                         observer.OnNext((T)e);
@@ -262,12 +274,18 @@ namespace ZES.Infrastructure.EventStore
                         if (count == 0)
                             break;
                     }
+                    
+                    _log.StopWatch.Start("ReadSingleStream");
                 }
                 else
                 {
+                    _log.StopWatch.Start("ReadSingleStream.Deserialize");
                     var dataflow = new DeserializeMetadataFlow(Configuration.DataflowOptions, _serializer);
                     page.Messages.Take(count).ToList().ToObservable().Subscribe(dataflow.InputBlock.AsObserver());
                     var metadata = await dataflow.OutputBlock.AsObservable().ToList();
+                    _log.StopWatch.Stop("ReadSingleStream.Deserialize");
+
+                    _log.StopWatch.Stop("ReadSingleStream");
                     foreach (var m in metadata.OrderBy(e => e.Version))
                     {
                         observer.OnNext((T)m);
@@ -275,13 +293,17 @@ namespace ZES.Infrastructure.EventStore
                         if (count == 0)
                             break;
                     }
+                    
+                    _log.StopWatch.Start("ReadSingleStream");
                 }
                 
+                _log.StopWatch.Start("ReadSingleStream.ReadStreamForwards");
                 page = await page.ReadNext();
+                _log.StopWatch.Stop("ReadSingleStream.ReadStreamForwards");
             } 
             
-            observer.OnCompleted(); 
             _log.StopWatch.Stop("ReadSingleStream");
+            observer.OnCompleted(); 
         }
         
         private void LogEvents(IEnumerable<NewStreamMessage> messages)
@@ -354,6 +376,23 @@ namespace ZES.Infrastructure.EventStore
             
             public override ITargetBlock<StreamMessage> InputBlock { get; }
             public override ISourceBlock<IEventMetadata> OutputBlock { get; }
+        }
+        
+        private class EncodeFlow : Dataflow<IEvent, NewStreamMessage>
+        {
+            public EncodeFlow(DataflowOptions dataflowOptions, ISerializer<IEvent> serializer) 
+                : base(dataflowOptions)
+            {
+                var block = new TransformBlock<IEvent, NewStreamMessage>(
+                    serializer.Encode, dataflowOptions.ToExecutionBlockOption(true));
+
+                RegisterChild(block);
+                InputBlock = block;
+                OutputBlock = block;
+            }
+
+            public override ITargetBlock<IEvent> InputBlock { get; }
+            public override ISourceBlock<NewStreamMessage> OutputBlock { get; }
         }
     }
 }

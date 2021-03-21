@@ -168,9 +168,7 @@ namespace ZES.Infrastructure.Branching
         {
             var currentBranch = _manager.ActiveBranch;
             var tempStreamId = $"{currentBranch}-{time.ToUnixTimeMilliseconds()}";
-            _log.StopWatch.Start("TryInsert.Branch");
             await _manager.Branch(tempStreamId, time, changes.Keys.Select(k => k.Key), true);
-            _log.StopWatch.Stop("TryInsert.Branch");
 
             var invalidEvents = new List<IEvent>();
 
@@ -205,24 +203,27 @@ namespace ZES.Infrastructure.Branching
             _log.StopWatch.Start("TryInsert.Merge");
             if (!invalidEvents.Any())
             {
-                foreach (var k in changes.Keys)
+                foreach (var l in allEvents)
                 {
+                    var k = l.Key;
+                    var events = l.Value;
+                    
                     var liveStream = await _streamLocator.FindBranched(k, currentBranch);
-                    _log.StopWatch.Start("TryInsert.TrimStream");
                     await TrimStream(liveStream, k.Version);
-                    _log.StopWatch.Stop("TryInsert.TrimStream");
 #if !USE_MERGE_FOR_INSERT
-                    liveStream = await _streamLocator.FindBranched(k, currentBranch) ?? k.Branch(currentBranch, ExpectedVersion.EmptyStream);
+                    liveStream = await _streamLocator.FindBranched(k, currentBranch) ??
+                                 k.Branch(currentBranch, ExpectedVersion.EmptyStream);
 
                     var store = GetStore(liveStream);
-                    var events = allEvents[k];
                     foreach (var e in events)
                     {
                         e.Stream = liveStream.Key;
                         e.Timeline = liveStream.Timeline;
                     }
 
+                    _log.StopWatch.Start("TryInsert.AppendToStream");
                     await store.AppendToStream(liveStream, events, false);
+                    _log.StopWatch.Stop("TryInsert.AppendToStream");
 #endif
                 }
 

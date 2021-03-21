@@ -73,7 +73,7 @@ namespace ZES
         {
             var messagesHolder =
                 _messagesHolderDict.GetOrAdd(message.Timeline, s => new UncompletedMessagesSingleHolder());
-            await await messagesHolder.UpdateState(b =>
+            await messagesHolder.UpdateState(b =>
             {
                 if (message.GetType().IsClosedTypeOf(typeof(RetroactiveCommand<>)))
                 {
@@ -104,7 +104,7 @@ namespace ZES
         {
             var messagesHolder =
                 _messagesHolderDict.GetOrAdd(message.Timeline, s => new UncompletedMessagesSingleHolder());
-            await await messagesHolder.UpdateState(b =>
+            await messagesHolder.UpdateState(b =>
             {
                 if (message.GetType().IsClosedTypeOf(typeof(RetroactiveCommand<>)))
                 {

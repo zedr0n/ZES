@@ -59,7 +59,7 @@ namespace ZES.Infrastructure.Domain
         public async Task AddFailedCommand(ICommand command)
         {
             var holder = _failedCommandsSingleHolders.GetOrAdd(command.Timeline, b => new FailedCommandsSingleHolder());
-            await await holder.UpdateState(b =>
+            await holder.UpdateState(b =>
             {
                 b.Timeline = command.Timeline;
                 b.Commands.Add(command);
@@ -84,7 +84,7 @@ namespace ZES.Infrastructure.Domain
             if (failedCommands.Count == 0)
                 return;
             
-            await await holder.UpdateState(b =>
+            await holder.UpdateState(b =>
             {
                 b.Timeline = command.Timeline;
                 b.Commands.RemoveWhere(c => c.MessageId == message.MessageId);

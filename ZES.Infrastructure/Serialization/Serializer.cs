@@ -657,7 +657,6 @@ namespace ZES.Infrastructure.Serialization
         
         private Event DeserializeEvent(string payload)
         {
-            _log.StopWatch.Start(nameof(DeserializeEvent)); 
             if (payload == null)
                 return null;
 
@@ -714,7 +713,6 @@ namespace ZES.Infrastructure.Serialization
                 deserializer.Switch(reader, currentProperty, e);
             }
 
-            _log.StopWatch.Stop(nameof(DeserializeEvent));
             return e;
         }
         #endif

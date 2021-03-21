@@ -244,9 +244,7 @@ namespace ZES.Infrastructure.Branching
 
         private async Task DeleteCommands(string branchId)
         {
-            _log.StopWatch.Start("DeleteCommands");
             await _commandLog.DeleteBranch(branchId);
-            _log.StopWatch.Stop("DeleteCommands");
         }
         
         private async Task DeleteBranch<T>(string branchId)

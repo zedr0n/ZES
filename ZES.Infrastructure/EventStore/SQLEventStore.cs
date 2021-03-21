@@ -4,6 +4,7 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reactive.Concurrency;
 using System.Reactive.Linq;
 using System.Reactive.Subjects;
 using System.Threading;
@@ -37,6 +38,9 @@ namespace ZES.Infrastructure.EventStore
         private readonly ConcurrentDictionary<string, ConcurrentDictionary<int, Instant>> _versions = new ConcurrentDictionary<string, ConcurrentDictionary<int, Instant>>();
         private readonly ConcurrentDictionary<Guid, IEvent> _cache = new ConcurrentDictionary<Guid, IEvent>();
 
+        private readonly ConcurrentBag<DeserializeEventFlow> _deserializeBag = new ConcurrentBag<DeserializeEventFlow>();
+        private readonly ConcurrentBag<EncodeFlow> _encodeBag = new ConcurrentBag<EncodeFlow>();
+        
         /// <summary>
         /// Initializes a new instance of the <see cref="SqlEventStore{I}"/> class
         /// </summary>
@@ -142,15 +146,32 @@ namespace ZES.Infrastructure.EventStore
         {
             var events = enumerable as IList<IEvent> ?? enumerable?.ToList();
 
-            var streamMessages = new NewStreamMessage[] { };
+            var streamMessages = new List<NewStreamMessage>();
             if (events != null)
             {
-                var encodeFlow = new EncodeFlow(Configuration.DataflowOptions, _serializer);
-                events.ToObservable().Subscribe(encodeFlow.InputBlock.AsObserver());
-                streamMessages = await encodeFlow.OutputBlock.AsObservable().ToArray();
+                _log.StopWatch.Start("AppendToStream.Encode");
+                if (events.Count > 1)
+                {
+                    // var encodeFlow = new EncodeFlow(Configuration.DataflowOptions, _serializer);
+                    // events.ToObservable().Subscribe(encodeFlow.InputBlock.AsObserver());
+                    // streamMessages = await encodeFlow.OutputBlock.AsObservable().ToArray();
+                    if (!_encodeBag.TryTake(out var encodeFlow))
+                        encodeFlow = new EncodeFlow(Configuration.DataflowOptions, _serializer);
+
+                    if (!await encodeFlow.ProcessAsync(events, streamMessages, events.Count)) 
+                        throw new InvalidOperationException($"Encoded {streamMessages.Count} of {events.Count} events");
+ 
+                    _encodeBag.Add(encodeFlow);
+                }
+                else
+                {
+                    streamMessages = new List<NewStreamMessage> { _serializer.Encode(events.Single()) };
+                }
+                
+                _log.StopWatch.Stop("AppendToStream.Encode");
             }
            
-            var result = await _streamStore.AppendToStream(stream.Key, stream.AppendPosition(), streamMessages);
+            var result = await _streamStore.AppendToStream(stream.Key, stream.AppendPosition(), streamMessages.ToArray());
             LogEvents(streamMessages);
 
             var version = result.CurrentVersion - stream.DeletedCount;
@@ -254,18 +275,43 @@ namespace ZES.Infrastructure.EventStore
             }
            
             _log.StopWatch.Start("ReadSingleStream.ReadStreamForwards");
-            var page = await _streamStore.ReadStreamForwards(stream.Key, position, Configuration.BatchSize);
+            var page = await _streamStore.ReadStreamForwards(stream.Key, position, Math.Min(Configuration.BatchSize, count));
             _log.StopWatch.Stop("ReadSingleStream.ReadStreamForwards");
             while (page.Messages.Length > 0 && count > 0)
             {
                 if (typeof(T) == typeof(IEvent))
                 {
                     _log.StopWatch.Start("ReadSingleStream.Deserialize");
-                    var dataflow = new DeserializeEventFlow(Configuration.DataflowOptions, _serializer, _cache);
-                    page.Messages.Take(count).ToList().ToObservable().Subscribe(dataflow.InputBlock.AsObserver());
-                    var events = await dataflow.OutputBlock.AsObservable().ToList();
-                    _log.StopWatch.Stop("ReadSingleStream.Deserialize");
+                    /*var events = new ConcurrentBag<IEvent>();
+                    var dataflow = new DeserializeEventToBagFlow(Configuration.DataflowOptions, _serializer, events);
+                    await dataflow.ProcessAsync(page.Messages);*/
+                    var events = new List<IEvent>();
+                    if (count > 1)
+                    {
+                        var aCount = Math.Min(count, Configuration.BatchSize);
+                        
+                        // var dataflow = new DeserializeEventFlow(Configuration.DataflowOptions, _serializer, _cache);
+                        if (!_deserializeBag.TryTake(out var dataflow))
+                            dataflow = new DeserializeEventFlow(Configuration.DataflowOptions, _serializer, _cache);
+
+                        if (!await dataflow.ProcessAsync(page.Messages, events, aCount))
+                            throw new InvalidOperationException("Not all events have been processed");
+                        
+                        _log.StopWatch.Stop("ReadSingleStream.Deserialize");
+                        _deserializeBag.Add(dataflow);
+                    }
+                    else
+                    {
+                        var e = _serializer.Deserialize(await page.Messages.SingleOrDefault().GetJsonData());
+                        _log.StopWatch.Stop("ReadSingleStream.Deserialize");
+                        observer.OnNext((T)e);
+                        break;
+                    }
                     
+                    /*var dataflow = new DeserializeEventFlow(Configuration.DataflowOptions, _serializer, _cache);
+                    page.Messages.ToList().ToObservable().SubscribeOn(Scheduler.Default).Subscribe(dataflow.InputBlock.AsObserver());
+                    var events = await dataflow.OutputBlock.AsObservable().ToList();*/
+
                     _log.StopWatch.Stop("ReadSingleStream");
                     foreach (var e in events.OrderBy(e => e.Version))
                     {
@@ -308,6 +354,8 @@ namespace ZES.Infrastructure.EventStore
         
         private void LogEvents(IEnumerable<NewStreamMessage> messages)
         {
+            if (!Configuration.LogEnabled(nameof(LogEvents)))
+                return;
             foreach (var m in messages) 
                 _log.Debug($"IsSaga : {!_isDomainStore} \n {m.JsonData}");
         }
@@ -319,6 +367,25 @@ namespace ZES.Infrastructure.EventStore
 
             foreach (var e in events)
                 _messageQueue.Event(e);
+        }
+
+        private class DeserializeEventToBagFlow : Dataflow<StreamMessage>
+        {
+            public DeserializeEventToBagFlow(DataflowOptions dataflowOptions, ISerializer<IEvent> serializer, ConcurrentBag<IEvent> events) 
+                : base(dataflowOptions)
+            {
+                var block = new ActionBlock<StreamMessage>(
+                    async m =>
+                {
+                    var payload = await m.GetJsonData();
+                    events.Add(serializer.Deserialize(payload));
+                }, dataflowOptions.ToExecutionBlockOption(true));
+                
+                RegisterChild(block);
+                InputBlock = block;
+            }
+
+            public override ITargetBlock<StreamMessage> InputBlock { get; }
         }
 
         private class DeserializeEventFlow : Dataflow<StreamMessage, IEvent>

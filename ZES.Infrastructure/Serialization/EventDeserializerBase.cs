@@ -8,7 +8,7 @@ namespace ZES.Infrastructure.Serialization
         where T : Event, new()
     {
         /// <inheritdoc />
-        public virtual string EventType => typeof(T).FullName;
+        public virtual string EventType => typeof(T).Name;
 
         /// <inheritdoc />
         public void Switch(JsonTextReader reader, string currentProperty, Event e) =>

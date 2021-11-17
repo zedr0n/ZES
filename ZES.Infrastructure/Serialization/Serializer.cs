@@ -602,14 +602,14 @@ namespace ZES.Infrastructure.Serialization
             if (e == null)
                return;
             
-            var sb = new StringBuilder();
-            var sw = new StringWriter(sb);
-            var writer = new JsonTextWriter(sw) { Formatting = Formatting.Indented };
-            
             var serializer = _serializationRegistry.GetSerializer(e);
             if (serializer == null)
                 return;
             
+            var sb = new StringBuilder();
+            var sw = new StringWriter(sb);
+            var writer = new JsonTextWriter(sw) { Formatting = Formatting.Indented };
+
             writer.WriteStartObject();
             WriteEventMetadata(writer, e);
             

@@ -8,7 +8,7 @@ namespace ZES.Infrastructure.Serialization
         where T : class, IEvent
     {
         /// <inheritdoc />
-        public string EventType => typeof(T).Name;
+        public string EventType => typeof(T).FullName;
 
         /// <inheritdoc />
         public void Write(JsonTextWriter writer, IEvent e) => Write(writer, e as T);

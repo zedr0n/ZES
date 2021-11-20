@@ -143,7 +143,7 @@ namespace ZES.Infrastructure.Domain
         {
             if (string.IsNullOrEmpty(eventType))
                 throw new InvalidOperationException("Event type not known for commmand");
-            return $"{_timeline.Id}:Command:{eventType}";
+            return $"{_timeline.Id}:Command:{eventType.Split('.').Last()}";
         }
         
         private NewStreamMessage Encode(ICommand command) =>

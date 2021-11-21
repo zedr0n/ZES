@@ -1,0 +1,26 @@
+@startuml C4_Main
+ 
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Container.puml
+'!define ICONS https://raw.githubusercontent.com/tupadr3/plantuml-icon-font-sprites/master/
+ 
+'!include ICONS/font-awesome-5/users.puml
+'!include ICONS/font-awesome-5/user_tie.puml
+'!include ICONS/material/contact_phone.puml
+ 
+'LAYOUT_AS_SKETCH()
+'LAYOUT_LEFT_RIGHT()
+'LAYOUT_WITH_LEGEND()
+ 
+'Person_Ext(user, "Clients", "Clients who are using OOO service", "users")
+Person(user, "Client", "Clients who are using the GraphQL service")
+Boundary(b_graphQL, "GraphQL ASP.Net service") {
+ 
+  System(graphQL, "GraphQL server", "HotChocolate server")   
+  System(recordLog, "Log recorder", "Log the operations")
+  Rel(graphQL, recordLog, "Log the command and query results")
+  Rel(user, graphQL, "Makes a GraphQL API call")
+}
+  System(replayer, "Log replayer", "Replays and validates the log")
+  Rel(user, replayer, "Replay the log")
+ 
+@enduml

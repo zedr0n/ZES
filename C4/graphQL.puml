@@ -1,0 +1,35 @@
+﻿@startuml
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Container.puml
+
+'LAYOUT_AS_SKETCH()
+'LAYOUT_LEFT_RIGHT()
+
+Person_Ext(user, "Client", "Clients who are using the GraphQL service")
+
+System_Boundary(graphql_call, "GraphQL API call") {
+    Container(commandBus, "Command bus", "Microservice","Process the commands asynchronously")
+    Container(queryBus, "Query bus", "Microservice","Process the queries asynchronously")
+    Container(remotes, "Remotes", "Microservice", "Push or pull to remote")
+    Container(branchManager, "Branch manager", "Microservice", "Tracks all the active timelines")
+    Container(log, "Log service", "Microservice", "Contains all the active logs")
+    Container(projection, "Projection manager", "Microservice", "Manages all ES projections")
+    Container(commandLog, "Command log", "Microservice", "Logs the commands and their status")
+    Container(errorLog, "Error log", "Microservice", "Logs all the errors in the system")
+    Container(eventStore, "Event store", "SQLStreamStore, MSSQL", "Contains all the events and commands")
+
+    Rel(user, commandBus, "Forward the mutation", "GraphQL")
+    Rel(user, queryBus, "Forward the query", "GraphQL")
+    Rel(user, remotes, "Request remote operation", "GraphQL")
+    Rel(user, branchManager, "Switch or query active timeline","GraphQL")
+    Rel(user, log, "Get current logs", "GraphQL")
+    Rel(user, projection, "Requests to rebuild all projections", "GraphQL")
+    
+    Rel(queryBus, projection, "Gets the query result from projection", "Call")
+    Rel(commandBus, commandLog, "Append the command to log", "Call")
+    Rel(commandBus, errorLog, "Append the errors for failed commands", "Call")
+    Rel(commandBus, eventStore, "Persist the command and resulting events", "Call")
+    Rel(projection, eventStore, "Build the projection from events", "Call")
+}
+
+
+@enduml

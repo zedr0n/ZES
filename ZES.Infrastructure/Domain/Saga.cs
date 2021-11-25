@@ -30,6 +30,8 @@ namespace ZES.Infrastructure.Domain
         /// <inheritdoc />
         public string SagaId(IEvent e)
         {
+            if (e == null)
+                return null;
             var sagaId = _sagaId.SingleOrDefault(h => h.Key.IsInstanceOfType(e)).Value;
             return sagaId?.Invoke(e);
         }

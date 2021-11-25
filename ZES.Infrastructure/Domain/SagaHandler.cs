@@ -45,16 +45,16 @@ namespace ZES.Infrastructure.Domain
                 .Bind();
 
             var tracker = new EventTracker(Configuration.DataflowOptions, _messageQueue);
-            _messageQueue.Messages.SubscribeOn(Scheduler.Default).Subscribe(tracker.InputBlock.AsObserver(), _source.Token);
-            tracker.OutputBlock.LinkTo(dispatcher.InputBlock, s => s != null && !_source.IsCancellationRequested);
+            /* _messageQueue.Messages.SubscribeOn(Scheduler.Default).Subscribe(tracker.InputBlock.AsObserver(), _source.Token);
+            / tracker.OutputBlock.LinkTo(dispatcher.InputBlock, s => s != null && !_source.IsCancellationRequested); */
             
-            /*_messageQueue.Messages.Select(e =>
+            _messageQueue.Messages.Select(e =>
             {
                 _messageQueue.UncompleteMessage(e).Wait();
                 var tracked = new Tracked<IEvent>(e);
                 tracked.Task.ContinueWith(t => _messageQueue.CompleteMessage(e));
                 return tracked;
-            }).SubscribeOn(Scheduler.Default).Subscribe(dispatcher.InputBlock.AsObserver(), _source.Token);*/
+            }).SubscribeOn(Scheduler.Default).Subscribe(dispatcher.InputBlock.AsObserver(), _source.Token);
             dispatcher.CompletionTask.ContinueWith(t => _source.Cancel());
         }
 

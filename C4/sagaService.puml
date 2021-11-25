@@ -1,0 +1,19 @@
+﻿@startuml
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Container.puml
+!include <c4/C4_Component.puml>  
+
+Container(eventQueue, "Event Queue","Microservice","Track the live events in the system")
+
+Container_Boundary(sagaService, "Saga service") {
+    Component(eventTracker, "Event tracker", "Class")
+    Component(sagaDispatcher, "Saga dispatcher", "Class")
+    Component(sagaFlow, "Saga flow","Class")
+}
+
+Rel(eventQueue, eventTracker, "Dispatches the event")
+Rel(eventTracker, eventQueue, "Uncompletes the event")
+Rel(eventTracker, sagaDispatcher, "Propagates the event")
+Rel(sagaDispatcher, sagaFlow, "Resolves the saga id and creates")
+Rel(sagaFlow, eventQueue, "Completes the event")
+
+@enduml

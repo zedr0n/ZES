@@ -1,6 +1,44 @@
 ﻿@startuml
 !include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Container.puml
+!include <c4/C4_Component.puml>  
 
-Container_Ext(commandBus, "", "", "")
+'LAYOUT_LEFT_RIGHT()
+
+title Container diagram for command bus
+
+Container(graphQL, "GraphQL server", "ASP.NET Core")
+Container_Boundary(commandBus, "Command bus") {
+    Component(commandAsync, "Command processor", "Class", "Asynchronous command processor")
+    Component(commandDispatcher, "Command dispatcher", "Class", "Dispatches commands for processing asynchronously")
+    Component(commandMessageQueue, "Command queue", "Class", "Tracks command completion in the system")
+    Component(commandHandler, "Command handler", "Class", "CQRS command handler")
+    Component(commandLog, "Command log", "Class", "")
+}
+
+Component(errorLog, "Error log", "Class", "")
+Container_Boundary(branchManager_container, "Branch manager") {
+    Component(branchManager, "Branch manager", "Class", "Branch manager")
+    Component(timeline, "Current timeline", "Class", "")
+}
+
+Component(esRepository, "Aggregate repository", "Class", "")
+ContainerDb(eventStore, "Event store", "SQLStreamStore", "")
+
+Rel(graphQL, commandAsync, "Forwards the command created from mutation")
+Rel(commandAsync, commandMessageQueue, "Marks the command as uncompleted")
+Rel(commandAsync, commandDispatcher, "Dispatches the command for processing")
+Rel(commandDispatcher, commandHandler, "Uses")
+Rel(commandHandler, commandMessageQueue, "Marks the command completion")
+Rel(commandAsync, branchManager, "Gets the current timeline")
+Rel(branchManager, timeline, "Produces")
+Rel(commandHandler, timeline, "Uses")
+Rel(commandHandler, commandLog, "Appends the command")
+Rel(timeline, commandDispatcher, "A separate dispatcher for each aggregate on the timeline")
+Rel(commandHandler, errorLog, "Logs exceptions for failures")
+Rel(esRepository, eventStore, "Uses")
+Rel(commandHandler, esRepository, "Uses")
+'Rel(commandDispatcher, branchManager, "Gets the dispatcher for current timeline")
+
+'Rel(graphQL, commandBus)
 
 @enduml

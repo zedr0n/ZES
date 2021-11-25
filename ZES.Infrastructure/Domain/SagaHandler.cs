@@ -42,15 +42,19 @@ namespace ZES.Infrastructure.Domain
             
             var dispatcher = _dispatcher
                 .WithOptions(Configuration.DataflowOptions)
-                .Bind(); 
+                .Bind();
 
-            _messageQueue.Messages.Select(e =>
+            var tracker = new EventTracker(Configuration.DataflowOptions, _messageQueue);
+            _messageQueue.Messages.SubscribeOn(Scheduler.Default).Subscribe(tracker.InputBlock.AsObserver(), _source.Token);
+            tracker.OutputBlock.LinkTo(dispatcher.InputBlock, s => s != null && !_source.IsCancellationRequested);
+            
+            /*_messageQueue.Messages.Select(e =>
             {
                 _messageQueue.UncompleteMessage(e).Wait();
                 var tracked = new Tracked<IEvent>(e);
                 tracked.Task.ContinueWith(t => _messageQueue.CompleteMessage(e));
                 return tracked;
-            }).SubscribeOn(Scheduler.Default).Subscribe(dispatcher.InputBlock.AsObserver(), _source.Token);
+            }).SubscribeOn(Scheduler.Default).Subscribe(dispatcher.InputBlock.AsObserver(), _source.Token);*/
             dispatcher.CompletionTask.ContinueWith(t => _source.Cancel());
         }
 
@@ -189,6 +193,39 @@ namespace ZES.Infrastructure.Domain
                         new SagaFlow(_options, sagaId, _repository, _log);
                 }
             } 
+        }
+        
+        /// <inheritdoc />
+        private class EventTracker : Dataflow<IEvent, Tracked<IEvent>>
+        {
+            /// <summary>
+            /// Initializes a new instance of the <see cref="EventTracker"/> class.
+            /// </summary>
+            /// <param name="dataflowOptions">Dataflow options</param>
+            /// <param name="messageQueue">Message queue service</param>
+            public EventTracker(DataflowOptions dataflowOptions, IMessageQueue messageQueue) 
+                : base(dataflowOptions)
+            {
+                var block = new TransformBlock<IEvent, Tracked<IEvent>>(async e =>
+                {
+                    if (new TSaga().SagaId(e) == null)
+                        return null;
+                    
+                    await messageQueue.UncompleteMessage(e);
+                    var tracked = new Tracked<IEvent>(e);
+                    tracked.Task.ContinueWith(_ => messageQueue.CompleteMessage(e));
+                    return tracked;
+                });
+                InputBlock = block;
+                OutputBlock = block;
+                RegisterChild(block);
+            }
+
+            /// <inheritdoc />
+            public override ITargetBlock<IEvent> InputBlock { get; }
+
+            /// <inheritdoc />
+            public override ISourceBlock<Tracked<IEvent>> OutputBlock { get; }
         }
     }
 }

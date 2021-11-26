@@ -3,17 +3,24 @@
 !include <c4/C4_Component.puml>  
 
 Container(eventQueue, "Event Queue","Microservice","Track the live events in the system")
+Container(sagaStore, "Saga event store","Microservice", "Saga event store")
+Container(commandBus, "Command bus", "Microservice", "Handles the commands")
 
 Container_Boundary(sagaService, "Saga service") {
-    Component(eventTracker, "Event tracker", "Class")
+    Component(eventSelector, "Event selector", "Object")
     Component(sagaDispatcher, "Saga dispatcher", "Class")
     Component(sagaFlow, "Saga flow","Class")
+    Component(saga, "Saga", "Object")
 }
 
-Rel(eventQueue, eventTracker, "Dispatches the event")
-Rel(eventTracker, eventQueue, "Uncompletes the event")
-Rel(eventTracker, sagaDispatcher, "Propagates the event")
-Rel(sagaDispatcher, sagaFlow, "Resolves the saga id and creates")
+Rel(eventQueue, eventSelector, "Dispatches the event")
+Rel(eventSelector, eventQueue, "Uncompletes the event")
+Rel(eventSelector, sagaDispatcher, "Propagates the event")
+Rel(sagaDispatcher, sagaFlow, "Resolves the saga id and creates a separate instance per saga id")
 Rel(sagaFlow, eventQueue, "Completes the event")
+Rel(sagaFlow, saga, "Dispatch the event to be handled")
+Rel(saga, sagaFlow, "Return the resulting commands")
+Rel(sagaFlow, sagaStore, "Persist and hydrate the saga")
+Rel(sagaFlow, commandBus, "Dispatch the commands")
 
 @enduml

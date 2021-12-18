@@ -89,22 +89,16 @@ namespace ZES.Infrastructure.Domain
         {
             _sagaId[typeof(TEvent)] = e => sagaId(e as TEvent);
             var isSagaSnapshot = typeof(ISagaSnapshotEvent).IsAssignableFrom(typeof(TEvent));
-            
-            Action<TEvent> handler = e =>
+
+            void Handler(TEvent e)
             {
-                action?.Invoke(e);
-                DefaultHash();                               
-            };
-            if (action != null && isSagaSnapshot) 
-            {
-                handler = e =>
-                {
+                if (isSagaSnapshot) 
                     ApplyEvent(e as ISagaSnapshotEvent);
-                    action(e);
-                };
+                action?.Invoke(e);
+                DefaultHash();
             }
 
-            Register(handler);
+            Register((Action<TEvent>)Handler);
         }
 
         private void ClearUncommittedCommands()

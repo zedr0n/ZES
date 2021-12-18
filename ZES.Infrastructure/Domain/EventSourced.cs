@@ -150,8 +150,11 @@ namespace ZES.Infrastructure.Domain
         public virtual void Snapshot()
         {
             var e = CreateSnapshot();
-            if (e != null)
-                When(e);
+            if (e == null) 
+                return;
+
+            e.Version = Version + 1;
+            When(e);
         }
 
         /// <summary>

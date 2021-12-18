@@ -13,11 +13,11 @@ namespace ZES.Infrastructure.Domain
         protected override void Register<TEvent>(Action<TEvent> action)
         {
             var handler = action;
-            if (action != null && typeof(ISnapshotEvent).IsAssignableFrom(typeof(TEvent)))
+            if (typeof(ISnapshotEvent).IsAssignableFrom(typeof(TEvent)))
             {
                 handler = e =>
                 {
-                    action(e);
+                    action?.Invoke(e);
                     SnapshotVersion = e.Version;
                 };
             }

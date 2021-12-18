@@ -583,7 +583,7 @@ namespace ZES.Infrastructure.Serialization
             writer.WriteValue(e.Timeline);
             
             writer.WritePropertyName(nameof(IEventMetadata.MessageType));
-            writer.WriteValue(e.GetType().Name);
+            writer.WriteValue(e.GetType().FullName);
             
             writer.WritePropertyName(nameof(IEventMetadata.Version));
             writer.WriteValue(e.Version);

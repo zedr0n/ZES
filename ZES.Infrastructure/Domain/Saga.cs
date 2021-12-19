@@ -12,6 +12,7 @@ namespace ZES.Infrastructure.Domain
     {
         private readonly List<ICommand> _undispatchedCommands = new List<ICommand>();
         private readonly Dictionary<Type, Func<IEvent, string>> _sagaId = new Dictionary<Type, Func<IEvent, string>>();
+        private readonly HashSet<Type> _initializerEvents = new HashSet<Type>();
 
         /// <inheritdoc />
         public IEnumerable<ICommand> GetUncommittedCommands()
@@ -35,7 +36,13 @@ namespace ZES.Infrastructure.Domain
             var sagaId = _sagaId.SingleOrDefault(h => h.Key.IsInstanceOfType(e)).Value;
             return sagaId?.Invoke(e);
         }
-        
+
+        /// <inheritdoc />
+        public bool IsInitializer(IEvent e)
+        {
+            return e != null && _initializerEvents.Contains(e.GetType());
+        }
+
         /// <inheritdoc />
         public override void LoadFrom<T>(IEnumerable<IEvent> pastEvents, bool computeHash = false)
         {
@@ -75,7 +82,7 @@ namespace ZES.Infrastructure.Domain
                 IgnoreCurrentEvent = true;
             });
         }
-        
+
         /// <summary>
         /// Associate the event with the specified saga id resolver
         /// and handle using the provided action
@@ -83,8 +90,9 @@ namespace ZES.Infrastructure.Domain
         /// </summary>
         /// <param name="sagaId">Id of saga handling this event</param>
         /// <param name="action">Handler applying the event to saga</param>
+        /// <param name="isInitializer">Specifies whether the event can spawn a new saga</param>
         /// <typeparam name="TEvent">Event type</typeparam>
-        protected void Register<TEvent>(Func<TEvent, string> sagaId, Action<TEvent> action = null)
+        protected void Register<TEvent>(Func<TEvent, string> sagaId, Action<TEvent> action = null, bool isInitializer = true)
             where TEvent : class, IEvent
         {
             _sagaId[typeof(TEvent)] = e => sagaId(e as TEvent);
@@ -99,6 +107,8 @@ namespace ZES.Infrastructure.Domain
             }
 
             Register((Action<TEvent>)Handler);
+            if (isInitializer)
+                _initializerEvents.Add(typeof(TEvent));
         }
 
         private void ClearUncommittedCommands()

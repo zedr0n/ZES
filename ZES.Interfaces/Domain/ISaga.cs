@@ -25,6 +25,13 @@ namespace ZES.Interfaces.Domain
         /// <param name="e">Event to pass to saga</param>
         /// <returns>Saga id or null if saga does not handle this event</returns>
         string SagaId(IEvent e);
+
+        /// <summary>
+        /// Determines if the event can spawn a new saga
+        /// </summary>
+        /// <param name="e">Event for the saga</param>
+        /// <returns>True if new saga is allowed</returns>
+        bool IsInitializer(IEvent e);
         
         /// <summary>
         /// Process event

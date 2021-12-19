@@ -1,4 +1,3 @@
-using System;
 using ZES.Infrastructure.Domain;
 using ZES.Infrastructure.Utils;
 using ZES.Interfaces;
@@ -7,19 +6,18 @@ using ZES.Tests.Domain.Events;
 
 namespace ZES.Tests.Domain.Sagas
 {
+    /// <inheritdoc />
     public class TestSaga : StatelessSaga<TestSaga.State, TestSaga.Trigger>
     {
-        private string _rootId;
-
         /// <summary>
         /// Initializes a new instance of the <see cref="TestSaga"/> class.
         /// </summary>
         public TestSaga()
         {
-            Register<RootCreated>(e => e.AggregateRootId(), Trigger.Create, e => _rootId = e.AggregateRootId());
-            Register<RootUpdated>(e => e.AggregateRootId(), Trigger.Update);
+            RegisterWithParameters<RootCreated>(e => e.AggregateRootId(), Trigger.Create);
+            RegisterWithParameters<RootUpdated>(e => e.AggregateRootId(), Trigger.Update);
             RegisterOnSnapshot<Root>();
-            Register<TestSagaSnapshotEvent>(e => e.Id, e => _rootId = e.Id);
+            Register<TestSagaSnapshotEvent>(e => e.Id);
         }
         
         public enum Trigger 
@@ -49,24 +47,25 @@ namespace ZES.Tests.Domain.Sagas
         }
 
         /// <inheritdoc/>
-        protected override ISnapshotEvent CreateSnapshot() => new TestSagaSnapshotEvent(StateMachine.State, _rootId);
+        protected override ISnapshotEvent CreateSnapshot() => new TestSagaSnapshotEvent(StateMachine.State, Id);
 
         /// <inheritdoc/>
         protected override void ConfigureStateMachine()
         {
-            base.ConfigureStateMachine(); 
-
+            base.ConfigureStateMachine();
+            
+            var eventTrigger = GetTrigger<RootCreated>();
             StateMachine.Configure(State.Open)
                 .Permit(Trigger.Create, State.Complete);
             StateMachine.Configure(State.Complete)
                 .Ignore(Trigger.Update)
-                .OnEntry(() =>
-                {
-                    if (_rootId == string.Empty)
-                        throw new InvalidOperationException();
-                    if (!_rootId.Contains("Copy"))
-                        SendCommand(new CreateRoot($"{_rootId}Copy"));
-                });
+                .OnEntryFrom(eventTrigger, Handle);
+        }
+
+        private void Handle(RootCreated e)
+        {
+            if (!e.RootId.Contains("Copy"))
+                SendCommand(new CreateRoot($"{e.RootId}Copy"));
         }
 
         private class TestSagaSnapshotEvent : SnapshotEvent

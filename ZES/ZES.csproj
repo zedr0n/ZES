@@ -17,6 +17,7 @@
       <PackageReference Include="SimpleInjector" Version="4.4.2" />
       <PackageReference Include="SqlStreamStore.MsSql" Version="1.2.1-alpha.2" />
       <PackageReference Include="SqlStreamStore.MySql" Version="1.2.1-alpha.2" />
+      <PackageReference Include="System.Reflection.DispatchProxy" Version="4.7.1" />
     </ItemGroup>
 
     <ItemGroup>

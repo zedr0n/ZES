@@ -11,8 +11,10 @@ using Xunit.Abstractions;
 using ZES.GraphQL;
 using ZES.Infrastructure;
 using ZES.Infrastructure.Causality;
+using ZES.Infrastructure.Domain;
 using ZES.Interfaces;
 using ZES.Interfaces.Causality;
+using ZES.Tests.Domain.Sagas;
 using ZES.Tests.Utils;
 
 namespace ZES.Tests

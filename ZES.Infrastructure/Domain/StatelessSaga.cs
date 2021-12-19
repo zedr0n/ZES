@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using Stateless;
 using ZES.Interfaces;
 
@@ -12,6 +13,7 @@ namespace ZES.Infrastructure.Domain
     public abstract class StatelessSaga<TState, TTrigger> : Saga
         where TState : Enum
     {
+        private readonly List<Action<StateMachine<TState, TTrigger>>> _configurationActions = new List<Action<StateMachine<TState, TTrigger>>>();
         private StateMachine<TState, TTrigger> _stateMachine;
         
         /// <summary>
@@ -42,6 +44,12 @@ namespace ZES.Infrastructure.Domain
         protected TState InitialState { get; set; } = default(TState);
 
         /// <summary>
+        /// Gets the triggers combined with the associated event
+        /// </summary>
+        private Dictionary<Type, StateMachine<TState, TTrigger>.TriggerWithParameters> Triggers { get; } =
+            new Dictionary<Type, StateMachine<TState, TTrigger>.TriggerWithParameters>();
+
+        /// <summary>
         /// Associate the event with the specified trigger, saga id resolver
         /// and handle using the provided action
         /// <para> - Actions normally deal with saga state and can be null </para>
@@ -55,7 +63,20 @@ namespace ZES.Infrastructure.Domain
         {
             RegisterIf(sagaId, e => t, e => true, action);
         }
-        
+       
+        /// <summary>
+        /// Associate the event with the specified trigger, saga id resolver
+        /// <para> - Actions normally deal with saga state and can be null </para>
+        /// </summary>
+        /// <param name="sagaId">Id of saga handling this event</param>
+        /// <param name="t">Trigger value</param>
+        /// <typeparam name="TEvent">Handled event type</typeparam>
+        protected void RegisterWithParameters<TEvent>(Func<TEvent, string> sagaId, TTrigger t)
+            where TEvent : class, IEvent
+        {
+            RegisterIfWithParameters(sagaId, t, e => true);
+        }
+
         /// <summary>
         /// Associate the event with the specified trigger, saga id resolver
         /// and handle using the provided action
@@ -104,8 +125,63 @@ namespace ZES.Infrastructure.Domain
                 else
                     IgnoreCurrentEvent = true;
             }
+
+            Register(sagaId, Handler);
+        }
+
+        /// <summary>
+        /// Associate the event with the specified trigger, saga id resolver
+        /// and handle using the provided action
+        /// <para> - Actions normally deal with saga state and can be null </para>
+        /// </summary>
+        /// <param name="sagaId">Id of saga handling this event</param>
+        /// <param name="trigger">Base trigger</param>
+        /// <param name="predicate">Event predicate</param>
+        /// <typeparam name="TEvent">Handled event type</typeparam>
+        protected void RegisterIfWithParameters<TEvent>(
+            Func<TEvent, string> sagaId,
+            TTrigger trigger,
+            Func<TEvent, bool> predicate)
+            where TEvent : class, IEvent
+        {
+            void Handler(TEvent e)
+            {
+                var condition = (predicate == null || predicate(e)) && StateMachine.CanFire(trigger);
+                if (!condition)
+                {
+                    IgnoreCurrentEvent = true;
+                    return;
+                }
+
+                var triggerWithParameters =
+                    Triggers[typeof(TEvent)] as StateMachine<TState, TTrigger>.TriggerWithParameters<TEvent>;
+                StateMachine.Fire(triggerWithParameters, e);
+            }
+
+            void ConfigurationAction(StateMachine<TState, TTrigger> stateMachine)
+            {
+                if (Triggers.ContainsKey(typeof(TEvent)))
+                    throw new Exception($"{typeof(TEvent).Name} already registered with saga {GetType().Name}");
+            
+                Triggers[typeof(TEvent)] = stateMachine.SetTriggerParameters<TEvent>(trigger);
+            }
+            
+            _configurationActions.Add(ConfigurationAction);
             
             Register(sagaId, Handler);
+        }
+
+        /// <summary>
+        /// Get the associated trigger with parameters for the event
+        /// </summary>
+        /// <typeparam name="TEvent">Event type</typeparam>
+        /// <returns>Trigger with parameters</returns>
+        protected StateMachine<TState, TTrigger>.TriggerWithParameters<TEvent> GetTrigger<TEvent>()
+            where TEvent : class, IEvent
+        {
+            if (Triggers.TryGetValue(typeof(TEvent), out var t))
+                return t as StateMachine<TState, TTrigger>.TriggerWithParameters<TEvent>;
+            return null;
         }
 
         /// <inheritdoc />
@@ -117,6 +193,8 @@ namespace ZES.Infrastructure.Domain
         protected virtual void ConfigureStateMachine()
         {
             StateMachine = new StateMachine<TState, TTrigger>(InitialState);
+            foreach (var configurationAction in _configurationActions)
+                configurationAction(StateMachine);
         }
 
         /// <inheritdoc />
@@ -128,7 +206,7 @@ namespace ZES.Infrastructure.Domain
             StateMachine = null;    // clear the state machine to reinitialize the state
             InitialState = (TState)Enum.Parse(typeof(TState), snapshotEvent.CurrentState);
             SnapshotVersion = snapshotEvent.Version;
-            DefaultHash();
+            Triggers.Clear();
         }
         
         /// <summary>

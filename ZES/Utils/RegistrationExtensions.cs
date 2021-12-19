@@ -102,10 +102,13 @@ namespace ZES.Utils
                 var handler = typeof(SagaHandler<>).MakeGenericType(s);
                 c.Register(iHandler, handler, Lifestyle.Singleton);
 
-                var dispatcherType = typeof(SagaHandler<>.SagaDispatcher.Builder).MakeGenericType(s);
-                var flowType = typeof(SagaHandler<>.SagaDispatcher.SagaFlow.Builder).MakeGenericType(s);
+                var dispatcherType = typeof(SagaHandler<>.SagaDispatcher).MakeGenericType(s);
                 c.Register(dispatcherType, dispatcherType, Lifestyle.Singleton);
-                c.Register(flowType, flowType, Lifestyle.Singleton);
+
+                var flowType = typeof(SagaHandler<>.SagaFlow).MakeGenericType(s);
+                var sagaFlowFactoryType = typeof(IFactory<>).MakeGenericType(flowType);
+                c.RegisterFactory(sagaFlowFactoryType);
+                c.Register(flowType, flowType, Lifestyle.Transient);
             }
         }
 

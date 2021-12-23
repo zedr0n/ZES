@@ -53,7 +53,7 @@ namespace ZES.Utils
                     ?.MakeGenericMethod(a);
                 if (m != null)
                 {
-                    var reg = Lifestyle.Singleton.CreateRegistration(typeof(IEventSourced), () => m.Invoke(null, new object[] { string.Empty, 0 }), c);
+                    var reg = Lifestyle.Singleton.CreateRegistration(typeof(IEventSourced), () => m.Invoke(null, new object[] { string.Empty, 0, null }), c);
                     c.Collection.Append(typeof(IEventSourced), reg);
                 }
 

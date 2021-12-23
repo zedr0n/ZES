@@ -91,7 +91,7 @@ namespace ZES.Infrastructure.Domain
             where T : class, TEventSourced, new()
         {
             var instance = await Find<T>(id);
-            return instance ?? EventSourced.Create<T>(id, 0);
+            return instance ?? EventSourced.Create<T>(id, 0, _log);
         }
 
         /// <inheritdoc />
@@ -114,7 +114,7 @@ namespace ZES.Infrastructure.Domain
             var events = await _eventStore.ReadStream<IEvent>(stream, start).ToList();
             if (events.Count == 0)
                 return null;
-            es = EventSourced.Create<T>(id, start - 1);
+            es = EventSourced.Create<T>(id, start - 1, _log);
             es.LoadFrom<T>(events, computeHash);
             
             return es as T;
@@ -130,7 +130,7 @@ namespace ZES.Infrastructure.Domain
 
             var start = stream.SnapshotVersion;
             var events = await _eventStore.ReadStream<IEvent>(stream, start).ToList();
-            var es = EventSourced.Create<T>(id, start - 1);
+            var es = EventSourced.Create<T>(id, start - 1, _log);
             es.LoadFrom<T>(events, true);
 
             return es.IsValid;
@@ -146,7 +146,7 @@ namespace ZES.Infrastructure.Domain
 
             var start = stream.SnapshotVersion;            
             var events = await _eventStore.ReadStream<IEvent>(stream, start).ToList();
-            var es = EventSourced.Create<T>(id, start - 1);
+            var es = EventSourced.Create<T>(id, start - 1, _log);
             es.LoadFrom<T>(events, true);
 
             return es.LastValidVersion;
@@ -164,7 +164,7 @@ namespace ZES.Infrastructure.Domain
             // return new List<IEvent>();
             var start = stream.SnapshotVersion;            
             var events = await _eventStore.ReadStream<IEvent>(stream, start).ToList();
-            var es = EventSourced.Create<T>(id, start - 1);
+            var es = EventSourced.Create<T>(id, start - 1, _log);
             es.LoadFrom<T>(events, true);
             
             _log.StopWatch.Stop(nameof(FindInvalidEvents));

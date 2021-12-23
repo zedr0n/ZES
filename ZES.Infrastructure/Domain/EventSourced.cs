@@ -17,6 +17,11 @@ namespace ZES.Infrastructure.Domain
         private bool _computeHash;
 
         /// <summary>
+        /// Gets or sets the log service
+        /// </summary>
+        public ILog Log { get; set; }
+        
+        /// <summary>
         /// Gets or sets current change hash
         /// </summary>
         public string Hash
@@ -59,9 +64,10 @@ namespace ZES.Infrastructure.Domain
         /// </summary>
         /// <param name="id">Event sourced identifier</param>
         /// <param name="version">Initial version</param>
+        /// <param name="log">Log service</param>
         /// <typeparam name="T">Event sourced type</typeparam>
         /// <returns>Event sourced instance with the provided id</returns>
-        public static T Create<T>(string id, int version)
+        public static T Create<T>(string id, int version, ILog log = null)
             where T : class, IEventSourced, new()
         {
             var instance = new T() as EventSourced;
@@ -69,6 +75,7 @@ namespace ZES.Infrastructure.Domain
                 return default(T);
 
             instance.Id = id;
+            instance.Log = log;
             if (version > 0)
                 instance.Version = version;
             return instance as T;

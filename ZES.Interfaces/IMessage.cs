@@ -19,6 +19,11 @@ namespace ZES.Interfaces
         Guid AncestorId { get; }
 
         /// <summary>
+        /// Gets or sets the correlation id for the message
+        /// </summary>
+        string CorrelationId { get; set; }
+        
+        /// <summary>
         /// Gets or sets gets event timestamp
         /// </summary>
         Instant Timestamp { get; set; }

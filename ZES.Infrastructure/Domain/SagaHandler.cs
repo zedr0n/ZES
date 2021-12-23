@@ -136,8 +136,11 @@ namespace ZES.Infrastructure.Domain
                     
                     var commands = saga.GetUncommittedCommands().OfType<Command>();
                     foreach (var c in commands)
+                    {
                         c.AncestorId = e.MessageId;
-                    
+                        c.CorrelationId = id;
+                    }
+
                     await _repository.Save(saga);
                 }
                 catch (Exception exception)

@@ -36,6 +36,7 @@ namespace ZES.Infrastructure.Domain
             {
                 e.CommandId = command.MessageId;
                 e.AncestorId = command.MessageId;
+                e.CorrelationId = command.CorrelationId;
             }
             
             if (command.UseTimestamp)

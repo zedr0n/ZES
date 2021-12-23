@@ -14,7 +14,7 @@ namespace ZES.Tests.Domain.Sagas
         /// </summary>
         public TestSaga()
         {
-            RegisterWithParameters<RootCreated>(e => e.AggregateRootId(), Trigger.Create);
+            RegisterWithParameters<RootCreated>(e => e.RootId, Trigger.Create);
             RegisterWithParameters<RootUpdated>(e => e.AggregateRootId(), Trigger.Update);
             RegisterOnSnapshot<Root>();
             Register<TestSagaSnapshotEvent>(e => e.Id);

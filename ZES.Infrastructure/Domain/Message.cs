@@ -27,6 +27,9 @@ namespace ZES.Infrastructure.Domain
         public Guid AncestorId { get; set; }
 
         /// <inheritdoc />
+        public string CorrelationId { get; set; }
+
+        /// <inheritdoc />
         public Instant Timestamp { get; set; }
 
         /// <inheritdoc />

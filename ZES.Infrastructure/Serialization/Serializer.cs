@@ -381,6 +381,9 @@ namespace ZES.Infrastructure.Serialization
             writer.WritePropertyName(nameof(IEventMetadata.AncestorId));
             writer.WriteValue(e.AncestorId);
             
+            writer.WritePropertyName(nameof(IEventMetadata.CorrelationId));
+            writer.WriteValue(e.CorrelationId);
+
             writer.WritePropertyName(nameof(IEventMetadata.Timestamp));
             writer.WriteValue(InstantPattern.ExtendedIso.Format(e.Timestamp));
             
@@ -429,6 +432,7 @@ namespace ZES.Infrastructure.Serialization
         /// <example> {
         /// "MessageId": "00782936-41af-47bb-8c32-b1fa4e240372",
         /// "AncestorId": "1d24d8a8-669c-487f-b1ca-9e36f7fd86db",
+        /// "CorrelationId" : "",
         /// "Timestamp": 1583368437195,
         /// "Version": 0,
         /// "MessageType": "RecordCreated",
@@ -454,6 +458,9 @@ namespace ZES.Infrastructure.Serialization
                         break;
                     case JsonToken.String when currentProperty == nameof(IEventMetadata.AncestorId):
                         metadata.AncestorId = Guid.Parse(reader.Value.ToString());
+                        break;
+                    case JsonToken.String when currentProperty == nameof(IEventMetadata.CorrelationId):
+                        metadata.CorrelationId = reader.Value.ToString();
                         break;
                     case JsonToken.String when currentProperty == nameof(IEventMetadata.MessageId):
                         metadata.MessageId = Guid.Parse(reader.Value.ToString());
@@ -576,6 +583,9 @@ namespace ZES.Infrastructure.Serialization
             writer.WritePropertyName(nameof(IEventMetadata.AncestorId));
             writer.WriteValue(e.AncestorId);
             
+            writer.WritePropertyName(nameof(IEventMetadata.CorrelationId));
+            writer.WriteValue(e.CorrelationId);
+
             writer.WritePropertyName(nameof(IEventMetadata.Timestamp));
             writer.WriteValue(InstantPattern.ExtendedIso.Format(e.Timestamp));
             
@@ -683,6 +693,9 @@ namespace ZES.Infrastructure.Serialization
                         break;
                     case JsonToken.String when currentProperty == nameof(Message.AncestorId):
                         e.AncestorId = Guid.Parse(reader.Value.ToString());
+                        break;
+                    case JsonToken.String when currentProperty == nameof(Message.CorrelationId):
+                        e.CorrelationId = reader.Value.ToString();
                         break;
                     case JsonToken.String when currentProperty == nameof(Message.Timestamp):
                         e.Timestamp = InstantPattern.ExtendedIso.Parse(reader.Value.ToString()).Value;

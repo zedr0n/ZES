@@ -50,6 +50,20 @@ namespace ZES.Infrastructure.Domain
             new Dictionary<Type, StateMachine<TState, TTrigger>.TriggerWithParameters>();
 
         /// <summary>
+        /// Associate the event with the specified trigger using correlation id for saga id resolver
+        /// and handle using the provided action
+        /// <para> - Actions normally deal with saga state and can be null </para>
+        /// </summary>
+        /// <param name="t">Trigger value</param>
+        /// <param name="action">Event handler</param>
+        /// <typeparam name="TEvent">Handled event type</typeparam>
+        protected void Register<TEvent>(TTrigger t, Action<TEvent> action = null)
+            where TEvent : class, IEvent
+        {
+            RegisterIf(e => e.CorrelationId, e => t, e => true, action);
+        }
+
+        /// <summary>
         /// Associate the event with the specified trigger, saga id resolver
         /// and handle using the provided action
         /// <para> - Actions normally deal with saga state and can be null </para>
@@ -63,7 +77,19 @@ namespace ZES.Infrastructure.Domain
         {
             RegisterIf(sagaId, e => t, e => true, action);
         }
-       
+      
+        /// <summary>
+        /// Associate the event with the specified trigger using correlation id for saga id resolver
+        /// <para> - Actions normally deal with saga state and can be null </para>
+        /// </summary>
+        /// <param name="t">Trigger value</param>
+        /// <typeparam name="TEvent">Handled event type</typeparam>
+        protected void RegisterWithParameters<TEvent>(TTrigger t)
+            where TEvent : class, IEvent
+        {
+            RegisterIfWithParameters<TEvent>(e => e.CorrelationId, t, e => true);
+        }
+
         /// <summary>
         /// Associate the event with the specified trigger, saga id resolver
         /// <para> - Actions normally deal with saga state and can be null </para>

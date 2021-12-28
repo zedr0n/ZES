@@ -39,11 +39,9 @@ namespace ZES.Infrastructure.Domain
             _source?.Cancel();
             _source = new CancellationTokenSource();
             
-            _messageQueue.Messages.Select(e =>
+            _messageQueue.Messages
+                .Where(e => new TSaga().SagaId(e) != null).Select(e =>
             {
-                if (new TSaga().SagaId(e) == null)
-                    return null;
-                
                 _messageQueue.UncompleteMessage(e).Wait();
                 var tracked = new Tracked<IEvent>(e);
                 tracked.Task.ContinueWith(t => _messageQueue.CompleteMessage(e));

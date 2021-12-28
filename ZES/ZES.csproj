@@ -15,8 +15,8 @@
       <PackageReference Include="JetBrains.Annotations" Version="2019.1.1" />
       <PackageReference Include="NLog" Version="4.6.8" />
       <PackageReference Include="SimpleInjector" Version="4.4.2" />
-      <PackageReference Include="SqlStreamStore.MsSql" Version="1.2.1-alpha.2" />
-      <PackageReference Include="SqlStreamStore.MySql" Version="1.2.1-alpha.2" />
+      <PackageReference Include="SqlStreamStore.MsSql" Version="1.2.1-alpha.3.31" />
+      <PackageReference Include="SqlStreamStore.MySql" Version="1.2.1-alpha.3.31" />
       <PackageReference Include="System.Reflection.DispatchProxy" Version="4.7.1" />
     </ItemGroup>
 

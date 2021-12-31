@@ -21,6 +21,16 @@ namespace ZES.Infrastructure
             "Common",
             "Message",
         };
+        
+        /// <summary>
+        /// Gets the Event Store RPC connection string
+        /// </summary>
+        public static string RpcConnectionString => "esdb://localhost:2113?tls=false";
+        
+        /// <summary>
+        /// Gets the Event Store TCP connection string
+        /// </summary>
+        public static string TcpConnectionString => "ConnectTo=tcp://admin:changeit@localhost:1113";
 
         /// <summary>
         /// Gets default dataflow options 
@@ -31,6 +41,11 @@ namespace ZES.Infrastructure
             BlockMonitorEnabled = false,
             FlowMonitorEnabled = false,
         };
+
+        /// <summary>
+        /// Gets a value indicating whether to use SQLStreamStore instead of Event Store
+        /// </summary>
+        public static bool UseSqlStore => true;
         
         /// <summary>
         /// Gets a value indicating whether to use local MySql or Azure MSSql

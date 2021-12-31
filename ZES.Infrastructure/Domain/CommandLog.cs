@@ -12,6 +12,7 @@ using ZES.Interfaces;
 using ZES.Interfaces.Domain;
 using ZES.Interfaces.EventStore;
 using ZES.Interfaces.Serialization;
+using ExpectedVersion = SqlStreamStore.Streams.ExpectedVersion;
 
 namespace ZES.Infrastructure.Domain
 {

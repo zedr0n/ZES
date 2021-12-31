@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using NodaTime;
-using SqlStreamStore.Streams;
 using ZES.Infrastructure.Domain;
 using ZES.Interfaces;
 using ZES.Interfaces.EventStore;
@@ -38,8 +37,11 @@ namespace ZES.Infrastructure.EventStore
         /// <param name="version">Event sourced version</param>
         /// <param name="parent">Parent stream info</param>
         /// <exception cref="InvalidOperationException">if key is not of expected format</exception>
-        public Stream(string key, int version = ExpectedVersion.NoStream, IStream parent = null) 
+        public Stream(string key, int version = int.MinValue, IStream parent = null)
         {
+            if (version == int.MinValue)
+                version = ExpectedVersion.NoStream;
+            
             var tokens = key.Split(':');
             if (tokens.Length != 3)
                 throw new InvalidOperationException();

@@ -6,6 +6,7 @@ using ZES.Infrastructure.EventStore;
 using ZES.Interfaces;
 using ZES.Interfaces.EventStore;
 using ZES.Interfaces.Serialization;
+using ExpectedVersion = SqlStreamStore.Streams.ExpectedVersion;
 
 namespace ZES.Infrastructure.Utils
 {

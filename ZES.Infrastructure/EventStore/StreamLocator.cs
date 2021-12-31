@@ -76,7 +76,7 @@ namespace ZES.Infrastructure.EventStore
             where T : IEventSourced
         {
             await Ready;
-            var aStream = new Stream(id, typeof(T).Name, ExpectedVersion.NoStream, timeline);
+            var aStream = new Stream(id, typeof(T).Name, SqlStreamStore.Streams.ExpectedVersion.NoStream, timeline);
             return _streams.TryGetValue(aStream.Key, out var stream) ? stream : default; 
         }
 
@@ -91,7 +91,7 @@ namespace ZES.Infrastructure.EventStore
         public async Task<IStream> FindBranched(IStream stream, string timeline)
         {
             await Ready;
-            var aStream = new Stream(stream.Id, stream.Type, ExpectedVersion.NoStream, timeline);
+            var aStream = new Stream(stream.Id, stream.Type, SqlStreamStore.Streams.ExpectedVersion.NoStream, timeline);
             return _streams.TryGetValue(aStream.Key, out var theStream) ? theStream : default;
         }
 
@@ -100,10 +100,10 @@ namespace ZES.Infrastructure.EventStore
 
         private IStream GetOrAdd(IStream stream)
         {
-            if (stream.Key.StartsWith("$$"))
+            if (stream == null || stream.Key.StartsWith("$$"))
                 return null;
 
-            if (stream.Version == ExpectedVersion.NoStream)
+            if (stream.Version == SqlStreamStore.Streams.ExpectedVersion.NoStream)
             {
                 _streams.TryRemove(stream.Key, out _);
                 return null;

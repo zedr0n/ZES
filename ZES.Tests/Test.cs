@@ -82,7 +82,7 @@ namespace ZES.Tests
                 container.Options.DefaultLifestyle = Lifestyle.Singleton;
 
                 var root = CreateRoot();
-                root.ComposeApplication(container);
+                root.ComposeApplication(container, Configuration.UseSqlStore);
                 container.Register<IGraphQlGenerator, GraphQlGenerator>(Lifestyle.Singleton);
                 container.Register<IServiceCollection>(() => new ServiceCollection(), Lifestyle.Singleton);
                 container.Register<ISchemaProvider, SchemaProvider>(Lifestyle.Singleton);

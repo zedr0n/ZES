@@ -19,6 +19,7 @@ using ZES.Interfaces.Causality;
 using ZES.Interfaces.Domain;
 using ZES.Interfaces.EventStore;
 using ZES.Interfaces.Pipes;
+using ExpectedVersion = SqlStreamStore.Streams.ExpectedVersion;
 
 namespace ZES.Infrastructure.Branching
 {

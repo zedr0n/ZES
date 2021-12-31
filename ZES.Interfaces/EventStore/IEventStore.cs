@@ -19,7 +19,8 @@ namespace ZES.Interfaces.EventStore
         /// <param name="start">Starting version for the read</param>
         /// <param name="count">Number of events to read</param>
         /// <returns>Cold observable of read events</returns>
-        IObservable<T> ReadStream<T>(IStream stream, int start, int count = -1);
+        IObservable<T> ReadStream<T>(IStream stream, int start, int count = -1)
+            where T : class, IEventMetadata;
 
         /// <summary>
         /// Gets the version of the event with the timestamp before specified
@@ -68,13 +69,6 @@ namespace ZES.Interfaces.EventStore
         /// Hot observable representing the current streams 
         /// </value>
         IObservable<IStream> Streams { get; }
-
-        /// <summary>
-        /// Asynchronously evaluates the size of the event store
-        /// </summary>
-        /// <remarks>Can be used to check if the graph is synced to store</remarks>
-        /// <returns>Event store size</returns>
-        Task<long> Size();
 
         /// <summary>
         /// Gets the current streams in the store 

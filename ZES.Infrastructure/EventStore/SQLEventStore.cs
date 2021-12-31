@@ -65,9 +65,6 @@ namespace ZES.Infrastructure.EventStore
         public IObservable<IStream> Streams => _streams.AsObservable().Select(s => s.Copy());
 
         /// <inheritdoc />
-        public async Task<long> Size() => await _streamStore.ReadHeadPosition() + 1;
-
-        /// <inheritdoc />
         public IObservable<IStream> ListStreams(string branch = null, Func<string, bool> predicate = null, CancellationToken token = default)
         {
             if (predicate == null)
@@ -98,6 +95,7 @@ namespace ZES.Infrastructure.EventStore
 
         /// <inheritdoc />
         public IObservable<T> ReadStream<T>(IStream stream, int start, int count = -1) 
+            where T : class, IEventMetadata
         { 
             var allStreams = stream.Ancestors.ToList();
             allStreams.Add(stream);
@@ -165,7 +163,7 @@ namespace ZES.Infrastructure.EventStore
                 }
                 else
                 {
-                    streamMessages = new List<NewStreamMessage> { _serializer.Encode(events.Single()) };
+                    streamMessages = new List<NewStreamMessage> { _serializer.EncodeSql(events.Single()) };
                 }
                 
                 _log.StopWatch.Stop("AppendToStream.Encode");
@@ -451,7 +449,7 @@ namespace ZES.Infrastructure.EventStore
                 : base(dataflowOptions)
             {
                 var block = new TransformBlock<IEvent, NewStreamMessage>(
-                    serializer.Encode, dataflowOptions.ToExecutionBlockOption(true));
+                    serializer.EncodeSql, dataflowOptions.ToExecutionBlockOption(true));
 
                 RegisterChild(block);
                 InputBlock = block;

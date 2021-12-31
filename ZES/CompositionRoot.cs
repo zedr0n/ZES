@@ -1,8 +1,12 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net;
 using System.Reflection;
 using System.Threading.Tasks;
+using EventStore.ClientAPI;
+using EventStore.ClientAPI.Common.Log;
+using EventStore.ClientAPI.Projections;
 using NLog;
 using SimpleInjector;
 using SqlStreamStore;
@@ -26,6 +30,7 @@ using ZES.Interfaces.Serialization;
 using ZES.Utils;
 using BranchManager = ZES.Infrastructure.Branching.BranchManager;
 using ILog = ZES.Interfaces.ILog;
+using ILogger = NLog.ILogger;
 
 #pragma warning disable CS1998
 
@@ -51,12 +56,13 @@ namespace ZES
                 container.Collection.Register<IGraphQlQuery>(new Type[] { });
             container.Verify();
         }
-        
+
         /// <summary>
         /// Register the services with container
         /// </summary>
         /// <param name="container"><see cref="SimpleInjector"/> container</param>
-        public void ComposeApplication(Container container)
+        /// <param name="useSqlStore">Use SQLStreamStore</param>
+        public void ComposeApplication(Container container, bool useSqlStore = true)
         {
             container.Options.RegisterParameterConventions(new List<IParameterConvention>
             {
@@ -71,6 +77,14 @@ namespace ZES
             container.Register<ICommandHandler<RequestJson>, JsonRequestHandler>(Lifestyle.Singleton);
             
             var store = GetStore(container);
+            if (!useSqlStore)
+            {
+                var tcpStore = GetTCPStore(container);
+                var projectionsManager = GetTCPProjectionsManager(container);
+
+                container.RegisterConditional(typeof(IEventStoreConnection), tcpStore, c => true);
+                container.RegisterConditional(typeof(ProjectionsManager), projectionsManager, c => true);
+            }
             
             container.RegisterConditional(
                 typeof(IStreamStore),
@@ -103,8 +117,11 @@ namespace ZES
             
             container.Register<IEventSerializationRegistry, EventSerializationRegistry>(Lifestyle.Singleton);
             container.Register(typeof(ISerializer<>), typeof(Serializer<>), Lifestyle.Singleton);
-            container.Register(typeof(IEventStore<>), typeof(SqlEventStore<>), Lifestyle.Singleton);
-            
+            if (useSqlStore)
+                container.Register(typeof(IEventStore<>), typeof(SqlEventStore<>), Lifestyle.Singleton);
+            else
+                container.Register(typeof(IEventStore<>), typeof(TcpEventStore<>), Lifestyle.Singleton);
+
             container.Register<ITimeline, Timeline>(Lifestyle.Singleton);
             container.Register<IMessageQueue, MessageQueue>(Lifestyle.Singleton);
             container.Register<ICommandLog, CommandLog>(Lifestyle.Singleton);
@@ -178,7 +195,36 @@ namespace ZES
                 typeof(IStreamStore),
                 store, 
                 c => c.Consumer.Target.Parameter?.GetCustomAttribute(typeof(RemoteAttribute)) != null);
-        } 
+        }
+
+        private Registration GetTCPProjectionsManager(Container container)
+        {
+            return Lifestyle.Singleton.CreateRegistration(
+                () =>
+            {
+                var projectionsManager = new ProjectionsManager(
+                    log: new ConsoleLogger(),
+                    httpEndPoint: new IPEndPoint(IPAddress.Parse("127.0.0.1"), 2113),
+                    operationTimeout: TimeSpan.FromMilliseconds(5000),
+                    httpSchema: "http");
+                return projectionsManager;
+            }, container);
+        }
+
+        private Registration GetTCPStore(Container container)
+        {
+            return Lifestyle.Singleton.CreateRegistration(
+                () =>
+                {
+                    var builder = ConnectionSettings.Create()
+                        .EnableVerboseLogging()
+                        .UseConsoleLogger()
+                        .DisableTls();
+                    var connection = EventStoreConnection.Create(Configuration.TcpConnectionString, builder);
+                    connection.ConnectAsync().Wait();
+                    return connection;
+                }, container);
+        }
         
         private Registration GetStore(Container container)
         {

@@ -238,7 +238,7 @@ namespace ZES.Infrastructure.Serialization
         /// <inheritdoc />
         public IStream DecodeStreamMetadata(string json)
         {
-            if (json == null)
+            if (json == null || json == "{}")
                 return null;
 #if USE_EXPLICIT
             

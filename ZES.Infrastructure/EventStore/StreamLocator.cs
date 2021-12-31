@@ -5,8 +5,6 @@ using System.Linq;
 using System.Reactive.Linq;
 using System.Reactive.Threading.Tasks;
 using System.Threading.Tasks;
-using NodaTime;
-using SqlStreamStore.Streams;
 using ZES.Infrastructure.Alerts;
 using ZES.Interfaces;
 using ZES.Interfaces.Domain;
@@ -76,7 +74,7 @@ namespace ZES.Infrastructure.EventStore
             where T : IEventSourced
         {
             await Ready;
-            var aStream = new Stream(id, typeof(T).Name, SqlStreamStore.Streams.ExpectedVersion.NoStream, timeline);
+            var aStream = new Stream(id, typeof(T).Name, ExpectedVersion.NoStream, timeline);
             return _streams.TryGetValue(aStream.Key, out var stream) ? stream : default; 
         }
 
@@ -91,7 +89,7 @@ namespace ZES.Infrastructure.EventStore
         public async Task<IStream> FindBranched(IStream stream, string timeline)
         {
             await Ready;
-            var aStream = new Stream(stream.Id, stream.Type, SqlStreamStore.Streams.ExpectedVersion.NoStream, timeline);
+            var aStream = new Stream(stream.Id, stream.Type, ExpectedVersion.NoStream, timeline);
             return _streams.TryGetValue(aStream.Key, out var theStream) ? theStream : default;
         }
 
@@ -103,7 +101,7 @@ namespace ZES.Infrastructure.EventStore
             if (stream == null || stream.Key.StartsWith("$$"))
                 return null;
 
-            if (stream.Version == SqlStreamStore.Streams.ExpectedVersion.NoStream)
+            if (stream.Version == ExpectedVersion.NoStream)
             {
                 _streams.TryRemove(stream.Key, out _);
                 return null;

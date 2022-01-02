@@ -21,7 +21,18 @@ namespace ZES.Infrastructure
             "Common",
             "Message",
         };
-        
+
+        static Configuration()
+        {
+            var env = Environment.GetEnvironmentVariable("UseSqlStore".ToUpper());
+            UseSqlStore = env == null || env != 0.ToString();
+        }
+
+        /// <summary>
+        /// Gets a value indicating whether gets the flag indicating whether to use the Embedded TCP Store
+        /// </summary>
+        public static bool UseEmbeddedTcpStore => true;
+
         /// <summary>
         /// Gets the Event Store RPC connection string
         /// </summary>
@@ -45,7 +56,7 @@ namespace ZES.Infrastructure
         /// <summary>
         /// Gets a value indicating whether to use SQLStreamStore instead of Event Store
         /// </summary>
-        public static bool UseSqlStore => true;
+        public static bool UseSqlStore { get; private set; }
         
         /// <summary>
         /// Gets a value indicating whether to use local MySql or Azure MSSql

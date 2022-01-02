@@ -1,9 +1,7 @@
 using System;
-using System.Collections;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
-using System.Reactive;
 using System.Reactive.Linq;
 using System.Reactive.Subjects;
 using System.Text;
@@ -30,8 +28,6 @@ namespace ZES.Infrastructure.EventStore
     /// <typeparam name="TStreamMessage">Type of the stream message for existing events</typeparam>
     public abstract class EventStoreBase<TEventSourced, TNewStreamMessage, TStreamMessage> : IEventStore<TEventSourced>
         where TEventSourced : IEventSourced
-        where TNewStreamMessage : class
-        where TStreamMessage : class
     {
         private readonly ISerializer<IEvent> _serializer;
         private readonly IMessageQueue _messageQueue;

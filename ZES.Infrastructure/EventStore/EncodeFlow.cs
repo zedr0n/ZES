@@ -11,7 +11,6 @@ namespace ZES.Infrastructure.EventStore
     /// </summary>
     /// <typeparam name="T">Type of encoded event</typeparam>
     public class EncodeFlow<T> : Dataflow<IEvent, T>
-        where T : class
     {
         /// <summary>
         /// Initializes a new instance of the <see cref="EncodeFlow{T}"/> class.

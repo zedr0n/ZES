@@ -61,8 +61,7 @@ namespace ZES
         /// Register the services with container
         /// </summary>
         /// <param name="container"><see cref="SimpleInjector"/> container</param>
-        /// <param name="useSqlStore">Use SQLStreamStore</param>
-        public void ComposeApplication(Container container, bool useSqlStore = true)
+        public void ComposeApplication(Container container)
         {
             container.Options.RegisterParameterConventions(new List<IParameterConvention>
             {
@@ -77,12 +76,11 @@ namespace ZES
             container.Register<ICommandHandler<RequestJson>, JsonRequestHandler>(Lifestyle.Singleton);
             
             var store = GetStore(container);
-            if (!useSqlStore)
+            if (!Configuration.UseSqlStore)
             {
-                var tcpStore = GetTCPStore(container);
                 var projectionsManager = GetTCPProjectionsManager(container);
 
-                container.RegisterConditional(typeof(IEventStoreConnection), tcpStore, c => true);
+                container.Register(GetTCPStoreConnection, Lifestyle.Singleton);
                 container.RegisterConditional(typeof(ProjectionsManager), projectionsManager, c => true);
             }
             
@@ -117,8 +115,8 @@ namespace ZES
             
             container.Register<IEventSerializationRegistry, EventSerializationRegistry>(Lifestyle.Singleton);
             container.Register(typeof(ISerializer<>), typeof(Serializer<>), Lifestyle.Singleton);
-            if (useSqlStore)
-                container.Register(typeof(IEventStore<>), typeof(SqlEventStore<>), Lifestyle.Singleton);
+            if (Configuration.UseSqlStore)
+                container.Register(typeof(IEventStore<>), typeof(SqlEventStoreEx<>), Lifestyle.Singleton);
             else
                 container.Register(typeof(IEventStore<>), typeof(TcpEventStore<>), Lifestyle.Singleton);
 
@@ -211,19 +209,15 @@ namespace ZES
             }, container);
         }
 
-        private Registration GetTCPStore(Container container)
+        private IEventStoreConnection GetTCPStoreConnection()
         {
-            return Lifestyle.Singleton.CreateRegistration(
-                () =>
-                {
-                    var builder = ConnectionSettings.Create()
-                        .EnableVerboseLogging()
-                        .UseConsoleLogger()
-                        .DisableTls();
-                    var connection = EventStoreConnection.Create(Configuration.TcpConnectionString, builder);
-                    connection.ConnectAsync().Wait();
-                    return connection;
-                }, container);
+            var builder = ConnectionSettings.Create()
+                .EnableVerboseLogging()
+                .UseConsoleLogger()
+                .DisableTls();
+            var connection = EventStoreConnection.Create(Configuration.TcpConnectionString, builder);
+            connection.ConnectAsync().Wait();
+            return connection;
         }
         
         private Registration GetStore(Container container)

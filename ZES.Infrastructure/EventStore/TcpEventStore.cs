@@ -36,6 +36,12 @@ namespace ZES.Infrastructure.EventStore
         /// <inheritdoc />
         protected override Task ListStreamsObservable(IObserver<IStream> observer, Func<string, bool> predicate, CancellationToken token)
         {
+            if (Configuration.UseEmbeddedTcpStore)
+            {
+                observer.OnCompleted();
+                return Task.CompletedTask;
+            }
+            
             var streams = new HashSet<string>();
             var taskCompletionSource = new TaskCompletionSource<bool>();
             _connection.SubscribeToAllFrom(

@@ -12,7 +12,7 @@
 
     <ItemGroup>
       <PackageReference Include="Common.Logging.NLog45" Version="3.4.1" />
-      <PackageReference Include="EventStore.Client" Version="21.2.1" />
+      <PackageReference Include="EventStore.Client" Version="20.6.0" />
       <PackageReference Include="JetBrains.Annotations" Version="2019.1.1" />
       <PackageReference Include="Microsoft.Extensions.Options" Version="5.0.0" />
       <PackageReference Include="NLog" Version="4.6.8" />

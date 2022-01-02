@@ -2,6 +2,8 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using EventStore.ClientAPI;
+using EventStore.ClientAPI.Embedded;
 using HotChocolate.Execution.Instrumentation;
 using Microsoft.Extensions.DependencyInjection;
 using NLog;
@@ -11,11 +13,10 @@ using Xunit.Abstractions;
 using ZES.GraphQL;
 using ZES.Infrastructure;
 using ZES.Infrastructure.Causality;
-using ZES.Infrastructure.Domain;
 using ZES.Interfaces;
 using ZES.Interfaces.Causality;
-using ZES.Tests.Domain.Sagas;
 using ZES.Tests.Utils;
+using ILogger = NLog.ILogger;
 
 namespace ZES.Tests
 {
@@ -73,7 +74,7 @@ namespace ZES.Tests
             var result = await player.Replay(logFile);
             return result;
         }
-
+        
         protected virtual Container CreateContainer(List<Action<Container>> registrations = null) 
         {
             lock (_lock)
@@ -82,7 +83,7 @@ namespace ZES.Tests
                 container.Options.DefaultLifestyle = Lifestyle.Singleton;
 
                 var root = CreateRoot();
-                root.ComposeApplication(container, Configuration.UseSqlStore);
+                root.ComposeApplication(container);
                 container.Register<IGraphQlGenerator, GraphQlGenerator>(Lifestyle.Singleton);
                 container.Register<IServiceCollection>(() => new ServiceCollection(), Lifestyle.Singleton);
                 container.Register<ISchemaProvider, SchemaProvider>(Lifestyle.Singleton);
@@ -93,6 +94,8 @@ namespace ZES.Tests
                 
                 // container.Register<IGraph, Graph>(Lifestyle.Singleton);
                 container.Register<IGraph, NullGraph>(Lifestyle.Singleton);
+                if (!Configuration.UseSqlStore && Configuration.UseEmbeddedTcpStore)
+                    container.Register(GetEmbeddedConnection, Lifestyle.Singleton);
                 container.Options.AllowOverridingRegistrations = false;
                 
                 if (registrations == null)
@@ -105,7 +108,25 @@ namespace ZES.Tests
                 return container;
             }
         }
-
+        
         private static CompositionRoot CreateRoot() => new CompositionRoot();
+
+        private IEventStoreConnection GetEmbeddedConnection()
+        {
+            var nodeBuilder = EmbeddedVNodeBuilder 
+                .AsSingleNode()
+                .OnDefaultEndpoints() 
+                .StartStandardProjections()
+                .DisableExternalTcpTls()
+                .DisableInternalTcpTls()
+                .RunInMemory();
+
+            var node = nodeBuilder.Build();
+            node.Start();
+
+            var connection = EmbeddedEventStoreConnection.Create(node);
+            connection.ConnectAsync().Wait();
+            return connection;
+        }
     }
 }

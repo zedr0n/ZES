@@ -74,12 +74,11 @@ namespace ZES.Infrastructure.Utils
         /// <typeparam name="T">Encoded message type</typeparam>
         /// <returns>Encoded message</returns>
         public static T Encode<T>(this ISerializer<IEvent> serializer, IEvent e)
-            where T : class
         {
             if (typeof(T) == typeof(NewStreamMessage))
-                return EncodeSql(serializer, e) as T;
+                return (T)(object)EncodeSql(serializer, e);
             if (typeof(T) == typeof(EventData))
-                return EncodeTcp(serializer, e) as T;
+                return (T)(object)EncodeTcp(serializer, e);
 
             throw new NotImplementedException($"Encoding for {typeof(T).Name} not implemented");
         }

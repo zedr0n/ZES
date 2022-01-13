@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using EventStore.ClientAPI;
 using EventStore.ClientAPI.Embedded;
+using EventStore.ClientAPI.SystemData;
 using HotChocolate.Execution.Instrumentation;
 using Microsoft.Extensions.DependencyInjection;
 using NLog;
@@ -117,14 +118,15 @@ namespace ZES.Tests
                 .AsSingleNode()
                 .OnDefaultEndpoints() 
                 .StartStandardProjections()
-                .DisableExternalTcpTls()
-                .DisableInternalTcpTls()
+                .DisableFirstLevelHttpAuthorization()
                 .RunInMemory();
 
             var node = nodeBuilder.Build();
             node.Start();
 
-            var connection = EmbeddedEventStoreConnection.Create(node);
+            var scp = ConnectionSettings.Create()
+                .SetDefaultUserCredentials(new UserCredentials("admin", "changeit"));
+            var connection = EmbeddedEventStoreConnection.Create(node, scp);
             connection.ConnectAsync().Wait();
             return connection;
         }

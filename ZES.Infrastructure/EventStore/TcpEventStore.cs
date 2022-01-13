@@ -5,6 +5,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using EventStore.ClientAPI;
+using EventStore.ClientAPI.SystemData;
 using ZES.Infrastructure.Utils;
 using ZES.Interfaces;
 using ZES.Interfaces.Domain;
@@ -66,7 +67,13 @@ namespace ZES.Infrastructure.EventStore
                     sub.Stop();
                     observer.OnCompleted();
                     taskCompletionSource.SetResult(true);
-                });
+                },
+                (sub, reason, e) =>
+                {
+                    Log.Error(e.Message);
+                    sub.Stop();
+                    observer.OnCompleted();
+                }, new UserCredentials("admin", "changeit"));
             return taskCompletionSource.Task;
         }
 

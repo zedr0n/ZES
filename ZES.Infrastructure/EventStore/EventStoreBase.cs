@@ -68,6 +68,8 @@ namespace ZES.Infrastructure.EventStore
         /// </summary>
         protected ISerializer<IEvent> Serializer => _serializer;
 
+        protected ILog Log => _log;
+        
         /// <inheritdoc />
         public IObservable<IStream> ListStreams(string branch = null, Func<string, bool> predicate = null, CancellationToken token = default)
         {

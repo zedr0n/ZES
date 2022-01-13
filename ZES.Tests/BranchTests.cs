@@ -365,6 +365,7 @@ namespace ZES.Tests
             await await bus.CommandAsync(new UpdateRoot("Root"));
             var pullResult = await remote.Pull(BranchManager.Master);
             Assert.Equal(Status.Success, pullResult.ResultStatus); 
+            Assert.Equal(1, pullResult.NumberOfStreams);
         }
 
         [Fact]

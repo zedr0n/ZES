@@ -117,14 +117,14 @@ namespace ZES.Infrastructure
         /// The batch size for stream store
         /// </value>
         public static int BatchSize => 1000;
-        
+
         /// <summary>
         /// Gets default number of threads per service 
         /// </summary>
         /// <value>
         /// Default number of threads per service 
         /// </value>
-        public static int ThreadsPerInstance => 2;
+        public static int ThreadsPerInstance => Math.Max(Environment.ProcessorCount / 2, 1);
 
         /// <summary>
         /// Check if Common.Logging logging is allowed

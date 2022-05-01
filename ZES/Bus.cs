@@ -152,7 +152,7 @@ namespace ZES
                     {
                         await _handler(c.Value);
                         c.Complete();
-                    }, _options.ToDataflowBlockOptions(useScheduler: true)); 
+                    }, _options.ToDataflowBlockOptions()); 
                 
                 return block.ToDataflow(_options);
             }

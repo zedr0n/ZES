@@ -79,7 +79,7 @@ namespace ZES.Infrastructure.Net
                     {
                         var r = await connector.GetAsync(url.Value);
                         url.SetResult(r);
-                    }, dataflowOptions.ToDataflowBlockOptions(true, true)); // .ToExecutionBlockOption(true));
+                    }, dataflowOptions.ToDataflowBlockOptions(true)); // .ToExecutionBlockOption(true));
                 
                 RegisterChild(block);
                 InputBlock = block;

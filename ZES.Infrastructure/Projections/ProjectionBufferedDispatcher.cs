@@ -20,7 +20,7 @@ namespace ZES.Infrastructure.Projections
         public ProjectionBufferedDispatcher(DataflowOptions dataflowOptions, ProjectionBase<TState> projection) 
             : base(dataflowOptions)
         {
-            _buffer = new BufferBlock<Tracked<IStream>>(dataflowOptions.ToDataflowBlockOptions(false, true)).ToDataflow(dataflowOptions);
+            _buffer = new BufferBlock<Tracked<IStream>>(dataflowOptions.ToDataflowBlockOptions(false)).ToDataflow(dataflowOptions);
             _dispatcher = new ProjectionDispatcher<TState>(dataflowOptions, projection);
             _log = projection.Log;
             _token = projection.CancellationToken;

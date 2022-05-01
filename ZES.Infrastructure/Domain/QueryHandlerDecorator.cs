@@ -73,7 +73,7 @@ namespace ZES.Infrastructure.Domain
                         var result = await handler.HandleEx(q.Value);
                         q.SetResult(result);
                     },
-                    Configuration.DataflowOptions.ToDataflowBlockOptions(false, true)); // new ExecutionDataflowBlockOptions { MaxDegreeOfParallelism = 1 });
+                    Configuration.DataflowOptions.ToDataflowBlockOptions(false)); // new ExecutionDataflowBlockOptions { MaxDegreeOfParallelism = 1 });
                 RegisterChild(block);
                 InputBlock = block;
             }

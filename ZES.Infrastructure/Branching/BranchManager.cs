@@ -408,7 +408,7 @@ namespace ZES.Infrastructure.Branching
 
                         var stream = parent ?? s.Branch(s.Timeline, version);
                         streams.TryAdd(stream, s.Version - version);
-                    }, Configuration.DataflowOptions.ToDataflowBlockOptions(true, true)); // ToExecutionBlockOption(true)); 
+                    }, Configuration.DataflowOptions.ToDataflowBlockOptions(true)); // ToExecutionBlockOption(true)); 
 
                 RegisterChild(_inputBlock);
             }
@@ -476,7 +476,7 @@ namespace ZES.Infrastructure.Branching
                         Interlocked.Add(ref _numberOfEvents, events.Count);
 
                         await eventStore.AppendToStream(parentStream, events, false);
-                    }, Configuration.DataflowOptions.ToDataflowBlockOptions(true, true)); // .ToExecutionBlockOption(true)); 
+                    }, Configuration.DataflowOptions.ToDataflowBlockOptions(true)); // .ToExecutionBlockOption(true)); 
 
                 RegisterChild(_inputBlock);
             }
@@ -518,7 +518,7 @@ namespace ZES.Infrastructure.Branching
                         var clone = s.Branch(timeline, version);
                         await eventStore.AppendToStream(clone);
                         Interlocked.Increment(ref _numberOfStreams);
-                    }, Configuration.DataflowOptions.ToDataflowBlockOptions(true, true)); // .ToExecutionBlockOption(true)); 
+                    }, Configuration.DataflowOptions.ToDataflowBlockOptions(true)); // .ToExecutionBlockOption(true)); 
 
                 RegisterChild(_inputBlock);
             }

@@ -26,14 +26,13 @@ namespace ZES.Infrastructure.Utils
             int maxMessagesPerTask = -1)
         {
             var executionOptions = options.ToExecutionBlockOption(isBlockMultiThreaded);
+            if (Configuration.MaxMessagesPerTask > 0)
+                maxMessagesPerTask = Configuration.MaxMessagesPerTask;
+            
             if (maxMessagesPerTask > 0)
-            {
-                if (Configuration.MaxMessagesPerTask > 0)
-                    maxMessagesPerTask = Configuration.MaxMessagesPerTask;
                 executionOptions.MaxMessagesPerTask = maxMessagesPerTask;
-            }
 
-            if (useScheduler)
+            if (useScheduler || Configuration.UseLimitedScheduler)
                 executionOptions.TaskScheduler = Configuration.LimitedTaskScheduler;
             return executionOptions;
         }

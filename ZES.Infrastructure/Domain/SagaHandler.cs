@@ -102,7 +102,7 @@ namespace ZES.Infrastructure.Domain
                     {
                         await Handle(e.Value);
                         e.Complete();
-                    }, DataflowOptions.ToDataflowBlockOptions(false, true)); // .ToExecutionBlockOption());
+                    }, DataflowOptions.ToDataflowBlockOptions(false)); // .ToExecutionBlockOption());
             
                 RegisterChild(block);
                 InputBlock = block;

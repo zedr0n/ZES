@@ -31,7 +31,7 @@ namespace ZES.Infrastructure.Utils
           // That means we can read from and modify the current state (held in the subject) atomically
           transaction.Value(_currentStateSubject);
           transaction.Complete();
-        }, new ExecutionDataflowBlockOptions { MaxDegreeOfParallelism = 1 });
+        }, Configuration.DataflowOptions.ToDataflowBlockOptions(false, true)); // new ExecutionDataflowBlockOptions { MaxDegreeOfParallelism = 1 });
       CurrentState = _currentStateSubject.DistinctUntilChanged();
     }
     

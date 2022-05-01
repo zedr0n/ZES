@@ -21,7 +21,7 @@ namespace ZES.Infrastructure.EventStore
             : base(dataflowOptions)
         {
             var block = new TransformBlock<IEvent, T>(
-                e => serializer.Encode<T>(e), dataflowOptions.ToExecutionBlockOption(true));
+                e => serializer.Encode<T>(e), dataflowOptions.ToDataflowBlockOptions(true, true));  // dataflowOptions.ToExecutionBlockOption(true) );
 
             RegisterChild(block);
             InputBlock = block;

@@ -6,6 +6,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Threading.Tasks.Dataflow;
 using Gridsum.DataflowEx;
+using ZES.Infrastructure.Utils;
 using ZES.Interfaces;
 using ZES.Interfaces.Domain;
 using ZES.Interfaces.Pipes;
@@ -98,10 +99,10 @@ namespace ZES.Infrastructure.Domain
 
                 var block = new ActionBlock<Tracked<IEvent>>(
                     async e =>
-                    { 
+                    {
                         await Handle(e.Value);
                         e.Complete();
-                    }, DataflowOptions.ToExecutionBlockOption());
+                    }, DataflowOptions.ToDataflowBlockOptions(false, true)); // .ToExecutionBlockOption());
             
                 RegisterChild(block);
                 InputBlock = block;

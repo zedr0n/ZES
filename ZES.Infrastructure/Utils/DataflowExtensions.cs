@@ -12,6 +12,33 @@ namespace ZES.Infrastructure.Utils
     public static class DataflowExtensions
     {
         /// <summary>
+        /// Gets the default execution dataflow block options
+        /// </summary>
+        /// <param name="options">Base options</param>
+        /// <param name="isBlockMultiThreaded">Can block run multiple threads</param>
+        /// <param name="useScheduler">Use limited concurrency scheduler</param>
+        /// <param name="maxMessagesPerTask">Maximum messages per task</param>
+        /// <returns>Execution dataflow block options</returns>
+        public static ExecutionDataflowBlockOptions ToDataflowBlockOptions(
+            this DataflowOptions options,
+            bool isBlockMultiThreaded = false,
+            bool useScheduler = false,
+            int maxMessagesPerTask = -1)
+        {
+            var executionOptions = options.ToExecutionBlockOption(isBlockMultiThreaded);
+            if (maxMessagesPerTask > 0)
+            {
+                if (Configuration.MaxMessagesPerTask > 0)
+                    maxMessagesPerTask = Configuration.MaxMessagesPerTask;
+                executionOptions.MaxMessagesPerTask = maxMessagesPerTask;
+            }
+
+            if (useScheduler)
+                executionOptions.TaskScheduler = Configuration.LimitedTaskScheduler;
+            return executionOptions;
+        }
+        
+        /// <summary>
         /// Process the specified number of inputs to outputs via the async dataflow 
         /// </summary>
         /// <param name="dataflow">Target dataflow</param>

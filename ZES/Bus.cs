@@ -10,6 +10,7 @@ using SimpleInjector;
 using ZES.Infrastructure;
 using ZES.Infrastructure.Alerts;
 using ZES.Infrastructure.Domain;
+using ZES.Infrastructure.Utils;
 using ZES.Interfaces;
 using ZES.Interfaces.Domain;
 using ZES.Interfaces.Pipes;
@@ -135,7 +136,7 @@ namespace ZES
         private class CommandDispatcher : ParallelDataDispatcher<string, Tracked<ICommand>>
         {
             private readonly Func<ICommand, Task> _handler;
-            private DataflowOptions _options;
+            private readonly DataflowOptions _options;
 
             public CommandDispatcher(Func<ICommand, Task> handler, string timeline, DataflowOptions options) 
                 : base(c => $"{timeline}:{c.Value.Target}", options, CancellationToken.None)
@@ -151,7 +152,7 @@ namespace ZES
                     {
                         await _handler(c.Value);
                         c.Complete();
-                    }, _options.ToExecutionBlockOption()); 
+                    }, _options.ToDataflowBlockOptions(useScheduler: true)); 
                 
                 return block.ToDataflow(_options);
             }

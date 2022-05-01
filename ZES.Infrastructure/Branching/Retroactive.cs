@@ -438,46 +438,5 @@ namespace ZES.Infrastructure.Branching
                 return _sagaRepository;
             return _repository;
         }
-
-        /*private class InsertFlow : Dataflow<IStream>
-        {
-            public InsertFlow(DataflowOptions dataflowOptions, IEventStore aggregateStore, IEventStore sagaStore, IStreamLocator streamLocator, string currentBranch, IReadOnlyDictionary<IStream, List<IEvent>> allEvents) 
-                : base(dataflowOptions)
-            {
-                var block = new ActionBlock<IStream>(
-                    async s =>
-                    {
-                        IEventStore store;
-                        var liveStream = await streamLocator.FindBranched(s, currentBranch);
-                        if (liveStream != null)
-                        {
-                            store = liveStream.IsSaga ? sagaStore : aggregateStore; 
-
-                            if (s.Version == ExpectedVersion.EmptyStream)
-                                await store.DeleteStream(liveStream);
-            
-                            if (s.Version > ExpectedVersion.EmptyStream && s.Version < liveStream.Version)
-                                await store.TrimStream(liveStream, s.Version);
-                        }
-
-                        liveStream = await streamLocator.FindBranched(s, currentBranch) ?? s.Branch(currentBranch, ExpectedVersion.EmptyStream);
-                        store = liveStream.IsSaga ? sagaStore : aggregateStore;
-
-                        var events = allEvents[s];
-                        foreach (var e in events)
-                        {
-                            e.Stream = liveStream.Key;
-                            e.Timeline = liveStream.Timeline;
-                        }
-
-                        await store.AppendToStream(liveStream, events, false);
-                    }, dataflowOptions.ToExecutionBlockOption(true));
-
-                InputBlock = block;
-                RegisterChild(block);
-            }
-
-            public override ITargetBlock<IStream> InputBlock { get; }
-        }*/
     }
 }

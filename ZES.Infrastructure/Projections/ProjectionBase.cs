@@ -184,7 +184,7 @@ namespace ZES.Infrastructure.Projections
         protected virtual async Task Rebuild()
         {
             StatusSubject.OnNext(Building);
-            _updateStateBlock = new ActionBlock<Tracked<IEvent>>(UpdateState, new ExecutionDataflowBlockOptions { MaxDegreeOfParallelism = 1 });
+            _updateStateBlock = new ActionBlock<Tracked<IEvent>>(UpdateState, Configuration.DataflowOptions.ToDataflowBlockOptions(false, true)); // new ExecutionDataflowBlockOptions { MaxDegreeOfParallelism = 1 });
 
             CancellationSource.Dispose();
             Versions.Clear();
@@ -324,7 +324,8 @@ namespace ZES.Infrastructure.Projections
             public BuildFlow(DataflowOptions dataflowOptions, ProjectionBase<TState> projection) 
                 : base(dataflowOptions)
             {
-                var actionBlock = new ActionBlock<InvalidateProjections>(async e =>
+                var actionBlock = new ActionBlock<InvalidateProjections>(
+                    async e =>
                 {
                     projection.Cancel();
                     var status = projection.StatusSubject.AsObservable().Timeout(Configuration.Timeout)
@@ -333,7 +334,7 @@ namespace ZES.Infrastructure.Projections
 
                     // Task.Factory.StartNew(projection.Rebuild);
                     projection.Rebuild();
-                }); 
+                }, Configuration.DataflowOptions.ToDataflowBlockOptions(false, true)); 
                
                 RegisterChild(actionBlock);
                 InputBlock = actionBlock;

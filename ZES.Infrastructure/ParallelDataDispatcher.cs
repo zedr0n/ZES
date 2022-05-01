@@ -73,8 +73,8 @@ namespace ZES.Infrastructure
                 childFlow.RegisterDependency(_dispatcherBlock);
                 return childFlow;
             });
-      
-            _dispatcherBlock = new ActionBlock<TIn>( async input => await Dispatch(input), option.ToExecutionBlockOption(true));
+
+            _dispatcherBlock = new ActionBlock<TIn>(async input => await Dispatch(input), option.ToDataflowBlockOptions(true, true)); // .ToExecutionBlockOption(true));
 
             RegisterChild(_dispatcherBlock);
         }

@@ -3,6 +3,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Threading.Tasks.Dataflow;
 using Gridsum.DataflowEx;
+using ZES.Infrastructure.Utils;
 using ZES.Interfaces;
 using ZES.Interfaces.EventStore;
 
@@ -19,7 +20,7 @@ namespace ZES.Infrastructure.Projections
         public ProjectionBufferedDispatcher(DataflowOptions dataflowOptions, ProjectionBase<TState> projection) 
             : base(dataflowOptions)
         {
-            _buffer = new BufferBlock<Tracked<IStream>>().ToDataflow(dataflowOptions);
+            _buffer = new BufferBlock<Tracked<IStream>>(dataflowOptions.ToDataflowBlockOptions(false, true)).ToDataflow(dataflowOptions);
             _dispatcher = new ProjectionDispatcher<TState>(dataflowOptions, projection);
             _log = projection.Log;
             _token = projection.CancellationToken;

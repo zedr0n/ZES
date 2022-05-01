@@ -13,6 +13,7 @@ using SqlStreamStore.Streams;
 using ZES.Infrastructure.Alerts;
 using ZES.Infrastructure.Domain;
 using ZES.Infrastructure.EventStore;
+using ZES.Infrastructure.Utils;
 using ZES.Interfaces;
 using ZES.Interfaces.Branching;
 using ZES.Interfaces.Causality;
@@ -407,7 +408,7 @@ namespace ZES.Infrastructure.Branching
 
                         var stream = parent ?? s.Branch(s.Timeline, version);
                         streams.TryAdd(stream, s.Version - version);
-                    }, Configuration.DataflowOptions.ToExecutionBlockOption(true)); 
+                    }, Configuration.DataflowOptions.ToDataflowBlockOptions(true, true)); // ToExecutionBlockOption(true)); 
 
                 RegisterChild(_inputBlock);
             }
@@ -475,7 +476,7 @@ namespace ZES.Infrastructure.Branching
                         Interlocked.Add(ref _numberOfEvents, events.Count);
 
                         await eventStore.AppendToStream(parentStream, events, false);
-                    }, Configuration.DataflowOptions.ToExecutionBlockOption(true)); 
+                    }, Configuration.DataflowOptions.ToDataflowBlockOptions(true, true)); // .ToExecutionBlockOption(true)); 
 
                 RegisterChild(_inputBlock);
             }
@@ -517,7 +518,7 @@ namespace ZES.Infrastructure.Branching
                         var clone = s.Branch(timeline, version);
                         await eventStore.AppendToStream(clone);
                         Interlocked.Increment(ref _numberOfStreams);
-                    }, Configuration.DataflowOptions.ToExecutionBlockOption(true)); 
+                    }, Configuration.DataflowOptions.ToDataflowBlockOptions(true, true)); // .ToExecutionBlockOption(true)); 
 
                 RegisterChild(_inputBlock);
             }

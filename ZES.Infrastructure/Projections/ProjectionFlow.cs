@@ -8,6 +8,7 @@ using System.Threading.Tasks;
 using System.Threading.Tasks.Dataflow;
 using Gridsum.DataflowEx;
 using SqlStreamStore.Streams;
+using ZES.Infrastructure.Utils;
 using ZES.Interfaces;
 using ZES.Interfaces.Domain;
 using ZES.Interfaces.EventStore;
@@ -33,7 +34,7 @@ namespace ZES.Infrastructure.Projections
             _token = projection.CancellationToken;
             _versions = projection.Versions;
                 
-            var block = new ActionBlock<Tracked<IStream>>(Process);
+            var block = new ActionBlock<Tracked<IStream>>(Process, dataflowOptions.ToDataflowBlockOptions(true, true));
             RegisterChild(block);
             InputBlock = block;
         }

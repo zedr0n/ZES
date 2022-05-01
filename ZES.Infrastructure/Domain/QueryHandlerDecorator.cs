@@ -2,6 +2,7 @@ using System;
 using System.Threading.Tasks;
 using System.Threading.Tasks.Dataflow;
 using Gridsum.DataflowEx;
+using ZES.Infrastructure.Utils;
 using ZES.Interfaces;
 using ZES.Interfaces.Domain;
 
@@ -71,8 +72,8 @@ namespace ZES.Infrastructure.Domain
                     {
                         var result = await handler.HandleEx(q.Value);
                         q.SetResult(result);
-                    }, 
-                    new ExecutionDataflowBlockOptions { MaxDegreeOfParallelism = 1 });
+                    },
+                    Configuration.DataflowOptions.ToDataflowBlockOptions(false, true)); // new ExecutionDataflowBlockOptions { MaxDegreeOfParallelism = 1 });
                 RegisterChild(block);
                 InputBlock = block;
             }

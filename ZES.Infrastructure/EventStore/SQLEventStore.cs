@@ -377,7 +377,7 @@ namespace ZES.Infrastructure.EventStore
                 {
                     var payload = await m.GetJsonData();
                     events.Add(serializer.Deserialize(payload));
-                }, dataflowOptions.ToExecutionBlockOption(true));
+                }, dataflowOptions.ToDataflowBlockOptions(true, true)); // .ToExecutionBlockOption(true));
                 
                 RegisterChild(block);
                 InputBlock = block;
@@ -410,7 +410,7 @@ namespace ZES.Infrastructure.EventStore
                     var payload = await m.GetJsonData();
                     return serializer.Deserialize(payload);
 #endif
-                }, dataflowOptions.ToExecutionBlockOption(true));
+                }, dataflowOptions.ToDataflowBlockOptions(true, true)); // .ToExecutionBlockOption(true));
 
                 RegisterChild(block);
                 InputBlock = block;
@@ -432,7 +432,7 @@ namespace ZES.Infrastructure.EventStore
                     var payload = m.JsonMetadata;
                     var metadata = serializer.DecodeMetadata(payload);
                     return metadata;
-                }, dataflowOptions.ToExecutionBlockOption(true));
+                }, dataflowOptions.ToDataflowBlockOptions(true,true)); // .ToExecutionBlockOption(true));
 
                 RegisterChild(block);
                 InputBlock = block;
@@ -449,7 +449,7 @@ namespace ZES.Infrastructure.EventStore
                 : base(dataflowOptions)
             {
                 var block = new TransformBlock<IEvent, NewStreamMessage>(
-                    serializer.EncodeSql, dataflowOptions.ToExecutionBlockOption(true));
+                    serializer.EncodeSql, dataflowOptions.ToDataflowBlockOptions(true, true)); // .ToExecutionBlockOption(true));
 
                 RegisterChild(block);
                 InputBlock = block;

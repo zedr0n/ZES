@@ -5,6 +5,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Threading.Tasks.Dataflow;
 using Gridsum.DataflowEx;
+using ZES.Infrastructure.Utils;
 using ZES.Interfaces;
 using ZES.Interfaces.Net;
 
@@ -78,7 +79,7 @@ namespace ZES.Infrastructure.Net
                     {
                         var r = await connector.GetAsync(url.Value);
                         url.SetResult(r);
-                    }, dataflowOptions.ToExecutionBlockOption(true));
+                    }, dataflowOptions.ToDataflowBlockOptions(true, true)); // .ToExecutionBlockOption(true));
                 
                 RegisterChild(block);
                 InputBlock = block;

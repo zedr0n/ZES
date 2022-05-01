@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Threading.Tasks.Dataflow;
 using Gridsum.DataflowEx;
 
 namespace ZES.Infrastructure
@@ -52,6 +53,22 @@ namespace ZES.Infrastructure
             BlockMonitorEnabled = false,
             FlowMonitorEnabled = false,
         };
+
+        /// <summary>
+        /// Gets a value indicating whether to use the limited concurrency scheduler
+        /// </summary>
+        public static bool UseLimitedScheduler { get; } = true;
+
+        /// <summary>
+        /// Gets the max messages per task
+        /// </summary>
+        public static int MaxMessagesPerTask { get; } = 1;
+
+        /// <summary>
+        /// Gets the limited thread scheduler
+        /// </summary>
+        public static LimitedConcurrencyLevelTaskScheduler LimitedTaskScheduler { get; } =
+            new LimitedConcurrencyLevelTaskScheduler(ThreadsPerInstance); 
 
         /// <summary>
         /// Gets a value indicating whether to use SQLStreamStore instead of Event Store
@@ -107,7 +124,7 @@ namespace ZES.Infrastructure
         /// <value>
         /// Default number of threads per service 
         /// </value>
-        public static int ThreadsPerInstance => 8;
+        public static int ThreadsPerInstance => 2;
 
         /// <summary>
         /// Check if Common.Logging logging is allowed

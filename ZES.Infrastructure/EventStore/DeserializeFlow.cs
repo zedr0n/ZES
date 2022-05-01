@@ -24,7 +24,8 @@ namespace ZES.Infrastructure.EventStore
         {
             TransformBlock<TStreamMessage, TEvent> block = null;
             block = new TransformBlock<TStreamMessage, TEvent>(
-                async m => await serializer.Decode<TStreamMessage, TEvent>(m), dataflowOptions.ToExecutionBlockOption(true));
+                async m => await serializer.Decode<TStreamMessage, TEvent>(m),
+                dataflowOptions.ToDataflowBlockOptions(true, true)); // dataflowOptions.ToExecutionBlockOption(true));
 
             RegisterChild(block);
             InputBlock = block;

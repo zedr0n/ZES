@@ -57,7 +57,7 @@ namespace ZES.Infrastructure
         /// <summary>
         /// Gets a value indicating whether to use the limited concurrency scheduler
         /// </summary>
-        public static bool UseLimitedScheduler { get; } = true;
+        public static bool UseLimitedScheduler { get; } = false;
 
         /// <summary>
         /// Gets the max messages per task

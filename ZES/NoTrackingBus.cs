@@ -20,11 +20,11 @@ using ZES.Interfaces.Pipes;
 namespace ZES
 {
     /// <inheritdoc />
-    public class Bus : IBus
+    public class NoTrackingBus : IBus
     {
         private readonly Container _container;
 
-        private readonly ConcurrentDictionary<string, CommandDispatcher> _dispatchers = new ConcurrentDictionary<string, CommandDispatcher>(); 
+        private readonly ConcurrentDictionary<string, CommandDispatcher> _dispatchers = new ConcurrentDictionary<string, CommandDispatcher>();
         private readonly ConcurrentDictionary<Type, IQueryHandler> _queryHandlers = new ConcurrentDictionary<Type, IQueryHandler>();
         private readonly ILog _log;
         private readonly ITimeline _timeline;
@@ -32,14 +32,14 @@ namespace ZES
         private readonly ICommandLog _commandLog;
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="Bus"/> class.
+        /// Initializes a new instance of the <see cref="NoTrackingBus"/> class.
         /// </summary>
         /// <param name="container"><see cref="SimpleInjector"/> container</param>
         /// <param name="log">Application log</param>
         /// <param name="timeline">Timeline</param>
         /// <param name="messageQueue">Message queue</param>
         /// <param name="commandLog">Command log</param>
-        public Bus(Container container, ILog log, ITimeline timeline, IMessageQueue messageQueue, ICommandLog commandLog)
+        public NoTrackingBus(Container container, ILog log, ITimeline timeline, IMessageQueue messageQueue, ICommandLog commandLog)
         {
             _container = container;
             _log = log;
@@ -76,16 +76,16 @@ namespace ZES
             command.Timeline = _timeline.Id;
             if (!command.Pure)
                 await _messageQueue.UncompleteMessage(command);
-            
-            var tracked = new Tracked<ICommand>(command);
+           
             var dispatcher = _dispatchers.GetOrAdd(_timeline.Id, CreateDispatcher);
-            await dispatcher.SendAsync(tracked);
+            await dispatcher.SendAsync(command);
 
-            // return tracked.Task;
+            var task = dispatcher.OutputBlock.ReceiveAsync(item => item.Equals(command));
+
             if (command.Pure)
-                return tracked.Task;
+                return task; 
             
-            return tracked.Task.ContinueWith(_ => _messageQueue.CompleteMessage(command)).Unwrap();
+            return task.ContinueWith(_ => _messageQueue.CompleteMessage(command)).Unwrap();
         }
         
         /// <inheritdoc />
@@ -110,7 +110,7 @@ namespace ZES
             HandleCommand,
             timeline,
             Configuration.DataflowOptions);
-        
+
         private object GetInstance(Type type)
         {
             try
@@ -135,25 +135,25 @@ namespace ZES
                 await handler.Handle(command).ConfigureAwait(false);
         }
 
-        private class CommandDispatcher : ParallelDataDispatcher<string, Tracked<ICommand>>
+        private class CommandDispatcher : ParallelDataDispatcherWithOutput<string, ICommand>
         {
             private readonly Func<ICommand, Task> _handler;
             private readonly DataflowOptions _options;
 
             public CommandDispatcher(Func<ICommand, Task> handler, string timeline, DataflowOptions options) 
-                : base(c => $"{timeline}:{c.Value.Target}", options, CancellationToken.None)
+                : base(c => $"{timeline}:{c.Target}", options, CancellationToken.None)
             {
                 _handler = handler;
                 _options = options;
             }
             
-            protected override Dataflow<Tracked<ICommand>> CreateChildFlow(string target)
+            protected override Dataflow<ICommand, ICommand> CreateChildFlow(string target)
             {
-                var block = new ActionBlock<Tracked<ICommand>>(
+                var block = new TransformBlock<ICommand, ICommand>(
                     async c =>
                     {
-                        await _handler(c.Value);
-                        c.Complete();
+                        await _handler(c);
+                        return c;
                     }, _options.ToDataflowBlockOptions()); 
                 
                 return block.ToDataflow(_options);

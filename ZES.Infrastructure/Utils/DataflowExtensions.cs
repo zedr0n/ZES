@@ -1,5 +1,7 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Threading.Tasks.Dataflow;
 using Gridsum.DataflowEx;
@@ -35,6 +37,38 @@ namespace ZES.Infrastructure.Utils
             if (useScheduler || Configuration.UseLimitedScheduler)
                 executionOptions.TaskScheduler = Configuration.LimitedTaskScheduler;
             return executionOptions;
+        }
+        
+        /// <summary>
+        /// Receive asynchronously with the defined predicate
+        /// </summary>
+        /// <param name="bufferBlock">Combined buffer block</param>
+        /// <param name="filter">Filter predicate</param>
+        /// <typeparam name="TIn">Item type</typeparam>
+        /// <returns>Filtered item if available</returns>
+        public static Task<TIn> ReceiveAsync<TIn>(this ISourceBlock<TIn> bufferBlock, Predicate<TIn> filter)
+        {
+            return bufferBlock.ReceiveAsync(filter, CancellationToken.None);
+        }
+
+        /// <summary>
+        /// Receive asynchronously with the defined predicate
+        /// </summary>
+        /// <param name="bufferBlock">Combined buffer block</param>
+        /// <param name="filter">Filter predicate</param>
+        /// <param name="token">Cancellation token</param>
+        /// <typeparam name="TIn">Item type</typeparam>
+        /// <returns>Filtered item if available</returns>
+        public static Task<TIn> ReceiveAsync<TIn>(this ISourceBlock<TIn> bufferBlock, Predicate<TIn> filter, CancellationToken token)
+        {
+            var block = new BufferBlock<TIn>();
+
+            bufferBlock.LinkTo(
+                block,
+                new DataflowLinkOptions { MaxMessages = 1, PropagateCompletion = true },
+                filter);
+
+            return block.ReceiveAsync(token);
         }
         
         /// <summary>

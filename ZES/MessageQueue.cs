@@ -96,7 +96,7 @@ namespace ZES
                 _log.Debug($"Uncompleted messages : {b.Count}, removed {message.Timeline}:{message.GetType().GetFriendlyName()}");
 
                 return b;
-            });
+            }).ConfigureScheduler(TaskScheduler.Default);
         }
 
         /// <inheritdoc />
@@ -125,7 +125,7 @@ namespace ZES
                 _log.Debug($"Uncompleted messages : {b.Count}, added {message.Timeline}:{message.GetType().GetFriendlyName()}");
 
                 return b;
-            });
+            }).ConfigureScheduler(TaskScheduler.Default);
         }
     }
 }

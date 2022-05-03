@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
@@ -12,6 +13,8 @@ namespace ZES.Infrastructure
     /// </summary>
     public static class Configuration
     {
+        private static readonly ConcurrentDictionary<string, bool> _logEnabled = new ConcurrentDictionary<string, bool>();
+
         private static readonly HashSet<string> Variables = new HashSet<string>
         {
             "AddCommand",
@@ -57,7 +60,7 @@ namespace ZES.Infrastructure
         /// <summary>
         /// Gets a value indicating whether to use the limited concurrency scheduler
         /// </summary>
-        public static bool UseLimitedScheduler { get; } = false;
+        public static bool UseLimitedScheduler { get; } = true;
 
         /// <summary>
         /// Gets the max messages per task
@@ -144,12 +147,15 @@ namespace ZES.Infrastructure
         /// <returns>True if log is enabled for category</returns>
         public static bool LogEnabled(string name)
         {
-            if (!Variables.Any(v => name.ToUpper().Contains(v.ToUpper())))
-                return true;
+            return _logEnabled.GetOrAdd(name, x =>
+            {
+                if (!Variables.Any(v => x.ToUpper().Contains(v.ToUpper())))
+                    return true;
 
-            var n = Variables.First(v => name.ToUpper().Contains(v.ToUpper()));
-            var env = Environment.GetEnvironmentVariable(n.ToUpper());
-            return env != null && env != 0.ToString();
+                var n = Variables.First(v => x.ToUpper().Contains(v.ToUpper()));
+                var env = Environment.GetEnvironmentVariable(n.ToUpper());
+                return env != null && env != 0.ToString();
+            });
         }
     }
 }

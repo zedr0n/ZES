@@ -1,7 +1,9 @@
 using System;
+using System.Collections.Generic;
 using System.Reactive;
 using System.Reactive.Linq;
 using System.Reactive.Subjects;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Threading.Tasks.Dataflow;
 
@@ -18,6 +20,7 @@ namespace ZES.Infrastructure.Utils
   {
     private readonly BehaviorSubject<THeldState> _currentStateSubject = new BehaviorSubject<THeldState>(default(THeldStateBuilder).DefaultState());
     private readonly ActionBlock<Tracked<TransactionFunc>> _transactionBuffer;
+    private readonly TransformBlock<KeyValuePair<Guid, TransactionFunc>, Guid> _transactionBufferEx;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="StateHolder{THeldState, THeldStateBuilder}"/> class.
@@ -31,7 +34,13 @@ namespace ZES.Infrastructure.Utils
           // That means we can read from and modify the current state (held in the subject) atomically
           transaction.Value(_currentStateSubject);
           transaction.Complete();
-        }, Configuration.DataflowOptions.ToDataflowBlockOptions(false)); // new ExecutionDataflowBlockOptions { MaxDegreeOfParallelism = 1 });
+        }, new ExecutionDataflowBlockOptions { MaxDegreeOfParallelism = 1, TaskScheduler = TaskScheduler.Default });
+      _transactionBufferEx = new TransformBlock<KeyValuePair<Guid, TransactionFunc>, Guid>(
+        transaction =>
+        {
+          transaction.Value(_currentStateSubject);
+          return transaction.Key;
+        }, new ExecutionDataflowBlockOptions { MaxDegreeOfParallelism = 1, TaskScheduler = TaskScheduler.Default });
       CurrentState = _currentStateSubject.DistinctUntilChanged();
     }
     
@@ -47,7 +56,7 @@ namespace ZES.Infrastructure.Utils
     /// </summary>
     /// <param name="updateBlock">Builder update block</param>
     /// <returns>Returns the task representing the update of the state</returns>
-    public async Task UpdateState(Func<THeldStateBuilder, THeldStateBuilder> updateBlock)
+    public Task UpdateState(Func<THeldStateBuilder, THeldStateBuilder> updateBlock)
     {
       void UpdateTransaction(BehaviorSubject<THeldState> currentStateSubject)
       {
@@ -65,8 +74,11 @@ namespace ZES.Infrastructure.Utils
         }
       }
 
-      var tracked = new Tracked<TransactionFunc>(UpdateTransaction);
-      var didSend = await _transactionBuffer.SendAsync(tracked);
+      // var tracked = new Tracked<TransactionFunc>(UpdateTransaction);
+      // var didSend = await _transactionBuffer.SendAsync(tracked);
+      var id = Guid.NewGuid();
+      var tx = new KeyValuePair<Guid, TransactionFunc>(id, UpdateTransaction);
+      var didSend = _transactionBufferEx.Post(tx);
 
       if (!didSend)
       {
@@ -74,7 +86,10 @@ namespace ZES.Infrastructure.Utils
           "UpdateState failed to process transaction. This probably means the BufferBlock is not initialized properly");
       }
 
-      await tracked.Task;
+      var completed = _transactionBufferEx.ReceiveAsync(x => x == id);
+      return completed;
+
+      // await tracked.Task;
     }
 
     /// <summary>

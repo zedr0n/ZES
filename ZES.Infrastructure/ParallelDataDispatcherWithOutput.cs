@@ -72,7 +72,6 @@ namespace ZES.Infrastructure
                 var childFlow = CreateChildFlow(key);
                 RegisterChild(childFlow);
                 childFlow.RegisterDependency(_dispatcherBlock);
-                // childFlow.OutputBlock.LinkTo(_completedBlock);
                 return childFlow;
             });
 

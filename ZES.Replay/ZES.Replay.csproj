@@ -8,6 +8,8 @@
         <IsPackable>False</IsPackable>
         <GenerateDocumentationFile>true</GenerateDocumentationFile>
         <LangVersion>latest</LangVersion>
+        <Configurations>Debug;Release;DebugLocal</Configurations>
+        <Platforms>AnyCPU</Platforms>
     </PropertyGroup>
 
     <ItemGroup>

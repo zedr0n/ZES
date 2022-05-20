@@ -8,6 +8,8 @@
         <AllowedOutputExtensionsInPackageBuildOutputFolder>$(AllowedOutputExtensionsInPackageBuildOutputFolder);.pdb</AllowedOutputExtensionsInPackageBuildOutputFolder>
         <Version>1.0.0</Version>
         <GenerateDocumentationFile>true</GenerateDocumentationFile>
+        <Configurations>Debug;Release;DebugLocal</Configurations>
+        <Platforms>AnyCPU</Platforms>
     </PropertyGroup>
 
     <ItemGroup>
@@ -17,10 +19,30 @@
       <PackageReference Include="Microsoft.Extensions.Options" Version="5.0.0" />
       <PackageReference Include="NLog" Version="4.6.8" />
       <PackageReference Include="SimpleInjector" Version="4.4.2" />
-      <PackageReference Include="SqlStreamStore.MsSql" Version="1.2.1-alpha.3.31" />
-      <PackageReference Include="SqlStreamStore.MySql" Version="1.2.1-alpha.3.31" />
       <PackageReference Include="System.Reflection.DispatchProxy" Version="4.7.1" />
     </ItemGroup>
+
+    <Choose>
+        <When Condition="'$(Configuration)' == 'DebugLocal'">
+            <ItemGroup>
+                <Reference Include="SqlStreamStore">
+                    <HintPath>../../SQLStreamStore/src/SqlStreamStore/bin/Debug/netstandard2.0/SqlStreamStore.dll</HintPath>
+                </Reference>
+                <Reference Include="SqlStreamStore.MsSql">
+                    <HintPath>../../SQLStreamStore/src/SqlStreamStore.MsSql/bin/Debug/netstandard2.0/SqlStreamStore.MsSql.dll</HintPath>
+                </Reference>
+                <Reference Include="SqlStreamStore.MySql">
+                    <HintPath>../../SQLStreamStore/src/SqlStreamStore.MySql/bin/Debug/netstandard2.0/SqlStreamStore.MySql.dll</HintPath>
+                </Reference>
+            </ItemGroup>
+        </When>
+        <Otherwise>
+            <ItemGroup>
+                <PackageReference Include="SqlStreamStore.MsSql" Version="1.2.1-alpha.3.32" />
+                <PackageReference Include="SqlStreamStore.MySql" Version="1.2.1-alpha.3.31" />
+            </ItemGroup>
+        </Otherwise>
+    </Choose>
 
     <ItemGroup>
       <ProjectReference Include="..\ZES.Infrastructure\ZES.Infrastructure.csproj" />

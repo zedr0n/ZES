@@ -4,6 +4,8 @@
     <TargetFramework>netcoreapp3.1</TargetFramework>
     <CodeAnalysisRuleSet>..\Analysis.ruleset</CodeAnalysisRuleSet>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <Configurations>Debug;Release;DebugLocal</Configurations>
+    <Platforms>AnyCPU</Platforms>
   </PropertyGroup>
 
   <ItemGroup>

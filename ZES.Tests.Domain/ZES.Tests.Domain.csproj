@@ -6,6 +6,8 @@
         <GenerateDocumentationFile>false</GenerateDocumentationFile>
         <NoWarn>1587;1591</NoWarn>
         <IsPackable>False</IsPackable>
+        <Configurations>Debug;Release;DebugLocal</Configurations>
+        <Platforms>AnyCPU</Platforms>
     </PropertyGroup>
 
     <ItemGroup>

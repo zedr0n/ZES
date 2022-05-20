@@ -1,4 +1,5 @@
 using System;
+using System.Diagnostics;
 using System.Linq;
 using System.Reactive.Concurrency;
 using System.Reactive.Linq;
@@ -20,8 +21,6 @@ namespace ZES.Infrastructure.Domain
         private readonly IMessageQueue _messageQueue;
         private readonly SagaDispatcher _dispatcher;
 
-        private CancellationTokenSource _source;
-
         /// <summary>
         /// Initializes a new instance of the <see cref="SagaHandler{TSaga}"/> class.
         /// </summary>
@@ -32,27 +31,19 @@ namespace ZES.Infrastructure.Domain
             _messageQueue = messageQueue;
             _dispatcher = dispatcher;
 
-            Start();
-        }
-
-        private void Start()
-        {
-            _source?.Cancel();
-            _source = new CancellationTokenSource();
-            
+            var source = new CancellationTokenSource();
             _messageQueue.Messages
-                .Where(e => new TSaga().SagaId(e) != null).Select(e =>
-            {
-                _messageQueue.UncompleteMessage(e).Wait();
-                var tracked = new Tracked<IEvent>(e);
-                tracked.Task.ContinueWith(t => _messageQueue.CompleteMessage(e));
-                return tracked;
-            }).SubscribeOn(Scheduler.Default).Subscribe(_dispatcher.InputBlock.AsObserver(), _source.Token);
-            _dispatcher.CompletionTask.ContinueWith(t => _source.Cancel());
+                .Where(e => new TSaga().SagaId(e) != null)
+                // .Select(e => Observable.FromAsync(async _ => await ToTracked(e)))
+                .Do(e => _messageQueue.UncompleteMessage(e).Wait())
+                // .Concat()
+                .Subscribe(_dispatcher.InputBlock.AsObserver(), source.Token);
+            
+            _dispatcher.CompletionTask.ContinueWith(t => source.Cancel());
         }
-
+        
         /// <inheritdoc />
-        public class SagaDispatcher : ParallelDataDispatcher<string, Tracked<IEvent>>
+        public class SagaDispatcher : ParallelDataDispatcher<string, IEvent>
         {
             private readonly IFactory<SagaFlow> _sagaFlow;
 
@@ -62,14 +53,14 @@ namespace ZES.Infrastructure.Domain
             /// <param name="log">Log helper</param>
             /// <param name="sagaFlow">Fluent builder</param>
             public SagaDispatcher(ILog log, IFactory<SagaFlow> sagaFlow)
-                : base(e => new TSaga().SagaId(e.Value), Configuration.DataflowOptions, CancellationToken.None, typeof(TSaga))
+                : base(e => new TSaga().SagaId(e), Configuration.DataflowOptions, CancellationToken.None, typeof(TSaga))
             {
                 Log = log;
                 _sagaFlow = sagaFlow;
             }
 
             /// <inheritdoc />
-            protected override Dataflow<Tracked<IEvent>> CreateChildFlow(string sagaId)
+            protected override Dataflow<IEvent> CreateChildFlow(string sagaId)
                 => _sagaFlow.Create();
 
             /// <inheritdoc />
@@ -81,7 +72,7 @@ namespace ZES.Infrastructure.Domain
         }
         
         /// <inheritdoc />
-        public class SagaFlow : Dataflow<Tracked<IEvent>>
+        public class SagaFlow : Dataflow<IEvent>
         {
             private readonly IEsRepository<ISaga> _repository;
             private readonly ILog _log;
@@ -91,17 +82,18 @@ namespace ZES.Infrastructure.Domain
             /// </summary>
             /// <param name="repository">Saga repository</param>
             /// <param name="log">Log service</param>
-            public SagaFlow(IEsRepository<ISaga> repository, ILog log)
+            /// <param name="messageQueue">Message queue service</param>
+            public SagaFlow(IEsRepository<ISaga> repository, ILog log, IMessageQueue messageQueue)
                 : base(Configuration.DataflowOptions)
             {
                 _repository = repository; 
                 _log = log;
 
-                var block = new ActionBlock<Tracked<IEvent>>(
+                var block = new ActionBlock<IEvent>(
                     async e =>
                     {
-                        await Handle(e.Value);
-                        e.Complete();
+                        await Handle(e);
+                        await messageQueue.CompleteMessage(e);
                     }, DataflowOptions.ToDataflowBlockOptions(false)); // .ToExecutionBlockOption());
             
                 RegisterChild(block);
@@ -109,7 +101,7 @@ namespace ZES.Infrastructure.Domain
             }
 
             /// <inheritdoc />
-            public override ITargetBlock<Tracked<IEvent>> InputBlock { get; }
+            public override ITargetBlock<IEvent> InputBlock { get; }
 
             private async Task Handle(IEvent e)
             {

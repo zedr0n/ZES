@@ -72,7 +72,11 @@ namespace ZES
         public async Task<Task> CommandAsync(ICommand command)
         {
             if (command.GetType().IsClosedTypeOf(typeof(RetroactiveCommand<>)))
+            {
                 await _messageQueue.RetroactiveExecution.FirstAsync(b => b == false).Timeout(Configuration.Timeout);
+                await _messageQueue.UncompletedMessages.FirstAsync(b => b == 0).Timeout(Configuration.Timeout);
+            }
+
             command.Timeline = _timeline.Id;
             if (!command.Pure)
                 await _messageQueue.UncompleteMessage(command);

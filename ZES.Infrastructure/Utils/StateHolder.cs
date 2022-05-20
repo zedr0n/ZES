@@ -74,8 +74,6 @@ namespace ZES.Infrastructure.Utils
         }
       }
 
-      // var tracked = new Tracked<TransactionFunc>(UpdateTransaction);
-      // var didSend = await _transactionBuffer.SendAsync(tracked);
       var id = Guid.NewGuid();
       var tx = new KeyValuePair<Guid, TransactionFunc>(id, UpdateTransaction);
       var didSend = _transactionBufferEx.Post(tx);
@@ -88,8 +86,6 @@ namespace ZES.Infrastructure.Utils
 
       var completed = _transactionBufferEx.ReceiveAsync(x => x == id);
       return completed;
-
-      // await tracked.Task;
     }
 
     /// <summary>

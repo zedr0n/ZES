@@ -31,7 +31,6 @@ namespace ZES.Infrastructure.EventStore
     {
         private readonly ISerializer<IEvent> _serializer;
         private readonly IMessageQueue _messageQueue;
-        private readonly ILog _log;
 
         private readonly Subject<IStream> _streams = new Subject<IStream>();
 
@@ -55,7 +54,7 @@ namespace ZES.Infrastructure.EventStore
 
             _messageQueue = messageQueue;
             _serializer = serializer;
-            _log = log;
+            Log = log;
 
             _isDomainStore = typeof(TEventSourced) == typeof(IAggregate);
         }
@@ -68,8 +67,11 @@ namespace ZES.Infrastructure.EventStore
         /// </summary>
         protected ISerializer<IEvent> Serializer => _serializer;
 
-        protected ILog Log => _log;
-        
+        /// <summary>
+        /// Gets the log service
+        /// </summary>
+        protected ILog Log { get; }
+
         /// <inheritdoc />
         public IObservable<IStream> ListStreams(string branch = null, Func<string, bool> predicate = null, CancellationToken token = default)
         {
@@ -193,7 +195,7 @@ namespace ZES.Infrastructure.EventStore
                     dict.TryRemove(e.Version, out _);
             }
             
-            _log.Debug($"Deleted ({version + 1}..{version + events.Count}) {(events.Count > 1 ? "events" : "event")} from {stream.Key}@{stream.Version}");
+            Log.Debug($"Deleted ({version + 1}..{version + events.Count}) {(events.Count > 1 ? "events" : "event")} from {stream.Key}@{stream.Version}");
 
             stream.Version = version;
             stream.AddDeleted(events.Count);
@@ -273,7 +275,7 @@ namespace ZES.Infrastructure.EventStore
         protected async Task<int> DecodeEventsObservable<T>(IObserver<T> observer, IEnumerable<TStreamMessage> streamMessages, int count)
             where T : class, IEventMetadata
         {
-            _log.StopWatch.Start("ReadSingleStream.Deserialize");
+            Log.StopWatch.Start("ReadSingleStream.Deserialize");
 
             var events = new List<T>();
             if (count > 1)
@@ -286,13 +288,13 @@ namespace ZES.Infrastructure.EventStore
                 if (!await (dataflow as DeserializeFlow<TStreamMessage, T>).ProcessAsync(streamMessages, events, aCount))
                     throw new InvalidOperationException("Not all events have been processed");
                         
-                _log.StopWatch.Stop("ReadSingleStream.Deserialize");
+                Log.StopWatch.Stop("ReadSingleStream.Deserialize");
                 _deserializeBag.Add(dataflow);
             }
             else
             {
                 var e = await _serializer.Decode<TStreamMessage, T>(streamMessages.SingleOrDefault());
-                _log.StopWatch.Stop("ReadSingleStream.Deserialize");
+                Log.StopWatch.Stop("ReadSingleStream.Deserialize");
                 events.Add(e);
             }
 
@@ -313,7 +315,7 @@ namespace ZES.Infrastructure.EventStore
             if (events == null)
                 return streamMessages;
             
-            _log.StopWatch.Start("AppendToStream.Encode");
+            Log.StopWatch.Start("AppendToStream.Encode");
             if (events.Count > 1)
             {
                 if (!_encodeBag.TryTake(out var encodeFlow))
@@ -329,14 +331,14 @@ namespace ZES.Infrastructure.EventStore
                 streamMessages = new List<TNewStreamMessage> { _serializer.Encode<TNewStreamMessage>(events.Single()) };
             }
                 
-            _log.StopWatch.Stop("AppendToStream.Encode");
+            Log.StopWatch.Stop("AppendToStream.Encode");
             return streamMessages;
         }
 
         private async Task ReadSingleStream<T>(IObserver<T> observer, IStream stream, int start, int count)
             where T : class, IEventMetadata
         {
-            _log.StopWatch.Start("ReadSingleStream");
+            Log.StopWatch.Start("ReadSingleStream");
             var position = stream.ReadPosition(start);
             if (position <= ExpectedVersion.EmptyStream)
                 position = 0;
@@ -344,7 +346,7 @@ namespace ZES.Infrastructure.EventStore
             if (count <= 0)
             {
                 observer.OnCompleted();
-                _log.StopWatch.Stop("ReadSingleStream");
+                Log.StopWatch.Stop("ReadSingleStream");
                 return;
             }
 
@@ -383,7 +385,7 @@ namespace ZES.Infrastructure.EventStore
                     json = Encoding.UTF8.GetString(eventData.Data);
                 else
                     break;
-                _log.Debug($"IsSaga : {!_isDomainStore} \n {json}");
+                Log.Debug($"IsSaga : {!_isDomainStore} \n {json}");
             }
         }
 

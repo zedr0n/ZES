@@ -84,9 +84,10 @@ namespace ZES.Infrastructure.EventStore
         /// <inheritdoc />
         protected override async Task UpdateStreamMetadata(IStream stream)
         {
-            var metaVersion = (await _streamStore.GetStreamMetadata(stream.Key)).MetadataStreamVersion;
+            /*var metaVersion = (await _streamStore.GetStreamMetadata(stream.Key)).MetadataStreamVersion;
             if (metaVersion == ExpectedVersion.EmptyStream)
-                metaVersion = ExpectedVersion.NoStream;
+                metaVersion = ExpectedVersion.NoStream;*/
+            var metaVersion = ExpectedVersion.Any;
                 
             await _streamStore.SetStreamMetadata(
                 stream.Key,
@@ -97,7 +98,7 @@ namespace ZES.Infrastructure.EventStore
         /// <inheritdoc />
         protected override async Task TruncateStreamStore(IStream stream, int version)
         {
-            var events = await ReadStream<IEvent>(stream, version + 1).ToList();
+            var events = await ReadStream<IEventMetadata>(stream, version + 1).ToList();
             foreach (var e in events.Reverse())
                 await _streamStore.DeleteMessage(stream.Key, e.MessageId);
         }

@@ -182,6 +182,19 @@ namespace ZES.Infrastructure.Domain
             var objectHash = Hashing.Crc32(value); // Hashing.Sha256(value);
             Hash = Hashing.Crc32(_hash + objectHash); // Hashing.Sha256(_hash + objectHash);
         }
+
+        /// <summary>
+        /// Update the hash with object
+        /// </summary>
+        /// <param name="values">List of doubles to hash</param>
+        protected void AddHashDoubleList(IEnumerable<double> values)
+        {
+            if (!_computeHash)
+                return;
+
+            var s = values.Aggregate(string.Empty, (current, d) => current + Hashing.Crc32(d));
+            Hash = Hashing.Crc32(_hash + s);
+        }
         
         /// <summary>
         /// Register the action to apply event to the instance

@@ -1,3 +1,4 @@
+using System;
 using System.IO;
 using System.Runtime.Serialization.Formatters.Binary;
 using System.Security.Cryptography;
@@ -53,6 +54,31 @@ namespace ZES.Infrastructure
 
             var bytes = Byte(value);
             return Crc32CAlgorithm.Compute(bytes).ToString();
+        }
+
+        /// <summary>
+        /// Crc32 object hash
+        /// </summary>
+        /// <param name="value">String to hash</param>
+        /// <returns>String hash</returns>
+        public static string Crc32(string value)
+        {
+            if (string.IsNullOrEmpty(value))
+                return string.Empty;
+
+            var bytes = Encoding.UTF8.GetBytes(value);
+            return Crc32Algorithm.Compute(bytes).ToString();
+        }
+
+        /// <summary>
+        /// Crc32 object hash
+        /// </summary>
+        /// <param name="value">String to hash</param>
+        /// <returns>Double to hash</returns>
+        public static string Crc32(double value)
+        {
+            var bytes = BitConverter.GetBytes(value);
+            return Crc32Algorithm.Compute(bytes).ToString();
         }
         
         /// <summary>

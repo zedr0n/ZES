@@ -81,12 +81,13 @@ namespace ZES.Infrastructure.Branching
 
             if (version == ExpectedVersion.EmptyStream)
                 await store.DeleteStream(stream);
-            
-            if (version <= ExpectedVersion.EmptyStream || version >= stream.Version)
-                return;
 
-            await store.TrimStream(stream, version);
-            await _graph.TrimStream(stream.Key, version);
+            if (version > ExpectedVersion.EmptyStream && version < stream.Version)
+            {
+                await store.TrimStream(stream, version);
+                await _graph.TrimStream(stream.Key, version);
+            }
+            
             _log.StopWatch.Stop("TrimStream");
         }
 
@@ -203,15 +204,22 @@ namespace ZES.Infrastructure.Branching
             _log.StopWatch.Start("TryInsert.Merge");
             if (!invalidEvents.Any())
             {
+                _log.StopWatch.Start("TryInsert.Merge.TrimStream");
+                
+                foreach (var k in allEvents.Keys)
+                {
+                    var liveStream = await _streamLocator.FindBranched(k, currentBranch);
+                    await TrimStream(liveStream, k.Version);
+                }
+                
+                _log.StopWatch.Stop("TryInsert.Merge.TrimStream");
+#if !USE_MERGE_FOR_INSERT
                 foreach (var l in allEvents)
                 {
                     var k = l.Key;
                     var events = l.Value;
-                    
-                    var liveStream = await _streamLocator.FindBranched(k, currentBranch);
-                    await TrimStream(liveStream, k.Version);
-#if !USE_MERGE_FOR_INSERT
-                    liveStream = await _streamLocator.FindBranched(k, currentBranch) ??
+
+                    var liveStream = await _streamLocator.FindBranched(k, currentBranch) ??
                                  k.Branch(currentBranch, ExpectedVersion.EmptyStream);
 
                     var store = GetStore(liveStream);
@@ -221,9 +229,9 @@ namespace ZES.Infrastructure.Branching
                         e.Timeline = liveStream.Timeline;
                     }
 
-                    _log.StopWatch.Start("TryInsert.AppendToStream");
+                    _log.StopWatch.Start("TryInsert.Merge.AppendToStream");
                     await store.AppendToStream(liveStream, events, false);
-                    _log.StopWatch.Stop("TryInsert.AppendToStream");
+                    _log.StopWatch.Stop("TryInsert.Merge.AppendToStream");
 #endif
                 }
 

@@ -34,9 +34,7 @@ namespace ZES.Infrastructure.Domain
             var source = new CancellationTokenSource();
             _messageQueue.Messages
                 .Where(e => new TSaga().SagaId(e) != null)
-                // .Select(e => Observable.FromAsync(async _ => await ToTracked(e)))
                 .Do(e => _messageQueue.UncompleteMessage(e).Wait())
-                // .Concat()
                 .Subscribe(_dispatcher.InputBlock.AsObserver(), source.Token);
             
             _dispatcher.CompletionTask.ContinueWith(t => source.Cancel());

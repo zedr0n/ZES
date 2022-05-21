@@ -185,20 +185,26 @@ namespace ZES.Infrastructure.EventStore
         /// <inheritdoc />
         public async Task TrimStream(IStream stream, int version)
         {
-            var events = await ReadStream<IEvent>(stream, version + 1).ToList();
+            var maxVersion = stream.Version;
+            var count = maxVersion - version;
+            Log.StopWatch.Start("TrimStream.TruncateStreamStore");
             await TruncateStreamStore(stream, version);
+            Log.StopWatch.Stop("TrimStream.TruncateStreamStore");
 
             if (_useVersionCache)
             {
                 var dict = _versions.GetOrAdd(stream.Key, new ConcurrentDictionary<int, Instant>());
-                foreach (var e in events)
-                    dict.TryRemove(e.Version, out _);
+                while (maxVersion > version)
+                {
+                    dict.TryRemove(maxVersion, out _);
+                    maxVersion--;
+                }
             }
             
-            Log.Debug($"Deleted ({version + 1}..{version + events.Count}) {(events.Count > 1 ? "events" : "event")} from {stream.Key}@{stream.Version}");
+            Log.Debug($"Deleted ({version + 1}..{maxVersion}) {(count > 1 ? "events" : "event")} from {stream.Key}@{stream.Version}");
 
             stream.Version = version;
-            stream.AddDeleted(events.Count);
+            stream.AddDeleted(count);
             UpdateStreamMetadata(stream);
         }
         

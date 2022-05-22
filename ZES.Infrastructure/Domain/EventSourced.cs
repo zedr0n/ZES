@@ -179,21 +179,21 @@ namespace ZES.Infrastructure.Domain
             if (!_computeHash)
                 return;
 
-            var objectHash = Hashing.Crc32(value); // Hashing.Sha256(value);
-            Hash = Hashing.Crc32(_hash + objectHash); // Hashing.Sha256(_hash + objectHash);
-        }
-
-        /// <summary>
-        /// Update the hash with object
-        /// </summary>
-        /// <param name="values">List of doubles to hash</param>
-        protected void AddHashDoubleList(IEnumerable<double> values)
-        {
-            if (!_computeHash)
-                return;
-
-            var s = values.Aggregate(string.Empty, (current, d) => current + Hashing.Crc32(d));
-            Hash = Hashing.Crc32(_hash + s);
+            switch (value)
+            {
+                case Enum @enum:
+                    AddHash((int)(object)@enum);
+                    break;
+                case IEnumerable<double> doubles:
+                    AddHash(doubles);
+                    break;
+                default:
+                {
+                    var objectHash = Hashing.Crc32(value); // Hashing.Sha256(value);
+                    Hash = Hashing.Crc32(_hash + objectHash); // Hashing.Sha256(_hash + objectHash);
+                    break;
+                }
+            }
         }
         
         /// <summary>
@@ -229,6 +229,23 @@ namespace ZES.Infrastructure.Domain
         {
             lock (_changes)
                 _changes.Clear();
+        }
+        
+        private void AddHash(int value)
+        {
+            if (!_computeHash)
+                return;
+
+            Hash = Hashing.Crc32(_hash + value);
+        }
+
+        private void AddHash(IEnumerable<double> values)
+        {
+            if (!_computeHash)
+                return;
+
+            var s = values.Aggregate(string.Empty, (current, d) => current + d);
+            Hash = Hashing.Crc32(_hash + s);
         }
     }
 }

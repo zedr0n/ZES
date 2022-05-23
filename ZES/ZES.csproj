@@ -38,8 +38,8 @@
         </When>
         <Otherwise>
             <ItemGroup>
-                <PackageReference Include="SqlStreamStore.MsSql" Version="1.2.1-alpha.3.32" />
-                <PackageReference Include="SqlStreamStore.MySql" Version="1.2.1-alpha.3.31" />
+                <PackageReference Include="SqlStreamStore.MsSql" Version="1.2.1-alpha.3.33" />
+                <PackageReference Include="SqlStreamStore.MySql" Version="1.2.1-alpha.3.33" />
             </ItemGroup>
         </Otherwise>
     </Choose>

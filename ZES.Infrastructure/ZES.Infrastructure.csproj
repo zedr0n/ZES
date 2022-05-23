@@ -37,7 +37,7 @@
         </When>
         <Otherwise>
             <ItemGroup>
-                <PackageReference Include="SqlStreamStore" Version="1.2.1-alpha.3.32" />
+                <PackageReference Include="SqlStreamStore" Version="1.2.1-alpha.3.33" />
             </ItemGroup>
         </Otherwise>
     </Choose>

@@ -344,7 +344,7 @@ namespace ZES.Infrastructure.EventStore
         private async Task ReadSingleStream<T>(IObserver<T> observer, IStream stream, int start, int count)
             where T : class, IEventMetadata
         {
-            Log.StopWatch.Start("ReadSingleStream");
+            Log.StopWatch.Start(nameof(ReadSingleStream));
             var position = stream.ReadPosition(start);
             if (position <= ExpectedVersion.EmptyStream)
                 position = 0;
@@ -352,11 +352,12 @@ namespace ZES.Infrastructure.EventStore
             if (count <= 0)
             {
                 observer.OnCompleted();
-                Log.StopWatch.Stop("ReadSingleStream");
+                Log.StopWatch.Stop(nameof(ReadSingleStream));
                 return;
             }
 
             await ReadSingleStreamStore(observer as IObserver<IEvent>, stream, position, count);
+            Log.StopWatch.Stop(nameof(ReadSingleStream));
         }
         
         private void UpdateVersionCache(IStream stream, IList<IEvent> events)

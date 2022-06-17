@@ -82,7 +82,7 @@ namespace ZES.Infrastructure.EventStore
             #if USE_CUSTOM_SQLSTREAMSTORE
                 var result = await _streamStore.AppendToStream(stream.Key, stream.AppendPosition(), streamMessages.ToArray(), default, false);
             #else
-                var result = await _streamStore.AppendToStream(stream.Key, stream.AppendPosition(), streamMessages.ToArray();
+                var result = await _streamStore.AppendToStream(stream.Key, stream.AppendPosition(), streamMessages.ToArray());
             #endif
                 return result.CurrentVersion;
         }

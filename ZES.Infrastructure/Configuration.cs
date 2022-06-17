@@ -28,8 +28,9 @@ namespace ZES.Infrastructure
 
         static Configuration()
         {
-            var env = Environment.GetEnvironmentVariable("UseSqlStore".ToUpper());
-            UseSqlStore = env == null || env != 0.ToString();
+            var env = Environment.GetEnvironmentVariable("UseTcpStore".ToUpper());
+            if (env != null && 1.ToString() == env)
+                UseSqlStore = false;
         }
 
         /// <summary>
@@ -71,12 +72,12 @@ namespace ZES.Infrastructure
         /// Gets the limited thread scheduler
         /// </summary>
         public static LimitedConcurrencyLevelTaskScheduler LimitedTaskScheduler { get; } =
-            new LimitedConcurrencyLevelTaskScheduler(ThreadsPerInstance); 
+            new LimitedConcurrencyLevelTaskScheduler(ThreadsPerInstance);
 
         /// <summary>
         /// Gets a value indicating whether to use SQLStreamStore instead of Event Store
         /// </summary>
-        public static bool UseSqlStore { get; private set; }
+        public static bool UseSqlStore { get; private set; } = true;
         
         /// <summary>
         /// Gets a value indicating whether to use local MySql or Azure MSSql

@@ -1,4 +1,5 @@
 using NodaTime;
+using ZES.Interfaces.Clocks;
 
 namespace ZES.Interfaces.Domain
 {
@@ -15,7 +16,7 @@ namespace ZES.Interfaces.Domain
         /// <summary>
         /// Gets or sets the query timestamp
         /// </summary>
-        Instant Timestamp { get; set; }
+        Time Timestamp { get; set; }
     }
 
     /// <summary>

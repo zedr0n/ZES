@@ -13,9 +13,11 @@ using ZES.Infrastructure;
 using ZES.Infrastructure.Alerts;
 using ZES.Infrastructure.Domain;
 using ZES.Infrastructure.Net;
+using ZES.Infrastructure.Utils;
 using ZES.Interfaces;
 using ZES.Interfaces.Branching;
 using ZES.Interfaces.Causality;
+using ZES.Interfaces.Clocks;
 using ZES.Interfaces.Domain;
 using ZES.Interfaces.Pipes;
 using ZES.Tests.Domain;
@@ -216,7 +218,7 @@ namespace ZES.Tests
             var record = new CreateRecord("Root");
             await await bus.CommandAsync(record);
 
-            var time = DateTime.UtcNow.ToInstant() + Duration.FromMinutes(10); // (DateTimeOffset)new DateTime(2019, 1, 1, 0, 0, 0, DateTimeKind.Utc); 
+            var time = (DateTime.UtcNow.ToInstant() + Duration.FromMinutes(10)).ToTime(); // (DateTimeOffset)new DateTime(2019, 1, 1, 0, 0, 0, DateTimeKind.Utc); 
             
             var command = new AddRecord("Root", 1) { Timestamp = time };
             await await bus.CommandAsync(command);
@@ -239,10 +241,10 @@ namespace ZES.Tests
             var statsQuery = new StatsQuery();
             var now = timeline.Now;
             
-            var historicalQuery = new HistoricalQuery<StatsQuery, Stats>(statsQuery, default(Instant).PlusTicks(1));
+            var historicalQuery = new HistoricalQuery<StatsQuery, Stats>(statsQuery, Time.Default);
             await bus.Equal(historicalQuery, s => s.NumberOfRoots, 0);
             
-            var liveQuery = new HistoricalQuery<StatsQuery, Stats>(statsQuery, DateTimeOffset.UtcNow.ToInstant());
+            var liveQuery = new HistoricalQuery<StatsQuery, Stats>(statsQuery, DateTimeOffset.UtcNow.ToInstant().ToTime());
             await bus.Equal(liveQuery, s => s.NumberOfRoots, 2);
 
             await await bus.CommandAsync(new UpdateRoot("HistoricalRoot"));            
@@ -251,11 +253,11 @@ namespace ZES.Tests
             await bus.IsTrue(new RootInfoQuery("HistoricalRoot"), i => i.UpdatedAt > i.CreatedAt);
 
             historicalInfo =
-                new HistoricalQuery<RootInfoQuery, RootInfo>(new RootInfoQuery("HistoricalRoot"), DateTimeOffset.UtcNow.ToInstant());
+                new HistoricalQuery<RootInfoQuery, RootInfo>(new RootInfoQuery("HistoricalRoot"), DateTimeOffset.UtcNow.ToInstant().ToTime());
             await bus.IsTrue(historicalInfo, i => i.UpdatedAt > i.CreatedAt);
             
             historicalInfo =
-                new HistoricalQuery<RootInfoQuery, RootInfo>(new RootInfoQuery("TempRoot"), DateTimeOffset.UtcNow.ToInstant());
+                new HistoricalQuery<RootInfoQuery, RootInfo>(new RootInfoQuery("TempRoot"), DateTimeOffset.UtcNow.ToInstant().ToTime());
             await bus.IsTrue(historicalInfo, i => i.UpdatedAt == i.CreatedAt);
         }
 

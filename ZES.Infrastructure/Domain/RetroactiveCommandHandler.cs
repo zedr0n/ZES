@@ -77,7 +77,7 @@ namespace ZES.Infrastructure.Domain
 
                 foreach (var c in commands)
                 {
-                    _log.Debug($"Replaying command {c.GetType().GetFriendlyName()} with timestamp {c.Timestamp.ToDateString()}");
+                    _log.Debug($"Replaying command {c.GetType().GetFriendlyName()} with timestamp {c.Timestamp}");
                     await _retroactive.ReplayCommand(c);
                 }
             }

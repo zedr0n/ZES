@@ -3,6 +3,7 @@ using System.Linq;
 using NodaTime;
 using ZES.Infrastructure.Domain;
 using ZES.Interfaces;
+using ZES.Interfaces.Clocks;
 using ZES.Interfaces.Domain;
 using ZES.Tests.Domain.Events;
 
@@ -40,7 +41,7 @@ namespace ZES.Tests.Domain
 
         public List<string> Details { get; set; }
         
-        public Instant UpdatedAt { get; private set; }
+        public Time UpdatedAt { get; private set; }
 
         public void Update()
         {
@@ -82,13 +83,13 @@ namespace ZES.Tests.Domain
             /// Initializes a new instance of the <see cref="SnapshotEvent"/> class.
             /// </summary>
             /// <param name="updatedAt">Updated at property</param>
-            public SnapshotEvent(Instant updatedAt, string rootId)
+            public SnapshotEvent(Time updatedAt, string rootId)
             {
                 UpdatedAt = updatedAt;
                 Id = rootId;
             }
 
-            public Instant UpdatedAt { get; }
+            public Time UpdatedAt { get; }
             public string Id { get; set; }
         }
     }

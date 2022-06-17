@@ -21,19 +21,19 @@ namespace ZES.Infrastructure.EventStore
     /// SQLStreamStore event store facade
     /// </summary>
     /// <typeparam name="TEventSourced">Event sourced type</typeparam>
-    public class SqlEventStoreEx<TEventSourced> : EventStoreBase<TEventSourced, NewStreamMessage, StreamMessage> 
+    public class SqlEventStore<TEventSourced> : EventStoreBase<TEventSourced, NewStreamMessage, StreamMessage> 
         where TEventSourced : IEventSourced
     {
         private readonly IStreamStore _streamStore;
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="SqlEventStoreEx{TEventSourced}"/> class.
+        /// Initializes a new instance of the <see cref="SqlEventStore{TEventSourced}"/> class.
         /// </summary>
         /// <param name="messageQueue">Message queue</param>
         /// <param name="serializer">Event serializer</param>
         /// <param name="log">Log service</param>
         /// <param name="streamStore">Stream store</param>
-        public SqlEventStoreEx(IMessageQueue messageQueue, ISerializer<IEvent> serializer, ILog log, IStreamStore streamStore)
+        public SqlEventStore(IMessageQueue messageQueue, ISerializer<IEvent> serializer, ILog log, IStreamStore streamStore)
             : base(messageQueue, serializer, log)
         {
             _streamStore = streamStore;

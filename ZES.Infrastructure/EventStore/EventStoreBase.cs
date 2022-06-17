@@ -13,6 +13,8 @@ using NodaTime;
 using SqlStreamStore.Streams;
 using ZES.Infrastructure.Utils;
 using ZES.Interfaces;
+using ZES.Interfaces.Causality;
+using ZES.Interfaces.Clocks;
 using ZES.Interfaces.Domain;
 using ZES.Interfaces.EventStore;
 using ZES.Interfaces.Pipes;
@@ -36,7 +38,7 @@ namespace ZES.Infrastructure.EventStore
 
         private readonly bool _isDomainStore;
         private readonly bool _useVersionCache;
-        private readonly ConcurrentDictionary<string, ConcurrentDictionary<int, Instant>> _versions = new ConcurrentDictionary<string, ConcurrentDictionary<int, Instant>>();
+        private readonly ConcurrentDictionary<string, ConcurrentDictionary<int, Time>> _versions = new ConcurrentDictionary<string, ConcurrentDictionary<int, Time>>();
         private readonly ConcurrentBag<EncodeFlow<TNewStreamMessage>> _encodeBag = new ConcurrentBag<EncodeFlow<TNewStreamMessage>>();
         private readonly ConcurrentEventFlowBag<TStreamMessage> _deserializeBag = new ConcurrentEventFlowBag<TStreamMessage>();
 
@@ -121,7 +123,7 @@ namespace ZES.Infrastructure.EventStore
         }
 
         /// <inheritdoc />
-        public async Task<int> GetVersion(IStream stream, Instant timestamp)
+        public async Task<int> GetVersion(IStream stream, Time timestamp)
         {
             if (_useVersionCache && _versions.TryGetValue(stream.Key, out var versions))
             {
@@ -193,7 +195,7 @@ namespace ZES.Infrastructure.EventStore
 
             if (_useVersionCache)
             {
-                var dict = _versions.GetOrAdd(stream.Key, new ConcurrentDictionary<int, Instant>());
+                var dict = _versions.GetOrAdd(stream.Key, new ConcurrentDictionary<int, Time>());
                 while (maxVersion > version)
                 {
                     dict.TryRemove(maxVersion, out _);
@@ -365,7 +367,7 @@ namespace ZES.Infrastructure.EventStore
             if (!_useVersionCache)
                 return;
             
-            var dict = _versions.GetOrAdd(stream.Key, new ConcurrentDictionary<int, Instant>());
+            var dict = _versions.GetOrAdd(stream.Key, new ConcurrentDictionary<int, Time>());
             foreach (var e in events ?? new List<IEvent>())
                 dict[e.Version] = e.Timestamp;
             var s = stream.Parent;

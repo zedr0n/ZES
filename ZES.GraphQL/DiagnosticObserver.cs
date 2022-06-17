@@ -8,6 +8,7 @@ using Microsoft.Extensions.DiagnosticAdapter;
 using NodaTime;
 using NodaTime.Text;
 using ZES.Interfaces;
+using ZES.Interfaces.Clocks;
 
 #pragma warning disable 1591
 
@@ -74,9 +75,7 @@ namespace ZES.GraphQL
             {
                 var arguments = request.SelectionSet.Selections.OfType<FieldNode>().SelectMany(s => s.Arguments);
                 var timestampStr = (string)arguments.SingleOrDefault(x => x.Name.Value == "timestamp" || x.Name.Value == "date")?.Value?.Value;
-                var timestamp = default(Instant);
-                if (timestampStr != null && InstantPattern.ExtendedIso.Parse(timestampStr).Success)
-                    timestamp = InstantPattern.ExtendedIso.Parse(timestampStr).Value;
+                var timestamp = Time.FromExtendedIso(timestampStr);
                 _recordLog.AddMutation(query, timestamp);
             }
         }

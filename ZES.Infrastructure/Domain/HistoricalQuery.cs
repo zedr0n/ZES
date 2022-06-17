@@ -1,4 +1,5 @@
 using NodaTime;
+using ZES.Interfaces.Clocks;
 using ZES.Interfaces.Domain;
 
 namespace ZES.Infrastructure.Domain
@@ -12,14 +13,14 @@ namespace ZES.Infrastructure.Domain
         /// </summary>
         /// <param name="query">Underlying query</param>
         /// <param name="timestamp">Point in time</param>
-        public HistoricalQuery(TQuery query, Instant timestamp)
+        public HistoricalQuery(TQuery query, Time timestamp)
         {
             Query = query;
             Timestamp = timestamp;
         }
 
         /// <inheritdoc />
-        public Instant Timestamp { get; set; }
+        public Time Timestamp { get; set; }
 
         /// <inheritdoc />
         public TQuery Query { get; }

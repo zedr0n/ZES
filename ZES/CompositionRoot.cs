@@ -14,6 +14,7 @@ using ZES.Conventions;
 using ZES.Infrastructure;
 using ZES.Infrastructure.Branching;
 using ZES.Infrastructure.Causality;
+using ZES.Infrastructure.Clocks;
 using ZES.Infrastructure.Domain;
 using ZES.Infrastructure.EventStore;
 using ZES.Infrastructure.Net;
@@ -21,6 +22,7 @@ using ZES.Infrastructure.Serialization;
 using ZES.Interfaces;
 using ZES.Interfaces.Branching;
 using ZES.Interfaces.Causality;
+using ZES.Interfaces.Clocks;
 using ZES.Interfaces.Domain;
 using ZES.Interfaces.EventStore;
 using ZES.Interfaces.GraphQL;
@@ -68,6 +70,12 @@ namespace ZES
                 new LogNameConvention(),
                 new UtcNowConvention(),
             });
+            container.Register<IPhysicalClock, PhysicalClock>(Lifestyle.Singleton);
+            if (!Time.UseLogicalTime)
+                container.Register<IClock, InstantClock>(Lifestyle.Singleton);
+            else
+                container.Register<IClock, LogicalClock>(Lifestyle.Singleton);
+
             container.Register<IBus, Bus>(Lifestyle.Singleton);
             container.Register<IEsRegistry, EsRegistry>(Lifestyle.Singleton);
             container.Register<IProjectionManager, ProjectionManager>(Lifestyle.Singleton);
@@ -116,7 +124,7 @@ namespace ZES
             container.Register<IEventSerializationRegistry, EventSerializationRegistry>(Lifestyle.Singleton);
             container.Register(typeof(ISerializer<>), typeof(Serializer<>), Lifestyle.Singleton);
             if (Configuration.UseSqlStore)
-                container.Register(typeof(IEventStore<>), typeof(SqlEventStoreEx<>), Lifestyle.Singleton);
+                container.Register(typeof(IEventStore<>), typeof(SqlEventStore<>), Lifestyle.Singleton);
             else
                 container.Register(typeof(IEventStore<>), typeof(TcpEventStore<>), Lifestyle.Singleton);
 

@@ -14,6 +14,7 @@ using NodaTime;
 using ZES.Infrastructure.Alerts;
 using ZES.Infrastructure.Utils;
 using ZES.Interfaces;
+using ZES.Interfaces.Clocks;
 using ZES.Interfaces.Domain;
 using ZES.Interfaces.EventStore;
 using static ZES.Interfaces.Domain.ProjectionStatus;
@@ -118,7 +119,7 @@ namespace ZES.Infrastructure.Projections
         /// <summary>
         /// Gets projection timestamp
         /// </summary>
-        public virtual Instant Latest => Instant.MaxValue;
+        public virtual Time Latest => Time.MaxValue;
         
         /// <summary>
         /// Gets build flow instance

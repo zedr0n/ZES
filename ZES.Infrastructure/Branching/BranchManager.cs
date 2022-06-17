@@ -8,8 +8,6 @@ using System.Threading.Tasks;
 using System.Threading.Tasks.Dataflow;
 using Gridsum.DataflowEx;
 using NodaTime;
-using NodaTime.Extensions;
-using SqlStreamStore.Streams;
 using ZES.Infrastructure.Alerts;
 using ZES.Infrastructure.Domain;
 using ZES.Infrastructure.EventStore;
@@ -17,10 +15,12 @@ using ZES.Infrastructure.Utils;
 using ZES.Interfaces;
 using ZES.Interfaces.Branching;
 using ZES.Interfaces.Causality;
+using ZES.Interfaces.Clocks;
 using ZES.Interfaces.Domain;
 using ZES.Interfaces.EventStore;
 using ZES.Interfaces.Pipes;
 using ExpectedVersion = SqlStreamStore.Streams.ExpectedVersion;
+using IClock = ZES.Interfaces.Clocks.IClock;
 
 namespace ZES.Infrastructure.Branching
 {
@@ -36,8 +36,9 @@ namespace ZES.Infrastructure.Branching
         public const string Master = "master";
         
         private readonly ILog _log;
-        private readonly ConcurrentDictionary<string, Timeline> _branches = new ConcurrentDictionary<string, Timeline>();
-        private readonly Timeline _activeTimeline;
+        private readonly ConcurrentDictionary<string, ITimeline> _branches = new ConcurrentDictionary<string, ITimeline>();
+        private readonly ITimeline _activeTimeline;
+        private readonly IClock _clock;
         private readonly IMessageQueue _messageQueue;
         private readonly IEventStore<IAggregate> _eventStore;
         private readonly IEventStore<ISaga> _sagaStore;
@@ -56,6 +57,7 @@ namespace ZES.Infrastructure.Branching
         /// <param name="streamLocator">Stream locator</param>
         /// <param name="graph">Graph</param>
         /// <param name="commandLog">Command log</param>
+        /// <param name="clock">Logical clock</param>
         public BranchManager(
             ILog log, 
             ITimeline activeTimeline,
@@ -64,7 +66,8 @@ namespace ZES.Infrastructure.Branching
             IEventStore<ISaga> sagaStore,
             IStreamLocator streamLocator,
             IGraph graph,
-            ICommandLog commandLog)
+            ICommandLog commandLog, 
+            IClock clock)
         {
             _log = log;
             _activeTimeline = activeTimeline as Timeline;
@@ -73,9 +76,10 @@ namespace ZES.Infrastructure.Branching
             _streamLocator = streamLocator;
             _graph = graph;
             _commandLog = commandLog;
+            _clock = clock;
             _sagaStore = sagaStore;
 
-            _branches.TryAdd(Master, Timeline.New(Master));
+            _branches.TryAdd(Master, activeTimeline.New(Master));
         }
 
         /// <inheritdoc />
@@ -103,7 +107,7 @@ namespace ZES.Infrastructure.Branching
         }
 
         /// <inheritdoc />
-        public async Task<ITimeline> Branch(string branchId, Instant time = default, IEnumerable<string> keys = null, bool deleteExisting = false)
+        public async Task<ITimeline> Branch(string branchId, Time time = default, IEnumerable<string> keys = null, bool deleteExisting = false)
         {
             _log.StopWatch.Start("Branch");
             if (_activeTimeline.Id == branchId)
@@ -124,7 +128,7 @@ namespace ZES.Infrastructure.Branching
                 newBranch = true;
             }
 
-            var timeline = _branches.GetOrAdd(branchId, b => Timeline.New(branchId, time));
+            var timeline = _branches.GetOrAdd(branchId, b => _activeTimeline.New(branchId, time));
             if (time != default && timeline.Now != time)
             {
                 _log.Errors.Add(new InvalidOperationException($"Branch {branchId} already exists!"));
@@ -136,8 +140,8 @@ namespace ZES.Infrastructure.Branching
             // copy the events
             if (newBranch)
             {
-                await Clone<IAggregate>(branchId, time != default ? time : SystemClock.Instance.GetCurrentInstant(), keys);
-                await Clone<ISaga>(branchId, time != default ? time : SystemClock.Instance.GetCurrentInstant(), keys);
+                await Clone<IAggregate>(branchId, time ?? _clock.GetCurrentInstant()); 
+                await Clone<ISaga>(branchId, time ?? _clock.GetCurrentInstant(), keys);
             }
 
             _log.StopWatch.Stop("Branch.Clone");
@@ -175,15 +179,6 @@ namespace ZES.Infrastructure.Branching
                await StoreChanges<ISaga>(branchId, changes); */
 
             return new Dictionary<IStream, int>(changes);
-        }
-
-        /// <inheritdoc />
-        public Instant GetTime(string branchId)
-        {
-            if (!_branches.TryGetValue(branchId, out var timeline))
-                return Instant.MinValue;
-
-            return timeline.Now;
         }
 
         /// <inheritdoc />
@@ -358,7 +353,7 @@ namespace ZES.Infrastructure.Branching
         // full clone of event store
         // can become really expensive
         // TODO: use links to event ids?
-        private async Task Clone<T>(string timeline, Instant time, IEnumerable<string> keys = null)
+        private async Task Clone<T>(string timeline, Time time, IEnumerable<string> keys = null)
             where T : IEventSourced
         {
             var store = GetStore<T>();
@@ -505,7 +500,7 @@ namespace ZES.Infrastructure.Branching
             private readonly ActionBlock<IStream> _inputBlock;
             private int _numberOfStreams;
             
-            public CloneFlow(string timeline, Instant time, IEventStore<T> eventStore) 
+            public CloneFlow(string timeline, Time time, IEventStore<T> eventStore) 
                 : base(Configuration.DataflowOptions)
             {
                 _inputBlock = new ActionBlock<IStream>(

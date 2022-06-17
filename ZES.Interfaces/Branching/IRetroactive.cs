@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using NodaTime;
+using ZES.Interfaces.Clocks;
 using ZES.Interfaces.Domain;
 using ZES.Interfaces.EventStore;
 
@@ -51,7 +52,7 @@ namespace ZES.Interfaces.Branching
         /// <param name="changes">All events to insert by stream</param>
         /// <param name="time">Time to insert at</param>
         /// <returns>List of invalid events if any</returns>
-        Task<List<IEvent>> TryInsert(Dictionary<IStream, IEnumerable<IEvent>> changes, Instant time);
+        Task<List<IEvent>> TryInsert(Dictionary<IStream, IEnumerable<IEvent>> changes, Time time);
         
         /// <summary>
         /// Delete event from the stream
@@ -67,7 +68,7 @@ namespace ZES.Interfaces.Branching
         /// <param name="command">Command to process</param>
         /// <param name="time">Time command  is applied</param>
         /// <returns>List of events by stream</returns>
-        Task<Dictionary<IStream, IEnumerable<IEvent>>> GetChanges(ICommand command, Instant time);
+        Task<Dictionary<IStream, IEnumerable<IEvent>>> GetChanges(ICommand command, Time time);
 
         /// <summary>
         /// Replay the command retroactively

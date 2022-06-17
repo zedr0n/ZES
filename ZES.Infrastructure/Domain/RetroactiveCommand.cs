@@ -1,4 +1,5 @@
 using NodaTime;
+using ZES.Interfaces.Clocks;
 using ZES.Interfaces.Domain;
 
 namespace ZES.Infrastructure.Domain
@@ -15,7 +16,7 @@ namespace ZES.Infrastructure.Domain
         /// </summary>
         /// <param name="command">Underlying command</param>
         /// <param name="timestamp">Time at which the command will be actioned</param>
-        public RetroactiveCommand(TCommand command, Instant timestamp)
+        public RetroactiveCommand(TCommand command, Time timestamp)
         {
             command.AncestorId = MessageId;
             Target = command.Target;

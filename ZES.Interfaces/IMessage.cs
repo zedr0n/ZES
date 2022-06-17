@@ -1,5 +1,5 @@
 using System;
-using NodaTime;
+using ZES.Interfaces.Clocks;
 
 namespace ZES.Interfaces
 {
@@ -26,7 +26,7 @@ namespace ZES.Interfaces
         /// <summary>
         /// Gets or sets gets event timestamp
         /// </summary>
-        Instant Timestamp { get; set; }
+        Time Timestamp { get; set; }
         
         /// <summary>
         /// Gets or sets the corresponding message timeline

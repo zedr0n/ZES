@@ -10,9 +10,11 @@ using ZES.Infrastructure.Alerts;
 using ZES.Infrastructure.Branching;
 using ZES.Infrastructure.Domain;
 using ZES.Infrastructure.Stochastics;
+using ZES.Infrastructure.Utils;
 using ZES.Interfaces;
 using ZES.Interfaces.Branching;
 using ZES.Interfaces.Causality;
+using ZES.Interfaces.Clocks;
 using ZES.Interfaces.Domain;
 using ZES.Interfaces.EventStore;
 using ZES.Interfaces.Pipes;
@@ -134,7 +136,7 @@ namespace ZES.Tests
             await await bus.CommandAsync(new AddRecord("Root", 1));
             await bus.IsTrue(new LastRecordQuery("Root"), r => (int)r.Value == 1);
 
-            var then = new DateTime(1970, 1, 1, 12, 0, 0, DateTimeKind.Utc).ToInstant(); 
+            var then = new DateTime(1970, 1, 1, 12, 0, 0, DateTimeKind.Utc).ToInstant().ToTime(); 
             await manager.Branch("Branch", then);
             queue.Alert(new InvalidateProjections());
             await bus.Equal(new LastRecordQuery("Root"), r => r.Value, -1);
@@ -298,7 +300,7 @@ namespace ZES.Tests
             Assert.Equal("master", timeline.Id);
            
             var timeTraveller = container.GetInstance<IBranchManager>();
-            await timeTraveller.Branch("test", Instant.MinValue);
+            await timeTraveller.Branch("test", Time.MinValue);
                      
             Assert.Equal("test", timeline.Id);
 

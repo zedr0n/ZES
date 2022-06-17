@@ -12,8 +12,10 @@ using NodaTime.Serialization.JsonNet;
 using NodaTime.Text;
 using NodaTime.TimeZones;
 using SqlStreamStore.Streams;
+using ZES.Infrastructure.Clocks;
 using ZES.Infrastructure.Domain;
 using ZES.Interfaces;
+using ZES.Interfaces.Clocks;
 using ZES.Interfaces.EventStore;
 using ZES.Interfaces.Serialization;
 using Stream = ZES.Infrastructure.EventStore.Stream;
@@ -50,8 +52,8 @@ namespace ZES.Infrastructure.Serialization
                 TypeNameAssemblyFormatHandling = TypeNameAssemblyFormatHandling.Simple,
                 Converters = new List<JsonConverter>(),
                 DateParseHandling = DateParseHandling.None,
-            }).ConfigureForNodaTime(new DateTimeZoneCache(new BclDateTimeZoneSource()));
-#if USE_JSON            
+            }).ConfigureForTime(); 
+#if USE_JSON
             _simpleSerializer = JsonSerializer.Create(new JsonSerializerSettings
             {
                 TypeNameHandling = TypeNameHandling.None,
@@ -60,7 +62,7 @@ namespace ZES.Infrastructure.Serialization
                 Converters = new List<JsonConverter>()
             });
 #endif
-#if USE_JIL            
+#if USE_JIL
             // warm up serializers
             JSON.Serialize(new EventMetadata
             {
@@ -175,7 +177,7 @@ namespace ZES.Infrastructure.Serialization
                 jsonWriter.WriteValue(stream.SnapshotVersion);
                 
                 jsonWriter.WritePropertyName(nameof(IStream.SnapshotTimestamp));
-                jsonWriter.WriteValue(InstantPattern.ExtendedIso.Format(stream.SnapshotTimestamp));
+                jsonWriter.WriteValue(stream.SnapshotTimestamp.ToExtendedIso());
                 
                 if (stream.Parent != null)
                 {
@@ -189,7 +191,7 @@ namespace ZES.Infrastructure.Serialization
                     jsonWriter.WriteValue(stream.Parent.SnapshotVersion);
                     
                     jsonWriter.WritePropertyName($"Parent{nameof(IStream.SnapshotTimestamp)}");
-                    jsonWriter.WriteValue(InstantPattern.ExtendedIso.Format(stream.Parent.SnapshotTimestamp));
+                    jsonWriter.WriteValue(stream.Parent.SnapshotTimestamp.ToExtendedIso());
                 }
                 
                 jsonWriter.WriteEndObject();
@@ -248,11 +250,11 @@ namespace ZES.Infrastructure.Serialization
             var key = string.Empty;
             var version = ExpectedVersion.EmptyStream;
             var snapshotVersion = 0;
-            var snapshotTimestamp = Instant.MinValue;
+            var snapshotTimestamp = Time.MinValue;
             var parentKey = string.Empty;
             var parentVersion = ExpectedVersion.NoStream;
             var parentSnapshotVersion = 0;
-            var parentSnapshotTimestamp = Instant.MinValue;
+            var parentSnapshotTimestamp = Time.MinValue;
             while (reader.Read())
             {
                 if (reader.Value == null)
@@ -279,13 +281,13 @@ namespace ZES.Infrastructure.Serialization
                         snapshotVersion = (int)(long)reader.Value;
                         break;
                     case JsonToken.String when currentProperty == nameof(IStream.SnapshotTimestamp):
-                        snapshotTimestamp = InstantPattern.ExtendedIso.Parse((string)reader.Value).Value;
+                        snapshotTimestamp = Time.FromExtendedIso((string)reader.Value);
                         break;
                     case JsonToken.Integer when currentProperty == $"Parent{nameof(IStream.SnapshotVersion)}":
                         parentSnapshotVersion = (int)(long)reader.Value;
                         break;
                     case JsonToken.String when currentProperty == $"Parent{nameof(IStream.SnapshotTimestamp)}":
-                        parentSnapshotTimestamp = InstantPattern.ExtendedIso.Parse((string)reader.Value).Value;
+                        parentSnapshotTimestamp = Time.FromExtendedIso((string)reader.Value); 
                         break;
                 }
             }
@@ -385,7 +387,7 @@ namespace ZES.Infrastructure.Serialization
             writer.WriteValue(e.CorrelationId);
 
             writer.WritePropertyName(nameof(IEventMetadata.Timestamp));
-            writer.WriteValue(InstantPattern.ExtendedIso.Format(e.Timestamp));
+            writer.WriteValue(e.Timestamp.ToExtendedIso());
             
             writer.WritePropertyName(nameof(IEventMetadata.Version));
             writer.WriteValue(version);
@@ -466,7 +468,7 @@ namespace ZES.Infrastructure.Serialization
                         metadata.MessageId = Guid.Parse(reader.Value.ToString());
                         break;
                     case JsonToken.String when currentProperty == nameof(IEventMetadata.Timestamp):
-                        metadata.Timestamp = InstantPattern.ExtendedIso.Parse((string)reader.Value).Value;
+                        metadata.Timestamp = Time.FromExtendedIso((string)reader.Value);
                         break;
                     case JsonToken.Integer when currentProperty == nameof(IEventMetadata.Version):
                         metadata.Version = (int)(long)reader.Value;
@@ -587,7 +589,7 @@ namespace ZES.Infrastructure.Serialization
             writer.WriteValue(e.CorrelationId);
 
             writer.WritePropertyName(nameof(IEventMetadata.Timestamp));
-            writer.WriteValue(InstantPattern.ExtendedIso.Format(e.Timestamp));
+            writer.WriteValue(e.Timestamp.ToExtendedIso());
             
             writer.WritePropertyName(nameof(IEventMetadata.Timeline));
             writer.WriteValue(e.Timeline);
@@ -698,10 +700,10 @@ namespace ZES.Infrastructure.Serialization
                         e.CorrelationId = reader.Value.ToString();
                         break;
                     case JsonToken.String when currentProperty == nameof(Message.Timestamp):
-                        e.Timestamp = InstantPattern.ExtendedIso.Parse(reader.Value.ToString()).Value;
+                        e.Timestamp = Time.FromExtendedIso((string)reader.Value);
                         break;
                     case JsonToken.Date when currentProperty == nameof(Message.Timestamp):
-                        e.Timestamp = InstantPattern.ExtendedIso.Parse(reader.Value.ToString()).Value;
+                        e.Timestamp = Time.FromExtendedIso(reader.Value.ToString());
                         break;
                     case JsonToken.Integer when currentProperty == nameof(EventMetadata.Version):
                         e.Version = (int)(long)reader.Value;

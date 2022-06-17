@@ -4,6 +4,7 @@ using System.Linq;
 using NodaTime;
 using ZES.Infrastructure.Domain;
 using ZES.Interfaces;
+using ZES.Interfaces.Clocks;
 using ZES.Interfaces.EventStore;
 
 namespace ZES.Infrastructure.EventStore
@@ -80,7 +81,7 @@ namespace ZES.Infrastructure.EventStore
         }
 
         /// <inheritdoc />
-        public Instant SnapshotTimestamp { get; set; }
+        public Time SnapshotTimestamp { get; set; } = Time.Default;
 
         /// <inheritdoc />
         public int SnapshotVersion { get; set; }
@@ -197,14 +198,14 @@ namespace ZES.Infrastructure.EventStore
                 Key,
                 version)
             {
-                SnapshotTimestamp = SnapshotVersion <= version ? SnapshotTimestamp : Instant.MinValue,
+                SnapshotTimestamp = SnapshotVersion <= version ? SnapshotTimestamp : Time.MaxValue, 
                 SnapshotVersion = SnapshotVersion <= version ? SnapshotVersion : 0,
                 Timeline = timeline,
             };
 
             stream.Parent = new Stream(Key, parentVersion, Parent)
             {
-                SnapshotTimestamp = SnapshotVersion <= version ? SnapshotTimestamp : Instant.MinValue,
+                SnapshotTimestamp = SnapshotVersion <= version ? SnapshotTimestamp : Time.MaxValue,
                 SnapshotVersion = SnapshotVersion <= version ? SnapshotVersion : 0,
             };
             

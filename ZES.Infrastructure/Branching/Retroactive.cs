@@ -15,6 +15,7 @@ using ZES.Infrastructure.Utils;
 using ZES.Interfaces;
 using ZES.Interfaces.Branching;
 using ZES.Interfaces.Causality;
+using ZES.Interfaces.Clocks;
 using ZES.Interfaces.Domain;
 using ZES.Interfaces.EventStore;
 using ZES.Interfaces.Pipes;
@@ -129,7 +130,7 @@ namespace ZES.Infrastructure.Branching
         }
 
         /// <inheritdoc />
-        public async Task<Dictionary<IStream, IEnumerable<IEvent>>> GetChanges(ICommand command, Instant time)
+        public async Task<Dictionary<IStream, IEnumerable<IEvent>>> GetChanges(ICommand command, Time time)
         {
             var activeBranch = _manager.ActiveBranch;
             var branch = $"{command.GetType().Name}-{time.ToUnixTimeMilliseconds()}";
@@ -165,7 +166,7 @@ namespace ZES.Infrastructure.Branching
         }
         
         /// <inheritdoc />
-        public async Task<List<IEvent>> TryInsert(Dictionary<IStream, IEnumerable<IEvent>> changes, Instant time)
+        public async Task<List<IEvent>> TryInsert(Dictionary<IStream, IEnumerable<IEvent>> changes, Time time)
         {
             var currentBranch = _manager.ActiveBranch;
             var tempStreamId = $"{currentBranch}-{time.ToUnixTimeMilliseconds()}";
@@ -248,7 +249,7 @@ namespace ZES.Infrastructure.Branching
         
         private async Task<bool> RollbackCommand(ICommand c)
         {
-            var time = c.Timestamp - Duration.FromMilliseconds(1);
+            var time = c.Timestamp.JustBefore();
             var changes = await GetChanges(c, time);
             var canDelete = true;
             foreach (var change in changes)
@@ -256,7 +257,7 @@ namespace ZES.Infrastructure.Branching
                 var eventsToDelete = new List<Guid>();
                 foreach (var e in change.Value.OrderByDescending(x => x.Version))
                 {
-                    _log.Debug($"Rolling back {change.Key}:{e.GetType().GetFriendlyName()} with version {e.Version} at {e.Timestamp.ToDateString()}");
+                    _log.Debug($"Rolling back {change.Key}:{e.GetType().GetFriendlyName()} with version {e.Version} at {e.Timestamp}");
                     var invalidEvents = (await ValidateDelete(change.Key, e.Version)).ToList();
                     if (invalidEvents.Any(x => !eventsToDelete.Contains(x.MessageId)))
                     {
@@ -388,7 +389,7 @@ namespace ZES.Infrastructure.Branching
             }
 
             var enumerable = events.ToList();
-            var time = default(Instant);
+            Time time;
             if (version > 0)
                 time = (await store.ReadStream<IEvent>(stream, version - 1, 1).SingleAsync()).Timestamp;
             else

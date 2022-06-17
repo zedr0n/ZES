@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using NodaTime;
+using ZES.Interfaces.Clocks;
 
 namespace ZES.Interfaces.EventStore
 {
@@ -43,7 +44,7 @@ namespace ZES.Interfaces.EventStore
         /// <summary>
         /// Gets or sets the last snapshot timestamp
         /// </summary>
-        Instant SnapshotTimestamp { get; set; }
+        Time SnapshotTimestamp { get; set; }
         
         /// <summary>
         /// Gets or sets the last snapshot version

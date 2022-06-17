@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using NodaTime;
+using ZES.Interfaces.Clocks;
 
 namespace ZES.Interfaces
 {
@@ -37,7 +38,7 @@ namespace ZES.Interfaces
         /// <summary>
         /// Gets the mutation submission timestamp
         /// </summary>
-        Instant Timestamp { get; }
+        Time Timestamp { get; }
     }
     
     /// <summary>

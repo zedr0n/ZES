@@ -1,4 +1,6 @@
 using NodaTime;
+using ZES.Interfaces.Causality;
+using ZES.Interfaces.Clocks;
 
 namespace ZES.Interfaces
 {
@@ -21,7 +23,7 @@ namespace ZES.Interfaces
         /// <value>
         /// Current time in the timeline
         /// </value>
-        Instant Now { get; }
+        Time Now { get; }
 
         /// <summary>
         /// Gets a value indicating whether whether it's a fixed timeline
@@ -41,6 +43,14 @@ namespace ZES.Interfaces
         /// Warp to time
         /// </summary>
         /// <param name="time">Time to warp to</param>
-        void Warp(Instant time);
+        void Warp(Time time);
+
+        /// <summary>
+        /// Create new timeline 
+        /// </summary>
+        /// <param name="id">Timeline id</param>
+        /// <param name="time">Null for live or time for fixed timeline</param>
+        /// <returns>New timeline</returns>
+        ITimeline New(string id, Time time = default);
     }
 }

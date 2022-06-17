@@ -1,5 +1,6 @@
 using NodaTime;
 using ZES.Interfaces;
+using ZES.Interfaces.Clocks;
 using ZES.Interfaces.Domain;
 using ZES.Interfaces.EventStore;
 
@@ -35,9 +36,9 @@ namespace ZES.Infrastructure.Projections
         }
 
         /// <inheritdoc />
-        public Instant Timestamp { get; set; }
+        public Time Timestamp { get; set; }
         
         /// <inheritdoc />
-        public override Instant Latest => Timestamp;
+        public override Time Latest => Timestamp;
     }
 }

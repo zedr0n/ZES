@@ -128,6 +128,7 @@ namespace ZES.GraphQL
                 c.RegisterExtendedScalarTypes();
                 
                 c.RegisterType<InstantType>();
+                c.RegisterType<TimeType>();
                 c.RegisterQueryType(typeof(BaseQueries));
                 c.RegisterMutationType(typeof(BaseMutations));
                 c.RegisterSubscriptionType<SubscriptionType>();
@@ -139,6 +140,7 @@ namespace ZES.GraphQL
             {
                 c.RegisterExtendedScalarTypes();
                 c.RegisterType<InstantType>();
+                c.RegisterType<TimeType>();
 
                 if (t.Item1 != null)
                 {
@@ -169,7 +171,11 @@ namespace ZES.GraphQL
 
             void AggregateSchemas(IStitchingBuilder b)
             {
-                b.AddSchemaConfiguration(c => c.RegisterType<InstantType>());
+                b.AddSchemaConfiguration(c =>
+                {
+                    c.RegisterType<InstantType>();
+                    c.RegisterType<TimeType>();
+                });
                 b.AddSchema("Base", baseSchema);
 
                 var i = 0;

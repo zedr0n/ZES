@@ -1,6 +1,7 @@
 using System;
 using NodaTime;
 using ZES.Interfaces;
+using ZES.Interfaces.Clocks;
 
 namespace ZES.Infrastructure.Domain
 {
@@ -30,7 +31,7 @@ namespace ZES.Infrastructure.Domain
         public string CorrelationId { get; set; }
 
         /// <inheritdoc />
-        public Instant Timestamp { get; set; }
+        public Time Timestamp { get; set; }
 
         /// <inheritdoc />
         public string Timeline { get; set; }

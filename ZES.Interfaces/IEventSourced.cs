@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using NodaTime;
+using ZES.Interfaces.Clocks;
 
 namespace ZES.Interfaces
 {
@@ -26,7 +27,7 @@ namespace ZES.Interfaces
         /// <summary>
         /// Gets the latest update timestamp 
         /// </summary>
-        Instant Timestamp { get; }
+        Time Timestamp { get; }
 
         /// <summary>
         /// Gets event sourced version ( for optimistic concurrency )
@@ -63,7 +64,7 @@ namespace ZES.Interfaces
         /// Timestamp the uncommitted events
         /// </summary>
         /// <param name="timestamp">Timestamp</param>
-        void TimestampEvents(Instant timestamp);
+        void TimestampEvents(Time timestamp);
 
         /// <summary>
         /// Creates and persists the aggregate snapshot as an event

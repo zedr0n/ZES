@@ -40,7 +40,13 @@ namespace ZES.Interfaces.Clocks
         /// Convert the time instance to extended iso format
         /// </summary>
         /// <returns>Extended ISO timestamp</returns>
-        public abstract string ToExtendedIso(); 
+        public abstract string ToExtendedIso();
+
+        /// <summary>
+        /// Converts the time to physical instant 
+        /// </summary>
+        /// <returns>Corresponding instant</returns>
+        public abstract Instant ToInstant();
         
         /// <summary>
         /// Get the time point just before the input time

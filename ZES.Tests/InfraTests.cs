@@ -194,7 +194,8 @@ namespace ZES.Tests
                 await await bus.CommandAsync(new CreateRoot($"Root{i}"));
                 i++;
             }
-            
+           
+            await repository.FindUntil<Root>($"Root{numRoots - 1}");
             log.Info($"No threading : {stopWatch.ElapsedMilliseconds}ms per {numRoots}");
             
             stopWatch = Stopwatch.StartNew();
@@ -267,8 +268,10 @@ namespace ZES.Tests
         {
             var container = CreateContainer();
             var bus = container.GetInstance<IBus>();
+            var log = container.GetInstance<ILog>();
 
             var rootId = numRoots; 
+            var stopWatch = Stopwatch.StartNew();
             while (rootId > 0)
             {
                 var command = new CreateRoot($"Root{rootId}");
@@ -279,6 +282,7 @@ namespace ZES.Tests
             // await bus.IsTrue(new StatsQuery(), s => s?.NumberOfRoots == numRoots, TimeSpan.FromMilliseconds(numRoots));
             await bus.Equal(new StatsQuery(), s => s?.NumberOfRoots, numRoots);
             await bus.Equal(new RootInfoQuery("Root1"), r => r.RootId, "Root1");
+            log.Info($"{Configuration.ThreadsPerInstance} threads : {stopWatch.ElapsedMilliseconds}ms per {numRoots}");
         }
 
         [Fact]

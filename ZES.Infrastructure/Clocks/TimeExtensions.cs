@@ -25,6 +25,8 @@ namespace ZES.Infrastructure.Clocks
             
             if (!Time.UseLogicalTime)
                 settings.Converters.Add(new InstantTimeConverter());
+            else
+                settings.Converters.Add(new LogicalTimeConverter());
  
             // Disable automatic conversion of anything that looks like a date and time to BCL types.
             settings.DateParseHandling = DateParseHandling.None;
@@ -47,6 +49,8 @@ namespace ZES.Infrastructure.Clocks
             
             if (!Time.UseLogicalTime)
                 serializer.Converters.Add(new InstantTimeConverter());
+            else
+                serializer.Converters.Add(new LogicalTimeConverter());
 
             // Disable automatic conversion of anything that looks like a date and time to BCL types.
             serializer.DateParseHandling = DateParseHandling.None;
@@ -85,5 +89,37 @@ namespace ZES.Infrastructure.Clocks
 
         /// <inheritdoc />
         public override bool CanConvert(Type objectType) => objectType == typeof(Time) || objectType == typeof(InstantTime);
+    }
+    
+    /// <inheritdoc />
+    public class LogicalTimeConverter : JsonConverter
+    {
+        private readonly JsonConverter _instantConverter;
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="LogicalTimeConverter"/> class.
+        /// </summary>
+        public LogicalTimeConverter()
+        {
+            _instantConverter = NodaConverters.InstantConverter;
+        }
+
+        /// <inheritdoc />
+        public override void WriteJson(JsonWriter writer, object value, JsonSerializer serializer)
+        {
+            var logicalTime = value as LogicalTime;
+            var instant = Instant.FromUnixTimeTicks(logicalTime.l);
+            _instantConverter.WriteJson(writer, instant, serializer);
+        }
+
+        /// <inheritdoc />
+        public override object ReadJson(JsonReader reader, Type objectType, object existingValue, JsonSerializer serializer)
+        {
+            var instant = (Instant)_instantConverter.ReadJson(reader, typeof(Instant), existingValue, serializer);
+            return new LogicalTime(instant.ToUnixTimeTicks(), 0);
+        }
+
+        /// <inheritdoc />
+        public override bool CanConvert(Type objectType) => objectType == typeof(Time) || objectType == typeof(LogicalTime);
     }
 }

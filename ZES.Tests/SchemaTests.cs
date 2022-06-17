@@ -5,6 +5,7 @@ using Xunit;
 using Xunit.Abstractions;
 using ZES.GraphQL;
 using ZES.Interfaces;
+using ZES.Interfaces.Clocks;
 using ZES.Interfaces.Pipes;
 using ZES.Tests.Domain.Commands;
 using ZES.Tests.Domain.Queries;
@@ -79,7 +80,9 @@ namespace ZES.Tests
             dynamic rootInfoDict = rootInfoResult?.Data.SingleOrDefault().Value;
             log.Info(rootInfoDict);
             Assert.NotNull(rootInfoDict);
-            Assert.NotEqual(default(Instant), rootInfoDict["createdAt"]);
+            var time = rootInfoDict["createdAt"] as Time;
+            Assert.NotNull(time);
+            Assert.NotEqual(default, time.ToInstant());
 
             query = generator.Query(new StatsQuery());  
             var statsResult = await executor.ExecuteAsync(query) as IReadOnlyQueryResult;

@@ -24,10 +24,14 @@ namespace ZES.Infrastructure.Clocks
         }
 
         /// <inheritdoc />
-        public Time GetCurrentInstant() => new LogicalTime(_l, _c); 
+        public Time GetCurrentInstant()
+        {
+            Sync();
+            return new LogicalTime(_l, _c);
+        }
 
         /// <inheritdoc />
-        public void Send()
+        public void Sync()
         {
             lock (_lock)
             {
@@ -60,9 +64,9 @@ namespace ZES.Infrastructure.Clocks
             lock (_lock)
             {
                 var l = _l;
-                var pt = _physicalClock.GetCurrentInstant().ToUnixTimeTicks();
-                _l = pt >= l ? (pt >= m.l ? pt : m.l) : (l >= m.l ? l : m.l); // max(l, pt, m.L)
-                if (l == pt && l == m.l)
+                Sync();              // l = max (l, pt )
+                _l = l >= m.l ? l : m.l;    // l = max ( max(l,pt), m.l) = max(l,m.l,pt) 
+                if (l == _l && l == m.l)
                     _c = _c >= m.c ? _c : m.c + 1;
                 else if (l == _l)
                     _c++;

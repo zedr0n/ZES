@@ -79,7 +79,10 @@ namespace ZES.Interfaces.Clocks
 
         /// <inheritdoc />
         public override string ToExtendedIso() => InstantPattern.ExtendedIso.Format(instant);
-        
+
+        /// <inheritdoc />
+        public override Instant ToInstant() => instant;
+
         /// <inheritdoc />
         public override Time JustBefore() => new InstantTime(instant - Duration.FromMilliseconds(1));
 

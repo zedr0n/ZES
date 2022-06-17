@@ -131,6 +131,7 @@ namespace ZES.Tests
             var eventStore = container.GetInstance<IEventStore<IAggregate>>();
             var retroactive = container.GetInstance<IRetroactive>();
             var graph = container.GetInstance<IGraph>();
+            var log = container.GetInstance<ILog>();
 
             await await bus.CommandAsync(new CreateRoot("Root"));
             
@@ -155,6 +156,7 @@ namespace ZES.Tests
             await bus.Equal(new HistoricalQuery<RootInfoQuery, RootInfo>(new RootInfoQuery("Root"), e.Timestamp), r => r.UpdatedAt, e.Timestamp);
             
             await graph.Serialise(nameof(CanInsertIntoStream));
+            log.Info(log.StopWatch.Totals);
         }
         
         [Fact]

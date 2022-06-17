@@ -72,7 +72,10 @@ namespace ZES.Infrastructure.Utils
         /// <returns>Time instance</returns>
         public static Time ToTime(this Instant instant)
         {
-            return new InstantTime(instant);
+            if (!Time.UseLogicalTime)
+                return new InstantTime(instant);
+            else
+                return new LogicalTime(instant.ToUnixTimeTicks(), 0);
         }
     }
 }

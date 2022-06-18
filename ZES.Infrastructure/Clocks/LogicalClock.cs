@@ -26,12 +26,12 @@ namespace ZES.Infrastructure.Clocks
         /// <inheritdoc />
         public Time GetCurrentInstant()
         {
-            Sync();
+            Tick();
             return new LogicalTime(_l, _c);
         }
 
         /// <inheritdoc />
-        public void Sync()
+        public void Tick()
         {
             lock (_lock)
             {
@@ -64,7 +64,7 @@ namespace ZES.Infrastructure.Clocks
             lock (_lock)
             {
                 var l = _l;
-                Sync();              // l = max (l, pt )
+                Tick();              // l = max (l, pt )
                 _l = l >= m.l ? l : m.l;    // l = max ( max(l,pt), m.l) = max(l,m.l,pt) 
                 if (l == _l && l == m.l)
                     _c = _c >= m.c ? _c : m.c + 1;

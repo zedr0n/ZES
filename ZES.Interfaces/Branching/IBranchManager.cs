@@ -63,5 +63,8 @@ namespace ZES.Interfaces.Branching
         /// <param name="branchId">Branch with changes</param>
         /// <returns>Set of changes</returns>
         Task<Dictionary<IStream, int>> GetChanges(string branchId);
+
+        /// <inheritdoc />
+        Time GetTime(string branchId);
     }
 }

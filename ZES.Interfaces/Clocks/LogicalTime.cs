@@ -50,8 +50,15 @@ namespace ZES.Interfaces.Clocks
         /// <returns>Time instance</returns>
         public new static LogicalTime FromExtendedIso(string time)
         {
-            var parseResult = InstantPattern.ExtendedIso.Parse(time);
-            return parseResult.Success ? new LogicalTime(parseResult.Value.ToUnixTimeTicks(), 0) : default(LogicalTime);
+            if (time == null)
+                return default;
+            var tokens = time.Split(';');
+            long c = 0;
+            if (tokens.Length > 1)
+                c = long.Parse(tokens[1]);
+            
+            var parseResult = InstantPattern.ExtendedIso.Parse(tokens[0]);
+            return parseResult.Success ? new LogicalTime(parseResult.Value.ToUnixTimeTicks(), c) : default;
         }
 
         /// <summary>
@@ -111,7 +118,13 @@ namespace ZES.Interfaces.Clocks
         }
 
         /// <inheritdoc />
-        public override string ToExtendedIso() => InstantPattern.ExtendedIso.Format(Instant.FromUnixTimeTicks(l));
+        public override string ToExtendedIso()
+        {
+            var str = InstantPattern.ExtendedIso.Format(Instant.FromUnixTimeTicks(l));
+            if (c > 0)
+                str += $";{c}";
+            return str;
+        }
 
         /// <inheritdoc />
         public override Instant ToInstant() => Instant.FromUnixTimeTicks(l);
@@ -169,6 +182,8 @@ namespace ZES.Interfaces.Clocks
 
         /// <inheritdoc />
         public override string ToString(string format, IFormatProvider formatProvider) =>
-            $"({Instant.FromUnixTimeTicks(l).ToString(format, formatProvider)},c)";
+            Instant.FromUnixTimeTicks(l).ToString(format, formatProvider);
+        // $"({Instant.FromUnixTimeTicks(l).ToString(format, formatProvider)},c)";
+
     }
 }

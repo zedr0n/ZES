@@ -25,6 +25,21 @@ namespace ZES.Infrastructure.Utils
         }
         
         /// <summary>
+        /// Convert string to time
+        /// </summary>
+        /// <param name="date">Input date</param>
+        /// <returns>Parse result</returns>
+        public static Time ToTime(this string date)
+        {
+            if (date == null)
+                return default;
+            var instant = date.ToInstant();
+            if (!instant.Success)
+                return default;
+            return instant.Value.ToTime();
+        }
+
+        /// <summary>
         /// Converts timestamp to date string 
         /// </summary>
         /// <param name="time">Unix timestamp</param>

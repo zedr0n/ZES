@@ -8,7 +8,7 @@
         /// <summary>
         /// Update the clock for send/local event
         /// </summary>
-        void Sync();
+        void Tick();
 
         /// <summary>
         /// Update the clock for received event

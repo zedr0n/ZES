@@ -182,6 +182,15 @@ namespace ZES.Infrastructure.Branching
         }
 
         /// <inheritdoc />
+        public Time GetTime(string branchId)
+        {
+            if (!_branches.TryGetValue(branchId, out var timeline))
+                return Time.MinValue;
+
+            return timeline.Now;
+        }
+        
+        /// <inheritdoc />
         public async Task<bool> Merge(string branchId, bool includeNewStreams = true)
         {
             if (!_branches.TryGetValue(branchId, out var branch))

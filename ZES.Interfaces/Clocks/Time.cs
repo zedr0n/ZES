@@ -11,7 +11,7 @@ namespace ZES.Interfaces.Clocks
         /// <summary>
         /// Gets a value indicating whether logical time is used instead of physical clocks
         /// </summary>
-        public static bool UseLogicalTime => false;
+        public static bool UseLogicalTime => true;
 
         /// <summary>
         /// Gets default value for the time instance

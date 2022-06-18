@@ -183,7 +183,6 @@ namespace ZES.Interfaces.Clocks
         /// <inheritdoc />
         public override string ToString(string format, IFormatProvider formatProvider) =>
             Instant.FromUnixTimeTicks(l).ToString(format, formatProvider);
-        // $"({Instant.FromUnixTimeTicks(l).ToString(format, formatProvider)},c)";
 
     }
 }

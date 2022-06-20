@@ -384,6 +384,12 @@ namespace ZES.Infrastructure.Serialization
             writer.WritePropertyName(nameof(IEventMetadata.Timestamp));
             writer.WriteValue(e.Timestamp.ToExtendedIso());
             
+            writer.WritePropertyName(nameof(IEventMetadata.LocalId));
+            writer.WriteValue(e.LocalId.ToString());
+            
+            writer.WritePropertyName(nameof(IEventMetadata.OriginId));
+            writer.WriteValue(e.OriginId.ToString());
+
             writer.WritePropertyName(nameof(IEventMetadata.Version));
             writer.WriteValue(version);
             

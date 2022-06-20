@@ -58,6 +58,10 @@ namespace ZES.Infrastructure.Domain
             var timeline = _timeline.Id;
             if (!(command is IRetroactiveCommand) && command.Timestamp == default)
                 command.Timestamp = _timeline.Now;
+            if (command.LocalId == default)
+                command.LocalId = new EventId(Configuration.ReplicaName, command.Timestamp);
+            if (command.OriginId == default)
+                command.OriginId = new EventId(Configuration.ReplicaName, command.Timestamp);
             command.Timeline = timeline;
 
             try

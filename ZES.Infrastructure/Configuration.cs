@@ -32,6 +32,7 @@ namespace ZES.Infrastructure
             var env = Environment.GetEnvironmentVariable("UseTcpStore".ToUpper());
             if (env != null && 1.ToString() == env)
                 UseSqlStore = false;
+            ReplicaName = Environment.GetEnvironmentVariable("ReplicaName".ToUpper()) ?? "None";
         }
 
         /// <summary>
@@ -43,6 +44,11 @@ namespace ZES.Infrastructure
         /// Gets the Event Store RPC connection string
         /// </summary>
         public static string RpcConnectionString => "esdb://localhost:2113?tls=false";
+
+        /// <summary>
+        /// Gets the replica name
+        /// </summary>
+        public static string ReplicaName { get; } 
         
         /// <summary>
         /// Gets the Event Store TCP connection string

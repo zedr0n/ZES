@@ -70,6 +70,8 @@ namespace ZES.Infrastructure.Domain
             {
                 if (e.Timestamp == default)
                     e.Timestamp = _timeline.Now;
+                e.LocalId = new EventId(Configuration.ReplicaName, e.Timestamp);
+                e.OriginId = e.LocalId;
                 e.Stream = stream.Key;
                 e.Timeline = _timeline.Id;
             }

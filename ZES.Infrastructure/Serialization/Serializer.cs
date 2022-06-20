@@ -6,11 +6,6 @@ using System.IO;
 using System.Runtime.Serialization;
 using System.Text;
 using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
-using NodaTime;
-using NodaTime.Serialization.JsonNet;
-using NodaTime.Text;
-using NodaTime.TimeZones;
 using SqlStreamStore.Streams;
 using ZES.Infrastructure.Clocks;
 using ZES.Infrastructure.Domain;
@@ -222,12 +217,12 @@ namespace ZES.Infrastructure.Serialization
             return Utf8Json.JsonSerializer.ToJsonString(meta);
 #elif USE_JIL
             return Jil.JSON.Serialize(meta);
-#elif USE_JSON
+#else
             using (var writer = new StringWriter())
             {
                 var jsonWriter = new JsonTextWriter(writer) { Formatting = Formatting.None };
 
-                _simpleSerializer.Serialize(jsonWriter, meta);
+                _serializer.Serialize(jsonWriter, meta);
 
                 // We don't close the stream as it's owned by the message.
                 writer.Flush();
@@ -334,14 +329,14 @@ namespace ZES.Infrastructure.Serialization
             meta = Utf8Json.JsonSerializer.Deserialize<StreamMetadata>(json);
 #elif USE_JIL
             meta = Jil.JSON.Deserialize<StreamMetadata>(json);
-#elif USE_JSON            
+#else            
             using (var reader = new StringReader(json))
             {
                 var jsonReader = new JsonTextReader(reader);
 
                 try
                 {
-                    meta = _simpleSerializer.Deserialize<StreamMetadata>(jsonReader);
+                    meta = _serializer.Deserialize<StreamMetadata>(jsonReader);
                 }
                 catch (Exception e)
                 {
@@ -353,9 +348,9 @@ namespace ZES.Infrastructure.Serialization
                 }
             }
 #endif            
-            var stream = new Streams.Stream(meta.Key, meta.Version);
+            var stream = new Stream(meta.Key, meta.Version);
             if (meta.Parent != null)
-                stream.Parent = new Streams.Stream(meta.Parent.Key, meta.Parent.Version);
+                stream.Parent = new Stream(meta.Parent.Key, meta.Parent.Version);
 
             return stream;
 #endif
@@ -405,9 +400,11 @@ namespace ZES.Infrastructure.Serialization
             return sw.ToString();
 #else
             var meta = new JObject(
-                new JProperty(nameof(IEventMetadata.MessageId), message.MessageId),
-                new JProperty(nameof(IEventMetadata.AncestorId), message.AncestorId),
-                new JProperty(nameof(IEventMetadata.Timestamp), message.Timestamp),
+                new JProperty(nameof(IEventMetadata.MessageId), e.MessageId),
+                new JProperty(nameof(IEventMetadata.AncestorId), e.AncestorId),
+                new JProperty(nameof(IEventMetadata.Timestamp), e.Timestamp.ToExtendedIso()),
+                new JProperty(nameof(IEventMetadata.LocalId), e.LocalId.ToString()),
+                new JProperty(nameof(IEventMetadata.OriginId), e.OriginId.ToString()),
                 new JProperty(nameof(IEventMetadata.Version), version),
                 new JProperty(nameof(IEventMetadata.MessageType), message.GetType().Name),
                 new JProperty(nameof(IEventMetadata.Hash), hash));
@@ -415,12 +412,12 @@ namespace ZES.Infrastructure.Serialization
             return Utf8Json.JsonSerializer.ToJsonString(meta);
 #elif USE_JIL
             return Jil.JSON.Serialize(meta,  Options.IncludeInherited);
-#elif USE_JSON
+#else
             using (var writer = new StringWriter())
             {
                 var jsonWriter = new JsonTextWriter(writer) { Formatting = Formatting.None };
 
-                _simpleSerializer.Serialize(jsonWriter, meta);
+                _serializer.Serialize(jsonWriter, meta);
 
                 // We don't close the stream as it's owned by the message.
                 writer.Flush();
@@ -514,14 +511,14 @@ namespace ZES.Infrastructure.Serialization
             return Utf8Json.JsonSerializer.Deserialize<EventMetadata>(json);
 #elif USE_JIL
             return Jil.JSON.Deserialize<EventMetadata>(json, Options.IncludeInherited);
-#elif USE_JSON
+#else
             using (var reader = new StringReader(json))
             {
                 var jsonReader = new JsonTextReader(reader);
 
                 try
                 {
-                    return _simpleSerializer.Deserialize<EventMetadata>(jsonReader);
+                    return _serializer.Deserialize<EventMetadata>(jsonReader);
                 }
                 catch (Exception e)
                 {
@@ -591,6 +588,12 @@ namespace ZES.Infrastructure.Serialization
             writer.WritePropertyName(nameof(IEventMetadata.Timestamp));
             writer.WriteValue(e.Timestamp.ToExtendedIso());
             
+            writer.WritePropertyName(nameof(IEventMetadata.LocalId));
+            writer.WriteValue(e.LocalId.ToString());
+            
+            writer.WritePropertyName(nameof(IEventMetadata.OriginId));
+            writer.WriteValue(e.OriginId.ToString());
+
             writer.WritePropertyName(nameof(IEventMetadata.Timeline));
             writer.WriteValue(e.Timeline);
             
@@ -704,6 +707,12 @@ namespace ZES.Infrastructure.Serialization
                         break;
                     case JsonToken.Date when currentProperty == nameof(Message.Timestamp):
                         e.Timestamp = Time.FromExtendedIso(reader.Value.ToString());
+                        break;
+                    case JsonToken.String when currentProperty == nameof(Message.LocalId):
+                        e.LocalId = EventId.Parse((string)reader.Value); 
+                        break;
+                    case JsonToken.String when currentProperty == nameof(Message.OriginId):
+                        e.OriginId = EventId.Parse((string)reader.Value); 
                         break;
                     case JsonToken.Integer when currentProperty == nameof(EventMetadata.Version):
                         e.Version = (int)(long)reader.Value;

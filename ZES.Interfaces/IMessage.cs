@@ -32,5 +32,15 @@ namespace ZES.Interfaces
         /// Gets or sets the corresponding message timeline
         /// </summary>
         string Timeline { get; set; }
+        
+        /// <summary>
+        /// Gets or sets the message local id
+        /// </summary>
+        EventId LocalId { get; set; }
+        
+        /// <summary>
+        /// Gets or sets the message origin id
+        /// </summary>
+        EventId OriginId { get; set; }
     }
 }

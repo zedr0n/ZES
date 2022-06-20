@@ -1,5 +1,4 @@
 using System;
-using NodaTime;
 using ZES.Interfaces;
 using ZES.Interfaces.Clocks;
 
@@ -35,5 +34,11 @@ namespace ZES.Infrastructure.Domain
 
         /// <inheritdoc />
         public string Timeline { get; set; }
+
+        /// <inheritdoc />
+        public EventId LocalId { get; set; }
+
+        /// <inheritdoc />
+        public EventId OriginId { get; set; }
     }
 }

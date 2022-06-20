@@ -11,7 +11,7 @@ namespace ZES.Tests.Domain.Events
             Type = type;
         }
 
-        public string RootId { get; internal set; }   
-        public Root.Type Type { get; internal set; }
+        public string RootId { get; set; }   
+        public Root.Type Type { get; set; }
     }
 }

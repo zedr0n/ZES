@@ -2,6 +2,7 @@
 using Newtonsoft.Json;
 using NodaTime;
 using NodaTime.Serialization.JsonNet;
+using ZES.Interfaces;
 using ZES.Interfaces.Clocks;
 
 namespace ZES.Infrastructure.Clocks
@@ -22,11 +23,9 @@ namespace ZES.Infrastructure.Clocks
             {
                 throw new ArgumentNullException(nameof(settings));
             }
-            
-            if (!Time.UseLogicalTime)
-                settings.Converters.Add(new InstantTimeConverter());
-            else
-                settings.Converters.Add(new LogicalTimeConverter());
+           
+            settings.Converters.Add(new TimeConverter());
+            settings.Converters.Add(new EventIdConverter());
  
             // Disable automatic conversion of anything that looks like a date and time to BCL types.
             settings.DateParseHandling = DateParseHandling.None;
@@ -47,10 +46,8 @@ namespace ZES.Infrastructure.Clocks
                 throw new ArgumentNullException(nameof(serializer));
             }
             
-            if (!Time.UseLogicalTime)
-                serializer.Converters.Add(new InstantTimeConverter());
-            else
-                serializer.Converters.Add(new LogicalTimeConverter());
+            serializer.Converters.Add(new TimeConverter());
+            serializer.Converters.Add(new EventIdConverter());
 
             // Disable automatic conversion of anything that looks like a date and time to BCL types.
             serializer.DateParseHandling = DateParseHandling.None;
@@ -60,6 +57,67 @@ namespace ZES.Infrastructure.Clocks
         }
     }
 
+    /// <inheritdoc />
+    public class EventIdConverter : JsonConverter
+    {
+        /// <inheritdoc />
+        public override void WriteJson(JsonWriter writer, object value, JsonSerializer serializer)
+        {
+            var eventId = value as EventId;
+            writer.WriteValue(eventId.ToString()); 
+        }
+
+        /// <inheritdoc />
+        public override object ReadJson(JsonReader reader, Type objectType, object existingValue, JsonSerializer serializer)
+        {
+            var str = reader.Value.ToString();
+            if (str == null)
+                return null;
+            return (EventId)EventId.Parse(str);
+        }
+
+        /// <inheritdoc />
+        public override bool CanConvert(Type objectType) => objectType == typeof(EventId);
+    }
+
+    /// <inheritdoc />
+    public class TimeConverter : JsonConverter
+    {
+        private readonly JsonConverter _instantTimeConverter;
+        private readonly JsonConverter _logicalTimeConverter;
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="TimeConverter"/> class.
+        /// </summary>
+        public TimeConverter()
+        {
+            _instantTimeConverter = new InstantTimeConverter();
+            _logicalTimeConverter = new LogicalTimeConverter();
+        }
+
+        /// <inheritdoc />
+        public override void WriteJson(JsonWriter writer, object value, JsonSerializer serializer)
+        {
+            if (Time.UseLogicalTime)
+                _logicalTimeConverter.WriteJson(writer, value, serializer );
+            else
+                _instantTimeConverter.WriteJson(writer, value, serializer);
+        }
+
+        /// <inheritdoc />
+        public override object ReadJson(JsonReader reader, Type objectType, object existingValue, JsonSerializer serializer)
+        {
+            if (Time.UseLogicalTime)
+                return _logicalTimeConverter.ReadJson(reader, objectType, existingValue, serializer);
+            else
+                return _instantTimeConverter.ReadJson(reader, objectType, existingValue, serializer);
+        }
+
+        /// <inheritdoc />
+        public override bool CanConvert(Type objectType) => _instantTimeConverter.CanConvert(objectType) ||
+                                                            _logicalTimeConverter.CanConvert(objectType);
+    }
+    
     /// <inheritdoc />
     public class InstantTimeConverter : JsonConverter
     {

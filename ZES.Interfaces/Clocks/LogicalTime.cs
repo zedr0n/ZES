@@ -10,28 +10,17 @@ namespace ZES.Interfaces.Clocks
     /// <summary>
     /// Logical time record
     /// </summary>
-    public sealed record LogicalTime : Time, IComparable<LogicalTime>, IComparable
+    public sealed record LogicalTime(long l, long c) : Time, IComparable<LogicalTime>, IComparable
     {
         /// <summary>
         /// Gets physical part
         /// </summary>
-        public long l { get; init; }
-        
+        public long l { get; init; } = l;
+
         /// <summary>
         /// Gets concurrency part
         /// </summary>
-        public long c { get; init; }
-
-        /// <summary>
-        /// Initializes a new instance of the <see cref="LogicalTime"/> class.
-        /// </summary>
-        /// <param name="l">Physical part</param>
-        /// <param name="c">Causality part</param>
-        public LogicalTime(long l, long c)
-        {
-            this.l = l;
-            this.c = c;
-        }
+        public long c { get; init; } = c;
 
         /// <summary>
         /// Gets the largest possible time instance

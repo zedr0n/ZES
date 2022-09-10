@@ -33,6 +33,7 @@ namespace ZES.Infrastructure.Domain
             copy.OriginatingStream = Stream;
             copy.MessageId = Guid.NewGuid();
             copy.AncestorId = MessageId;
+            copy.LocalId = LocalId;
             return copy;
         }
     }

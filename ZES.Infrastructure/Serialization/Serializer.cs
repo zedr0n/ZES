@@ -167,6 +167,9 @@ namespace ZES.Infrastructure.Serialization
                 
                 jsonWriter.WritePropertyName(nameof(IStream.Version));
                 jsonWriter.WriteValue(stream.Version);
+                
+                jsonWriter.WritePropertyName(nameof(IStream.LocalId));
+                jsonWriter.WriteValue(stream.LocalId.ToString());
 
                 jsonWriter.WritePropertyName(nameof(IStream.SnapshotVersion));
                 jsonWriter.WriteValue(stream.SnapshotVersion);
@@ -182,6 +185,9 @@ namespace ZES.Infrastructure.Serialization
                     jsonWriter.WritePropertyName($"Parent{nameof(IStream.Version)}");
                     jsonWriter.WriteValue(stream.Parent.Version);
                     
+                    jsonWriter.WritePropertyName($"Parent{nameof(IStream.LocalId)}");
+                    jsonWriter.WriteValue(stream.Parent.LocalId.ToString());
+
                     jsonWriter.WritePropertyName($"Parent{nameof(IStream.SnapshotVersion)}");
                     jsonWriter.WriteValue(stream.Parent.SnapshotVersion);
                     
@@ -250,6 +256,8 @@ namespace ZES.Infrastructure.Serialization
             var parentVersion = ExpectedVersion.NoStream;
             var parentSnapshotVersion = 0;
             var parentSnapshotTimestamp = Time.MinValue;
+            var localId = default(EventId);
+            var parentLocalId = default(EventId);
             while (reader.Read())
             {
                 if (reader.Value == null)
@@ -272,6 +280,12 @@ namespace ZES.Infrastructure.Serialization
                     case JsonToken.Integer when currentProperty == $"Parent{nameof(IStream.Version)}":
                         parentVersion = (int)(long)reader.Value;
                         break;
+                    case JsonToken.String when currentProperty == nameof(IStream.LocalId):
+                        localId = EventId.Parse((string)reader.Value);
+                        break;
+                    case JsonToken.String when currentProperty == $"Parent{nameof(IStream.LocalId)}":
+                        parentLocalId = EventId.Parse((string)reader.Value);
+                        break;
                     case JsonToken.Integer when currentProperty == nameof(IStream.SnapshotVersion):
                         snapshotVersion = (int)(long)reader.Value;
                         break;
@@ -291,6 +305,7 @@ namespace ZES.Infrastructure.Serialization
             {
                 SnapshotVersion = snapshotVersion,
                 SnapshotTimestamp = snapshotTimestamp,
+                LocalId = localId,
             };
             if (parentKey != string.Empty)
             {
@@ -298,6 +313,7 @@ namespace ZES.Infrastructure.Serialization
                 {
                     SnapshotVersion = parentSnapshotVersion,
                     SnapshotTimestamp = parentSnapshotTimestamp,
+                    LocalId = parentLocalId,
                 };
             }
 

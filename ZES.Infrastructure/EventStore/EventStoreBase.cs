@@ -162,6 +162,10 @@ namespace ZES.Infrastructure.EventStore
                 version += stream.Parent.Version + 1;
 
             stream.Version = version;
+            var maxLocalId = events?.Max(e => e.LocalId);
+            if ( (maxLocalId != default ) && (stream.LocalId == default || (stream.LocalId != default && stream.LocalId < maxLocalId)))
+                stream.LocalId = maxLocalId;
+            
             if (snapshotVersion > stream.SnapshotVersion)
             {
                 stream.SnapshotVersion = snapshotVersion;
@@ -400,7 +404,7 @@ namespace ZES.Infrastructure.EventStore
 
         private void PublishEvents(IEnumerable<IEvent> events)
         {
-            if (!_isDomainStore || events == null)
+            if (!_isDomainStore || events == null || _messageQueue == null)
                 return;
 
             foreach (var e in events)

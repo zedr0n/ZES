@@ -1,13 +1,25 @@
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using NodaTime;
 using ZES.Interfaces.Causality;
 using ZES.Interfaces.Clocks;
+using ZES.Interfaces.Domain;
 using ZES.Interfaces.EventStore;
 
 namespace ZES.Interfaces.Branching
 {
+    /// <summary>
+    /// Merge result record 
+    /// </summary>
+    /// <param name="success">Merge status</param>
+    /// <param name="changes">Merge changes</param>
+    /// <param name="commandChanges">Commmands merge changes</param>
+    public record MergeResult(bool success, Dictionary<IStream, int> changes, IEnumerable<ICommand> commandChanges)
+    {
+    }
+    
     /// <summary>
     /// Timeline manager
     /// </summary>
@@ -42,7 +54,7 @@ namespace ZES.Interfaces.Branching
         /// <param name="branchId">Branch to merge</param>
         /// <param name="includeNewStreams">Whether to create new streams which don't exist on current branch</param>
         /// <returns>Completes when merge is completed</returns>
-        Task<bool> Merge(string branchId, bool includeNewStreams = true);
+        Task<MergeResult> Merge(string branchId, bool includeNewStreams = true);
 
         /// <summary>
         /// Reset the timeline

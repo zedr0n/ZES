@@ -175,8 +175,6 @@ namespace ZES.Infrastructure.Branching
             }
 
             await StoreChanges(branchId, changes);
-            /* await StoreChanges<IAggregate>(branchId, changes);
-               await StoreChanges<ISaga>(branchId, changes); */
 
             return new Dictionary<IStream, int>(changes);
         }
@@ -191,53 +189,44 @@ namespace ZES.Infrastructure.Branching
         }
         
         /// <inheritdoc />
-        public async Task<bool> Merge(string branchId, bool includeNewStreams = true)
+        public async Task<MergeResult> Merge(string branchId, bool includeNewStreams = true)
         {
             if (!_branches.TryGetValue(branchId, out var branch))
             {
                 _log.Warn($"Branch {branchId} does not exist", this);
-                return false;
+                return new MergeResult(false, null, null);
             }
 
             if (_activeTimeline.Id == branchId)
             {
                 _log.Warn($"Cannot merge branch into itself", this);
-                return false;
+                return new MergeResult(false, null, null);
             }
-
-            /*if (!branch.Live)
-            {
-                _log.Warn($"Trying to merge non-live branch {branchId}", this);
-                return;
-            }*/
 
             var aggrResult = await MergeStore<IAggregate>(branchId, includeNewStreams);
             var sagaResult = await MergeStore<ISaga>(branchId, includeNewStreams);
-
-            if (aggrResult == null || sagaResult == null)
-                return false;
-
-            return true;
-
-            /*var mergeFlow = new MergeFlow(_activeTimeline, _eventStore, _streamLocator);
-
-            _eventStore.ListStreams(branchId).Subscribe(mergeFlow.InputBlock.AsObserver());
             
-            try
-            {
-                await mergeFlow.CompletionTask;
-                mergeFlow.Complete();
+            if (aggrResult == null || sagaResult == null)
+                return new MergeResult(false, null, null);
 
-                var mergeResult = mergeFlow.Result;
-                _log.Info($"Merged {mergeResult.NumberOfStreams} streams, {mergeResult.NumberOfEvents} events from {branchId} into {_activeTimeline.Id}");
-            }
-            catch (Exception e)
+            var remoteCommands = await _commandLog.GetCommands(branchId);
+            var localCommands = await _commandLog.GetCommands(_activeTimeline.Id);
+            var commandsToSync = remoteCommands.Except(localCommands);
+
+            foreach (var c in commandsToSync)
+                _commandLog.AppendCommand(c);
+            
+            /*var commandsDict = new Dictionary<IStream, int>();
+            foreach (var c in commandsToSync)
             {
-                _log.Errors.Add(e);
+                var s = _commandLog.GetStream(c);
+                if (commandsDict.ContainsKey(s))
+                    commandsDict[s] += 1;
+                else
+                    commandsDict[s] = 1;
             }*/
 
-            // rebuild all projections
-            // _messageQueue.Alert(new Alerts.InvalidateProjections());
+            return new MergeResult(true, aggrResult.Concat(sagaResult).ToDictionary(x => x.Key, x => x.Value), commandsToSync);
         }
         
         /// <inheritdoc />
@@ -306,7 +295,7 @@ namespace ZES.Infrastructure.Branching
             }
         }
         
-        private async Task<MergeFlow<T>.MergeResult> MergeStore<T>(string branchId, bool includeNewStreams)
+        private async Task<Dictionary<IStream, int>> MergeStore<T>(string branchId, bool includeNewStreams)
             where T : IEventSourced
         {
             var store = GetStore<T>();
@@ -338,10 +327,14 @@ namespace ZES.Infrastructure.Branching
                 await mergeFlow.CompletionTask;
                 mergeFlow.Complete();
 
-                var mergeResult = mergeFlow.Result;
-                if (mergeResult.NumberOfStreams > 0)
-                    _log.Debug($"Merged {mergeResult.NumberOfStreams} streams, {mergeResult.NumberOfEvents} events from {branchId} into {_activeTimeline.Id} [{typeof(T).Name}]");
-                return mergeResult;
+                var mergeResult = mergeFlow.Streams;
+                if (mergeResult.Count > 0)
+                {
+                    _log.Debug(
+                        $"Merged {mergeResult.Count} streams, {mergeResult.Values.Sum()} events from {branchId} into {_activeTimeline.Id} [{typeof(T).Name}]");
+                }
+
+                return new Dictionary<IStream, int>(mergeResult);
             }
             catch (Exception e)
             {
@@ -424,9 +417,7 @@ namespace ZES.Infrastructure.Branching
             where T : IEventSourced
         {
             private readonly ActionBlock<IStream> _inputBlock;
-            private int _numberOfEvents;
-            private int _numberOfStreams;
-            
+
             public MergeFlow(ITimeline currentBranch, IEventStore<T> eventStore, IStreamLocator streamLocator, bool doMerge) 
                 : base(Configuration.DataflowOptions)
             {
@@ -471,36 +462,20 @@ namespace ZES.Infrastructure.Branching
                         if (!doMerge)
                             return;
 
-                        Interlocked.Increment(ref _numberOfStreams);
-
                         var events = await eventStore.ReadStream<IEvent>(s, version + 1, s.Version - version).ToList();
                         foreach (var e in events.OfType<Event>())
                             e.Stream = parentStream.Key;
 
-                        Interlocked.Add(ref _numberOfEvents, events.Count);
-
                         await eventStore.AppendToStream(parentStream, events, false);
+                        Streams.TryAdd(parentStream, events.Count());
                     }, Configuration.DataflowOptions.ToDataflowBlockOptions(true)); // .ToExecutionBlockOption(true)); 
 
                 RegisterChild(_inputBlock);
             }
 
-            public MergeResult Result { get; } = new MergeResult(); 
+            public ConcurrentDictionary<IStream, int> Streams { get; } = new ();
 
             public override ITargetBlock<IStream> InputBlock => _inputBlock;
-            
-            public override void Complete()
-            {
-                Result.NumberOfEvents = _numberOfEvents;
-                Result.NumberOfStreams = _numberOfStreams;
-                base.Complete();
-            }
-                
-            public class MergeResult
-            {
-                public long NumberOfEvents { get; set; }
-                public long NumberOfStreams { get; set; }
-            }
         }
 
         private class CloneFlow<T> : Dataflow<IStream>

@@ -352,6 +352,30 @@ namespace ZES.Tests
             Assert.Equal(0, pullResult.NumberOfStreams );
             Assert.Equal(0, pullResult.NumberOfMessages);
         }
+        
+        [Fact]
+        public async void CanPushToGenericRemote()
+        {
+            var container = CreateContainer(new List<Action<Container>> { c => c.UseLocalStore(true) });
+            var bus = container.GetInstance<IBus>();
+            var remote = container.GetInstance<IRemote>();
+
+            await await bus.CommandAsync(new CreateRoot("Root"));
+            await await bus.CommandAsync(new CreateRoot("Root2"));
+
+            var pushResult = await remote.Push(BranchManager.Master);
+            Assert.Equal(Status.Success, pushResult.ResultStatus);
+            
+            // +1 because of command log
+            Assert.Equal(3, pushResult.NumberOfStreams);
+            Assert.Equal(4, pushResult.NumberOfMessages);
+
+            // remote is synced so nothing to pull
+            var pullResult = await remote.Pull(BranchManager.Master);
+            Assert.Equal(Status.Success, pullResult.ResultStatus); 
+            Assert.Equal(0, pullResult.NumberOfStreams );
+            Assert.Equal(0, pullResult.NumberOfMessages);
+        }
 
         [Fact]
         public async void CanPullFromRemote()
@@ -374,7 +398,7 @@ namespace ZES.Tests
         public async void CanCancelPull()
         {
             var container = CreateContainer(new List<Action<Container>> { c => c.UseLocalStore() });
-            var otherContainer = CreateContainer(new List<Action<Container>> { c => c.UseLocalStore(container) });
+            var otherContainer = CreateContainer(new List<Action<Container>> { c => c.UseLocalStore(false, container) });
             
             var bus = container.GetInstance<IBus>();
             var remote = container.GetInstance<IRemote>();
@@ -416,7 +440,7 @@ namespace ZES.Tests
 
             await bus.Command(new UpdateRoot("Root"));
             var mergeResult = await manager.Merge("test");
-            Assert.False(mergeResult);
+            Assert.False(mergeResult.success);
 
             otherRoot = await repository.Find<Root>("OtherRoot");
             Assert.Null(otherRoot);

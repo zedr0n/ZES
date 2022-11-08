@@ -10,10 +10,10 @@ namespace ZES.Tests
             root.RegisterRemoteStore(c, dropAll);
         }
         
-        public static void UseLocalStore(this Container c, Container baseContainer = null)
+        public static void UseLocalStore(this Container c, bool useGenericRemote = false, Container baseContainer = null)
         {
             var root = new CompositionRoot();
-            root.RegisterLocalStore(c, baseContainer);
+            root.RegisterLocalStore(c, useGenericRemote, baseContainer);
         }
     }
 }

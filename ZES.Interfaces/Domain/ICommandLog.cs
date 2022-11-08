@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using ZES.Interfaces.EventStore;
 
 namespace ZES.Interfaces.Domain
 {
@@ -36,10 +37,41 @@ namespace ZES.Interfaces.Domain
         Task<ICommand> GetCommand(IEvent e);
 
         /// <summary>
+        /// Gets the command on the branch
+        /// </summary>
+        /// <param name="branchId">Branch id</param> 
+        /// <returns>List of commands</returns>
+        Task<IEnumerable<ICommand>> GetCommands(string branchId);
+
+        /// <summary>
         /// Delete commands pertaining to <paramref name="branchId"/> 
         /// </summary>
         /// <param name="branchId">Branch id</param>
         /// <returns>Completes when branch is deleted</returns>
         Task DeleteBranch(string branchId);
+
+        /// <summary>
+        /// List the command log streams
+        /// </summary>
+        /// <param name="branchId">Branch id</param>
+        /// <returns>List of command log streams</returns>
+        Task<IEnumerable<IStream>> ListStreams(string branchId);
+
+        /// <summary>
+        /// Read specified number of events from the stream forward from starting version 
+        /// </summary>
+        /// <param name="stream">Target stream</param>
+        /// <param name="start">Starting version for the read</param>
+        /// <param name="count">Number of events to read</param>
+        /// <returns>Cold observable of read events</returns>
+        IObservable<ICommand> ReadStream(IStream stream, int start, int count = -1);
+
+        /// <summary>
+        /// Get the stream corresponding to the command
+        /// </summary>
+        /// <param name="c">Command instance</param>
+        /// <param name="branchId">Branch id</param>
+        /// <returns>Associated stream</returns>
+        IStream GetStream(ICommand c, string branchId = null);
     }
 }

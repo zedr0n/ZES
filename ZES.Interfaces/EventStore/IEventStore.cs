@@ -14,6 +14,14 @@ namespace ZES.Interfaces.EventStore
     public interface IEventStore
     {
         /// <summary>
+        /// Gets stream details channel 
+        /// </summary>
+        /// <value>
+        /// Hot observable representing the current streams 
+        /// </value>
+        IObservable<IStream> Streams { get; }
+
+        /// <summary>
         /// Read specified number of events from the stream forward from starting version 
         /// </summary>
         /// <typeparam name="T">Event or just metadata</typeparam>
@@ -55,22 +63,6 @@ namespace ZES.Interfaces.EventStore
         /// <param name="version">Last version to keep</param>
         /// <returns>Task completes when the stream is trimmed</returns>
         Task TrimStream(IStream stream, int version);
-    }
-    
-    /// <summary>
-    /// Stream store facade
-    /// </summary>
-    /// <typeparam name="TEventSourced">Event sourced type</typeparam>
-    public interface IEventStore<TEventSourced> : IEventStore
-        where TEventSourced : IEventSourced
-    {
-        /// <summary>
-        /// Gets stream details channel 
-        /// </summary>
-        /// <value>
-        /// Hot observable representing the current streams 
-        /// </value>
-        IObservable<IStream> Streams { get; }
 
         /// <summary>
         /// Gets the current streams in the store 
@@ -80,5 +72,14 @@ namespace ZES.Interfaces.EventStore
         /// <param name="token">Cancellation token</param>
         /// <returns>Stream observable</returns>
         IObservable<IStream> ListStreams(string branch = null, Func<string, bool> predicate = null, CancellationToken token = default);
+    }
+    
+    /// <summary>
+    /// Stream store facade
+    /// </summary>
+    /// <typeparam name="TEventSourced">Event sourced type</typeparam>
+    public interface IEventStore<TEventSourced> : IEventStore
+        where TEventSourced : IEventSourced
+    {
     }
 }

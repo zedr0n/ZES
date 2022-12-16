@@ -427,6 +427,16 @@ namespace ZES.Infrastructure.Branching
                         var version = ExpectedVersion.EmptyStream;
                         var parentStream = s.Branch(currentBranch?.Id, ExpectedVersion.EmptyStream);
                         var parent = s.Parent;
+
+                        // get base
+                        var branchStream = await streamLocator.FindBranched(s, currentBranch?.Id);
+                        if (branchStream != null && parent == null)
+                        {
+                            version = branchStream.Version;
+                            parentStream = branchStream;
+                            parent = branchStream;
+                        }
+                        
                         while (parent != null && parent.Version > ExpectedVersion.EmptyStream)
                         {
                             parentStream = await streamLocator.Find(parent);

@@ -57,7 +57,7 @@ namespace ZES.Infrastructure.EventStore
         public async Task<IEnumerable<IStream>> ListStreams(string branchId)
         {
             await Ready;
-            return _streams.Where(s => s.Key.StartsWith(branchId)).Select(s => s.Value);
+            return _streams.Where(s => s.Key.StartsWith(branchId + ":")).Select(s => s.Value);
         }
 
         /// <inheritdoc />
@@ -66,7 +66,7 @@ namespace ZES.Infrastructure.EventStore
         {
             await Ready;
             var isSaga = typeof(T).Name == nameof(ISaga);
-            return _streams.Where(s => s.Key.StartsWith(branchId) && s.Value.IsSaga == isSaga).Select(s => s.Value);
+            return _streams.Where(s => s.Key.StartsWith(branchId + ":") && s.Value.IsSaga == isSaga).Select(s => s.Value);
         }
 
         /// <inheritdoc />

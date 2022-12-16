@@ -98,6 +98,12 @@ namespace ZES.Infrastructure.Branching
                 var remoteStream = remoteStreams.SingleOrDefault(x => x.Type == s.Type && x.Id == s.Id && x.Timeline == branchId);
                 if (remoteStream == default)
                     remoteStream = new Stream(s.Id, s.Type, ExpectedVersion.NoStream, branchId);
+                foreach (var e in eventsToSync)
+                {
+                    e.Stream = remoteStream.Key;
+                    e.LocalId = new EventId(ReplicaName, syncTime);
+                }
+
                 await remoteStore.AppendToStream(remoteStream, eventsToSync, false);
 
                 pushResult.NumberOfMessages += eventsToSync.Count;
@@ -146,8 +152,16 @@ namespace ZES.Infrastructure.Branching
             foreach (var s in remoteStreams)
             {
                 var remoteEvents = await remoteStore.ReadStream<IEvent>(s, 0).ToList();
-                var localStream = s.Branch(syncRemoteTimeline, ExpectedVersion.EmptyStream);
-                await localStore.AppendToStream(localStream, remoteEvents, false);
+                var localStream = await _streamLocator.Find(s);
+                var localEvents = await localStore.ReadStream<IEvent>(localStream, 0).ToList();
+                var eventsToSync = remoteEvents.Where(e => localEvents.All(x => x.OriginId != e.OriginId)).ToList();
+                var version = s.Version;
+                if (eventsToSync.Count > 0)
+                    version = eventsToSync.Min(e => e.Version) - 1;
+                else
+                    eventsToSync = null;
+                var localSyncStream = localStream.Branch(syncRemoteTimeline, version);
+                await localStore.AppendToStream(localSyncStream, eventsToSync, false);
             }
 
             await _branchManager.Branch(timeline);

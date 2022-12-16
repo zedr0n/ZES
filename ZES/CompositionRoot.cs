@@ -106,6 +106,9 @@ namespace ZES
                 typeof(IStreamStore),
                 GetStore(container),
                 c => c.Consumer.Target.Parameter?.GetCustomAttribute(typeof(RemoteAttribute)) != null); */
+           
+            container.RegisterFactory(typeof(IFactory<LocalReplica>));
+            container.Register<IRemoteManager, RemoteManager>(Lifestyle.Singleton);
             
             container.RegisterConditional(
                 typeof(IStreamStore),
@@ -163,7 +166,6 @@ namespace ZES
 
             container.Register<ITimeline, Timeline>(Lifestyle.Singleton);
             container.Register<IMessageQueue, MessageQueue>(Lifestyle.Singleton);
-            // container.Register<ICommandLog, CommandLog>(Lifestyle.Singleton);
             container.Register<ICommandRegistry, CommandRegistry>(Lifestyle.Singleton);
 
             container.Register<ILog, Logging.NLog>(Lifestyle.Singleton);
@@ -216,12 +218,11 @@ namespace ZES
         /// Uses in memory remote store optionally sharing the instance with base container 
         /// </summary>
         /// <param name="container">SimpleInjector container</param>
-        /// <param name="useGenericRemote">Use generic remote</param>
         /// <param name="baseContainer">Base container to share the remote store from</param>
-        public void RegisterLocalStore(Container container, bool useGenericRemote = false, Container baseContainer = null )
+        public void RegisterLocalStore(Container container, Container baseContainer = null )
         {
             container.Options.AllowOverridingRegistrations = true;
-            container.Register(typeof(IRemote), useGenericRemote ? typeof(GenericRemote) : typeof(Remote), Lifestyle.Singleton); 
+            container.Register(typeof(IRemote), typeof(Remote), Lifestyle.Singleton); 
             container.Options.AllowOverridingRegistrations = false;
 
             var store = GetStore(container);
@@ -235,20 +236,6 @@ namespace ZES
                 typeof(IStreamStore),
                 store, 
                 c => (c.Consumer.Target.Parameter?.GetCustomAttribute(typeof(RemoteAttribute)) != null));
-            
-            container.RegisterConditional(
-                typeof(IEventStore<IAggregate>),
-                GetRemoteEventStore<IAggregate>(container),
-                c => c.Consumer.ImplementationType.GetInterfaces().Contains(typeof(IRemote)) && c.Consumer.Target.Parameter?.GetCustomAttribute(typeof(RemoteAttribute)) != null);
-            container.RegisterConditional(
-                typeof(IEventStore<ISaga>),
-                GetRemoteEventStore<ISaga>(container),
-                c => c.Consumer.ImplementationType.GetInterfaces().Contains(typeof(IRemote)) && c.Consumer.Target.Parameter?.GetCustomAttribute(typeof(RemoteAttribute)) != null);
-            
-            container.RegisterConditional(
-                typeof(ICommandLog),
-                GetRemoteCommandLog(container),
-                c => c.Consumer.ImplementationType.GetInterfaces().Contains(typeof(IRemote)) && c.Consumer.Target.Parameter?.GetCustomAttribute(typeof(RemoteAttribute)) != null);
         }
         
         private Registration GetTCPProjectionsManager(Container container)
@@ -292,8 +279,10 @@ namespace ZES
         private Registration GetRemoteCommandLog(Container container)
         {
             return Lifestyle.Singleton.CreateRegistration(
-                () => new CommandLog(container.GetInstance<RemoteStreamStore>().Store,
-                    container.GetInstance<ISerializer<ICommand>>(), container.GetInstance<ITimeline>(),
+                () => new CommandLog(
+                    container.GetInstance<RemoteStreamStore>().Store,
+                    container.GetInstance<ISerializer<ICommand>>(), 
+                    container.GetInstance<ITimeline>(),
                     container.GetInstance<ILog>()), container);
         }
 

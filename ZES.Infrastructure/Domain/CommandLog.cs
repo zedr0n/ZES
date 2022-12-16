@@ -102,7 +102,7 @@ namespace ZES.Infrastructure.Domain
             var streams = (await ListStreams(branchId)).ToList();
             if (streams.Count == 0)
                 return new List<ICommand>();
-            var obs = streams.Select(s => ReadStream(s, 0)).Aggregate((r,c) => r.Concat(c));
+            var obs = streams.Select(s => ReadStream(s, 0)).Aggregate((r, c) => r.Concat(c));
             return await obs.ToList();
         }
 

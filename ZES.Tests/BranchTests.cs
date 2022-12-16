@@ -356,9 +356,12 @@ namespace ZES.Tests
         [Fact]
         public async void CanPushToGenericRemote()
         {
-            var container = CreateContainer(new List<Action<Container>> { c => c.UseLocalStore(true) });
+            var container = CreateContainer(new List<Action<Container>> { c => c.UseLocalStore() });
             var bus = container.GetInstance<IBus>();
-            var remote = container.GetInstance<IRemote>();
+            var remoteManager = container.GetInstance<IRemoteManager>();
+            var localReplica = container.GetInstance<IFactory<LocalReplica>>().Create();
+            remoteManager.RegisterLocalReplica("Server", localReplica.AggregateEventStore, localReplica.SagaEventStore, localReplica.CommandLog);
+            var remote = remoteManager.GetGenericRemote("Server");
 
             await await bus.CommandAsync(new CreateRoot("Root"));
             await await bus.CommandAsync(new CreateRoot("Root2"));
@@ -398,7 +401,7 @@ namespace ZES.Tests
         public async void CanCancelPull()
         {
             var container = CreateContainer(new List<Action<Container>> { c => c.UseLocalStore() });
-            var otherContainer = CreateContainer(new List<Action<Container>> { c => c.UseLocalStore(false, container) });
+            var otherContainer = CreateContainer(new List<Action<Container>> { c => c.UseLocalStore(container) });
             
             var bus = container.GetInstance<IBus>();
             var remote = container.GetInstance<IRemote>();

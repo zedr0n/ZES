@@ -203,7 +203,7 @@ namespace ZES.Infrastructure.EventStore
                 Timeline = timeline,
             };
 
-            if ( Parent == null || parentVersion > Parent.Version)
+            if ( (Parent == null && parentVersion > ExpectedVersion.EmptyStream ) || ( Parent != null && parentVersion > Parent.Version) )
             {
                 stream.Parent = new Stream(Key, parentVersion, Parent)
                 {

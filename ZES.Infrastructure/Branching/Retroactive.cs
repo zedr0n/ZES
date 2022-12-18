@@ -9,8 +9,8 @@ using System.Threading.Tasks;
 using System.Threading.Tasks.Dataflow;
 using Gridsum.DataflowEx;
 using NodaTime;
-using SqlStreamStore.Streams;
 using ZES.Infrastructure.Domain;
+using ZES.Infrastructure.EventStore;
 using ZES.Infrastructure.Utils;
 using ZES.Interfaces;
 using ZES.Interfaces.Branching;
@@ -192,7 +192,7 @@ namespace ZES.Infrastructure.Branching
                 if (liveStream != null)
                     laterEvents = await store.ReadStream<IEvent>(liveStream, version).Where(e => !(e is ISnapshotEvent)).ToList();
 
-                var newStream = await _streamLocator.FindBranched(stream, tempStreamId) ?? stream.Branch(tempStreamId, ExpectedVersion.EmptyStream);
+                var newStream = await _streamLocator.FindBranched(stream, tempStreamId) ?? stream.Branch(tempStreamId, ExpectedVersion.NoStream);
                 _log.Debug($"Inserting events ({version}..{events.Count + version}) into {newStream.Key}");
                 var list = events.Concat(laterEvents).ToList();
                 allEvents[stream] = list;
@@ -221,7 +221,7 @@ namespace ZES.Infrastructure.Branching
                     var events = l.Value;
 
                     var liveStream = await _streamLocator.FindBranched(k, currentBranch) ??
-                                 k.Branch(currentBranch, ExpectedVersion.EmptyStream);
+                                 k.Branch(currentBranch, ExpectedVersion.NoStream);
 
                     var store = GetStore(liveStream);
                     foreach (var e in events)

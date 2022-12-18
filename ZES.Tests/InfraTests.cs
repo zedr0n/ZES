@@ -55,7 +55,6 @@ namespace ZES.Tests
         {
             var container = CreateContainer();
             var bus = container.GetInstance<IBus>();
-            var repository = container.GetInstance<IEsRepository<IAggregate>>();
             var store = container.GetInstance<IEventStore<IAggregate>>();
             var locator = container.GetInstance<IStreamLocator>();
 
@@ -69,6 +68,11 @@ namespace ZES.Tests
 
             var streamHash = await store.GetHash(stream);
             Assert.Equal(events.Single().StreamHash, streamHash);
+
+            await await bus.CommandAsync(new UpdateRoot("Root"));
+            stream = await locator.Find<Root>("Root");
+            var otherHash = await store.GetHash(stream, 0);
+            Assert.Equal(streamHash, otherHash);
         }
 
         [Fact]

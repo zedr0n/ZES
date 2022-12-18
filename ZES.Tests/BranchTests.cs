@@ -549,6 +549,34 @@ namespace ZES.Tests
         }
 
         [Fact]
+        public async void CanPushBranchToGenericRemote()
+        {
+            var container = CreateContainer(new List<Action<Container>> { c => c.UseLocalStore() });
+            var bus = container.GetInstance<IBus>();
+            var remoteManager = container.GetInstance<IRemoteManager>();
+            var localReplica = container.GetInstance<IFactory<LocalReplica>>().Create();
+            remoteManager.RegisterLocalReplica("Server", localReplica.AggregateEventStore, localReplica.SagaEventStore, localReplica.CommandLog);
+            var remote = remoteManager.GetGenericRemote("Server");
+            
+            await await bus.CommandAsync(new CreateRoot("Root")); 
+            
+            var timeTraveller = container.GetInstance<IBranchManager>();
+            await timeTraveller.Branch("test");
+
+            await await bus.CommandAsync(new CreateRoot("Root2"));
+
+            var pushResult = await remote.Push("test");
+            Assert.Equal(Status.Failed, pushResult.ResultStatus);
+
+            await remote.Push(BranchManager.Master);
+            pushResult = await remote.Push("test");
+            Assert.Equal(Status.Success, pushResult.ResultStatus);
+
+            var pullResult = await remote.Pull("test");
+            Assert.Equal(Status.Success, pullResult.ResultStatus); 
+        }
+
+        [Fact]
         public async void CanPushBranch()
         {
             var container = CreateContainer(new List<Action<Container>> { c => c.UseLocalStore() });

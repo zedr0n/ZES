@@ -118,7 +118,7 @@ namespace ZES.Infrastructure.EventStore
         public string Timeline { get; set; }
 
         /// <inheritdoc />
-        public IStream Copy() => new Stream(Key, Version, Parent)
+        public IStream Copy() => new Stream(Key, Version, Parent?.Copy())
         {
             SnapshotTimestamp = SnapshotTimestamp,
             SnapshotVersion = SnapshotVersion,
@@ -203,11 +203,20 @@ namespace ZES.Infrastructure.EventStore
                 Timeline = timeline,
             };
 
-            stream.Parent = new Stream(Key, parentVersion, Parent)
+            if ( Parent == null || parentVersion > Parent.Version)
             {
-                SnapshotTimestamp = SnapshotVersion <= version ? SnapshotTimestamp : Time.MaxValue,
-                SnapshotVersion = SnapshotVersion <= version ? SnapshotVersion : 0,
-            };
+                stream.Parent = new Stream(Key, parentVersion, Parent)
+                {
+                    SnapshotTimestamp = SnapshotVersion <= version ? SnapshotTimestamp : Time.MaxValue,
+                    SnapshotVersion = SnapshotVersion <= version ? SnapshotVersion : 0,
+                };
+            }
+            else if (Parent != null)
+            {
+                stream.Parent = Parent.Copy();
+                if (Parent.Version > version)
+                    stream.Version = Parent.Version;
+            }
             
             return stream;
         }

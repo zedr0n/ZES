@@ -331,7 +331,7 @@ namespace ZES.Infrastructure.Branching
                     
                     // record results
                     foreach (var c in changes)
-                        mergeResult.Add(c.Key, c.Value.Count);        
+                        mergeResult.Add(c.Key, c.Value?.Count ?? 0);        
                 }
                 else
                 {
@@ -438,17 +438,22 @@ namespace ZES.Infrastructure.Branching
         private class MergeFlow<T> : Dataflow<IStream>
             where T : IEventSourced
         {
+            private readonly IEventStore<T> _eventStore;
             private readonly ActionBlock<IStream> _inputBlock;
 
             public MergeFlow(ITimeline currentBranch, IEventStore<T> eventStore, IStreamLocator streamLocator) 
                 : base(Configuration.DataflowOptions)
             {
+                _eventStore = eventStore;
                 _inputBlock = new ActionBlock<IStream>(
                     async s =>
                     {
                         // find the common base
-                        var baseStream = await streamLocator.FindBranched(s, currentBranch?.Id) ?? s.Branch(currentBranch?.Id, ExpectedVersion.EmptyStream);
-                        
+                        var baseStream = await streamLocator.FindBranched(s, currentBranch?.Id);
+                        var streamNotFound = baseStream == null;
+                        if (streamNotFound)
+                             baseStream = s.Branch(currentBranch?.Id, ExpectedVersion.NoStream);
+
                         // find common version
                         /*var baseAncestors = baseStream.Ancestors.ToList();
                         var branchAncestors = s.Ancestors.ToList();
@@ -481,16 +486,23 @@ namespace ZES.Infrastructure.Branching
                         {
                             var events = await eventStore.ReadStream<IEvent>(s, minVersion + 1, s.Version - minVersion).ToList();
                             foreach (var e in events.OfType<Event>())
+                            {
                                 e.Stream = baseStream.Key;
-                            
+                                e.Timeline = currentBranch?.Id;
+                            }
+
                             Changes.TryAdd(baseStream, events.ToList());
+                        }
+                        else if (streamNotFound)
+                        {
+                            Changes.TryAdd(baseStream, null);
                         }
                     }, Configuration.DataflowOptions.ToDataflowBlockOptions(true)); // .ToExecutionBlockOption(true)); 
 
                 RegisterChild(_inputBlock);
             }
 
-            public ConcurrentDictionary<IStream, List<IEvent>> Changes { get; } = new();
+            public ConcurrentDictionary<IStream, List<IEvent>> Changes { get; } = new ();
             public override ITargetBlock<IStream> InputBlock => _inputBlock;
         }
 

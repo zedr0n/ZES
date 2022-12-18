@@ -80,11 +80,22 @@ namespace ZES.Infrastructure.Branching
 
             if (!mergeResult.success) 
                 return pushResult;
-            
-            pushResult.ResultStatus = FastForwardResult.Status.Success;
+
             var changes = mergeResult.changes;
             var commandChanges = mergeResult.commandChanges;
-                    
+
+            // validate all the ancestors are present
+            foreach (var v in changes.Where(v => !v.Key.IsSaga))
+            {
+                var remoteStore = GetEventStore(v.Key, true);
+                var remoteStreams = await remoteStore.ListStreams().ToList();
+                var s = await _streamLocator.Find(v.Key);
+                if (s.Ancestors.Where(a => a.Version > ExpectedVersion.EmptyStream).Any(a => remoteStreams.All(r => r.Key != a.Key)))
+                    return pushResult;
+            }
+
+            pushResult.ResultStatus = FastForwardResult.Status.Success;
+
             foreach (var v in changes.Where(v => !v.Key.IsSaga))
             {
                 var localStore = GetEventStore(v.Key, false);

@@ -315,26 +315,48 @@ namespace ZES.Infrastructure.Branching
             
             try
             {
-                // check any errors on the merge
-                var mergeFlow = new MergeFlow<T>(_activeTimeline, store, _streamLocator, false);
-                streams.Subscribe(mergeFlow.InputBlock.AsObserver());
-                await mergeFlow.CompletionTask;
-                mergeFlow.Complete();
+                var mergeResult = new Dictionary<IStream, int>();
+                if (!Configuration.UseLegacyMerge)
+                {
+                    // get merge changes
+                    var mergeFlow = new MergeFlow<T>(_activeTimeline, store, _streamLocator);
+                    streams.Subscribe(mergeFlow.InputBlock.AsObserver());
+                    await mergeFlow.CompletionTask;
+                    mergeFlow.Complete();
+                    var changes = mergeFlow.Changes;
+                    
+                    // apply changes
+                    var appendFlow = new AppendFlow<T>(store);
+                    await appendFlow.ProcessAsync(changes.Select(x => (x.Key, x.Value)));
+                    
+                    // record results
+                    foreach (var c in changes)
+                        mergeResult.Add(c.Key, c.Value.Count);        
+                }
+                else
+                {
+                    // check any errors on the merge
+                    var mergeFlow = new LegacyMergeFlow<T>(_activeTimeline, store, _streamLocator, false);
+                    streams.Subscribe(mergeFlow.InputBlock.AsObserver());
+                    await mergeFlow.CompletionTask;
+                    mergeFlow.Complete();
 
-                // actually do the merge
-                mergeFlow = new MergeFlow<T>(_activeTimeline, store, _streamLocator, true);
-                streams.Subscribe(mergeFlow.InputBlock.AsObserver());
-                await mergeFlow.CompletionTask;
-                mergeFlow.Complete();
+                    // actually do the merge
+                    mergeFlow = new LegacyMergeFlow<T>(_activeTimeline, store, _streamLocator, true);
+                    streams.Subscribe(mergeFlow.InputBlock.AsObserver());
+                    await mergeFlow.CompletionTask;
+                    mergeFlow.Complete();
 
-                var mergeResult = mergeFlow.Streams;
+                    mergeResult = new Dictionary<IStream, int>(mergeFlow.Streams);
+                }
+
                 if (mergeResult.Count > 0)
                 {
                     _log.Debug(
                         $"Merged {mergeResult.Count} streams, {mergeResult.Values.Sum()} events from {branchId} into {_activeTimeline.Id} [{typeof(T).Name}]");
                 }
 
-                return new Dictionary<IStream, int>(mergeResult);
+                return mergeResult;
             }
             catch (Exception e)
             {
@@ -418,7 +440,66 @@ namespace ZES.Infrastructure.Branching
         {
             private readonly ActionBlock<IStream> _inputBlock;
 
-            public MergeFlow(ITimeline currentBranch, IEventStore<T> eventStore, IStreamLocator streamLocator, bool doMerge) 
+            public MergeFlow(ITimeline currentBranch, IEventStore<T> eventStore, IStreamLocator streamLocator) 
+                : base(Configuration.DataflowOptions)
+            {
+                _inputBlock = new ActionBlock<IStream>(
+                    async s =>
+                    {
+                        // find the common base
+                        var baseStream = await streamLocator.FindBranched(s, currentBranch?.Id) ?? s.Branch(currentBranch?.Id, ExpectedVersion.EmptyStream);
+                        
+                        // find common version
+                        /*var baseAncestors = baseStream.Ancestors.ToList();
+                        var branchAncestors = s.Ancestors.ToList();
+                        var commonAncestors = baseAncestors.Intersect(branchAncestors, new Stream.StreamComparer()).ToList();
+                        if (commonAncestors.Count > 1)
+                        {
+                            throw new InvalidOperationException(
+                                $"{s} and {baseStream} have multiple common ancestors!");
+                        }
+
+                        var commonAncestor = commonAncestors.SingleOrDefault();
+                        if (commonAncestor == null)
+                        {
+                            throw new InvalidOperationException(
+                                $"Couldn't find common ancestor for {s} and {baseStream}");
+                        }*/
+                        
+                        var minVersion = Math.Min(s.Version, baseStream.Version);
+                        
+                        // verify fast-forward
+                        var baseHash = await eventStore.GetHash(baseStream, minVersion);
+                        var branchHash = await eventStore.GetHash(s, minVersion);
+                        if (baseHash != branchHash)
+                        {
+                            throw new InvalidOperationException(
+                                $"{s} and {baseStream} do not agree at latest version {minVersion}");
+                        }
+
+                        if (s.Version > minVersion)
+                        {
+                            var events = await eventStore.ReadStream<IEvent>(s, minVersion + 1, s.Version - minVersion).ToList();
+                            foreach (var e in events.OfType<Event>())
+                                e.Stream = baseStream.Key;
+                            
+                            Changes.TryAdd(baseStream, events.ToList());
+                        }
+                    }, Configuration.DataflowOptions.ToDataflowBlockOptions(true)); // .ToExecutionBlockOption(true)); 
+
+                RegisterChild(_inputBlock);
+            }
+
+            public ConcurrentDictionary<IStream, List<IEvent>> Changes { get; } = new();
+            public override ITargetBlock<IStream> InputBlock => _inputBlock;
+        }
+
+        private class LegacyMergeFlow<T> : Dataflow<IStream>
+            where T : IEventSourced
+        {
+            private readonly ActionBlock<IStream> _inputBlock;
+
+            public LegacyMergeFlow(ITimeline currentBranch, IEventStore<T> eventStore, IStreamLocator streamLocator, bool doMerge) 
                 : base(Configuration.DataflowOptions)
             {
                 _inputBlock = new ActionBlock<IStream>(
@@ -445,13 +526,9 @@ namespace ZES.Infrastructure.Branching
                             if (currentBranch != null &&
                                 (version > parent.Version && parent.Timeline == currentBranch.Id))
                             {
-                                var theseEvents = await eventStore
-                                    .ReadStream<IEvent>(parentStream, parent.Version + 1, version - parent.Version)
-                                    .Select(e => e.MessageId).ToList();
-                                var thoseEvents = await eventStore
-                                    .ReadStream<IEvent>(s, parent.Version + 1, version - parent.Version)
-                                    .Select(e => e.MessageId).ToList();
-                                if (theseEvents.Zip(thoseEvents, (e1, e2) => (e1, e2)).Any(x => x.Item1 != x.Item2))
+                                var parentStreamHash = await eventStore.GetHash(parentStream, version);
+                                var streamHash = await eventStore.GetHash(s, version);
+                                if (parentStreamHash != streamHash)
                                 {
                                     throw new InvalidOperationException(
                                         $"{currentBranch?.Id} timeline has moved on in the meantime, aborting...( {parentStream.Key} : {version} > {parent.Version} )");

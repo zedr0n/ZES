@@ -140,9 +140,9 @@ namespace ZES.Infrastructure.EventStore
         }
 
         /// <inheritdoc />
-        public async Task<string> GetHash(IStream stream, int version = -1)
+        public async Task<string> GetHash(IStream stream, int version = int.MaxValue)
         {
-            if (version < 0)
+            if (version == int.MaxValue)
                 version = stream.Version;
             if (version < 0)
                 return string.Empty;

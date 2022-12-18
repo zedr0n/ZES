@@ -36,7 +36,12 @@ namespace ZES.Infrastructure
         }
 
         /// <summary>
-        /// Gets a value indicating whether gets the flag indicating whether to use the Embedded TCP Store
+        /// Gets a value indicating whether to use legacy merge
+        /// </summary>
+        public static bool UseLegacyMerge => false;
+        
+        /// <summary>
+        /// Gets a value indicating whether to use the Embedded TCP Store
         /// </summary>
         public static bool UseEmbeddedTcpStore => true;
 
@@ -135,7 +140,7 @@ namespace ZES.Infrastructure
         /// <value>
         /// Default number of threads per service 
         /// </value>
-        public static int ThreadsPerInstance => Math.Max(Environment.ProcessorCount / 2, 1);
+        public static int ThreadsPerInstance => Debugger.IsAttached ? 1 : Math.Max(Environment.ProcessorCount / 2, 1);
 
         /// <summary>
         /// Check if Common.Logging logging is allowed

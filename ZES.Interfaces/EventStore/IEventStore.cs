@@ -46,7 +46,7 @@ namespace ZES.Interfaces.EventStore
         /// <param name="stream">Stream descriptor</param>
         /// <param name="version">Version to query</param>
         /// <returns>The stream hash</returns>
-        Task<string> GetHash(IStream stream, int version = -1);
+        Task<string> GetHash(IStream stream, int version = int.MaxValue);
 
         /// <summary>
         /// Append events to stream

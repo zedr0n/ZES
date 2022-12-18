@@ -219,6 +219,25 @@ namespace ZES.Infrastructure.EventStore
         }
 
         /// <inheritdoc />
+        public class StreamComparer : IEqualityComparer<IStream>
+        {
+            /// <inheritdoc />
+            public bool Equals(IStream x, IStream y)
+            {
+                if (x == y)
+                    return true;
+                
+                if (x == null || y == null)
+                    return false;
+
+                return x.Key == y.Key && x.Version == y.Version;
+            }
+
+            /// <inheritdoc />
+            public int GetHashCode(IStream obj) => obj.Key.GetHashCode() ^ obj.Version.GetHashCode();
+        }
+
+        /// <inheritdoc />
         public class BranchComparer : IEqualityComparer<IStream>
         {
             /// <inheritdoc />

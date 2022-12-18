@@ -10,6 +10,7 @@ using Xunit.Abstractions;
 using ZES.Infrastructure.Alerts;
 using ZES.Infrastructure.Branching;
 using ZES.Infrastructure.Domain;
+using ZES.Infrastructure.EventStore;
 using ZES.Infrastructure.Stochastics;
 using ZES.Infrastructure.Utils;
 using ZES.Interfaces;
@@ -75,6 +76,21 @@ namespace ZES.Tests
             Assert.Equal(rootUpdatedHash, latestHash);
         }
 
+        [Fact]
+        public async void CanGetEmptyStreamHash()
+        {
+            var container = CreateContainer();
+            var bus = container.GetInstance<IBus>();
+            var locator = container.GetInstance<IStreamLocator>();
+            var store = container.GetInstance<IEventStore<IAggregate>>();
+            
+            await await bus.CommandAsync(new CreateRoot("Root"));
+            var stream = await locator.Find<Root>("Root");
+            var emptyStream = stream.Branch("test", ExpectedVersion.EmptyStream);
+            var hash = await store.GetHash(emptyStream);
+            Assert.Empty(hash);
+        }
+        
         [Fact]
         public async void CanMergeTimeline()
         {

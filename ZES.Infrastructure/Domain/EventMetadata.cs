@@ -14,8 +14,11 @@ namespace ZES.Infrastructure.Domain
         public int Version { get; set; }
 
         /// <inheritdoc />
+        public string StreamHash { get; set; }
+
+        /// <inheritdoc />
         [DefaultValue("")]
         [JsonProperty(DefaultValueHandling = DefaultValueHandling.Ignore)]
-        public string Hash { get; set; } = string.Empty;
+        public string ContentHash { get; set; } = string.Empty;
     }
 }

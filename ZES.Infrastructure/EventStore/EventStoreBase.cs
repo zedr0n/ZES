@@ -140,12 +140,35 @@ namespace ZES.Infrastructure.EventStore
         }
 
         /// <inheritdoc />
+        public async Task<string> GetHash(IStream stream, int version = -1)
+        {
+            if (version < 0)
+                version = stream.Version;
+            if (version < 0)
+                return string.Empty;
+
+            var metadata = await ReadStream<IEventMetadata>(stream, version, 1).LastOrDefaultAsync();
+            return metadata?.StreamHash ?? string.Empty;
+        }
+
+        /// <inheritdoc />
         public async Task AppendToStream(IStream stream, IEnumerable<IEvent> enumerable = null, bool publish = true)
         {
             var events = enumerable as IList<IEvent> ?? enumerable?.ToList();
             var snapshotEvent = events?.LastOrDefault(e => e is ISnapshotEvent);
+
+            if (events != null)
+            {
+                var streamHash = await GetHash(stream);
+                foreach (var e in events)
+                {
+                    streamHash = Hashing.Crc32(streamHash + e.MessageId);
+                    e.StreamHash = streamHash;
+                }
+            }
+
             var streamMessages = await EncodeEvents(events);
-             
+
             var nextVersion = await AppendToStreamStore(stream, streamMessages);
             LogEvents(streamMessages);
             
@@ -162,9 +185,6 @@ namespace ZES.Infrastructure.EventStore
                 version += stream.Parent.Version + 1;
 
             stream.Version = version;
-            var maxLocalId = events?.Max(e => e.LocalId);
-            if ( (maxLocalId != default ) && (stream.LocalId == default || (stream.LocalId != default && stream.LocalId < maxLocalId)))
-                stream.LocalId = maxLocalId;
             
             if (snapshotVersion > stream.SnapshotVersion)
             {

@@ -16,8 +16,13 @@ namespace ZES.Interfaces
         int Version { get; set; }
 
         /// <summary>
-        /// Gets or sets the event hash
+        /// Gets or sets the stream hash
         /// </summary>
-        string Hash { get; set; }
+        string StreamHash { get; set; }
+        
+        /// <summary>
+        /// Gets or sets the aggregate content hash
+        /// </summary>
+        string ContentHash { get; set; }
     }
 }

@@ -125,7 +125,7 @@ namespace ZES.Infrastructure.Domain
             {
                 Hash = string.Empty;
                 ApplyEvent(e);
-                e.Hash = Hash;
+                e.ContentHash = Hash;
                 
                 ((Event)e).Version = Version;
                 if (!IgnoreCurrentEvent)
@@ -145,7 +145,7 @@ namespace ZES.Infrastructure.Domain
                 if (computeHash)
                     Hash = string.Empty;
                 ApplyEvent(e);
-                if (computeHash && e.Hash != _hash)
+                if (computeHash && e.ContentHash != _hash)
                     _invalidEvents.Add(e);
             }
 

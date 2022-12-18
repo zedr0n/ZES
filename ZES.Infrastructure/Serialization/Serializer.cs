@@ -168,9 +168,6 @@ namespace ZES.Infrastructure.Serialization
                 jsonWriter.WritePropertyName(nameof(IStream.Version));
                 jsonWriter.WriteValue(stream.Version);
                 
-                jsonWriter.WritePropertyName(nameof(IStream.LocalId));
-                jsonWriter.WriteValue(stream.LocalId.ToString());
-
                 jsonWriter.WritePropertyName(nameof(IStream.SnapshotVersion));
                 jsonWriter.WriteValue(stream.SnapshotVersion);
                 
@@ -185,9 +182,6 @@ namespace ZES.Infrastructure.Serialization
                     jsonWriter.WritePropertyName($"Parent{nameof(IStream.Version)}");
                     jsonWriter.WriteValue(stream.Parent.Version);
                     
-                    jsonWriter.WritePropertyName($"Parent{nameof(IStream.LocalId)}");
-                    jsonWriter.WriteValue(stream.Parent.LocalId.ToString());
-
                     jsonWriter.WritePropertyName($"Parent{nameof(IStream.SnapshotVersion)}");
                     jsonWriter.WriteValue(stream.Parent.SnapshotVersion);
                     
@@ -256,8 +250,6 @@ namespace ZES.Infrastructure.Serialization
             var parentVersion = ExpectedVersion.NoStream;
             var parentSnapshotVersion = 0;
             var parentSnapshotTimestamp = Time.MinValue;
-            var localId = default(EventId);
-            var parentLocalId = default(EventId);
             while (reader.Read())
             {
                 if (reader.Value == null)
@@ -280,12 +272,6 @@ namespace ZES.Infrastructure.Serialization
                     case JsonToken.Integer when currentProperty == $"Parent{nameof(IStream.Version)}":
                         parentVersion = (int)(long)reader.Value;
                         break;
-                    case JsonToken.String when currentProperty == nameof(IStream.LocalId):
-                        localId = EventId.Parse((string)reader.Value);
-                        break;
-                    case JsonToken.String when currentProperty == $"Parent{nameof(IStream.LocalId)}":
-                        parentLocalId = EventId.Parse((string)reader.Value);
-                        break;
                     case JsonToken.Integer when currentProperty == nameof(IStream.SnapshotVersion):
                         snapshotVersion = (int)(long)reader.Value;
                         break;
@@ -305,7 +291,6 @@ namespace ZES.Infrastructure.Serialization
             {
                 SnapshotVersion = snapshotVersion,
                 SnapshotTimestamp = snapshotTimestamp,
-                LocalId = localId,
             };
             if (parentKey != string.Empty)
             {
@@ -313,31 +298,10 @@ namespace ZES.Infrastructure.Serialization
                 {
                     SnapshotVersion = parentSnapshotVersion,
                     SnapshotTimestamp = parentSnapshotTimestamp,
-                    LocalId = parentLocalId,
                 };
             }
 
             return stream;
-
-            /*var jarray = JObject.Parse(json);
-            
-            if (!jarray.TryGetValue(nameof(IStream.Version), out var version))
-                return null;
-            
-            if (!jarray.TryGetValue(nameof(IStream.Key), out var key))
-                return null;
-
-            var stream = new Stream((string)key, (int)version);
-
-            if (!jarray.TryGetValue(nameof(IStream.Parent), out var jParent))
-                return stream;
-            
-            ((JObject)jParent).TryGetValue(nameof(IStream.Key), out var parentKey);
-            ((JObject)jParent).TryGetValue(nameof(IStream.Version), out var parentVersion);
-                
-            stream.Parent = new Stream((string)parentKey, (int)parentVersion);
-
-            return stream;*/
 #else
             StreamMetadata meta;
 
@@ -379,7 +343,7 @@ namespace ZES.Infrastructure.Serialization
             if (e == null)
                 return null;
             var version = e?.Version ?? 0;
-            var hash = e?.Hash ?? string.Empty;
+            var hash = e?.ContentHash ?? string.Empty;
 #if USE_EXPLICIT
             
             var sw = new StringWriter();
@@ -405,6 +369,9 @@ namespace ZES.Infrastructure.Serialization
             
             writer.WritePropertyName(nameof(IEventMetadata.OriginId));
             writer.WriteValue(e.OriginId.ToString());
+            
+            writer.WritePropertyName(nameof(IEventMetadata.StreamHash));
+            writer.WriteValue(e.StreamHash);
 
             writer.WritePropertyName(nameof(IEventMetadata.Version));
             writer.WriteValue(version);
@@ -412,7 +379,7 @@ namespace ZES.Infrastructure.Serialization
             writer.WritePropertyName(nameof(IEventMetadata.MessageType));
             writer.WriteValue(e.GetType().Name);
             
-            writer.WritePropertyName(nameof(IEventMetadata.Hash));
+            writer.WritePropertyName(nameof(IEventMetadata.ContentHash));
             writer.WriteValue(hash);
             
             writer.WritePropertyName(nameof(IEventMetadata.Timeline));
@@ -495,8 +462,8 @@ namespace ZES.Infrastructure.Serialization
                     case JsonToken.String when currentProperty == nameof(IEventMetadata.MessageType):
                         metadata.MessageType = (string)reader.Value;
                         break;
-                    case JsonToken.String when currentProperty == nameof(IEventMetadata.Hash):
-                        metadata.Hash = (string)reader.Value;
+                    case JsonToken.String when currentProperty == nameof(IEventMetadata.ContentHash):
+                        metadata.ContentHash = (string)reader.Value;
                         break;
                     case JsonToken.String when currentProperty == nameof(IEventMetadata.Timeline):
                         metadata.Timeline = (string)reader.Value;
@@ -615,6 +582,9 @@ namespace ZES.Infrastructure.Serialization
             
             writer.WritePropertyName(nameof(IEventMetadata.OriginId));
             writer.WriteValue(e.OriginId.ToString());
+            
+            writer.WritePropertyName(nameof(IEventMetadata.StreamHash));
+            writer.WriteValue(e.StreamHash);
 
             writer.WritePropertyName(nameof(IEventMetadata.Timeline));
             writer.WriteValue(e.Timeline);
@@ -625,10 +595,10 @@ namespace ZES.Infrastructure.Serialization
             writer.WritePropertyName(nameof(IEventMetadata.Version));
             writer.WriteValue(e.Version);
 
-            if (e.Hash != string.Empty)
+            if (e.ContentHash != string.Empty)
             {
-                writer.WritePropertyName(nameof(IEventMetadata.Hash));
-                writer.WriteValue(e.Hash);
+                writer.WritePropertyName(nameof(IEventMetadata.ContentHash));
+                writer.WriteValue(e.ContentHash);
             }
         }
 
@@ -736,14 +706,17 @@ namespace ZES.Infrastructure.Serialization
                     case JsonToken.String when currentProperty == nameof(Message.OriginId):
                         e.OriginId = EventId.Parse((string)reader.Value); 
                         break;
+                    case JsonToken.String when currentProperty == nameof(EventMetadata.StreamHash):
+                        e.StreamHash = (string)reader.Value;
+                        break;
                     case JsonToken.Integer when currentProperty == nameof(EventMetadata.Version):
                         e.Version = (int)(long)reader.Value;
                         break;
                     case JsonToken.String when currentProperty == nameof(EventMetadata.MessageType):
                         e.MessageType = (string)reader.Value;
                         break;
-                    case JsonToken.String when currentProperty == nameof(EventMetadata.Hash):
-                        e.Hash = (string)reader.Value;
+                    case JsonToken.String when currentProperty == nameof(EventMetadata.ContentHash):
+                        e.ContentHash = (string)reader.Value;
                         break;
                     case JsonToken.String when currentProperty == nameof(Event.CommandId):
                         e.CommandId = Guid.Parse(reader.Value.ToString());

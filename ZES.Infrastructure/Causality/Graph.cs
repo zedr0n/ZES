@@ -280,7 +280,7 @@ namespace ZES.Infrastructure.Causality
             foreach (var a in ancestors)
                 LinkCause(a, vertex);
 
-            vertex.MerkleHash = metadata.Hash;
+            vertex.MerkleHash = metadata.ContentHash;
             streamVertex.MerkleHash = CalculateStreamHash(streamVertex);
         }
         

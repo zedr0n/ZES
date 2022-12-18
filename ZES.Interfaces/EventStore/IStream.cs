@@ -42,11 +42,6 @@ namespace ZES.Interfaces.EventStore
         int Version { get; set; }
 
         /// <summary>
-        /// Gets or sets the latest local event id of the stream
-        /// </summary>
-        EventId LocalId { get; set; } 
-        
-        /// <summary>
         /// Gets or sets the last snapshot timestamp
         /// </summary>
         Time SnapshotTimestamp { get; set; }

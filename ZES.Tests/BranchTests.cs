@@ -40,6 +40,42 @@ namespace ZES.Tests
         }
 
         [Fact]
+        public async void CanCorrectlyGetBranchStreamHash()
+        {
+            var container = CreateContainer();
+            var bus = container.GetInstance<IBus>();
+            var repository = container.GetInstance<IEsRepository<IAggregate>>();
+            var store = container.GetInstance<IEventStore<IAggregate>>();
+            var locator = container.GetInstance<IStreamLocator>();
+            var timeline = container.GetInstance<ITimeline>();
+
+            var manager = container.GetInstance<IBranchManager>();
+            
+            await await bus.CommandAsync(new CreateRoot("Root"));
+            var stream = await locator.Find<Root>("Root");
+            var rootCreatedHash = await store.GetHash(stream);
+            var now = timeline.Now;
+            
+            await await bus.CommandAsync(new UpdateRoot("Root"));
+            stream = await locator.Find<Root>("Root");
+            var rootUpdatedHash = await store.GetHash(stream);
+
+            var branch = await manager.Branch("test", now);
+            var branchStream = await locator.FindBranched(stream, "test");
+            var branchHash = await store.GetHash(branchStream);
+            Assert.Equal(rootCreatedHash, branchHash);
+            Assert.NotEqual(rootUpdatedHash, branchHash);
+
+            var otherStream = stream.Branch("test2", 0);
+            var otherHash = await store.GetHash(otherStream);
+            Assert.Equal(rootCreatedHash, otherHash);
+
+            var latestStream = stream.Branch("test3", 1);
+            var latestHash = await store.GetHash(latestStream);
+            Assert.Equal(rootUpdatedHash, latestHash);
+        }
+
+        [Fact]
         public async void CanMergeTimeline()
         {
             var container = CreateContainer(new List<Action<Container>>() { Config.RegisterSagas });
@@ -426,7 +462,6 @@ namespace ZES.Tests
             Assert.Equal(2, pushResult.NumberOfStreams);
             Assert.Equal(2, pushResult.NumberOfMessages);
         }
-
 
         [Fact]
         public async void CanPullFromRemote()

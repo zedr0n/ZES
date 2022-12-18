@@ -81,9 +81,6 @@ namespace ZES.Infrastructure.EventStore
         }
 
         /// <inheritdoc />
-        public EventId LocalId { get; set; }
-
-        /// <inheritdoc />
         public Time SnapshotTimestamp { get; set; } = Time.Default;
 
         /// <inheritdoc />
@@ -126,7 +123,6 @@ namespace ZES.Infrastructure.EventStore
             SnapshotTimestamp = SnapshotTimestamp,
             SnapshotVersion = SnapshotVersion,
             DeletedCount = DeletedCount,
-            LocalId = LocalId,
         };
         
         /// <inheritdoc />
@@ -192,7 +188,7 @@ namespace ZES.Infrastructure.EventStore
         public IStream Branch(string timeline, int version)
         {
             if (Timeline == timeline)
-                return new Stream(Key, version, Parent) { LocalId = LocalId };
+                return new Stream(Key, version, Parent);
 
             var parentVersion = version >= Version ? Version : version;
             if (parentVersion < 0)
@@ -205,14 +201,12 @@ namespace ZES.Infrastructure.EventStore
                 SnapshotTimestamp = SnapshotVersion <= version ? SnapshotTimestamp : Time.MaxValue, 
                 SnapshotVersion = SnapshotVersion <= version ? SnapshotVersion : 0,
                 Timeline = timeline,
-                LocalId = LocalId,
             };
 
             stream.Parent = new Stream(Key, parentVersion, Parent)
             {
                 SnapshotTimestamp = SnapshotVersion <= version ? SnapshotTimestamp : Time.MaxValue,
                 SnapshotVersion = SnapshotVersion <= version ? SnapshotVersion : 0,
-                LocalId = LocalId,
             };
             
             return stream;

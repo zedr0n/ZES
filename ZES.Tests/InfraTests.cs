@@ -19,6 +19,7 @@ using ZES.Interfaces.Branching;
 using ZES.Interfaces.Causality;
 using ZES.Interfaces.Clocks;
 using ZES.Interfaces.Domain;
+using ZES.Interfaces.EventStore;
 using ZES.Interfaces.Pipes;
 using ZES.Tests.Domain;
 using ZES.Tests.Domain.Commands;
@@ -47,6 +48,27 @@ namespace ZES.Tests
 
             var root = await repository.Find<Root>("Root");
             Assert.Equal("Root", root.Id);
+        }
+
+        [Fact]
+        public async void CanCalculateStreamHash()
+        {
+            var container = CreateContainer();
+            var bus = container.GetInstance<IBus>();
+            var repository = container.GetInstance<IEsRepository<IAggregate>>();
+            var store = container.GetInstance<IEventStore<IAggregate>>();
+            var locator = container.GetInstance<IStreamLocator>();
+
+            var command = new CreateRoot("Root");
+            await await bus.CommandAsync(command);
+
+            var stream = await locator.Find<Root>("Root");
+            var events = await store.ReadStream<IEvent>(stream, 0).ToList();
+            Assert.Single(events);
+            Assert.NotEmpty(events.Single().StreamHash);
+
+            var streamHash = await store.GetHash(stream);
+            Assert.Equal(events.Single().StreamHash, streamHash);
         }
 
         [Fact]

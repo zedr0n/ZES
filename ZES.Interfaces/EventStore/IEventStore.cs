@@ -39,7 +39,15 @@ namespace ZES.Interfaces.EventStore
         /// <param name="timestamp">Up to time</param>
         /// <returns>The last version before timestamp</returns>
         Task<int> GetVersion(IStream stream, Time timestamp);
-        
+
+        /// <summary>
+        /// Gets the stream hash for the specified version if any
+        /// </summary>
+        /// <param name="stream">Stream descriptor</param>
+        /// <param name="version">Version to query</param>
+        /// <returns>The stream hash</returns>
+        Task<string> GetHash(IStream stream, int version = -1);
+
         /// <summary>
         /// Append events to stream
         /// </summary>

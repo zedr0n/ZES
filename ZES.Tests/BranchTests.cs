@@ -495,6 +495,35 @@ namespace ZES.Tests
             Assert.Equal(Status.Success, pullResult.ResultStatus); 
             Assert.Equal(1, pullResult.NumberOfStreams);
         }
+        
+        [Fact]
+        public async void CanPullFromGenericRemote()
+        {
+            var container = CreateContainer();
+            var otherContainer = CreateContainer();
+            var bus = container.GetInstance<IBus>();
+            var remoteManager = container.GetInstance<IRemoteManager>();
+            var localReplica = container.GetInstance<IFactory<LocalReplica>>().Create();
+            remoteManager.RegisterLocalReplica("Server", localReplica.AggregateEventStore, localReplica.SagaEventStore, localReplica.CommandLog);
+            var remote = remoteManager.GetGenericRemote("Server");
+
+            await await bus.CommandAsync(new CreateRoot("Root")); 
+            var pushResult = await remote.Push(BranchManager.Master);
+            Assert.Equal(Status.Success, pushResult.ResultStatus);
+
+            var otherRemoteManager = otherContainer.GetInstance<IRemoteManager>();
+            otherRemoteManager.RegisterLocalReplica("Server", localReplica.AggregateEventStore, localReplica.SagaEventStore, localReplica.CommandLog);
+            var otherRemote = otherRemoteManager.GetGenericRemote("Server");
+
+            var pullResult = await otherRemote.Pull(BranchManager.Master);
+            Assert.Equal(Status.Success, pullResult.ResultStatus); 
+            Assert.Equal(2, pullResult.NumberOfStreams);
+            Assert.Equal(2, pullResult.NumberOfMessages);
+            
+            var repository = otherContainer.GetInstance<IEsRepository<IAggregate>>();
+            var root = await repository.Find<Root>("Root");
+            Assert.Equal("Root", root.Id);
+        }
 
         [Fact]
         public async void CanCancelPull()

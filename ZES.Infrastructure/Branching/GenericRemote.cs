@@ -17,6 +17,7 @@ namespace ZES.Infrastructure.Branching
     {
         private readonly IEventStore<IAggregate> _aggregateStore;
         private readonly IEventStore<ISaga> _sagaStore;
+        private readonly ICommandLog _commandLog;
         private readonly IEventStore<IAggregate> _remoteAggregateStore;
         private readonly IEventStore<ISaga> _remoteSagaStore;
         private readonly ICommandLog _remoteCommandLog;
@@ -30,6 +31,7 @@ namespace ZES.Infrastructure.Branching
         /// <param name="replicaName">Replica name</param>
         /// <param name="aggregateStore">Local aggregate store</param>
         /// <param name="sagaStore">Local saga store </param>
+        /// <param name="commandLog">Command log</param>
         /// <param name="remoteAggregateStore">Remote aggregate store</param>
         /// <param name="remoteSagaStore">Remote saga store</param>
         /// <param name="remoteCommandLog">Remote command log</param>
@@ -40,6 +42,7 @@ namespace ZES.Infrastructure.Branching
             string replicaName,
             IEventStore<IAggregate> aggregateStore,
             IEventStore<ISaga> sagaStore,
+            ICommandLog commandLog,
             IEventStore<IAggregate> remoteAggregateStore,
             IEventStore<ISaga> remoteSagaStore,
             ICommandLog remoteCommandLog,
@@ -50,6 +53,7 @@ namespace ZES.Infrastructure.Branching
                 ReplicaName = replicaName;
                 _aggregateStore = aggregateStore;
                 _sagaStore = sagaStore;
+                _commandLog = commandLog;
                 _remoteAggregateStore = remoteAggregateStore;
                 _remoteSagaStore = remoteSagaStore;
                 _log = log;
@@ -82,13 +86,18 @@ namespace ZES.Infrastructure.Branching
                 return pushResult;
 
             var changes = mergeResult.changes;
-            var commandChanges = mergeResult.commandChanges;
+            var commandChanges = mergeResult.commandChanges.ToList();
 
+            var remoteAggregateStore = GetEventStore<IAggregate>(true);
+            var remoteSagaStore = GetEventStore<ISaga>(true);
+
+            var remoteAggregateStreams = await remoteAggregateStore.ListStreams().ToList();
+            var remoteSagaStreams = await remoteSagaStore.ListStreams().ToList();
+            
             // validate all the ancestors are present
-            foreach (var v in changes.Where(v => !v.Key.IsSaga))
+            foreach (var v in changes)
             {
-                var remoteStore = GetEventStore(v.Key, true);
-                var remoteStreams = await remoteStore.ListStreams().ToList();
+                var remoteStreams = v.Key.IsSaga ? remoteSagaStreams : remoteAggregateStreams; 
                 var s = await _streamLocator.Find(v.Key);
                 if (s.Ancestors.Where(a => a.Version > ExpectedVersion.EmptyStream).Any(a => remoteStreams.All(r => r.Key != a.Key)))
                     return pushResult;
@@ -96,11 +105,12 @@ namespace ZES.Infrastructure.Branching
 
             pushResult.ResultStatus = FastForwardResult.Status.Success;
 
-            foreach (var v in changes.Where(v => !v.Key.IsSaga))
+            foreach (var v in changes) 
             {
                 var localStore = GetEventStore(v.Key, false);
                 var remoteStore = GetEventStore(v.Key, true);
-                var remoteStreams = await remoteStore.ListStreams(branchId).ToList();
+                var remoteStreams = v.Key.IsSaga ? remoteSagaStreams : remoteAggregateStreams;
+                remoteStreams = remoteStreams.Where(s => s.Timeline == branchId).ToList();
                 var s = await _streamLocator.Find(v.Key);
                 var eventsToSync = await localStore.ReadStream<IEvent>(s, s.Version - v.Value + 1, v.Value).ToList();
                 if (eventsToSync.Count <= 0) 
@@ -122,7 +132,11 @@ namespace ZES.Infrastructure.Branching
             }
 
             foreach (var c in commandChanges)
+            {
+                c.LocalId = new EventId(ReplicaName, syncTime);
                 _remoteCommandLog.AppendCommand(c);
+            }
+
             pushResult.NumberOfMessages += commandChanges.Count();
             pushResult.NumberOfStreams += commandChanges.Select(c => c.EventType).Distinct().Count();
 
@@ -145,8 +159,27 @@ namespace ZES.Infrastructure.Branching
             await CopyRemoteToTimeline<ISaga>(branchId, syncRemoteTimeline);
            
             var mergeResult = await _branchManager.Merge(syncRemoteTimeline);
-            if (mergeResult.success)
-                pullResult.ResultStatus = FastForwardResult.Status.Success;
+            if (!mergeResult.success)
+                return pullResult;
+
+            pullResult.ResultStatus = FastForwardResult.Status.Success;
+            pullResult.NumberOfMessages += mergeResult.changes.Sum(m => m.Value);
+            pullResult.NumberOfStreams += mergeResult.changes.Count();
+
+            var remoteCommands = await _remoteCommandLog.GetCommands(branchId);
+            var localCommands = await _commandLog.GetCommands(branchId);
+            var commandsToSync = remoteCommands.Except(localCommands).ToList();
+            foreach (var c in commandsToSync)
+            {
+                c.LocalId = new EventId(Configuration.ReplicaName, syncTime);
+                _commandLog.AppendCommand(c);
+            }
+
+            pullResult.NumberOfMessages += commandsToSync.Count;
+            pullResult.NumberOfStreams += commandsToSync.Select(c => c.EventType).Distinct().Count();
+            
+            await _branchManager.DeleteBranch(syncRemoteTimeline);
+
             _log.Info($"Pulled {pullResult.NumberOfMessages} objects to {pullResult.NumberOfStreams} streams on branch {branchId}");
             return pullResult;
         }
@@ -163,14 +196,21 @@ namespace ZES.Infrastructure.Branching
             foreach (var s in remoteStreams)
             {
                 var remoteEvents = await remoteStore.ReadStream<IEvent>(s, 0).ToList();
-                var localStream = await _streamLocator.Find(s);
+                var localStream = await _streamLocator.Find(s) ?? s.Branch(timeline, ExpectedVersion.NoStream);
                 var localEvents = await localStore.ReadStream<IEvent>(localStream, 0).ToList();
                 var eventsToSync = remoteEvents.Where(e => localEvents.All(x => x.OriginId != e.OriginId)).ToList();
                 var version = s.Version;
                 if (eventsToSync.Count > 0)
+                {
                     version = eventsToSync.Min(e => e.Version) - 1;
+                    if (version < 0)
+                        version = ExpectedVersion.NoStream;
+                }
                 else
+                {
                     eventsToSync = null;
+                }
+
                 var localSyncStream = localStream.Branch(syncRemoteTimeline, version);
                 await localStore.AppendToStream(localSyncStream, eventsToSync, false);
             }

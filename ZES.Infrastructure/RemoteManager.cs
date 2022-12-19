@@ -13,6 +13,7 @@ namespace ZES.Infrastructure
     {
         private readonly IEventStore<IAggregate> _aggregateStore;
         private readonly IEventStore<ISaga> _sagaStore;
+        private readonly ICommandLog _commandLog;
         private readonly ILog _log;
         private readonly IBranchManager _branchManager;
         private readonly IStreamLocator _streamLocator;
@@ -26,18 +27,21 @@ namespace ZES.Infrastructure
         /// </summary>
         /// <param name="aggregateStore">Local aggregate store</param>
         /// <param name="sagaStore">Local saga store </param>
+        /// <param name="commandLog">Command log</param>
         /// <param name="log">Logging service</param>
         /// <param name="branchManager">Branch manager service</param>
         /// <param name="streamLocator">Stream locator service</param>
         public RemoteManager(
             IEventStore<IAggregate> aggregateStore, 
             IEventStore<ISaga> sagaStore, 
+            ICommandLog commandLog,
             ILog log,
             IBranchManager branchManager,
             IStreamLocator streamLocator)
         {
             _aggregateStore = aggregateStore;
             _sagaStore = sagaStore;
+            _commandLog = commandLog;
             _log = log;
             _branchManager = branchManager;
             _streamLocator = streamLocator;
@@ -62,6 +66,7 @@ namespace ZES.Infrastructure
                         s, 
                         _aggregateStore, 
                         _sagaStore, 
+                        _commandLog,
                         aggregateStore, 
                         sagaStore,
                         commandLog,

@@ -186,5 +186,20 @@ namespace ZES.Infrastructure.Domain
         
         private NewStreamMessage Encode(ICommand command) =>
             new NewStreamMessage(command.MessageId, command.GetType().Name, _serializer.Serialize(command), _serializer.EncodeMetadata(command));
+        
+        private async Task Repopulate()
+        {
+            _streams.Clear();
+            var page = await _streamStore.ListStreams();
+            while (page.StreamIds.Length > 0)
+            {
+                foreach (var s in page.StreamIds.Where(x => x.Contains(":Command:") ))
+                {
+                    var metadata = await _streamStore.GetStreamMetadata(s);
+                    var stream = _serializer.DecodeStreamMetadata(metadata.MetadataJson);
+                    _streams.TryAdd(s, stream);
+                }
+            }
+        }
     }
 }

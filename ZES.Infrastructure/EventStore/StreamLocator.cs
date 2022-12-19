@@ -82,7 +82,7 @@ namespace ZES.Infrastructure.EventStore
         public async Task<IStream> Find(IStream stream)
         {
             await Ready;
-            return _streams.TryGetValue(stream.Key, out var outStream) ? outStream : stream;  
+            return _streams.TryGetValue(stream.Key, out var outStream) ? outStream : default;  
         }
 
         /// <inheritdoc />

@@ -209,24 +209,17 @@ namespace ZES.Infrastructure.Branching
             if (aggrResult == null || sagaResult == null)
                 return new MergeResult(false, null, null);
 
-            var remoteCommands = await _commandLog.GetCommands(branchId);
+            var branchCommands = await _commandLog.GetCommands(branchId);
             var localCommands = await _commandLog.GetCommands(_activeTimeline.Id);
-            var commandsToSync = remoteCommands.Except(localCommands);
+            var commandsToMerge = branchCommands.Except(localCommands).ToList();
 
-            foreach (var c in commandsToSync)
-                _commandLog.AppendCommand(c);
-            
-            /*var commandsDict = new Dictionary<IStream, int>();
-            foreach (var c in commandsToSync)
+            foreach (var c in commandsToMerge)
             {
-                var s = _commandLog.GetStream(c);
-                if (commandsDict.ContainsKey(s))
-                    commandsDict[s] += 1;
-                else
-                    commandsDict[s] = 1;
-            }*/
+                c.Timeline = _activeTimeline.Id;
+                _commandLog.AppendCommand(c);
+            }
 
-            return new MergeResult(true, aggrResult.Concat(sagaResult).ToDictionary(x => x.Key, x => x.Value), commandsToSync);
+            return new MergeResult(true, aggrResult.Concat(sagaResult).ToDictionary(x => x.Key, x => x.Value), commandsToMerge);
         }
         
         /// <inheritdoc />
@@ -352,7 +345,7 @@ namespace ZES.Infrastructure.Branching
 
                 if (mergeResult.Count > 0)
                 {
-                    _log.Debug(
+                    _log.Info(
                         $"Merged {mergeResult.Count} streams, {mergeResult.Values.Sum()} events from {branchId} into {_activeTimeline.Id} [{typeof(T).Name}]");
                 }
 
@@ -438,13 +431,11 @@ namespace ZES.Infrastructure.Branching
         private class MergeFlow<T> : Dataflow<IStream>
             where T : IEventSourced
         {
-            private readonly IEventStore<T> _eventStore;
             private readonly ActionBlock<IStream> _inputBlock;
 
             public MergeFlow(ITimeline currentBranch, IEventStore<T> eventStore, IStreamLocator streamLocator) 
                 : base(Configuration.DataflowOptions)
             {
-                _eventStore = eventStore;
                 _inputBlock = new ActionBlock<IStream>(
                     async s =>
                     {
@@ -479,7 +470,7 @@ namespace ZES.Infrastructure.Branching
                         if (baseHash != branchHash)
                         {
                             throw new InvalidOperationException(
-                                $"{s} and {baseStream} do not agree at latest version {minVersion}");
+                                $"{s.Key} and {baseStream.Key} do not agree at latest version {minVersion}");
                         }
 
                         if (s.Version > minVersion)

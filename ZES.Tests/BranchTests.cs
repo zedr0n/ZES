@@ -452,7 +452,36 @@ namespace ZES.Tests
             Assert.Equal(0, pullResult.NumberOfStreams );
             Assert.Equal(0, pullResult.NumberOfMessages);
         }
-        
+
+        [Fact]
+        public async void CanCancelPushToGenericRemote()
+        {
+            var container = CreateContainer();
+            var bus = container.GetInstance<IBus>();
+            var remoteManager = container.GetInstance<IRemoteManager>();
+            var localReplica = container.GetInstance<IFactory<LocalReplica>>().Create();
+            remoteManager.RegisterLocalReplica("Server", localReplica.AggregateEventStore, localReplica.SagaEventStore, localReplica.CommandLog);
+            var remote = remoteManager.GetGenericRemote("Server");
+
+            await await bus.CommandAsync(new CreateRoot("Root"));
+            await remote.Push(BranchManager.Master);
+
+            var otherContainer = CreateContainer();
+            var otherRemoteManager = otherContainer.GetInstance<IRemoteManager>();
+            otherRemoteManager.RegisterLocalReplica("Server", localReplica.AggregateEventStore, localReplica.SagaEventStore, localReplica.CommandLog);
+            var otherRemote = otherRemoteManager.GetGenericRemote("Server");
+            await otherRemote.Pull(BranchManager.Master);
+            
+            var otherBus = otherContainer.GetInstance<IBus>();
+            await await otherBus.CommandAsync(new UpdateRoot("Root"));
+
+            await otherRemote.Push(BranchManager.Master);
+           
+            await await bus.CommandAsync(new UpdateRoot("Root"));
+            var pushResult = await remote.Push(BranchManager.Master);
+            Assert.Equal(Status.Failed, pushResult.ResultStatus);
+        }
+
         [Fact]
         public async void CanUpdateGenericRemote()
         {
@@ -550,6 +579,38 @@ namespace ZES.Tests
             var pullResult = await remote.Pull(BranchManager.Master);
             Assert.Equal(Status.Failed, pullResult.ResultStatus);
         }
+        
+        [Fact]
+        public async void CanCancelPullFromGenericRemote()
+        {
+            var container = CreateContainer();
+            var otherContainer = CreateContainer();
+            
+            var bus = container.GetInstance<IBus>();
+            var remoteManager = container.GetInstance<IRemoteManager>();
+            var localReplica = container.GetInstance<IFactory<LocalReplica>>().Create();
+            remoteManager.RegisterLocalReplica("Server", localReplica.AggregateEventStore, localReplica.SagaEventStore, localReplica.CommandLog);
+            var remote = remoteManager.GetGenericRemote("Server");
+
+            await await bus.CommandAsync(new CreateRoot("Root")); 
+            var pushResult = await remote.Push(BranchManager.Master);
+            Assert.Equal(Status.Success, pushResult.ResultStatus);
+
+            await await bus.CommandAsync(new UpdateRoot("Root"));
+
+            var otherBus = otherContainer.GetInstance<IBus>();
+            var otherRemoteManager = otherContainer.GetInstance<IRemoteManager>();
+            otherRemoteManager.RegisterLocalReplica("Server", localReplica.AggregateEventStore, localReplica.SagaEventStore, localReplica.CommandLog);
+            var otherRemote = otherRemoteManager.GetGenericRemote("Server");
+            await otherRemote.Pull(BranchManager.Master);
+
+            await await otherBus.CommandAsync(new UpdateRoot("Root"));
+            await otherRemote.Push(BranchManager.Master);
+            
+            var pullResult = await remote.Pull(BranchManager.Master);
+            Assert.Equal(Status.Failed, pullResult.ResultStatus);
+        }
+
 
         [Fact]
         public async void CanCancelMerge()
@@ -578,14 +639,11 @@ namespace ZES.Tests
         }
 
         [Fact]
-        public async void CanPushBranchToGenericRemote()
+        public async void CanPushBranch()
         {
             var container = CreateContainer(new List<Action<Container>> { c => c.UseLocalStore() });
             var bus = container.GetInstance<IBus>();
-            var remoteManager = container.GetInstance<IRemoteManager>();
-            var localReplica = container.GetInstance<IFactory<LocalReplica>>().Create();
-            remoteManager.RegisterLocalReplica("Server", localReplica.AggregateEventStore, localReplica.SagaEventStore, localReplica.CommandLog);
-            var remote = remoteManager.GetGenericRemote("Server");
+            var remote = container.GetInstance<IRemote>(); 
             
             await await bus.CommandAsync(new CreateRoot("Root")); 
             
@@ -604,13 +662,16 @@ namespace ZES.Tests
             var pullResult = await remote.Pull("test");
             Assert.Equal(Status.Success, pullResult.ResultStatus); 
         }
-
+        
         [Fact]
-        public async void CanPushBranch()
+        public async void CanPushBranchToGenericRemote()
         {
-            var container = CreateContainer(new List<Action<Container>> { c => c.UseLocalStore() });
+            var container = CreateContainer();
             var bus = container.GetInstance<IBus>();
-            var remote = container.GetInstance<IRemote>(); 
+            var remoteManager = container.GetInstance<IRemoteManager>();
+            var localReplica = container.GetInstance<IFactory<LocalReplica>>().Create();
+            remoteManager.RegisterLocalReplica("Server", localReplica.AggregateEventStore, localReplica.SagaEventStore, localReplica.CommandLog);
+            var remote = remoteManager.GetGenericRemote("Server");
             
             await await bus.CommandAsync(new CreateRoot("Root")); 
             
@@ -640,9 +701,35 @@ namespace ZES.Tests
             await await bus.CommandAsync(new CreateRoot("Root"));
             var result = await remote.Push(BranchManager.Master);
             Assert.Equal(Status.Success, result.ResultStatus);
+            Assert.Equal(6, result.NumberOfMessages);
+            Assert.Equal(5, result.NumberOfStreams);
 
             var pullResult = await remote.Pull(BranchManager.Master);
             Assert.Equal(Status.Success, pullResult.ResultStatus);
+            Assert.Equal(0, pullResult.NumberOfMessages);
+            Assert.Equal(0, pullResult.NumberOfStreams);
+        }
+        
+        [Fact]
+        public async void CanPushSagaToGenericRemote()
+        {
+            var container = CreateContainer(new List<Action<Container>> { Config.RegisterSagas });
+            var bus = container.GetInstance<IBus>();
+            var remoteManager = container.GetInstance<IRemoteManager>();
+            var localReplica = container.GetInstance<IFactory<LocalReplica>>().Create();
+            remoteManager.RegisterLocalReplica("Server", localReplica.AggregateEventStore, localReplica.SagaEventStore, localReplica.CommandLog);
+            var remote = remoteManager.GetGenericRemote("Server");
+            
+            await await bus.CommandAsync(new CreateRoot("Root"));
+            var result = await remote.Push(BranchManager.Master);
+            Assert.Equal(Status.Success, result.ResultStatus);
+            Assert.Equal(6, result.NumberOfMessages);
+            Assert.Equal(5, result.NumberOfStreams);
+
+            var pullResult = await remote.Pull(BranchManager.Master);
+            Assert.Equal(Status.Success, pullResult.ResultStatus);
+            Assert.Equal(0, pullResult.NumberOfMessages);
+            Assert.Equal(0, pullResult.NumberOfStreams);
         }
 
         [Fact]
@@ -652,6 +739,48 @@ namespace ZES.Tests
             var bus = container.GetInstance<IBus>();
             var timeTraveller = container.GetInstance<IBranchManager>(); 
             var remote = container.GetInstance<IRemote>(); 
+            
+            var command = new CreateRoot("Root");
+            await await bus.CommandAsync(command);
+
+            var result = await remote.Push(BranchManager.Master);
+            Assert.Equal(Status.Success, result.ResultStatus); 
+            
+            var timeline = container.GetInstance<ITimeline>();
+            Assert.Equal("master", timeline.Id);
+
+            await timeTraveller.Branch("test");
+
+            await await bus.CommandAsync(new CreateRoot("testRoot"));
+
+            await timeTraveller.Branch("grandTest");
+
+            await await bus.CommandAsync(new CreateRoot("testRoot2"));
+            await bus.IsTrue(new StatsQuery(), s => s.NumberOfRoots == 3);
+
+            result = await remote.Push("grandTest");
+            Assert.Equal(Status.Failed, result.ResultStatus);
+
+            result = await remote.Push("test");
+            Assert.Equal(Status.Success, result.ResultStatus);
+            
+            result = await remote.Push("grandTest");
+            Assert.Equal(Status.Success, result.ResultStatus);
+
+            result = await remote.Pull("grandTest");
+            Assert.Equal(Status.Success, result.ResultStatus);
+        }
+        
+        [Fact]
+        public async void CanPushGrandBranchToGenericRemote()
+        {
+            var container = CreateContainer();
+            var bus = container.GetInstance<IBus>();
+            var timeTraveller = container.GetInstance<IBranchManager>(); 
+            var remoteManager = container.GetInstance<IRemoteManager>();
+            var localReplica = container.GetInstance<IFactory<LocalReplica>>().Create();
+            remoteManager.RegisterLocalReplica("Server", localReplica.AggregateEventStore, localReplica.SagaEventStore, localReplica.CommandLog);
+            var remote = remoteManager.GetGenericRemote("Server");
             
             var command = new CreateRoot("Root");
             await await bus.CommandAsync(command);

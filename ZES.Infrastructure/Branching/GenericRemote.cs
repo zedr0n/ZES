@@ -99,8 +99,12 @@ namespace ZES.Infrastructure.Branching
             {
                 var remoteStreams = v.Key.IsSaga ? remoteSagaStreams : remoteAggregateStreams; 
                 var s = await _streamLocator.Find(v.Key);
-                if (s.Ancestors.Where(a => a.Version > ExpectedVersion.EmptyStream).Any(a => remoteStreams.All(r => r.Key != a.Key)))
-                    return pushResult;
+                var missingAncestors = s.Ancestors.Where(a => a.Version > ExpectedVersion.EmptyStream)
+                    .Where(a => remoteStreams.All(r => r.Key != a.Key)).ToList();
+                if (missingAncestors.Count == 0) 
+                    continue;
+                _log.Warn($"Stream {s.Key.Replace(s.Timeline, branchId)} cannot be pushed to remote {ReplicaName} due to missing ancestor {missingAncestors.First().Key}", this);
+                return pushResult;
             }
 
             pushResult.ResultStatus = FastForwardResult.Status.Success;
@@ -168,7 +172,7 @@ namespace ZES.Infrastructure.Branching
 
             var remoteCommands = await _remoteCommandLog.GetCommands(branchId);
             var localCommands = await _commandLog.GetCommands(branchId);
-            var commandsToSync = remoteCommands.Except(localCommands).ToList();
+            var commandsToSync = remoteCommands.Where(c => localCommands.All(x => x.OriginId != c.OriginId)).ToList();
             foreach (var c in commandsToSync)
             {
                 c.LocalId = new EventId(Configuration.ReplicaName, syncTime);

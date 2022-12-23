@@ -443,7 +443,7 @@ namespace ZES.Infrastructure.Branching
                         var baseStream = await streamLocator.FindBranched(s, currentBranch?.Id);
                         var streamNotFound = baseStream == null;
                         if (streamNotFound)
-                             baseStream = s.Branch(currentBranch?.Id, ExpectedVersion.NoStream);
+                             baseStream = s.Branch(currentBranch?.Id, s.Parent?.Version ?? ExpectedVersion.NoStream);
 
                         // find common version
                         /*var baseAncestors = baseStream.Ancestors.ToList();

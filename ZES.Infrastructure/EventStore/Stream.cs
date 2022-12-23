@@ -187,12 +187,7 @@ namespace ZES.Infrastructure.EventStore
         /// <inheritdoc />
         public IStream Branch(string timeline, int version)
         {
-            if (Timeline == timeline)
-                return new Stream(Key, version, Parent);
-
-            var parentVersion = version >= Version ? Version : version;
-            if (parentVersion < 0)
-                parentVersion = ExpectedVersion.EmptyStream;
+            version = Math.Min(version, Version);
 
             var stream = new Stream(
                 Key,
@@ -203,21 +198,24 @@ namespace ZES.Infrastructure.EventStore
                 Timeline = timeline,
             };
 
-            if ( (Parent == null && parentVersion > ExpectedVersion.EmptyStream ) || ( Parent != null && parentVersion > Parent.Version) )
+            // find last ancestor before the version to branch
+            var parent = Parent;
+            while (parent != null && Parent.Version > version)
+                parent = parent.Parent;
+
+            if (parent != null && version == parent.Version)
             {
-                stream.Parent = new Stream(Key, parentVersion, Parent)
+                stream.Parent = parent.Copy();
+            }
+            else if ( version > ExpectedVersion.EmptyStream )
+            {
+                stream.Parent = new Stream(Key, version, parent)
                 {
                     SnapshotTimestamp = SnapshotVersion <= version ? SnapshotTimestamp : Time.MaxValue,
                     SnapshotVersion = SnapshotVersion <= version ? SnapshotVersion : 0,
                 };
             }
-            else if (Parent != null)
-            {
-                stream.Parent = Parent.Copy();
-                if (Parent.Version > version)
-                    stream.Version = Parent.Version;
-            }
-            
+
             return stream;
         }
 

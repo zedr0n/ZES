@@ -41,6 +41,30 @@ namespace ZES.Tests
         }
 
         [Fact]
+        public async void CanBranchWithMultipleAncestors()
+        {
+            var container = CreateContainer();
+            var bus = container.GetInstance<IBus>();
+            var manager = container.GetInstance<IBranchManager>();
+            var locator = container.GetInstance<IStreamLocator>();
+
+            await await bus.CommandAsync(new CreateRoot("Root"));
+            await manager.Branch("test");
+
+            await await bus.CommandAsync(new UpdateRoot("Root"));
+            await manager.Branch("test2");
+            
+            await await bus.CommandAsync(new UpdateRoot("Root"));
+
+            var stream = await locator.Find<Root>("Root", "test2");
+            Assert.Equal(2, stream.Ancestors.Count());
+            
+            var streamBranch = stream.Branch("test3", 1);
+            Assert.Equal("test", streamBranch.Parent.Timeline);
+            Assert.Equal(1, streamBranch.Version);
+        }
+
+        [Fact]
         public async void CanCorrectlyGetBranchStreamHash()
         {
             var container = CreateContainer();
@@ -610,7 +634,6 @@ namespace ZES.Tests
             var pullResult = await remote.Pull(BranchManager.Master);
             Assert.Equal(Status.Failed, pullResult.ResultStatus);
         }
-
 
         [Fact]
         public async void CanCancelMerge()

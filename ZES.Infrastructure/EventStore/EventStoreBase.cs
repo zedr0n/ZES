@@ -97,7 +97,7 @@ namespace ZES.Infrastructure.EventStore
         public IObservable<T> ReadStream<T>(IStream stream, int start, int count = -1) 
             where T : class, IEventMetadata
         { 
-            var allStreams = stream.Ancestors.ToList();
+            var allStreams = stream.Ancestors.Reverse().ToList();
             allStreams.Add(stream);
 
             var allObservables = new List<IObservable<T>>();

@@ -122,7 +122,15 @@ namespace ZES.Infrastructure.Branching
                     
                 var remoteStream = remoteStreams.SingleOrDefault(x => x.Type == s.Type && x.Id == s.Id && x.Timeline == branchId);
                 if (remoteStream == default)
+                {
                     remoteStream = new Stream(s.Id, s.Type, ExpectedVersion.NoStream, branchId);
+                    if (s.Parent != null)
+                    {
+                        remoteStream.Version = s.Parent.Version;
+                        remoteStream.Parent = s.Parent.Copy();
+                    }
+                }
+
                 foreach (var e in eventsToSync)
                 {
                     e.Stream = remoteStream.Key;

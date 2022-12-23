@@ -530,6 +530,16 @@ namespace ZES.Tests
             Assert.Equal(Status.Success, pushResultAfter.ResultStatus);
             Assert.Equal(2, pushResult.NumberOfStreams);
             Assert.Equal(2, pushResult.NumberOfMessages);
+            
+            var otherContainer = CreateContainer();
+            var otherBus = otherContainer.GetInstance<IBus>();
+            var otherManager = otherContainer.GetInstance<IBranchManager>();
+            var otherRemoteManager = otherContainer.GetInstance<IRemoteManager>();
+            otherRemoteManager.RegisterLocalReplica("Server", localReplica.AggregateEventStore, localReplica.SagaEventStore, localReplica.CommandLog);
+            var otherRemote = otherRemoteManager.GetGenericRemote("Server");
+            await otherRemote.Pull(BranchManager.Master);
+            
+            await otherBus.IsTrue(new RootInfoQuery("Root"), s => s.UpdatedAt > s.CreatedAt);
         }
 
         [Fact]
@@ -712,6 +722,19 @@ namespace ZES.Tests
 
             var pullResult = await remote.Pull("test");
             Assert.Equal(Status.Success, pullResult.ResultStatus); 
+            
+            var otherContainer = CreateContainer();
+            var otherBus = otherContainer.GetInstance<IBus>();
+            var otherManager = otherContainer.GetInstance<IBranchManager>();
+            var otherRemoteManager = otherContainer.GetInstance<IRemoteManager>();
+            otherRemoteManager.RegisterLocalReplica("Server", localReplica.AggregateEventStore, localReplica.SagaEventStore, localReplica.CommandLog);
+            var otherRemote = otherRemoteManager.GetGenericRemote("Server");
+            await otherRemote.Pull(BranchManager.Master);
+            await otherRemote.Pull("test");
+
+            await otherManager.Branch("test");
+            
+            await otherBus.IsTrue(new StatsQuery(), s => s.NumberOfRoots == 2);
         }
 
         [Fact]
@@ -753,6 +776,15 @@ namespace ZES.Tests
             Assert.Equal(Status.Success, pullResult.ResultStatus);
             Assert.Equal(0, pullResult.NumberOfMessages);
             Assert.Equal(0, pullResult.NumberOfStreams);
+            
+            var otherContainer = CreateContainer();
+            var otherBus = otherContainer.GetInstance<IBus>();
+            var otherRemoteManager = otherContainer.GetInstance<IRemoteManager>();
+            otherRemoteManager.RegisterLocalReplica("Server", localReplica.AggregateEventStore, localReplica.SagaEventStore, localReplica.CommandLog);
+            var otherRemote = otherRemoteManager.GetGenericRemote("Server");
+            await otherRemote.Pull(BranchManager.Master);
+            
+            await otherBus.IsTrue(new StatsQuery(), s => s.NumberOfRoots == 2);
         }
 
         [Fact]
@@ -834,6 +866,20 @@ namespace ZES.Tests
 
             result = await remote.Pull("grandTest");
             Assert.Equal(Status.Success, result.ResultStatus);
+            
+            var otherContainer = CreateContainer();
+            var otherBus = otherContainer.GetInstance<IBus>();
+            var otherManager = otherContainer.GetInstance<IBranchManager>(); 
+            var otherRemoteManager = otherContainer.GetInstance<IRemoteManager>();
+            otherRemoteManager.RegisterLocalReplica("Server", localReplica.AggregateEventStore, localReplica.SagaEventStore, localReplica.CommandLog);
+            var otherRemote = otherRemoteManager.GetGenericRemote("Server");
+            await otherRemote.Pull(BranchManager.Master);
+            await otherRemote.Pull("test");
+            await otherRemote.Pull("grandTest");
+
+            await otherManager.Branch("grandTest");
+
+            await otherBus.IsTrue(new StatsQuery(), s => s.NumberOfRoots == 3);
         }
 
         [Fact]
@@ -864,6 +910,58 @@ namespace ZES.Tests
             var root = await repository.Find<Root>(id);
             Assert.Equal(3, root.Version);
             Assert.Equal(2, root.SnapshotVersion);
+        }
+        
+        [Fact]
+        public async void CanPushSnapshotToGenericRemote()
+        {
+            var container = CreateContainer(new List<Action<Container>> { c => c.UseLocalStore() });
+            var bus = container.GetInstance<IBus>();
+            var manager = container.GetInstance<IBranchManager>(); 
+            var remoteManager = container.GetInstance<IRemoteManager>();
+            var localReplica = container.GetInstance<IFactory<LocalReplica>>().Create();
+            remoteManager.RegisterLocalReplica("Server", localReplica.AggregateEventStore, localReplica.SagaEventStore, localReplica.CommandLog);
+            var remote = remoteManager.GetGenericRemote("Server");
+            var repository = container.GetInstance<IEsRepository<IAggregate>>();
+
+            var id = "Root";
+            var command = new CreateRoot(id);
+            await await bus.CommandAsync(command);
+            await await bus.CommandAsync(new UpdateRoot(id));
+
+            await await bus.CommandAsync(new CreateSnapshot<Root>(id));
+
+            var result = await remote.Push(BranchManager.Master);
+            Assert.Equal(Status.Success, result.ResultStatus);
+            
+            await manager.Branch("test");
+            await await bus.CommandAsync(new UpdateRoot(id));
+
+            result = await remote.Push("test");
+            Assert.Equal(Status.Success, result.ResultStatus);
+
+            var root = await repository.Find<Root>(id);
+            Assert.Equal(3, root.Version);
+            Assert.Equal(2, root.SnapshotVersion);
+            
+            var otherContainer = CreateContainer();
+            var otherRepository = otherContainer.GetInstance<IEsRepository<IAggregate>>();
+            var otherManager = otherContainer.GetInstance<IBranchManager>(); 
+            var otherRemoteManager = otherContainer.GetInstance<IRemoteManager>();
+            otherRemoteManager.RegisterLocalReplica("Server", localReplica.AggregateEventStore, localReplica.SagaEventStore, localReplica.CommandLog);
+            var otherRemote = otherRemoteManager.GetGenericRemote("Server");
+            var pullResult = await otherRemote.Pull(BranchManager.Master);
+            Assert.Equal(Status.Success, pullResult.ResultStatus);
+
+            var otherRoot = await otherRepository.Find<Root>(id);
+            Assert.Equal(2, otherRoot.Version);
+            Assert.Equal(2, otherRoot.SnapshotVersion);
+
+            await otherRemote.Pull("test");
+            await otherManager.Branch("test");
+            otherRoot = await otherRepository.Find<Root>(id);
+            Assert.Equal(3, otherRoot.Version);
+            Assert.Equal(2, otherRoot.SnapshotVersion);
         }
 
         [Fact]

@@ -1,0 +1,40 @@
+<Project Sdk="Microsoft.NET.Sdk">
+    <PropertyGroup>
+        <TargetFramework>netstandard2.0</TargetFramework>
+        <CodeAnalysisRuleSet>..\Analysis.ruleset</CodeAnalysisRuleSet>
+        <IsPackable>true</IsPackable>
+        <PublishRepositoryUrl>true</PublishRepositoryUrl>
+        <AllowedOutputExtensionsInPackageBuildOutputFolder>$(AllowedOutputExtensionsInPackageBuildOutputFolder);.pdb</AllowedOutputExtensionsInPackageBuildOutputFolder>
+        <Version>1.0.0</Version>
+        <LangVersion>9.0</LangVersion>
+        <NoWarn>4014</NoWarn>
+        <GenerateDocumentationFile>true</GenerateDocumentationFile>
+        <Configurations>Debug;Release;DebugLocal</Configurations>
+        <Platforms>AnyCPU</Platforms>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="..\ZES.Interfaces\ZES.Interfaces.csproj" />
+        <ProjectReference Include="..\ZES.Infrastructure\ZES.Infrastructure.csproj" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.0.0" PrivateAssets="All" />
+    </ItemGroup>
+
+    <Choose>
+        <When Condition="'$(Configuration)' == 'DebugLocal'">
+            <ItemGroup>
+                <Reference Include="SqlStreamStore">
+                    <HintPath>../../SQLStreamStore/src/SqlStreamStore/bin/Debug/netstandard2.0/SqlStreamStore.dll</HintPath>
+                </Reference>
+            </ItemGroup>
+        </When>
+        <Otherwise>
+            <ItemGroup>
+                <PackageReference Include="SqlStreamStore" Version="1.2.1-alpha.3.33" />
+            </ItemGroup>
+        </Otherwise>
+    </Choose>
+
+</Project>

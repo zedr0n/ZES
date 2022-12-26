@@ -173,18 +173,6 @@ namespace ZES.Infrastructure.EventStore
         }
 
         /// <inheritdoc />
-        public int AppendPosition()
-        {
-            var version = Version;
-            version += DeletedCount;
-            if (Parent == null || Parent?.Version <= ExpectedVersion.NoStream) 
-                return version;
-            
-            version -= Parent.Version + 1;
-            return version < 0 ? ExpectedVersion.Any : version;
-        }
-
-        /// <inheritdoc />
         public IStream Branch(string timeline, int version)
         {
             version = Math.Min(version, Version);

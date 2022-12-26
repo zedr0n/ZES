@@ -82,12 +82,13 @@ namespace ZES.Persistence.SQLStreamStore
         /// <inheritdoc/>
         protected override async Task<int> AppendToStreamStore(IStream stream, IList<NewStreamMessage> streamMessages)
         {
-            var version = GetExpectedVersion(stream.Version);
+            var version = stream.Version;
             version += stream.DeletedCount;
             if (stream.Parent != null && stream.Parent.Version > ExpectedVersion.NoStream)
                 version -= stream.Parent.Version + 1;
             if (version < 0)
                 version = ExpectedVersion.Any;
+            version = GetExpectedVersion(version);
             
             #if USE_CUSTOM_SQLSTREAMSTORE
             var result = await _streamStore.AppendToStream(stream.Key, version, streamMessages.ToArray(), default, false);

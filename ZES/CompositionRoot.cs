@@ -164,6 +164,16 @@ namespace ZES
                                                       .Contains(typeof(IRemote)) &&
                                                   c.Consumer.Target.Parameter?.GetCustomAttribute(
                                                       typeof(RemoteAttribute)) == null))));
+                container.RegisterConditional(
+                    typeof(ICommandLog), 
+                    typeof(TcpCommandLog),
+                    Lifestyle.Singleton,
+                    c => c.Consumer == null || (c.Consumer != null 
+                                                && (!c.Consumer.ImplementationType.GetInterfaces()
+                                                        .Contains(typeof(IRemote)) || 
+                                                    (c.Consumer.ImplementationType.GetInterfaces()
+                                                         .Contains(typeof(IRemote)) &&
+                                                     c.Consumer.Target.Parameter?.GetCustomAttribute(typeof(RemoteAttribute)) == null))));
             }
 
             container.Register<ITimeline, Timeline>(Lifestyle.Singleton);

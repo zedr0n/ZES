@@ -99,7 +99,14 @@ namespace ZES.Persistence.EventStoreDB
         /// <inheritdoc />
         protected override async Task<int> AppendToStreamStore(IStream stream, IList<EventData> streamMessages)
         {
-            var result = await _connection.AppendToStreamAsync(stream.Key, stream.AppendPosition(), streamMessages);
+            var version = stream.Version;
+            if (stream.Parent != null && stream.Parent.Version > ExpectedVersion.NoStream)
+                version -= stream.Parent.Version + 1;
+            if (version < 0)
+                version = ExpectedVersion.Any; 
+            version = GetExpectedVersion(version);
+
+            var result = await _connection.AppendToStreamAsync(stream.Key, version, streamMessages);
             return (int)result.NextExpectedVersion;
         }
 

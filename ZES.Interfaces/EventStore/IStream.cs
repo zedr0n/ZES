@@ -110,12 +110,6 @@ namespace ZES.Interfaces.EventStore
         IStream Branch(string timeline, int version);
 
         /// <summary>
-        /// Append position for the split stream
-        /// </summary>
-        /// <returns>Append position</returns>
-        int AppendPosition();
-
-        /// <summary>
         /// Number of events actually present in the stream from [start, start+count)
         /// </summary>
         /// <param name="start">First version</param>

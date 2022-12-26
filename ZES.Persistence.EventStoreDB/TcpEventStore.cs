@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -6,14 +6,19 @@ using System.Threading;
 using System.Threading.Tasks;
 using EventStore.ClientAPI;
 using EventStore.ClientAPI.SystemData;
+using ZES.Infrastructure;
+using ZES.Infrastructure.EventStore;
 using ZES.Infrastructure.Utils;
 using ZES.Interfaces;
 using ZES.Interfaces.Domain;
 using ZES.Interfaces.EventStore;
 using ZES.Interfaces.Pipes;
 using ZES.Interfaces.Serialization;
+using ExpectedVersion = ZES.Infrastructure.EventStore.ExpectedVersion;
 
-namespace ZES.Infrastructure.EventStore
+#pragma warning disable CS1998
+
+namespace ZES.Persistence.EventStoreDB
 {
     /// <inheritdoc />
     public class TcpEventStore<TEventSourced> : EventStoreBase<TEventSourced, EventData, RecordedEvent>
@@ -108,6 +113,47 @@ namespace ZES.Infrastructure.EventStore
         protected override async Task DeleteStreamStore(IStream stream)
         {
             await _connection.DeleteStreamAsync(stream.Key, ExpectedVersion.Any);
+        }
+
+        /// <inheritdoc />
+        protected override string GetEventJson(EventData message) => Encoding.UTF8.GetString(message.Data);
+
+        /// <inheritdoc />
+        protected override EventData EventToStreamMessage(IEvent e, string jsonData, string jsonMetadata) => 
+            new ( e.MessageId,
+                e.MessageType,
+                true,
+                Encoding.UTF8.GetBytes(jsonData),
+                Encoding.UTF8.GetBytes(jsonMetadata));
+
+        /// <inheritdoc />
+        protected override async Task<T> StreamMessageToEvent<T>(RecordedEvent streamMessage)
+        {
+            if (typeof(T) == typeof(IEvent))
+            {
+                var json = Encoding.UTF8.GetString(streamMessage.Data);
+                return Serializer.Deserialize(json) as T;
+            }
+
+            if (typeof(T) == typeof(IEventMetadata))
+            {
+                var json = Encoding.UTF8.GetString(streamMessage.Metadata);
+                return Serializer.DecodeMetadata(json) as T;
+            }
+
+            return null;
+        }
+
+        /// <inheritdoc />
+        protected override int GetExpectedVersion(int version)
+        {
+            return version switch
+            {
+                ExpectedVersion.Any => global::EventStore.ClientAPI.ExpectedVersion.Any,
+                ExpectedVersion.NoStream => global::EventStore.ClientAPI.ExpectedVersion.NoStream,
+                ExpectedVersion.EmptyStream => global::EventStore.ClientAPI.ExpectedVersion.NoStream,
+                _ => version
+            };
         }
 
         /// <inheritdoc />

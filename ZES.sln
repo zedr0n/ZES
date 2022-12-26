@@ -19,6 +19,10 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ZES.GraphQL", "ZES.GraphQL\
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ZES.Replay", "ZES.Replay\ZES.Replay.csproj", "{282DC0FA-6340-4A87-9E7B-646ACEA8C1D7}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ZES.Persistence.EventStoreDB", "ZES.Persistence.EventStoreDB\ZES.Persistence.EventStoreDB.csproj", "{95EA3C2D-CBDF-42EA-8514-F45070DDBD4D}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ZES.Persistence.SQLStreamStore", "ZES.Persistence.SQLStreamStore\ZES.Persistence.SQLStreamStore.csproj", "{854797D5-D007-4F44-8D54-1A0A3783ABE7}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -74,6 +78,18 @@ Global
 		{282DC0FA-6340-4A87-9E7B-646ACEA8C1D7}.Release|Any CPU.Build.0 = Release|Any CPU
 		{282DC0FA-6340-4A87-9E7B-646ACEA8C1D7}.DebugLocal|Any CPU.ActiveCfg = DebugLocal|Any CPU
 		{282DC0FA-6340-4A87-9E7B-646ACEA8C1D7}.DebugLocal|Any CPU.Build.0 = DebugLocal|Any CPU
+		{95EA3C2D-CBDF-42EA-8514-F45070DDBD4D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{95EA3C2D-CBDF-42EA-8514-F45070DDBD4D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{95EA3C2D-CBDF-42EA-8514-F45070DDBD4D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{95EA3C2D-CBDF-42EA-8514-F45070DDBD4D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{95EA3C2D-CBDF-42EA-8514-F45070DDBD4D}.DebugLocal|Any CPU.ActiveCfg = Debug|Any CPU
+		{95EA3C2D-CBDF-42EA-8514-F45070DDBD4D}.DebugLocal|Any CPU.Build.0 = Debug|Any CPU
+		{854797D5-D007-4F44-8D54-1A0A3783ABE7}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{854797D5-D007-4F44-8D54-1A0A3783ABE7}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{854797D5-D007-4F44-8D54-1A0A3783ABE7}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{854797D5-D007-4F44-8D54-1A0A3783ABE7}.Release|Any CPU.Build.0 = Release|Any CPU
+		{854797D5-D007-4F44-8D54-1A0A3783ABE7}.DebugLocal|Any CPU.ActiveCfg = Debug|Any CPU
+		{854797D5-D007-4F44-8D54-1A0A3783ABE7}.DebugLocal|Any CPU.Build.0 = Debug|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

@@ -19,7 +19,7 @@ using ZES.Interfaces.Clocks;
 using ZES.Interfaces.Domain;
 using ZES.Interfaces.EventStore;
 using ZES.Interfaces.Pipes;
-using ExpectedVersion = SqlStreamStore.Streams.ExpectedVersion;
+using ExpectedVersion = ZES.Infrastructure.EventStore.ExpectedVersion;
 using IClock = ZES.Interfaces.Clocks.IClock;
 
 namespace ZES.Infrastructure.Branching

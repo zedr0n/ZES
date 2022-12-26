@@ -7,10 +7,9 @@ using System.Reactive.Subjects;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using EventStore.ClientAPI;
+using System.Threading.Tasks.Dataflow;
 using Gridsum.DataflowEx;
 using NodaTime;
-using SqlStreamStore.Streams;
 using ZES.Infrastructure.Utils;
 using ZES.Interfaces;
 using ZES.Interfaces.Causality;
@@ -39,7 +38,7 @@ namespace ZES.Infrastructure.EventStore
         private readonly bool _isDomainStore;
         private readonly bool _useVersionCache;
         private readonly ConcurrentDictionary<string, ConcurrentDictionary<int, Time>> _versions = new ConcurrentDictionary<string, ConcurrentDictionary<int, Time>>();
-        private readonly ConcurrentBag<EncodeFlow<TNewStreamMessage>> _encodeBag = new ConcurrentBag<EncodeFlow<TNewStreamMessage>>();
+        private readonly ConcurrentBag<EncodeFlow> _encodeBag = new ConcurrentBag<EncodeFlow>();
         private readonly ConcurrentEventFlowBag<TStreamMessage> _deserializeBag = new ConcurrentEventFlowBag<TStreamMessage>();
 
         /// <summary>
@@ -315,9 +314,9 @@ namespace ZES.Infrastructure.EventStore
                 var aCount = Math.Min(count, Configuration.BatchSize);
 
                 if (!_deserializeBag.TryTake<T>(out var dataflow))
-                    dataflow = new DeserializeFlow<TStreamMessage, T>(Configuration.DataflowOptions, _serializer);
+                    dataflow = new DeserializeFlow<T>(Configuration.DataflowOptions, this);
 
-                if (!await (dataflow as DeserializeFlow<TStreamMessage, T>).ProcessAsync(streamMessages, events, aCount))
+                if (!await (dataflow as DeserializeFlow<T>).ProcessAsync(streamMessages, events, aCount))
                     throw new InvalidOperationException("Not all events have been processed");
                         
                 Log.StopWatch.Stop("ReadSingleStream.Deserialize");
@@ -325,7 +324,7 @@ namespace ZES.Infrastructure.EventStore
             }
             else
             {
-                var e = await _serializer.Decode<TStreamMessage, T>(streamMessages.SingleOrDefault());
+                var e = await StreamMessageToEvent<T>(streamMessages.SingleOrDefault());
                 Log.StopWatch.Stop("ReadSingleStream.Deserialize");
                 events.Add(e);
             }
@@ -341,6 +340,38 @@ namespace ZES.Infrastructure.EventStore
             return count;
         }
         
+        /// <summary>
+        /// Get event json
+        /// </summary>
+        /// <param name="message">Event message</param>
+        /// <returns>Event json string</returns>
+        protected abstract string GetEventJson(TNewStreamMessage message);
+
+        /// <summary>
+        /// Convert event to stream message
+        /// </summary>
+        /// <param name="e">Event</param>
+        /// <param name="jsonData">Serialized event</param>
+        /// <param name="jsonMetadata">Serialized event metadata</param>
+        /// <returns>Event stream message</returns>
+        protected abstract TNewStreamMessage EventToStreamMessage(IEvent e, string jsonData, string jsonMetadata);
+
+        /// <summary>
+        /// Convert stream message to event ( or event metadata )
+        /// </summary>
+        /// <param name="streamMessage">Stream message</param>
+        /// <typeparam name="T">Event or metadata type</typeparam>
+        /// <returns>Event or event metadata</returns>
+        protected abstract Task<T> StreamMessageToEvent<T>(TStreamMessage streamMessage)
+            where T : class, IEventMetadata;
+
+        /// <summary>
+        /// Gets the equivalent expected version for the store
+        /// </summary>
+        /// <param name="version">Target version</param>
+        /// <returns>Store version</returns>
+        protected abstract int GetExpectedVersion(int version);
+
         private async Task<IList<TNewStreamMessage>> EncodeEvents(ICollection<IEvent> events)
         {
             var streamMessages = new List<TNewStreamMessage>();
@@ -351,7 +382,7 @@ namespace ZES.Infrastructure.EventStore
             if (events.Count > 1)
             {
                 if (!_encodeBag.TryTake(out var encodeFlow))
-                    encodeFlow = new EncodeFlow<TNewStreamMessage>(Configuration.DataflowOptions, _serializer);
+                    encodeFlow = new EncodeFlow(Configuration.DataflowOptions, _serializer, this);
 
                 if (!await encodeFlow.ProcessAsync(events, streamMessages, events.Count)) 
                     throw new InvalidOperationException($"Encoded {streamMessages.Count} of {events.Count} events");
@@ -360,7 +391,8 @@ namespace ZES.Infrastructure.EventStore
             }
             else
             {
-                streamMessages = new List<TNewStreamMessage> { _serializer.Encode<TNewStreamMessage>(events.Single()) };
+                _serializer.SerializeEventAndMetadata(events.Single(), out var eventJson, out var metadataJson);
+                streamMessages = new List<TNewStreamMessage> { EventToStreamMessage(events.Single(), eventJson, metadataJson) };
             }
                 
             Log.StopWatch.Stop("AppendToStream.Encode");
@@ -409,19 +441,15 @@ namespace ZES.Infrastructure.EventStore
         {
             if (!Configuration.LogEnabled(nameof(LogEvents)))
                 return;
+
             foreach (var m in messages)
             {
-                var json = string.Empty;
-                if (m is NewStreamMessage newStreamMessage)
-                    json = newStreamMessage.JsonData;
-                else if (m is EventData eventData)
-                    json = Encoding.UTF8.GetString(eventData.Data);
-                else
-                    break;
-                Log.Debug($"IsSaga : {!_isDomainStore} \n {json}");
+                var json = GetEventJson(m);
+                if (json != string.Empty)
+                    Log.Debug($"IsSaga : {!_isDomainStore} \n {json}");
             }
         }
-
+        
         private void PublishEvents(IEnumerable<IEvent> events)
         {
             if (!_isDomainStore || events == null || _messageQueue == null)
@@ -465,6 +493,72 @@ namespace ZES.Infrastructure.EventStore
                 else
                     _metadataBag.Add(item as Dataflow<TMessage, IEventMetadata>);
             }
+        }
+        
+        /// <summary>
+        /// Dataflow for encoding events to persist to event store
+        /// </summary>
+        private class EncodeFlow : Dataflow<IEvent, TNewStreamMessage>
+        {
+            /// <summary>
+            /// Initializes a new instance of the <see cref="EncodeFlow"/> class.
+            /// </summary>
+            /// <param name="dataflowOptions">Dataflow options</param>
+            /// <param name="serializer">Event serializer</param>
+            /// <param name="eventStore">Event store</param>
+            public EncodeFlow(DataflowOptions dataflowOptions, ISerializer<IEvent> serializer, EventStoreBase<TEventSourced, TNewStreamMessage, TStreamMessage> eventStore)
+                : base(dataflowOptions)
+            {
+                var block = new TransformBlock<IEvent, TNewStreamMessage>(
+                    e =>
+                    {
+                        serializer.SerializeEventAndMetadata(e, out var eventJson, out var metadataJson );
+                        return eventStore.EventToStreamMessage(e, eventJson, metadataJson);
+                    }, 
+                    dataflowOptions.ToDataflowBlockOptions(true));  // dataflowOptions.ToExecutionBlockOption(true) );
+
+                RegisterChild(block);
+                InputBlock = block;
+                OutputBlock = block;
+            }
+
+            /// <inheritdoc />
+            public override ITargetBlock<IEvent> InputBlock { get; }
+
+            /// <inheritdoc />
+            public override ISourceBlock<TNewStreamMessage> OutputBlock { get; }
+        }
+
+        /// <summary>
+        /// Event deserializer TPL dataflow
+        /// </summary>
+        /// <typeparam name="TEvent">IEvent or metadata</typeparam>
+        private class DeserializeFlow<TEvent> : Dataflow<TStreamMessage, TEvent>
+            where TEvent : class, IEventMetadata
+        {
+            /// <summary>
+            /// Initializes a new instance of the <see cref="DeserializeFlow{TEvent}"/> class.
+            /// </summary>
+            /// <param name="dataflowOptions">Dataflow options</param>
+            /// <param name="eventStore">Event store</param>
+            public DeserializeFlow(DataflowOptions dataflowOptions, EventStoreBase<TEventSourced, TNewStreamMessage, TStreamMessage> eventStore) 
+                : base(dataflowOptions)
+            {
+                TransformBlock<TStreamMessage, TEvent> block = null;
+                block = new TransformBlock<TStreamMessage, TEvent>(
+                    async m => await eventStore.StreamMessageToEvent<TEvent>(m),
+                    dataflowOptions.ToDataflowBlockOptions(true)); // dataflowOptions.ToExecutionBlockOption(true));
+
+                RegisterChild(block);
+                InputBlock = block;
+                OutputBlock = block;
+            }
+
+            /// <inheritdoc />
+            public override ITargetBlock<TStreamMessage> InputBlock { get; }
+
+            /// <inheritdoc />
+            public override ISourceBlock<TEvent> OutputBlock { get; }
         }
     }
 }

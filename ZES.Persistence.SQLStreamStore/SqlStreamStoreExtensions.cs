@@ -1,15 +1,19 @@
-using System.Linq;
+﻿using System.Linq;
 using System.Threading.Tasks;
 using SqlStreamStore;
 using SqlStreamStore.Streams;
+using ZES.Infrastructure;
 using ZES.Infrastructure.EventStore;
 using ZES.Interfaces;
 using ZES.Interfaces.EventStore;
 using ZES.Interfaces.Serialization;
 using ExpectedVersion = SqlStreamStore.Streams.ExpectedVersion;
 
-namespace ZES.Infrastructure.Utils
+namespace ZES.Persistence.SQLStreamStore
 {
+    /// <summary>
+    /// SQLStreamStore extensions
+    /// </summary>
     internal static class SqlStreamStoreExtensions
     {
         /// <summary>
@@ -52,7 +56,13 @@ namespace ZES.Infrastructure.Utils
 
             return stream;
         }
-        
+
+        /// <summary>
+        /// Gets the last position for stream key
+        /// </summary>
+        /// <param name="streamStore">SQLStreamStore instance</param>
+        /// <param name="key">Stream key</param>
+        /// <returns>A <see cref="Task{TResult}"/> representing the result of the asynchronous operation.</returns>
         public static async Task<int> LastPosition(this IStreamStore streamStore, string key)
         {
             var page = await streamStore.ReadStreamBackwards(key, StreamVersion.End, 1);
@@ -65,6 +75,12 @@ namespace ZES.Infrastructure.Utils
             return ExpectedVersion.EmptyStream;
         }
 
+        /// <summary>
+        /// Gets the deleted event count for stream key
+        /// </summary>
+        /// <param name="streamStore">SQLStreamStore instance</param>
+        /// <param name="key">Stream key</param>
+        /// <returns>Number of deleted events in stream</returns>
         public static async Task<int> DeletedCount(this IStreamStore streamStore, string key)
         {
             var deleted = 0;

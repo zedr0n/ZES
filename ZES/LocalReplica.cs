@@ -6,6 +6,7 @@ using ZES.Interfaces.Domain;
 using ZES.Interfaces.EventStore;
 using ZES.Interfaces.Pipes;
 using ZES.Interfaces.Serialization;
+using ZES.Persistence.SQLStreamStore;
 
 namespace ZES
 {
@@ -32,7 +33,7 @@ namespace ZES
             var streamStore = new InMemoryStreamStore();
             AggregateEventStore = new SqlEventStore<IAggregate>(messageQueue, serializer, log, streamStore);
             SagaEventStore = new SqlEventStore<ISaga>(messageQueue, serializer, log, streamStore);
-            CommandLog = new CommandLog(streamStore, serializerCommand, timeline, log);
+            CommandLog = new SqlCommandLog(serializerCommand, timeline, log, streamStore);
         }
 
         /// <summary>

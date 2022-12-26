@@ -6,21 +6,17 @@ using System.Linq;
 using System.Reactive.Linq;
 using System.Reactive.Subjects;
 using System.Threading.Tasks;
-using SqlStreamStore;
-using SqlStreamStore.Streams;
 using ZES.Infrastructure.EventStore;
 using ZES.Interfaces;
 using ZES.Interfaces.Domain;
 using ZES.Interfaces.EventStore;
 using ZES.Interfaces.Serialization;
-using ExpectedVersion = SqlStreamStore.Streams.ExpectedVersion;
 
 namespace ZES.Infrastructure.Domain
 {
     /// <inheritdoc />
-    public class CommandLog : ICommandLog
+    public abstract class CommandLogBase<TNewStreamMessage, TStreamMessage> : ICommandLog
     {
-        private readonly IStreamStore _streamStore;
         private readonly ISerializer<ICommand> _serializer;
         private readonly ITimeline _timeline;
         private readonly ILog _log;
@@ -29,15 +25,13 @@ namespace ZES.Infrastructure.Domain
         private readonly ConcurrentDictionary<string, IStream> _streams = new ();
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="CommandLog"/> class.
+        /// Initializes a new instance of the <see cref="CommandLogBase{TStreamMessage, TNewStreamMessage}"/> class.
         /// </summary>
-        /// <param name="streamStore">Underlying stream store</param>
         /// <param name="serializer">Serializer</param>
         /// <param name="timeline">Current timeline tracker</param>
         /// <param name="log">Application log</param>
-        public CommandLog(IStreamStore streamStore, ISerializer<ICommand> serializer, ITimeline timeline, ILog log)
+        public CommandLogBase(ISerializer<ICommand> serializer, ITimeline timeline, ILog log)
         {
-            _streamStore = streamStore;
             _serializer = serializer;
             _timeline = timeline;
             _log = log;
@@ -47,6 +41,16 @@ namespace ZES.Infrastructure.Domain
         /// <inheritdoc />
         public IObservable<HashSet<ICommand>> FailedCommands =>
             _failedCommandsSingleHolders.GetOrAdd(_timeline.Id, s => new FailedCommandsSingleHolder()).FailedCommands();
+
+        /// <summary>
+        /// Gets the serializer instance
+        /// </summary>
+        protected ISerializer<ICommand> Serializer => _serializer;
+
+        /// <summary>
+        /// Gets the log instance
+        /// </summary>
+        protected ILog Log => _log;
 
         /// <inheritdoc />
         public async Task<IEnumerable<IStream>> ListStreams(string branchId)
@@ -58,32 +62,9 @@ namespace ZES.Infrastructure.Domain
         /// <inheritdoc />
         public IObservable<ICommand> ReadStream(IStream stream, int start, int count = -1)
         {
-            var c = 0;
-            var observable = Observable.Create(async (IObserver<ICommand> observer) =>
-            {
-                var page = await _streamStore.ReadStreamForwards(stream.Key, start, Configuration.BatchSize);
-                while (page.Messages.Length > 0)
-                {
-                    foreach (var m in page.Messages)
-                    {
-                        var data = await m.GetJsonData();
-                        var command = _serializer.Deserialize(data);
-                        observer.OnNext(command);
-                        c++;
-                        if (count > 0 && c >= count)
-                            break;
-                    }
-
-                    if (count > 0 && c >= count)
-                        break;
-                    
-                    page = await page.ReadNext();
-                }
-                
-                observer.OnCompleted();    
-            });
-
-            return observable;
+            var obs = Observable.Create(async (IObserver<ICommand> observer) =>
+                await ReadStreamStore(observer, stream, start, Configuration.BatchSize));
+            return obs;
         }
 
         /// <inheritdoc />
@@ -131,12 +112,10 @@ namespace ZES.Infrastructure.Domain
                 return;
             
             var message = Encode(command);
-            LogCommands(message);
 
             var key = Key(command.EventType);
-            var appendResult = await _streamStore.AppendToStream(key, ExpectedVersion.Any, message);
-            var stream = _streams.GetOrAdd(key, new Stream(key, appendResult.CurrentVersion));
-            stream.Version = appendResult.CurrentVersion;
+            var version = await AppendToStream(key, message);
+            var stream = _streams.GetOrAdd(key, new Stream(key, version));
 
             // resolve the command if failed
             var holder = _failedCommandsSingleHolders.GetOrAdd(command.Timeline, b => new FailedCommandsSingleHolder());
@@ -147,59 +126,45 @@ namespace ZES.Infrastructure.Domain
             await holder.UpdateState(b =>
             {
                 b.Timeline = command.Timeline;
-                b.Commands.RemoveWhere(c => c.MessageId == message.MessageId);
+                b.Commands.RemoveWhere(c => c.MessageId == command.MessageId);
                 return b;
             });
         }
 
         /// <inheritdoc />
-        public async Task DeleteBranch(string branchId)
-        {
-            var page = await _streamStore.ListStreams(Configuration.BatchSize);
-            while (page.StreamIds.Length > 0)
-            {
-                foreach (var s in page.StreamIds)
-                {
-                    if (!s.StartsWith(branchId) || !s.Contains("Command"))
-                        continue;
+        public abstract Task DeleteBranch(string branchId);
 
-                    await _streamStore.DeleteStream(s);
-                    _log.Debug($"Deleted {nameof(ICommand)} stream {s}");
-                }
-                
-                page = await page.Next();
-            }
-        }
+        /// <summary>
+        /// Store implementation of stream read as observable
+        /// </summary>
+        /// <param name="observer">Observer instance</param>
+        /// <param name="stream">Stream definition</param>
+        /// <param name="position">Stream position</param>
+        /// <param name="count">Number of commands to read</param>
+        /// <returns>Task representing the completion of observable</returns>
+        protected abstract Task ReadStreamStore(IObserver<ICommand> observer, IStream stream, int position, int count);
+
+        /// <summary>
+        /// Store implementation of stream write
+        /// </summary>
+        /// <param name="key">Stream key</param>
+        /// <param name="message">Stream message</param>
+        /// <returns>Task completes when write is completed, returning the version written</returns>
+        protected abstract Task<int> AppendToStream(string key, TNewStreamMessage message);
+
+        /// <summary>
+        /// Encode the command to stream message
+        /// </summary>
+        /// <param name="command">Command instance</param>
+        /// <returns>Command stream message</returns>
+        protected abstract TNewStreamMessage Encode(ICommand command);
         
-        private void LogCommands(NewStreamMessage message)
-        {
-            _log.Debug(message.JsonData);
-        }
-
         private string Key(string eventType, string branchId = null)
         {
             if (string.IsNullOrEmpty(eventType))
                 throw new InvalidOperationException("Event type not known for commmand");
             branchId ??= _timeline.Id;
             return $"{branchId}:Command:{eventType.Split('.').Last()}";
-        }
-        
-        private NewStreamMessage Encode(ICommand command) =>
-            new NewStreamMessage(command.MessageId, command.GetType().Name, _serializer.Serialize(command), _serializer.EncodeMetadata(command));
-        
-        private async Task Repopulate()
-        {
-            _streams.Clear();
-            var page = await _streamStore.ListStreams();
-            while (page.StreamIds.Length > 0)
-            {
-                foreach (var s in page.StreamIds.Where(x => x.Contains(":Command:") ))
-                {
-                    var metadata = await _streamStore.GetStreamMetadata(s);
-                    var stream = _serializer.DecodeStreamMetadata(metadata.MetadataJson);
-                    _streams.TryAdd(s, stream);
-                }
-            }
         }
     }
 }

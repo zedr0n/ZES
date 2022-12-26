@@ -5,6 +5,8 @@ using System.Security.Cryptography;
 using System.Text;
 using Force.Crc32;
 
+#pragma warning disable SYSLIB0011
+
 namespace ZES.Infrastructure
 {
     /// <summary>

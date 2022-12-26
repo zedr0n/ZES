@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
@@ -12,14 +12,14 @@ using QuickGraph.Algorithms;
 using QuickGraph.Serialization;
 using SqlStreamStore;
 using SqlStreamStore.Streams;
-using ZES.Infrastructure.Utils;
+using ZES.Infrastructure;
 using ZES.Interfaces;
 using ZES.Interfaces.Causality;
 using ZES.Interfaces.Serialization;
 
 #pragma warning disable SA1600
 
-namespace ZES.Infrastructure.Causality
+namespace ZES.Persistence.SQLStreamStore
 {
     /// <inheritdoc />
     public class Graph : IGraph

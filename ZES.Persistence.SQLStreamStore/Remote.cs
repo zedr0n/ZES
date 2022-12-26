@@ -1,18 +1,18 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reactive.Linq;
 using System.Threading.Tasks;
 using SqlStreamStore;
 using SqlStreamStore.Streams;
+using ZES.Infrastructure;
 using ZES.Infrastructure.Alerts;
-using ZES.Infrastructure.Utils;
 using ZES.Interfaces;
 using ZES.Interfaces.Pipes;
 using ZES.Interfaces.Serialization;
 using static ZES.Interfaces.FastForwardResult;
 
-namespace ZES.Infrastructure.Branching
+namespace ZES.Persistence.SQLStreamStore
 {
     /// <summary>
     /// SQLStreamStore-based remote 

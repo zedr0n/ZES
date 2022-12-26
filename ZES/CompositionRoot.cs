@@ -29,6 +29,8 @@ using ZES.Interfaces.GraphQL;
 using ZES.Interfaces.Net;
 using ZES.Interfaces.Pipes;
 using ZES.Interfaces.Serialization;
+using ZES.Persistence.EventStoreDB;
+using ZES.Persistence.SQLStreamStore;
 using ZES.Utils;
 using BranchManager = ZES.Infrastructure.Branching.BranchManager;
 using ILog = ZES.Interfaces.ILog;
@@ -98,7 +100,7 @@ namespace ZES
                 c => 
                      c.Consumer.ImplementationType.GetGenericArguments().Contains(typeof(IAggregate)) ||
                      c.Consumer.ImplementationType.GetInterfaces().Contains(typeof(IBranchManager)) || 
-                     c.Consumer.ImplementationType == typeof(CommandLog) ||
+                     c.Consumer.ImplementationType.GetInterfaces().Contains(typeof(ICommandLog)) ||
                      c.Consumer.ImplementationType == typeof(Graph))
                 ;
             
@@ -140,7 +142,7 @@ namespace ZES
                                                      c.Consumer.Target.Parameter?.GetCustomAttribute(typeof(RemoteAttribute)) == null))));
                 container.RegisterConditional(
                     typeof(ICommandLog), 
-                    typeof(CommandLog),
+                    typeof(SqlCommandLog),
                     Lifestyle.Singleton,
                     c => c.Consumer == null || (c.Consumer != null 
                                                 && (!c.Consumer.ImplementationType.GetInterfaces()
@@ -279,11 +281,12 @@ namespace ZES
         private Registration GetRemoteCommandLog(Container container)
         {
             return Lifestyle.Singleton.CreateRegistration(
-                () => new CommandLog(
-                    container.GetInstance<RemoteStreamStore>().Store,
+                () => new SqlCommandLog(
                     container.GetInstance<ISerializer<ICommand>>(), 
                     container.GetInstance<ITimeline>(),
-                    container.GetInstance<ILog>()), container);
+                    container.GetInstance<ILog>(),
+                    container.GetInstance<RemoteStreamStore>().Store),
+                container);
         }
 
         private Registration GetRemoteStore(Container container, bool dropAll = true)

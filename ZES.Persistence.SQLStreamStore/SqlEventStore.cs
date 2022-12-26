@@ -1,4 +1,4 @@
-#define USE_CUSTOM_SQLSTREAMSTORE
+﻿#define USE_CUSTOM_SQLSTREAMSTORE
 
 using System;
 using System.Collections.Generic;
@@ -8,14 +8,17 @@ using System.Threading;
 using System.Threading.Tasks;
 using SqlStreamStore;
 using SqlStreamStore.Streams;
+using ZES.Infrastructure;
+using ZES.Infrastructure.EventStore;
 using ZES.Infrastructure.Utils;
 using ZES.Interfaces;
 using ZES.Interfaces.Domain;
 using ZES.Interfaces.EventStore;
 using ZES.Interfaces.Pipes;
 using ZES.Interfaces.Serialization;
+using ExpectedVersion = ZES.Infrastructure.EventStore.ExpectedVersion;
 
-namespace ZES.Infrastructure.EventStore
+namespace ZES.Persistence.SQLStreamStore
 {
     /// <summary>
     /// SQLStreamStore event store facade
@@ -79,12 +82,19 @@ namespace ZES.Infrastructure.EventStore
         /// <inheritdoc/>
         protected override async Task<int> AppendToStreamStore(IStream stream, IList<NewStreamMessage> streamMessages)
         {
+            var version = GetExpectedVersion(stream.Version);
+            version += stream.DeletedCount;
+            if (stream.Parent != null && stream.Parent.Version > ExpectedVersion.NoStream)
+                version -= stream.Parent.Version + 1;
+            if (version < 0)
+                version = ExpectedVersion.Any;
+            
             #if USE_CUSTOM_SQLSTREAMSTORE
-                var result = await _streamStore.AppendToStream(stream.Key, stream.AppendPosition(), streamMessages.ToArray(), default, false);
+            var result = await _streamStore.AppendToStream(stream.Key, version, streamMessages.ToArray(), default, false);
             #else
                 var result = await _streamStore.AppendToStream(stream.Key, stream.AppendPosition(), streamMessages.ToArray());
             #endif
-                return result.CurrentVersion;
+            return result.CurrentVersion;
         }
 
         /// <inheritdoc />
@@ -114,5 +124,33 @@ namespace ZES.Infrastructure.EventStore
         {
             await _streamStore.DeleteStream(stream.Key);
         }
+
+        /// <inheritdoc />
+        protected override string GetEventJson(NewStreamMessage message) => message.JsonData;
+
+        /// <inheritdoc />
+        protected override NewStreamMessage EventToStreamMessage(IEvent e, string jsonData, string jsonMetadata) =>
+            new (e.MessageId, e.MessageType, jsonData, jsonMetadata);
+
+        /// <inheritdoc />
+        protected override async Task<T> StreamMessageToEvent<T>(StreamMessage streamMessage)
+        {
+            if (typeof(T) == typeof(IEvent))
+            {
+                var json = await streamMessage.GetJsonData();
+                return Serializer.Deserialize(json) as T;
+            }
+
+            if (typeof(T) == typeof(IEventMetadata))
+            {
+                var json = streamMessage.JsonMetadata;
+                return Serializer.DecodeMetadata(json) as T;
+            }
+
+            return null;
+        }
+
+        /// <inheritdoc />
+        protected override int GetExpectedVersion(int version) => version;
     }
 }

@@ -16,7 +16,6 @@
 
     <ItemGroup>
       <PackageReference Include="Crc32.NET" Version="1.2.0" />
-      <PackageReference Include="EventStore.Client" Version="20.6.0" />
       <PackageReference Include="Gridsum.DataflowEx" Version="2.0.0" />
       <PackageReference Include="Jil" Version="2.17.0" />
       <PackageReference Include="JsonDiffPatch.Net" Version="2.1.0" />
@@ -28,21 +27,6 @@
       <PackageReference Include="System.Threading.Tasks.Dataflow" Version="4.9.0" />
     </ItemGroup>
 
-    <Choose>
-        <When Condition="'$(Configuration)' == 'DebugLocal'">
-            <ItemGroup>
-                <Reference Include="SqlStreamStore">
-                    <HintPath>../../SQLStreamStore/src/SqlStreamStore/bin/Debug/netstandard2.0/SqlStreamStore.dll</HintPath>
-                </Reference>
-            </ItemGroup>
-        </When>
-        <Otherwise>
-            <ItemGroup>
-                <PackageReference Include="SqlStreamStore" Version="1.2.1-alpha.3.33" />
-            </ItemGroup>
-        </Otherwise>
-    </Choose>
-    
     <ItemGroup>
       <ProjectReference Include="..\ZES.Interfaces\ZES.Interfaces.csproj" />
     </ItemGroup>
@@ -67,7 +51,7 @@
       <Compile Update="Domain\QueryHandlerDecorator.cs">
         <DependentUpon>Query.cs</DependentUpon>
       </Compile>
-      <Compile Update="Domain\CommandLog.cs">
+      <Compile Update="Domain\CommandLogBase.cs">
         <DependentUpon>Command.cs</DependentUpon>
       </Compile>
       <Compile Update="Domain\QueryHandlerBase.cs">

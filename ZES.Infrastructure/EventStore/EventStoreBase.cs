@@ -74,6 +74,12 @@ namespace ZES.Infrastructure.EventStore
         protected ILog Log { get; }
 
         /// <inheritdoc />
+        public virtual Task ResetDatabase()
+        {
+            return Task.CompletedTask;
+        }
+
+        /// <inheritdoc />
         public IObservable<IStream> ListStreams(string branch = null, Func<string, bool> predicate = null, CancellationToken token = default)
         {
             bool Predicate(string streamId)
@@ -168,10 +174,10 @@ namespace ZES.Infrastructure.EventStore
 
             var streamMessages = await EncodeEvents(events);
 
-            var nextVersion = await AppendToStreamStore(stream, streamMessages);
+            var version = await AppendToStreamStore(stream, streamMessages);
             LogEvents(streamMessages);
             
-            var version = nextVersion - stream.DeletedCount;
+            // var version = nextVersion - stream.DeletedCount;
             var snapshotVersion = stream.SnapshotVersion;
             var snapshotTimestamp = stream.SnapshotTimestamp;
             if (snapshotEvent != default && snapshotEvent.Version > snapshotVersion)

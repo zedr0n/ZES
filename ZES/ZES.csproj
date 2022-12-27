@@ -19,6 +19,7 @@
       <PackageReference Include="Microsoft.Extensions.Options" Version="5.0.0" />
       <PackageReference Include="NLog" Version="4.6.8" />
       <PackageReference Include="SimpleInjector" Version="4.4.2" />
+      <PackageReference Include="StackExchange.Redis" Version="2.6.86" />
       <PackageReference Include="System.Reflection.DispatchProxy" Version="4.7.1" />
     </ItemGroup>
 
@@ -48,6 +49,7 @@
       <ProjectReference Include="..\ZES.Interfaces\ZES.Interfaces.csproj" />
        <ProjectReference Include="..\ZES.Infrastructure\ZES.Infrastructure.csproj" />
        <ProjectReference Include="..\ZES.Persistence.EventStoreDB\ZES.Persistence.EventStoreDB.csproj" />
+       <ProjectReference Include="..\ZES.Persistence.Redis\ZES.Persistence.Redis.csproj" />
         <ProjectReference Include="..\ZES.Persistence.SQLStreamStore\ZES.Persistence.SQLStreamStore.csproj" />
     </ItemGroup>
 

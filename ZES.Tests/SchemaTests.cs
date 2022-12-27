@@ -68,14 +68,15 @@ namespace ZES.Tests
             var bus = container.GetInstance<IBus>();
             var log = container.GetInstance<ILog>();
             var generator = container.GetInstance<IGraphQlGenerator>();
-            
-            var command = new CreateRoot("Root");
+
+            var id = $"{nameof(CanExecuteQuery)}-Root";
+            var command = new CreateRoot(id);
             await await bus.CommandAsync(command);
             
             var schemaProvider = container.GetInstance<ISchemaProvider>();
             
             var executor = schemaProvider.Build();
-            var query = generator.Query(new RootInfoQuery("Root"));
+            var query = generator.Query(new RootInfoQuery(id));
             var rootInfoResult = await executor.ExecuteAsync(query) as IReadOnlyQueryResult;
             dynamic rootInfoDict = rootInfoResult?.Data.SingleOrDefault().Value;
             log.Info(rootInfoDict);
@@ -103,17 +104,18 @@ namespace ZES.Tests
             
             var executor = schemaProvider.Build();
 
-            var command = generator.Mutation(new CreateRoot("Root"));
+            var id = $"{nameof(CanExecuteMutation)}-Root";
+            var command = generator.Mutation(new CreateRoot(id));
             var commandResult = executor.Execute(command);
             foreach (var e in commandResult.Errors)
                 log.Error(e.Message, this);
             
-            command = generator.Mutation(new CreateRecord("Root"));
+            command = generator.Mutation(new CreateRecord(id));
             commandResult = executor.Execute(command);
             foreach (var e in commandResult.Errors)
                 log.Error(e.Message, this); 
 
-            command = generator.Mutation(new AddRecord("Root", 1));
+            command = generator.Mutation(new AddRecord(id, 1));
             commandResult = executor.Execute(command);
             foreach (var e in commandResult.Errors)
                 log.Error(e.Message, this);
@@ -136,8 +138,9 @@ namespace ZES.Tests
             var generator = container.GetInstance<IGraphQlGenerator>();
             
             var executor = schemaProvider.Build();
+            var id = $"{nameof(CanReplayLog)}-Root";
 
-            var command = generator.Mutation(new CreateRoot("Root"));
+            var command = generator.Mutation(new CreateRoot(id));
             await executor.ExecuteAsync(command);
             
             var query = generator.Query(new StatsQuery());
@@ -147,7 +150,7 @@ namespace ZES.Tests
             var logFile = $"{nameof(CanReplayLog)}.json";
             await recordLog.Flush(logFile);
 
-            var container2 = CreateContainer();
+            var container2 = CreateContainer(db: 1);
             schemaProvider = container2.GetInstance<ISchemaProvider>();
             recordLog = container2.GetInstance<IRecordLog>();
             var scenario = await recordLog.Load(logFile);
@@ -166,8 +169,9 @@ namespace ZES.Tests
             var generator = container.GetInstance<IGraphQlGenerator>();
             
             var executor = schemaProvider.Build();
+            var id = $"{nameof(CanBranch)}-Root";
 
-            var command = generator.Mutation(new CreateRoot("Root"));
+            var command = generator.Mutation(new CreateRoot(id));
             var commandResult = executor.Execute(command);
             foreach (var e in commandResult.Errors)
                 log.Error(e.Message, this);
@@ -188,7 +192,8 @@ namespace ZES.Tests
             
             var schemaProvider = container.GetInstance<ISchemaProvider>();
             var generator = container.GetInstance<IGraphQlGenerator>();
-            var command = generator.Mutation(new CreateRoot("Root"));
+            var id = $"{nameof(CanQueryError)}-Root";
+            var command = generator.Mutation(new CreateRoot(id));
             
             var executor = schemaProvider.Build();
 

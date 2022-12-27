@@ -22,6 +22,12 @@ namespace ZES.Interfaces.EventStore
         IObservable<IStream> Streams { get; }
 
         /// <summary>
+        /// Reset the database removing all data
+        /// </summary>
+        /// <returns>Task completes when database is reset</returns>
+        Task ResetDatabase();
+
+        /// <summary>
         /// Read specified number of events from the stream forward from starting version 
         /// </summary>
         /// <typeparam name="T">Event or just metadata</typeparam>

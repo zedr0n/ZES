@@ -10,6 +10,7 @@ using EventStore.ClientAPI.Projections;
 using NLog;
 using SimpleInjector;
 using SqlStreamStore;
+using StackExchange.Redis;
 using ZES.Conventions;
 using ZES.Infrastructure;
 using ZES.Infrastructure.Branching;
@@ -30,6 +31,7 @@ using ZES.Interfaces.Net;
 using ZES.Interfaces.Pipes;
 using ZES.Interfaces.Serialization;
 using ZES.Persistence.EventStoreDB;
+using ZES.Persistence.Redis;
 using ZES.Persistence.SQLStreamStore;
 using ZES.Utils;
 using BranchManager = ZES.Infrastructure.Branching.BranchManager;
@@ -86,12 +88,17 @@ namespace ZES
             container.Register<ICommandHandler<RequestJson>, JsonRequestHandler>(Lifestyle.Singleton);
             
             var store = GetStore(container);
-            if (!Configuration.UseSqlStore)
+            if (Configuration.EventStoreBackendType == EventStoreBackendType.EventStore)
             {
                 var projectionsManager = GetTCPProjectionsManager(container);
 
                 container.Register(GetTCPStoreConnection, Lifestyle.Singleton);
                 container.RegisterConditional(typeof(ProjectionsManager), projectionsManager, c => true);
+            }
+
+            if (Configuration.EventStoreBackendType == EventStoreBackendType.Redis)
+            {
+                container.Register(GetRedisConnection, Lifestyle.Singleton);
             }
             
             container.RegisterConditional(
@@ -128,7 +135,7 @@ namespace ZES
             
             container.Register<IEventSerializationRegistry, EventSerializationRegistry>(Lifestyle.Singleton);
             container.Register(typeof(ISerializer<>), typeof(Serializer<>), Lifestyle.Singleton);
-            if (Configuration.UseSqlStore)
+            if (Configuration.EventStoreBackendType == EventStoreBackendType.SqlStreamStore)
             {
                 container.RegisterConditional(
                     typeof(IEventStore<>), 
@@ -151,7 +158,7 @@ namespace ZES
                                                          .Contains(typeof(IRemote)) &&
                                                      c.Consumer.Target.Parameter?.GetCustomAttribute(typeof(RemoteAttribute)) == null))));
             }
-            else
+            else if (Configuration.EventStoreBackendType == EventStoreBackendType.EventStore)
             {
                 container.RegisterConditional(
                     typeof(IEventStore<>),
@@ -167,6 +174,30 @@ namespace ZES
                 container.RegisterConditional(
                     typeof(ICommandLog), 
                     typeof(TcpCommandLog),
+                    Lifestyle.Singleton,
+                    c => c.Consumer == null || (c.Consumer != null 
+                                                && (!c.Consumer.ImplementationType.GetInterfaces()
+                                                        .Contains(typeof(IRemote)) || 
+                                                    (c.Consumer.ImplementationType.GetInterfaces()
+                                                         .Contains(typeof(IRemote)) &&
+                                                     c.Consumer.Target.Parameter?.GetCustomAttribute(typeof(RemoteAttribute)) == null))));
+            }
+            else if (Configuration.EventStoreBackendType == EventStoreBackendType.Redis)
+            {
+                container.RegisterConditional(
+                    typeof(IEventStore<>),
+                    typeof(RedisEventStore<>),
+                    Lifestyle.Singleton,
+                    c => c.Consumer == null || (c.Consumer != null &&
+                                                (!c.Consumer.ImplementationType.GetInterfaces()
+                                                     .Contains(typeof(IRemote)) ||
+                                                 (c.Consumer.ImplementationType.GetInterfaces()
+                                                      .Contains(typeof(IRemote)) &&
+                                                  c.Consumer.Target.Parameter?.GetCustomAttribute(
+                                                      typeof(RemoteAttribute)) == null))));
+                container.RegisterConditional(
+                    typeof(ICommandLog), 
+                    typeof(RedisCommandLog),
                     Lifestyle.Singleton,
                     c => c.Consumer == null || (c.Consumer != null 
                                                 && (!c.Consumer.ImplementationType.GetInterfaces()
@@ -264,6 +295,12 @@ namespace ZES
             }, container);
         }
 
+        private IRedisConnection GetRedisConnection()
+        {
+            var connectionMultiplexer = ConnectionMultiplexer.Connect("localhost, allowAdmin=true"); 
+            return new RedisConnection(connectionMultiplexer);
+        }
+        
         private IEventStoreConnection GetTCPStoreConnection()
         {
             var builder = ConnectionSettings.Create()

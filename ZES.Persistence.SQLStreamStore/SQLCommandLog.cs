@@ -85,6 +85,6 @@ namespace ZES.Persistence.SQLStreamStore
 
         /// <inheritdoc />
         protected override NewStreamMessage Encode(ICommand command) =>
-            new (command.MessageId, command.GetType().Name, Serializer.Serialize(command), Serializer.EncodeMetadata(command));
+           new (command.MessageId, command.GetType().Name, Serializer.Serialize(command), Serializer.EncodeMetadata(command));
     }
 }

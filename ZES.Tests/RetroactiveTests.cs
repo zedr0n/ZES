@@ -33,12 +33,13 @@ namespace ZES.Tests
             var bus = container.GetInstance<IBus>();
             var graph = container.GetInstance<IGraph>();
             var manager = container.GetInstance<IBranchManager>();
-
-            var command = new CreateRoot("Root");
+            var id = $"{nameof(CanCreateGraph)}-Root";
+            
+            var command = new CreateRoot(id);
             await await bus.CommandAsync(command);
             await manager.Branch("test"); 
 
-            await await bus.CommandAsync(new UpdateRoot("Root"));
+            await await bus.CommandAsync(new UpdateRoot(id));
 
             await graph.Populate();
         }
@@ -51,18 +52,19 @@ namespace ZES.Tests
             var streamLocator = container.GetInstance<IStreamLocator>();
             var retroactive = container.GetInstance<IRetroactive>();
             var messageQueue = container.GetInstance<IMessageQueue>();
+            var id = $"{nameof(CanTrimStream)}-Root";
             
-            await await bus.CommandAsync(new CreateRoot("Root"));
-            await bus.IsTrue(new RootInfoQuery("Root"), c => c.CreatedAt == c.UpdatedAt);
-            await await bus.CommandAsync(new UpdateRoot("Root"));
-            await bus.IsTrue(new RootInfoQuery("Root"), c => c.CreatedAt < c.UpdatedAt);
+            await await bus.CommandAsync(new CreateRoot(id));
+            await bus.IsTrue(new RootInfoQuery(id), c => c.CreatedAt == c.UpdatedAt);
+            await await bus.CommandAsync(new UpdateRoot(id));
+            await bus.IsTrue(new RootInfoQuery(id), c => c.CreatedAt < c.UpdatedAt);
             
-            var stream = await streamLocator.Find<Root>("Root");
+            var stream = await streamLocator.Find<Root>(id);
             await retroactive.TrimStream(stream, 0);
             messageQueue.Alert(new InvalidateProjections());
-            await bus.IsTrue(new RootInfoQuery("Root"), c => c.CreatedAt == c.UpdatedAt);
+            await bus.IsTrue(new RootInfoQuery(id), c => c.CreatedAt == c.UpdatedAt);
 
-            stream = await streamLocator.Find<Root>("Root");
+            stream = await streamLocator.Find<Root>(id);
             Assert.Equal(0, stream.Version);
         }
 
@@ -77,12 +79,12 @@ namespace ZES.Tests
             var timestamp = timeline.Now;
             var lastTime = timestamp + Duration.FromSeconds(60);
             var midTime = timestamp + ((lastTime - timestamp ) / 2);
+            var id = $"{nameof(CanProcessRetroactiveCommand)}-Root";
 
-            await await bus.CommandAsync(new CreateRoot("Root"));
-            await await bus.CommandAsync(new RetroactiveCommand<UpdateRoot>(new UpdateRoot("Root"), lastTime));
+            await await bus.CommandAsync(new CreateRoot(id));
+            await await bus.CommandAsync(new RetroactiveCommand<UpdateRoot>(new UpdateRoot(id), lastTime));
 
-            var task = await bus.CommandAsync(new RetroactiveCommand<UpdateRoot>(new UpdateRoot("Root"), midTime));
-            await task;
+            await await bus.CommandAsync(new RetroactiveCommand<UpdateRoot>(new UpdateRoot(id), midTime));
             await graph.Serialise(nameof(CanProcessRetroactiveCommand));
         }
 
@@ -94,14 +96,15 @@ namespace ZES.Tests
             var retroactive = container.GetInstance<IRetroactive>();
             var locator = container.GetInstance<IStreamLocator>();
             var messageQueue = container.GetInstance<IMessageQueue>();
+            var id = $"{nameof(CanDeleteFromStream)}-Root";
             
-            await await bus.CommandAsync(new CreateRoot("Root"));
-            await await bus.CommandAsync(new UpdateRoot("Root"));
-            await await bus.CommandAsync(new UpdateRoot("Root"));
+            await await bus.CommandAsync(new CreateRoot(id));
+            await await bus.CommandAsync(new UpdateRoot(id));
+            await await bus.CommandAsync(new UpdateRoot(id));
 
-            await bus.Equal(new RootInfoQuery("Root"), r => r.NumberOfUpdates, 2);
+            await bus.Equal(new RootInfoQuery(id), r => r.NumberOfUpdates, 2);
             
-            var stream = await locator.Find<Root>("Root");
+            var stream = await locator.Find<Root>(id);
             var canDelete = await retroactive.TryDelete(stream, 3);
             Assert.False(canDelete);
             
@@ -109,12 +112,12 @@ namespace ZES.Tests
             
             Assert.True(canDelete);
             messageQueue.Alert(new InvalidateProjections());
-            await bus.Equal(new RootInfoQuery("Root"), r => r.NumberOfUpdates, 1);
+            await bus.Equal(new RootInfoQuery(id), r => r.NumberOfUpdates, 1);
 
             canDelete = await retroactive.TryDelete(stream, 1);
             Assert.True(canDelete);
             messageQueue.Alert(new InvalidateProjections());
-            await bus.Equal(new RootInfoQuery("Root"), r => r.NumberOfUpdates, 0);
+            await bus.Equal(new RootInfoQuery(id), r => r.NumberOfUpdates, 0);
 
             canDelete = await retroactive.TryDelete(stream, 0);
             Assert.False(canDelete);
@@ -132,28 +135,29 @@ namespace ZES.Tests
             var retroactive = container.GetInstance<IRetroactive>();
             var graph = container.GetInstance<IGraph>();
             var log = container.GetInstance<ILog>();
+            var id = $"{nameof(CanInsertIntoStream)}-Root";
 
-            await await bus.CommandAsync(new CreateRoot("Root"));
+            await await bus.CommandAsync(new CreateRoot(id));
             
             var timestamp = timeline.Now;
             var lastTime = timestamp + Duration.FromSeconds(60);
 
-            await await bus.CommandAsync(new RetroactiveCommand<UpdateRoot>(new UpdateRoot("Root"), lastTime));
-            await bus.Equal(new RootInfoQuery("Root"), r => r.UpdatedAt, lastTime);
+            await await bus.CommandAsync(new RetroactiveCommand<UpdateRoot>(new UpdateRoot(id), lastTime));
+            await bus.Equal(new RootInfoQuery(id), r => r.UpdatedAt, lastTime);
 
             await manager.Branch("test", timestamp);
-            await await bus.CommandAsync(new UpdateRoot("Root"));
-            var stream = await streamLocator.Find<Root>("Root", timeline.Id);
+            await await bus.CommandAsync(new UpdateRoot(id));
+            var stream = await streamLocator.Find<Root>(id, timeline.Id);
 
             var e = await eventStore.ReadStream<IEvent>(stream, 0).LastAsync();
 
             manager.Reset();
-            stream = await streamLocator.Find<Root>("Root", timeline.Id);
+            stream = await streamLocator.Find<Root>(id, timeline.Id);
 
             await retroactive.TryInsertIntoStream(stream, 1, new[] { e });
 
-            await bus.Equal(new RootInfoQuery("Root"), r => r.UpdatedAt, lastTime);
-            await bus.Equal(new HistoricalQuery<RootInfoQuery, RootInfo>(new RootInfoQuery("Root"), e.Timestamp), r => r.UpdatedAt, e.Timestamp);
+            await bus.Equal(new RootInfoQuery(id), r => r.UpdatedAt, lastTime);
+            await bus.Equal(new HistoricalQuery<RootInfoQuery, RootInfo>(new RootInfoQuery(id), e.Timestamp), r => r.UpdatedAt, e.Timestamp);
             
             await graph.Serialise(nameof(CanInsertIntoStream));
             log.Info(log.StopWatch.Totals);
@@ -170,25 +174,26 @@ namespace ZES.Tests
             var streamLocator = container.GetInstance<IStreamLocator>();
             var retroactive = container.GetInstance<IRetroactive>();
             var graph = container.GetInstance<IGraph>();
+            var id = $"{nameof(CanInsertIntoStreamMultipleBranch)}-Root";
 
-            await await bus.CommandAsync(new CreateRoot("Root"));
+            await await bus.CommandAsync(new CreateRoot(id));
             var timestamp = timeline.Now;
 
             var branch = await manager.Branch("test0");
             var lastTime = timestamp + Duration.FromSeconds(60); 
             branch.Warp(lastTime);
-            await await bus.CommandAsync(new UpdateRoot("Root"));
+            await await bus.CommandAsync(new UpdateRoot(id));
 
             manager.Reset();
             await manager.Branch("test", timestamp);
-            await await bus.CommandAsync(new UpdateRoot("Root"));
-            var stream = await streamLocator.Find<Root>("Root", branch.Id);
+            await await bus.CommandAsync(new UpdateRoot(id));
+            var stream = await streamLocator.Find<Root>(id, branch.Id);
 
             var e = await eventStore.ReadStream<IEvent>(stream, 0).LastAsync();
 
             manager.Reset();
             await manager.Branch("test0");
-            stream = await streamLocator.Find<Root>("Root", branch.Id);
+            stream = await streamLocator.Find<Root>(id, branch.Id);
             await retroactive.TryInsertIntoStream(stream, 1, new[] { e });
             
             await graph.Serialise(nameof(CanInsertIntoStreamMultipleBranch) + "-test0");
@@ -203,8 +208,8 @@ namespace ZES.Tests
             
             await graph.Serialise(nameof(CanInsertIntoStreamMultipleBranch));
             
-            await bus.Equal(new RootInfoQuery("Root"), r => r.UpdatedAt, lastTime);
-            await bus.Equal(new HistoricalQuery<RootInfoQuery, RootInfo>(new RootInfoQuery("Root"), e.Timestamp), r => r.UpdatedAt, e.Timestamp);
+            await bus.Equal(new RootInfoQuery(id), r => r.UpdatedAt, lastTime);
+            await bus.Equal(new HistoricalQuery<RootInfoQuery, RootInfo>(new RootInfoQuery(id), e.Timestamp), r => r.UpdatedAt, e.Timestamp);
         }
 
         [Fact]
@@ -214,29 +219,30 @@ namespace ZES.Tests
             var bus = container.GetInstance<IBus>();
             var timeline = container.GetInstance<ITimeline>();
             var messageQueue = container.GetInstance<IMessageQueue>();
+            var id = $"{nameof(CanRetroactivelyApplySaga)}-Root";
             
             var timestamp = timeline.Now;
             var lastTime = timestamp + Duration.FromSeconds(60);
             var midTime = timestamp + ((lastTime - timestamp) / 2);
  
-            await await bus.CommandAsync(new CreateRoot("Root"));
-            await bus.IsTrue(new RootInfoQuery("RootCopy"), info => info.CreatedAt < midTime);
+            await await bus.CommandAsync(new CreateRoot(id));
+            await bus.IsTrue(new RootInfoQuery($"{id}Copy"), info => info.CreatedAt < midTime);
 
-            await await bus.CommandAsync(new RetroactiveCommand<UpdateRoot>(new UpdateRoot("Root"), lastTime));
-            await bus.Equal(new HistoricalQuery<RootInfoQuery, RootInfo>(new RootInfoQuery("Root"), lastTime), r => r.UpdatedAt, lastTime);
+            await await bus.CommandAsync(new RetroactiveCommand<UpdateRoot>(new UpdateRoot(id), lastTime));
+            await bus.Equal(new HistoricalQuery<RootInfoQuery, RootInfo>(new RootInfoQuery(id), lastTime), r => r.UpdatedAt, lastTime);
             
-            await await bus.CommandAsync(new RetroactiveCommand<CreateRoot>(new CreateRoot("LastRoot"), lastTime));
+            await await bus.CommandAsync(new RetroactiveCommand<CreateRoot>(new CreateRoot($"{id}Last"), lastTime));
             messageQueue.Alert(new InvalidateProjections());
-            await bus.Equal(new RootInfoQuery("LastRootCopy"), r => r.CreatedAt, lastTime);
+            await bus.Equal(new RootInfoQuery($"{id}LastCopy"), r => r.CreatedAt, lastTime);
 
             await await bus.CommandAsync(
-                new RetroactiveCommand<UpdateRoot>(new UpdateRoot("LastRoot"), lastTime + Duration.FromSeconds(1)));
+                new RetroactiveCommand<UpdateRoot>(new UpdateRoot($"{id}Last"), lastTime + Duration.FromSeconds(1)));
             
-            await bus.Equal(new HistoricalQuery<RootInfoQuery, RootInfo>(new RootInfoQuery("LastRoot"), lastTime + Duration.FromSeconds(1)), r => r.UpdatedAt, lastTime + Duration.FromSeconds(1));
+            await bus.Equal(new HistoricalQuery<RootInfoQuery, RootInfo>(new RootInfoQuery($"{id}Last"), lastTime + Duration.FromSeconds(1)), r => r.UpdatedAt, lastTime + Duration.FromSeconds(1));
             
-            await await bus.CommandAsync(new RetroactiveCommand<CreateRoot>(new CreateRoot("MidRoot"), midTime));
+            await await bus.CommandAsync(new RetroactiveCommand<CreateRoot>(new CreateRoot($"{id}Mid"), midTime));
             messageQueue.Alert(new InvalidateProjections());
-            await bus.Equal(new RootInfoQuery("MidRootCopy"), r => r.CreatedAt, midTime);
+            await bus.Equal(new RootInfoQuery($"{id}MidCopy"), r => r.CreatedAt, midTime);
         }
     }
 }

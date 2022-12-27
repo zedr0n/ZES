@@ -42,12 +42,13 @@ namespace ZES.Tests
             var container = CreateContainer();
             var bus = container.GetInstance<IBus>();
             var repository = container.GetInstance<IEsRepository<IAggregate>>();
+            var id = $"{nameof(CanSaveRoot)}-Root";
             
-            var command = new CreateRoot("Root");
+            var command = new CreateRoot(id);
             await await bus.CommandAsync(command);
 
-            var root = await repository.Find<Root>("Root");
-            Assert.Equal("Root", root.Id);
+            var root = await repository.Find<Root>(id);
+            Assert.Equal(id, root.Id);
         }
 
         [Fact]
@@ -58,10 +59,11 @@ namespace ZES.Tests
             var store = container.GetInstance<IEventStore<IAggregate>>();
             var locator = container.GetInstance<IStreamLocator>();
 
-            var command = new CreateRoot("Root");
+            var id = $"{nameof(CanCalculateStreamHash)}-Root";
+            var command = new CreateRoot(id);
             await await bus.CommandAsync(command);
 
-            var stream = await locator.Find<Root>("Root");
+            var stream = await locator.Find<Root>(id);
             var events = await store.ReadStream<IEvent>(stream, 0).ToList();
             Assert.Single(events);
             Assert.NotEmpty(events.Single().StreamHash);
@@ -69,8 +71,8 @@ namespace ZES.Tests
             var streamHash = await store.GetHash(stream);
             Assert.Equal(events.Single().StreamHash, streamHash);
 
-            await await bus.CommandAsync(new UpdateRoot("Root"));
-            stream = await locator.Find<Root>("Root");
+            await await bus.CommandAsync(new UpdateRoot(id));
+            stream = await locator.Find<Root>(id);
             var otherHash = await store.GetHash(stream, 0);
             Assert.Equal(streamHash, otherHash);
         }
@@ -82,13 +84,14 @@ namespace ZES.Tests
             var bus = container.GetInstance<IBus>();
             var repository = container.GetInstance<IEsRepository<IAggregate>>();
 
-            await await bus.CommandAsync(new CreateRecord("Root"));
+            var id = $"{nameof(CanCreateRecord)}-Root";
+            await await bus.CommandAsync(new CreateRecord(id));
 
-            var record = await repository.Find<Domain.Record>("Root");
-            Assert.Equal("Root", record.Id);
+            var record = await repository.Find<Domain.Record>(id);
+            Assert.Equal(id, record.Id);
 
-            await await bus.CommandAsync(new AddRecord("Root", 1));
-            record = await repository.Find<Domain.Record>("Root");
+            await await bus.CommandAsync(new AddRecord(id, 1));
+            record = await repository.Find<Domain.Record>(id);
             Assert.Equal(1, record.Values.FirstOrDefault().Value);
         }
 
@@ -98,12 +101,13 @@ namespace ZES.Tests
             var container = CreateContainer();
             var bus = container.GetInstance<IBus>();
 
-            await await bus.CommandAsync(new CreateRecord("Root"));
+            var id = $"{nameof(CanCalculateTotalRecord)}-Root";
+            await await bus.CommandAsync(new CreateRecord(id));
 
-            await await bus.CommandAsync(new AddRecord("Root", 1));
+            await await bus.CommandAsync(new AddRecord(id, 1));
             await bus.Equal(new TotalRecordQuery(), r => r.Total, 1.0);
 
-            await await bus.CommandAsync(new AddRecord("Root", 2));
+            await await bus.CommandAsync(new AddRecord(id, 2));
             await bus.Equal(new TotalRecordQuery(), r => r.Total, 3.0);
         }
 
@@ -117,8 +121,9 @@ namespace ZES.Tests
 
             IError error = null;
             errorLog.Observable.Subscribe(e => error = e);
-            
-            var command = new CreateRoot("Root");
+
+            var id = $"{nameof(CannotSaveTwice)}-Root";
+            var command = new CreateRoot(id);
             await await bus.CommandAsync(command);
             await bus.Command(command, 2);
             Assert.Equal(nameof(InvalidOperationException), error.ErrorType); 
@@ -135,15 +140,16 @@ namespace ZES.Tests
             var container = CreateContainer();
             var bus = container.GetInstance<IBus>();
             var repository = container.GetInstance<IEsRepository<IAggregate>>();
-            
-            var command = new CreateRoot("Root1");
+
+            var id = $"{nameof(CanSaveMultipleRoots)}-Root";
+            var command = new CreateRoot($"{id}1");
             await bus.CommandAsync(command);  
             
-            var command2 = new CreateRoot("Root2");
+            var command2 = new CreateRoot($"{id}2");
             await bus.CommandAsync(command2);
 
-            var root = await repository.FindUntil<Root>("Root1");
-            var root2 = await repository.FindUntil<Root>("Root2");
+            var root = await repository.FindUntil<Root>($"{id}1");
+            var root2 = await repository.FindUntil<Root>($"{id}2");
 
             Assert.NotEqual(root.Id, root2.Id);
         }
@@ -153,11 +159,12 @@ namespace ZES.Tests
         {
             var container = CreateContainer();
             var bus = container.GetInstance<IBus>();
-            
-            var command = new CreateRoot("Root");
+
+            var id = $"{nameof(CanProjectRoot)}-Root";
+            var command = new CreateRoot(id);
             await bus.CommandAsync(command); 
             
-            await bus.IsTrue(new RootInfoQuery("Root"), c => c?.CreatedAt != default);
+            await bus.IsTrue(new RootInfoQuery(id), c => c?.CreatedAt != default);
         }
 
         [Fact]
@@ -172,11 +179,12 @@ namespace ZES.Tests
             var otherStats = manager.GetProjection<Stats>();
             Assert.Equal(stats.Guid, otherStats.Guid);
 
-            var rootInfo = manager.GetProjection<RootInfo>("Root");
-            var otherRootInfo = manager.GetProjection<RootInfo>("Root");
+            var id = $"{nameof(CanCreateProjectionManager)}-Root";
+            var rootInfo = manager.GetProjection<RootInfo>(id);
+            var otherRootInfo = manager.GetProjection<RootInfo>(id);
             Assert.Equal(otherRootInfo?.Guid, rootInfo?.Guid);
             
-            var rootInfo2 = manager.GetProjection<RootInfo>("Root2"); 
+            var rootInfo2 = manager.GetProjection<RootInfo>($"{id}2"); 
             
             Assert.NotEqual(rootInfo?.Guid, rootInfo2.Guid);
         }
@@ -187,18 +195,19 @@ namespace ZES.Tests
             var container = CreateContainer();
             var bus = container.GetInstance<IBus>();
             var repo = container.GetInstance<IEsRepository<IAggregate>>();
-            
-            var command = new CreateRoot("UpdateRoot.Root"); 
+
+            var id = $"{nameof(CanUpdateRoot)}-Root";
+            var command = new CreateRoot(id); 
             await await bus.CommandAsync(command);
 
-            var createdAt = (await bus.QueryUntil(new RootInfoQuery("UpdateRoot.Root"), r => r.CreatedAt != default)).CreatedAt;
+            var createdAt = (await bus.QueryUntil(new RootInfoQuery(id), r => r.CreatedAt != default)).CreatedAt;
             
-            var updateCommand = new UpdateRoot("UpdateRoot.Root");
+            var updateCommand = new UpdateRoot(id);
             await await bus.CommandAsync(updateCommand);
 
-            await bus.IsTrue(new RootInfoQuery("UpdateRoot.Root"), r => r.UpdatedAt > createdAt);
+            await bus.IsTrue(new RootInfoQuery(id), r => r.UpdatedAt > createdAt);
 
-            var root = await repo.Find<Root>("UpdateRoot.Root");
+            var root = await repo.Find<Root>(id);
             
             var graph = container.GetInstance<IGraph>();
             await graph.Serialise(nameof(CanUpdateRoot));
@@ -215,24 +224,25 @@ namespace ZES.Tests
 
             var i = 0;
             var stopWatch = Stopwatch.StartNew();
+            var id = $"{nameof(CanCreateMultipleRoots)}-Root";
             while ( i < numRoots )
             {
-                await await bus.CommandAsync(new CreateRoot($"Root{i}"));
+                await await bus.CommandAsync(new CreateRoot($"{id}{i}"));
                 i++;
             }
            
-            await repository.FindUntil<Root>($"Root{numRoots - 1}");
+            await repository.FindUntil<Root>($"{id}{numRoots - 1}");
             log.Info($"No threading : {stopWatch.ElapsedMilliseconds}ms per {numRoots}");
             
             stopWatch = Stopwatch.StartNew();
             i = 0;
             while ( i < numRoots )
             {
-                await bus.CommandAsync(new CreateRoot($"ThreadRoot{i}"));
+                await bus.CommandAsync(new CreateRoot($"{id}Thread{i}"));
                 i++;
             }
             
-            await repository.FindUntil<Root>($"ThreadRoot{numRoots - 1}");
+            await repository.FindUntil<Root>($"{id}Thread{numRoots - 1}");
             log.Info($"Threading : {stopWatch.ElapsedMilliseconds}ms per {numRoots}");
         }
 
@@ -242,15 +252,16 @@ namespace ZES.Tests
             var container = CreateContainer();
             var bus = container.GetInstance<IBus>();
 
-            var record = new CreateRecord("Root");
+            var id = $"{nameof(CanRecordRoot)}-Root";
+            var record = new CreateRecord(id);
             await await bus.CommandAsync(record);
 
             var time = (DateTime.UtcNow.ToInstant() + Duration.FromMinutes(10)).ToTime(); // (DateTimeOffset)new DateTime(2019, 1, 1, 0, 0, 0, DateTimeKind.Utc); 
             
-            var command = new AddRecord("Root", 1) { Timestamp = time };
+            var command = new AddRecord(id, 1) { Timestamp = time };
             await await bus.CommandAsync(command);
 
-            await bus.Equal(new LastRecordQuery("Root"), c => c.TimeStamp, time);
+            await bus.Equal(new LastRecordQuery(id), c => c.TimeStamp, time);
         }
         
         [Fact]
@@ -259,11 +270,12 @@ namespace ZES.Tests
             var container = CreateContainer();
             var bus = container.GetInstance<IBus>();
             var timeline = container.GetInstance<ITimeline>();
-            
-            var command = new CreateRoot("HistoricalRoot");
+
+            var id = $"{nameof(CanHistoricalProjectRoot)}-Root";
+            var command = new CreateRoot($"{id}Historical");
             await await bus.CommandAsync(command);
 
-            await await bus.CommandAsync(new CreateRoot("TempRoot"));
+            await await bus.CommandAsync(new CreateRoot($"{id}Temp"));
 
             var statsQuery = new StatsQuery();
             var now = timeline.Now;
@@ -274,17 +286,17 @@ namespace ZES.Tests
             var liveQuery = new HistoricalQuery<StatsQuery, Stats>(statsQuery, DateTimeOffset.UtcNow.ToInstant().ToTime());
             await bus.Equal(liveQuery, s => s.NumberOfRoots, 2);
 
-            await await bus.CommandAsync(new UpdateRoot("HistoricalRoot"));            
-            var historicalInfo = new HistoricalQuery<RootInfoQuery, RootInfo>(new RootInfoQuery("HistoricalRoot"), now);
+            await await bus.CommandAsync(new UpdateRoot($"{id}Historical"));            
+            var historicalInfo = new HistoricalQuery<RootInfoQuery, RootInfo>(new RootInfoQuery($"{id}Historical"), now);
             await bus.IsTrue(historicalInfo, i => i.CreatedAt == i.UpdatedAt);
-            await bus.IsTrue(new RootInfoQuery("HistoricalRoot"), i => i.UpdatedAt > i.CreatedAt);
+            await bus.IsTrue(new RootInfoQuery($"{id}Historical"), i => i.UpdatedAt > i.CreatedAt);
 
             historicalInfo =
-                new HistoricalQuery<RootInfoQuery, RootInfo>(new RootInfoQuery("HistoricalRoot"), DateTimeOffset.UtcNow.ToInstant().ToTime());
+                new HistoricalQuery<RootInfoQuery, RootInfo>(new RootInfoQuery($"{id}Historical"), DateTimeOffset.UtcNow.ToInstant().ToTime());
             await bus.IsTrue(historicalInfo, i => i.UpdatedAt > i.CreatedAt);
             
             historicalInfo =
-                new HistoricalQuery<RootInfoQuery, RootInfo>(new RootInfoQuery("TempRoot"), DateTimeOffset.UtcNow.ToInstant().ToTime());
+                new HistoricalQuery<RootInfoQuery, RootInfo>(new RootInfoQuery($"{id}Temp"), DateTimeOffset.UtcNow.ToInstant().ToTime());
             await bus.IsTrue(historicalInfo, i => i.UpdatedAt == i.CreatedAt);
         }
 
@@ -296,18 +308,19 @@ namespace ZES.Tests
             var bus = container.GetInstance<IBus>();
             var log = container.GetInstance<ILog>();
 
+            var id = $"{nameof(CanProjectALotOfRoots)}-Root";
             var rootId = numRoots; 
             var stopWatch = Stopwatch.StartNew();
             while (rootId > 0)
             {
-                var command = new CreateRoot($"Root{rootId}");
+                var command = new CreateRoot($"{id}{rootId}");
                 await bus.CommandAsync(command);
                 rootId--;
             }
 
             // await bus.IsTrue(new StatsQuery(), s => s?.NumberOfRoots == numRoots, TimeSpan.FromMilliseconds(numRoots));
             await bus.Equal(new StatsQuery(), s => s?.NumberOfRoots, numRoots);
-            await bus.Equal(new RootInfoQuery("Root1"), r => r.RootId, "Root1");
+            await bus.Equal(new RootInfoQuery($"{id}1"), r => r.RootId, $"{id}1");
             log.Info($"{Configuration.ThreadsPerInstance} threads : {stopWatch.ElapsedMilliseconds}ms per {numRoots}");
         }
 
@@ -316,15 +329,16 @@ namespace ZES.Tests
         {
             var container = CreateContainer(new List<Action<Container>> { Config.RegisterSagas });
             var bus = container.GetInstance<IBus>();
-            
-            var command = new CreateRoot("Root");
-            await bus.CommandAsync(command);
-            await bus.CommandAsync(new UpdateRoot("Root"));
 
-            await bus.IsTrue(new RootInfoQuery("RootCopy"), r => r.UpdatedAt >= r.CreatedAt);
+            var id = $"{nameof(CanUseSaga)}";
+            var command = new CreateRoot(id);
+            await bus.CommandAsync(command);
+            await bus.CommandAsync(new UpdateRoot(id));
+
+            await bus.IsTrue(new RootInfoQuery($"{id}Copy"), r => r.UpdatedAt >= r.CreatedAt);
             
-            await bus.IsTrue(new RootInfoQuery("RootCopy"), r => r.CreatedAt != default);
-            await bus.IsTrue(new RootInfoQuery("RootCopy"), r => r.UpdatedAt == r.CreatedAt);
+            await bus.IsTrue(new RootInfoQuery($"{id}Copy"), r => r.CreatedAt != default);
+            await bus.IsTrue(new RootInfoQuery($"{id}Copy"), r => r.UpdatedAt == r.CreatedAt);
 
             var graph = container.GetInstance<IGraph>();
             await graph.Serialise();
@@ -336,21 +350,22 @@ namespace ZES.Tests
         {
             var container = CreateContainer(new List<Action<Container>> { Config.RegisterSagas });
             var bus = container.GetInstance<IBus>();
-            
+
+            var id = $"{nameof(CanParallelizeSagas)}";
             var rootId = numRoots; 
             while (rootId > 0)
             {
-                var command = new CreateRoot($"Root{rootId}");
+                var command = new CreateRoot($"{id}{rootId}");
                 await bus.CommandAsync(command);
                 rootId--;
             }
 
-            await bus.QueryUntil(new RootInfoQuery("Root1"));  
+            await bus.QueryUntil(new RootInfoQuery($"{id}1"));  
             
             rootId = numRoots;
             while (rootId > 0)
             {
-                var updateCommand = new UpdateRoot($"Root{rootId}");
+                var updateCommand = new UpdateRoot($"{id}{rootId}");
                 await bus.CommandAsync(updateCommand);
                 rootId--;
             }
@@ -369,22 +384,23 @@ namespace ZES.Tests
             var bus = container.GetInstance<IBus>();
             var messageQueue = container.GetInstance<IMessageQueue>();
 
+            var id = $"{nameof(CanRebuildProjection)}-Root";
             var rootId = numberOfRoots;
             while (rootId > 0)
             {
-                var command = new CreateRoot($"Root{rootId}");
+                var command = new CreateRoot($"{id}{rootId}");
                 await bus.CommandAsync(command);
                 rootId--;
             }
             
-            var query = new RootInfoQuery("Root1");
+            var query = new RootInfoQuery($"{id}1");
             await bus.QueryUntil(query, c => c.CreatedAt != default);
             messageQueue.Alert(new InvalidateProjections());
 
             var statsQuery = new StatsQuery();
             await bus.IsTrue(statsQuery, s => s?.NumberOfRoots == numberOfRoots);
             
-            var newCommand = new CreateRoot("OtherRoot");
+            var newCommand = new CreateRoot($"{id}Other");
             await bus.CommandAsync(newCommand);
             await bus.IsTrue(statsQuery, s => s?.NumberOfRoots == numberOfRoots + 1);
         }
@@ -398,10 +414,11 @@ namespace ZES.Tests
             var messageQueue = container.GetInstance<IMessageQueue>();
             var log = container.GetInstance<ILog>();
 
+            var id = $"{nameof(CanCancelProjection)}-Root";
             var rootId = numberOfRoots;
             while (rootId > 0)
             {
-                var command = new CreateRoot($"Root{rootId}");
+                var command = new CreateRoot($"{id}{rootId}");
                 await bus.CommandAsync(command);
                 rootId--;
             }
@@ -458,15 +475,16 @@ namespace ZES.Tests
             var bus = container.GetInstance<IBus>();
             var repository = container.GetInstance<IEsRepository<IAggregate>>();
 
-            await await bus.CommandAsync(new CreateRoot("Root"));
-            await await bus.CommandAsync(new UpdateRoot("Root"));
-            await await bus.CommandAsync(new CreateSnapshot<Root>("Root"));
-            await await bus.CommandAsync(new UpdateRoot("Root"));
+            var id = $"{nameof(CanCreateSnapshot)}-Root";
+            await await bus.CommandAsync(new CreateRoot(id));
+            await await bus.CommandAsync(new UpdateRoot(id));
+            await await bus.CommandAsync(new CreateSnapshot<Root>(id));
+            await await bus.CommandAsync(new UpdateRoot(id));
 
-            var root = await repository.Find<Root>("Root");
+            var root = await repository.Find<Root>(id);
             Assert.Equal(2, root.SnapshotVersion);
 
-            await bus.QueryUntil(new RootInfoQuery("Root"), r => r != null && r.UpdatedAt > r.CreatedAt);
+            await bus.QueryUntil(new RootInfoQuery(id), r => r != null && r.UpdatedAt > r.CreatedAt);
         }
 
         [Fact]
@@ -476,7 +494,7 @@ namespace ZES.Tests
             var bus = container.GetInstance<IBus>();
             var repository = container.GetInstance<IEsRepository<ISaga>>();
             var manager = container.GetInstance<IBranchManager>();
-            var id = "SnapshotRoot";
+            var id = $"{nameof(CanCreateSagaSnapshot)}-Root";
             
             await await bus.CommandAsync(new CreateRoot(id));
             await await bus.CommandAsync(new UpdateRoot(id));
@@ -501,7 +519,7 @@ namespace ZES.Tests
             var container = CreateContainer();
             var bus = container.GetInstance<IBus>();
 
-            var id = nameof(CanHaveListsInEvents); 
+            var id = $"{nameof(CanHaveListsInEvents)}-Root"; 
             await await bus.CommandAsync(new CreateRoot(id));
 
             var lst = new List<string>()

@@ -16,6 +16,9 @@ using ZES.Infrastructure;
 using ZES.Infrastructure.Causality;
 using ZES.Interfaces;
 using ZES.Interfaces.Causality;
+using ZES.Interfaces.Domain;
+using ZES.Interfaces.EventStore;
+using ZES.Persistence.Redis;
 using ZES.Tests.Utils;
 using ILogger = NLog.ILogger;
 
@@ -76,7 +79,7 @@ namespace ZES.Tests
             return result;
         }
         
-        protected virtual Container CreateContainer(List<Action<Container>> registrations = null) 
+        protected virtual Container CreateContainer(List<Action<Container>> registrations = null, bool resetDb = false, int db = 0) 
         {
             lock (_lock)
             {
@@ -95,7 +98,7 @@ namespace ZES.Tests
                 
                 // container.Register<IGraph, Graph>(Lifestyle.Singleton);
                 container.Register<IGraph, NullGraph>(Lifestyle.Singleton);
-                if (!Configuration.UseSqlStore && Configuration.UseEmbeddedTcpStore)
+                if (Configuration.EventStoreBackendType == EventStoreBackendType.EventStore && Configuration.UseEmbeddedTcpStore)
                     container.Register(GetEmbeddedConnection, Lifestyle.Singleton);
                 container.Options.AllowOverridingRegistrations = false;
                 
@@ -106,6 +109,18 @@ namespace ZES.Tests
 
                 // container.Verify();
                 root.Verify(container);
+                if (resetDb)
+                {
+                    var eventStore = container.GetInstance<IEventStore<IAggregate>>();
+                    eventStore.ResetDatabase().Wait();
+                }
+
+                if (db != 0 && Configuration.EventStoreBackendType == EventStoreBackendType.Redis)
+                {
+                    var connection = container.GetInstance<IRedisConnection>();
+                    connection.Database = db;
+                }
+ 
                 return container;
             }
         }

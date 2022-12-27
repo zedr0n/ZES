@@ -10,6 +10,27 @@ using ZES.Interfaces.Clocks;
 namespace ZES.Infrastructure
 {
     /// <summary>
+    /// Event store backend type
+    /// </summary>
+    public enum EventStoreBackendType
+    {
+        /// <summary>
+        /// SQLStreamStore backend
+        /// </summary>
+        SqlStreamStore,
+        
+        /// <summary>
+        /// EventStore backend
+        /// </summary>
+        EventStore,
+        
+        /// <summary>
+        /// Redis Streams backend
+        /// </summary>
+        Redis,
+    }
+    
+    /// <summary>
     /// Static configuration instance
     /// </summary>
     public static class Configuration
@@ -31,7 +52,7 @@ namespace ZES.Infrastructure
         {
             var env = Environment.GetEnvironmentVariable("UseTcpStore".ToUpper());
             if (env != null && 1.ToString() == env)
-                UseSqlStore = false;
+                EventStoreBackendType = EventStoreBackendType.EventStore;
             ReplicaName = Environment.GetEnvironmentVariable("ReplicaName".ToUpper()) ?? "None";
         }
 
@@ -86,6 +107,11 @@ namespace ZES.Infrastructure
         public static LimitedConcurrencyLevelTaskScheduler LimitedTaskScheduler { get; } =
             new LimitedConcurrencyLevelTaskScheduler(ThreadsPerInstance);
 
+        /// <summary>
+        /// Gets a value indicating which backend to use for event store
+        /// </summary>
+        public static EventStoreBackendType EventStoreBackendType { get; } = EventStoreBackendType.SqlStreamStore;
+        
         /// <summary>
         /// Gets a value indicating whether to use SQLStreamStore instead of Event Store
         /// </summary>

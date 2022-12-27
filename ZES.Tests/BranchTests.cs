@@ -7,6 +7,7 @@ using NodaTime.Extensions;
 using SimpleInjector;
 using Xunit;
 using Xunit.Abstractions;
+using ZES.Infrastructure;
 using ZES.Infrastructure.Alerts;
 using ZES.Infrastructure.Branching;
 using ZES.Infrastructure.Domain;
@@ -48,15 +49,16 @@ namespace ZES.Tests
             var manager = container.GetInstance<IBranchManager>();
             var locator = container.GetInstance<IStreamLocator>();
 
-            await await bus.CommandAsync(new CreateRoot("Root"));
+            var id = $"{nameof(CanBranchWithMultipleAncestors)}-Root";
+            await await bus.CommandAsync(new CreateRoot(id));
             await manager.Branch("test");
 
-            await await bus.CommandAsync(new UpdateRoot("Root"));
+            await await bus.CommandAsync(new UpdateRoot(id));
             await manager.Branch("test2");
             
-            await await bus.CommandAsync(new UpdateRoot("Root"));
+            await await bus.CommandAsync(new UpdateRoot(id));
 
-            var stream = await locator.Find<Root>("Root", "test2");
+            var stream = await locator.Find<Root>(id, "test2");
             Assert.Equal(2, stream.Ancestors.Count());
             
             var streamBranch = stream.Branch("test3", 1);
@@ -75,14 +77,15 @@ namespace ZES.Tests
             var timeline = container.GetInstance<ITimeline>();
 
             var manager = container.GetInstance<IBranchManager>();
-            
-            await await bus.CommandAsync(new CreateRoot("Root"));
-            var stream = await locator.Find<Root>("Root");
+
+            var id = $"{nameof(CanCorrectlyGetBranchStreamHash)}-Root";
+            await await bus.CommandAsync(new CreateRoot(id));
+            var stream = await locator.Find<Root>(id);
             var rootCreatedHash = await store.GetHash(stream);
             var now = timeline.Now;
             
-            await await bus.CommandAsync(new UpdateRoot("Root"));
-            stream = await locator.Find<Root>("Root");
+            await await bus.CommandAsync(new UpdateRoot(id));
+            stream = await locator.Find<Root>(id);
             var rootUpdatedHash = await store.GetHash(stream);
 
             var branch = await manager.Branch("test", now);
@@ -107,9 +110,10 @@ namespace ZES.Tests
             var bus = container.GetInstance<IBus>();
             var locator = container.GetInstance<IStreamLocator>();
             var store = container.GetInstance<IEventStore<IAggregate>>();
-            
-            await await bus.CommandAsync(new CreateRoot("Root"));
-            var stream = await locator.Find<Root>("Root");
+
+            var id = $"{nameof(CanGetEmptyStreamHash)}-Root";
+            await await bus.CommandAsync(new CreateRoot(id));
+            var stream = await locator.Find<Root>(id);
             var emptyStream = stream.Branch("test", ExpectedVersion.EmptyStream);
             var hash = await store.GetHash(emptyStream);
             Assert.Empty(hash);
@@ -121,18 +125,19 @@ namespace ZES.Tests
             var container = CreateContainer(new List<Action<Container>>() { Config.RegisterSagas });
             var bus = container.GetInstance<IBus>();
             var time = container.GetInstance<IBranchManager>();
-            
-            var command = new CreateRoot("Root");
+
+            var id = $"{nameof(CanMergeTimeline)}-Root";
+            var command = new CreateRoot(id);
             await await bus.CommandAsync(command);
 
             await time.Branch("test");
             
-            await await bus.CommandAsync(new UpdateRoot("Root"));
+            await await bus.CommandAsync(new UpdateRoot(id));
             
-            var infoQuery = new RootInfoQuery("Root");
+            var infoQuery = new RootInfoQuery(id);
             await bus.IsTrue(infoQuery, r => r.CreatedAt < r.UpdatedAt);
             
-            await await bus.CommandAsync(new CreateRoot("TestRoot"));
+            await await bus.CommandAsync(new CreateRoot($"{id}Test"));
 
             time.Reset();
             
@@ -156,14 +161,15 @@ namespace ZES.Tests
             var container = CreateContainer(new List<Action<Container>>() { });
             var bus = container.GetInstance<IBus>();
             var time = container.GetInstance<IBranchManager>();
-            
-            var command = new CreateRoot("Root");
+
+            var id = $"{nameof(CanUpdateTimeline)}-Root";
+            var command = new CreateRoot(id);
             await await bus.CommandAsync(command);
 
             await time.Branch("test");
             time.Reset();
             
-            await await bus.CommandAsync(new UpdateRoot("Root"));
+            await await bus.CommandAsync(new UpdateRoot(id));
             await time.Branch("test");
             var mergeResult = await time.Merge(BranchManager.Master);
             Assert.True(mergeResult.success);
@@ -176,18 +182,19 @@ namespace ZES.Tests
             var container = CreateContainer(new List<Action<Container>>() { Config.RegisterSagas });
             var bus = container.GetInstance<IBus>();
             var manager = container.GetInstance<IBranchManager>();
-            
-            var command = new CreateRoot("Root");
+
+            var id = $"{nameof(CanMergeWithoutNewStreams)}-Root";
+            var command = new CreateRoot(id);
             await await bus.CommandAsync(command);
             
             await manager.Branch("test");
             
-            await await bus.CommandAsync(new UpdateRoot("Root"));
+            await await bus.CommandAsync(new UpdateRoot(id));
             
-            var infoQuery = new RootInfoQuery("Root");
+            var infoQuery = new RootInfoQuery(id);
             await bus.IsTrue(infoQuery, r => r.CreatedAt < r.UpdatedAt);
 
-            await await bus.CommandAsync(new CreateRoot("BranchRoot"));
+            await await bus.CommandAsync(new CreateRoot($"{id}Branch"));
 
             manager.Reset();
             
@@ -206,11 +213,12 @@ namespace ZES.Tests
             var bus = container.GetInstance<IBus>();
             var manager = container.GetInstance<IBranchManager>();
 
-            await await bus.CommandAsync(new CreateRoot("Root"));
+            var id = $"{nameof(CanQueryTimeline)}-Root";
+            await await bus.CommandAsync(new CreateRoot(id));
             await bus.Equal(new StatsQuery(), s => s.NumberOfRoots, 1);
 
             await manager.Branch("Branch");
-            await await bus.CommandAsync(new CreateRoot("OtherRoot"));
+            await await bus.CommandAsync(new CreateRoot($"{id}Other"));
             await bus.Equal(new StatsQuery(), s => s.NumberOfRoots, 2);
 
             manager.Reset();
@@ -229,25 +237,26 @@ namespace ZES.Tests
             var manager = container.GetInstance<IBranchManager>();
             var queue = container.GetInstance<IMessageQueue>();
 
-            await await bus.CommandAsync(new CreateRecord("Root"));
-            await await bus.CommandAsync(new AddRecord("Root", 1));
-            await bus.IsTrue(new LastRecordQuery("Root"), r => (int)r.Value == 1);
+            var id = $"{nameof(CanMergeHistory)}-Root";
+            await await bus.CommandAsync(new CreateRecord(id));
+            await await bus.CommandAsync(new AddRecord(id, 1));
+            await bus.IsTrue(new LastRecordQuery(id), r => (int)r.Value == 1);
 
             var then = new DateTime(1970, 1, 1, 12, 0, 0, DateTimeKind.Utc).ToInstant().ToTime(); 
             await manager.Branch("Branch", then);
             queue.Alert(new InvalidateProjections());
-            await bus.Equal(new LastRecordQuery("Root"), r => r.Value, -1);
+            await bus.Equal(new LastRecordQuery(id), r => r.Value, -1);
             
-            await await bus.CommandAsync(new CreateRecord("InitialRoot"));
-            await await bus.CommandAsync(new AddRecord("InitialRoot", 10));
+            await await bus.CommandAsync(new CreateRecord($"{id}Initial"));
+            await await bus.CommandAsync(new AddRecord($"{id}Initial", 10));
 
             manager.Reset();
             
             // await manager.Branch(BranchManager.Master);
             await manager.Merge("Branch");
             
-            await bus.IsTrue(new LastRecordQuery("Root"), r => (int)r.Value == 1);
-            await bus.IsTrue(new HistoricalQuery<LastRecordQuery, LastRecord>(new LastRecordQuery("Root"), then), r => (int)r.Value == 10);
+            await bus.IsTrue(new LastRecordQuery(id), r => (int)r.Value == 1);
+            await bus.IsTrue(new HistoricalQuery<LastRecordQuery, LastRecord>(new LastRecordQuery(id), then), r => (int)r.Value == 10);
         }
         
         [Fact]
@@ -259,8 +268,9 @@ namespace ZES.Tests
             var manager = container.GetInstance<IBranchManager>();
             var locator = container.GetInstance<IStreamLocator>();
             var queue = container.GetInstance<IMessageQueue>();
-            
-            var command = new CreateRoot("Root");
+
+            var id = $"{nameof(CanCreateClone)}-Root";
+            var command = new CreateRoot(id);
             await await bus.CommandAsync(command);
 
             var timeline = container.GetInstance<ITimeline>();
@@ -271,30 +281,30 @@ namespace ZES.Tests
             manager.Reset();
             Assert.Equal(BranchManager.Master, manager.ActiveBranch);
             
-            await await bus.CommandAsync(new UpdateRoot("Root"));
+            await await bus.CommandAsync(new UpdateRoot(id));
 
             await manager.Branch("test");
 
             Assert.Equal("test", timeline.Id);
-            var root = await repository.Find<Root>("Root");
+            var root = await repository.Find<Root>(id);
            
-            Assert.Equal("Root", root.Id);
+            Assert.Equal(id, root.Id);
 
-            await bus.IsTrue(new RootInfoQuery("Root"), r => r.CreatedAt != default && r.CreatedAt == r.UpdatedAt);
+            await bus.IsTrue(new RootInfoQuery(id), r => r.CreatedAt != default && r.CreatedAt == r.UpdatedAt);
 
-            await await bus.CommandAsync(new CreateRoot("TestRoot"));
-            await bus.IsTrue(new RootInfoQuery("TestRoot"), r => r.CreatedAt != default);
+            await await bus.CommandAsync(new CreateRoot($"{id}Test"));
+            await bus.IsTrue(new RootInfoQuery($"{id}Test"), r => r.CreatedAt != default);
             
-            Assert.NotNull(locator.Find<TestSaga>("Root"));
+            Assert.NotNull(locator.Find<TestSaga>(id));
 
             manager.Reset();
-            await bus.IsTrue(new RootInfoQuery("Root"), r => r.CreatedAt != r.UpdatedAt);
-            await bus.IsTrue(new RootInfoQuery("TestRoot"), r => r.CreatedAt == r.UpdatedAt);
+            await bus.IsTrue(new RootInfoQuery(id), r => r.CreatedAt != r.UpdatedAt);
+            await bus.IsTrue(new RootInfoQuery($"{id}Test"), r => r.CreatedAt == r.UpdatedAt);
 
             await manager.Branch("test");
             queue.Alert(new InvalidateProjections());
-            await bus.IsTrue(new RootInfoQuery("TestRoot"), r => r.CreatedAt != default);
-            await bus.IsTrue(new RootInfoQuery("Root"), r => r.CreatedAt != default && r.CreatedAt == r.UpdatedAt);
+            await bus.IsTrue(new RootInfoQuery($"{id}Test"), r => r.CreatedAt != default);
+            await bus.IsTrue(new RootInfoQuery(id), r => r.CreatedAt != default && r.CreatedAt == r.UpdatedAt);
 
             var graph = container.GetInstance<IGraph>();
             await graph.Serialise();
@@ -307,8 +317,9 @@ namespace ZES.Tests
             var bus = container.GetInstance<IBus>();
             var timeTraveller = container.GetInstance<IBranchManager>();
             var queue = container.GetInstance<IMessageQueue>();
-            
-            var command = new CreateRoot("Root");
+
+            var id = $"{nameof(CanMergeGrandTimeline)}-Root";
+            var command = new CreateRoot(id);
             await await bus.CommandAsync(command);
 
             var timeline = container.GetInstance<ITimeline>();
@@ -316,12 +327,12 @@ namespace ZES.Tests
 
             await timeTraveller.Branch("test");
 
-            await await bus.CommandAsync(new CreateRoot("testRoot"));
+            await await bus.CommandAsync(new CreateRoot($"{id}Test"));
 
             await timeTraveller.Branch("grandTest");
             queue.Alert(new InvalidateProjections());
 
-            await await bus.CommandAsync(new CreateRoot("testRoot2"));
+            await await bus.CommandAsync(new CreateRoot($"{id}Test2"));
             await bus.IsTrue(new StatsQuery(), s => s.NumberOfRoots == 3);
             
             await timeTraveller.Branch("test");
@@ -349,8 +360,9 @@ namespace ZES.Tests
             var bus = container.GetInstance<IBus>();
             var timeTraveller = container.GetInstance<IBranchManager>();
             var queue = container.GetInstance<IMessageQueue>();
-            
-            var command = new CreateRoot("Root");
+
+            var id = $"{nameof(CanMergeGrandTimelineSequentially)}-Root";
+            var command = new CreateRoot(id);
             await await bus.CommandAsync(command);
 
             var timeline = container.GetInstance<ITimeline>();
@@ -358,14 +370,14 @@ namespace ZES.Tests
 
             await timeTraveller.Branch("test");
 
-            await await bus.CommandAsync(new CreateRoot("testRoot"));
+            await await bus.CommandAsync(new CreateRoot($"{id}Test"));
             timeTraveller.Reset();
             await timeTraveller.Merge("test");
 
             await timeTraveller.Branch("test");
             await timeTraveller.Branch("grandTest");
 
-            await await bus.CommandAsync(new CreateRoot("testRoot2"));
+            await await bus.CommandAsync(new CreateRoot($"{id}Test2"));
             await bus.IsTrue(new StatsQuery(), s => s.NumberOfRoots == 3);
 
             await timeTraveller.Branch("test");
@@ -388,11 +400,12 @@ namespace ZES.Tests
             var container = CreateContainer();
             var bus = container.GetInstance<IBus>();
             var repository = container.GetInstance<IEsRepository<IAggregate>>();
-            
-            var command = new CreateRoot("Root");
+
+            var id = $"{nameof(CanCreateEmpty)}-Root";
+            var command = new CreateRoot(id);
             await await bus.CommandAsync(command);
 
-            await repository.Find<Root>("Root");
+            await repository.Find<Root>(id);
             var timeline = container.GetInstance<ITimeline>();
             Assert.Equal("master", timeline.Id);
            
@@ -406,7 +419,7 @@ namespace ZES.Tests
             timeTraveller.Reset();
             
             Assert.Equal("master", timeline.Id);
-            await repository.FindUntil<Root>("Root");
+            await repository.FindUntil<Root>(id);
             await bus.IsTrue(new StatsQuery(), s => s.NumberOfRoots == 1);
         }
         
@@ -417,7 +430,8 @@ namespace ZES.Tests
             var bus = container.GetInstance<IBus>();
             var remote = container.GetInstance<IRemote>();
 
-            await await bus.CommandAsync(new CreateRoot("Root"));
+            var id = $"{nameof(CanUseNullRemote)}-Root";
+            await await bus.CommandAsync(new CreateRoot(id));
 
             var pushResult = await remote.Push(BranchManager.Master);
             Assert.Equal(Status.Success, pushResult.ResultStatus);
@@ -429,12 +443,16 @@ namespace ZES.Tests
         [Fact]
         public async void CanPushToRemote()
         {
+            if (Configuration.EventStoreBackendType != EventStoreBackendType.SqlStreamStore)
+                return;
+
             var container = CreateContainer(new List<Action<Container>> { c => c.UseLocalStore() });
             var bus = container.GetInstance<IBus>();
             var remote = container.GetInstance<IRemote>();
 
-            await await bus.CommandAsync(new CreateRoot("Root"));
-            await await bus.CommandAsync(new CreateRoot("Root2"));
+            var id = $"{nameof(CanPushToRemote)}-Root";
+            await await bus.CommandAsync(new CreateRoot(id));
+            await await bus.CommandAsync(new CreateRoot($"{id}2"));
 
             var pushResult = await remote.Push(BranchManager.Master);
             Assert.Equal(Status.Success, pushResult.ResultStatus);
@@ -453,15 +471,16 @@ namespace ZES.Tests
         [Fact]
         public async void CanPushToGenericRemote()
         {
-            var container = CreateContainer(new List<Action<Container>> { c => c.UseLocalStore() });
+            var container = CreateContainer(resetDb: true);
             var bus = container.GetInstance<IBus>();
             var remoteManager = container.GetInstance<IRemoteManager>();
             var localReplica = container.GetInstance<IFactory<LocalReplica>>().Create();
             remoteManager.RegisterLocalReplica("Server", localReplica.AggregateEventStore, localReplica.SagaEventStore, localReplica.CommandLog);
             var remote = remoteManager.GetGenericRemote("Server");
 
-            await await bus.CommandAsync(new CreateRoot("Root"));
-            await await bus.CommandAsync(new CreateRoot("Root2"));
+            var id = $"{nameof(CanPushToGenericRemote)}-Root";
+            await await bus.CommandAsync(new CreateRoot(id));
+            await await bus.CommandAsync(new CreateRoot($"{id}2"));
 
             var pushResult = await remote.Push(BranchManager.Master);
             Assert.Equal(Status.Success, pushResult.ResultStatus);
@@ -480,28 +499,29 @@ namespace ZES.Tests
         [Fact]
         public async void CanCancelPushToGenericRemote()
         {
-            var container = CreateContainer();
+            var container = CreateContainer(resetDb: true);
             var bus = container.GetInstance<IBus>();
             var remoteManager = container.GetInstance<IRemoteManager>();
             var localReplica = container.GetInstance<IFactory<LocalReplica>>().Create();
             remoteManager.RegisterLocalReplica("Server", localReplica.AggregateEventStore, localReplica.SagaEventStore, localReplica.CommandLog);
             var remote = remoteManager.GetGenericRemote("Server");
 
-            await await bus.CommandAsync(new CreateRoot("Root"));
+            var id = $"{nameof(CanCancelPushToGenericRemote)}-Root";
+            await await bus.CommandAsync(new CreateRoot(id));
             await remote.Push(BranchManager.Master);
 
-            var otherContainer = CreateContainer();
+            var otherContainer = CreateContainer(db: 1);
             var otherRemoteManager = otherContainer.GetInstance<IRemoteManager>();
             otherRemoteManager.RegisterLocalReplica("Server", localReplica.AggregateEventStore, localReplica.SagaEventStore, localReplica.CommandLog);
             var otherRemote = otherRemoteManager.GetGenericRemote("Server");
             await otherRemote.Pull(BranchManager.Master);
             
             var otherBus = otherContainer.GetInstance<IBus>();
-            await await otherBus.CommandAsync(new UpdateRoot("Root"));
+            await await otherBus.CommandAsync(new UpdateRoot(id));
 
             await otherRemote.Push(BranchManager.Master);
            
-            await await bus.CommandAsync(new UpdateRoot("Root"));
+            await await bus.CommandAsync(new UpdateRoot(id));
             var pushResult = await remote.Push(BranchManager.Master);
             Assert.Equal(Status.Failed, pushResult.ResultStatus);
         }
@@ -509,14 +529,15 @@ namespace ZES.Tests
         [Fact]
         public async void CanUpdateGenericRemote()
         {
-            var container = CreateContainer(new List<Action<Container>> { c => c.UseLocalStore() });
+            var container = CreateContainer(resetDb: true);
             var bus = container.GetInstance<IBus>();
             var remoteManager = container.GetInstance<IRemoteManager>();
             var localReplica = container.GetInstance<IFactory<LocalReplica>>().Create();
             remoteManager.RegisterLocalReplica("Server", localReplica.AggregateEventStore, localReplica.SagaEventStore, localReplica.CommandLog);
             var remote = remoteManager.GetGenericRemote("Server");
 
-            await await bus.CommandAsync(new CreateRoot("Root"));
+            var id = $"{nameof(CanUpdateGenericRemote)}-Root";
+            await await bus.CommandAsync(new CreateRoot(id));
 
             var pushResult = await remote.Push(BranchManager.Master);
             Assert.Equal(Status.Success, pushResult.ResultStatus);
@@ -525,13 +546,13 @@ namespace ZES.Tests
             Assert.Equal(2, pushResult.NumberOfStreams);
             Assert.Equal(2, pushResult.NumberOfMessages);
 
-            await await bus.CommandAsync(new UpdateRoot("Root"));
+            await await bus.CommandAsync(new UpdateRoot(id));
             var pushResultAfter = await remote.Push(BranchManager.Master);
             Assert.Equal(Status.Success, pushResultAfter.ResultStatus);
             Assert.Equal(2, pushResult.NumberOfStreams);
             Assert.Equal(2, pushResult.NumberOfMessages);
             
-            var otherContainer = CreateContainer();
+            var otherContainer = CreateContainer(db: 1);
             var otherBus = otherContainer.GetInstance<IBus>();
             var otherManager = otherContainer.GetInstance<IBranchManager>();
             var otherRemoteManager = otherContainer.GetInstance<IRemoteManager>();
@@ -539,21 +560,25 @@ namespace ZES.Tests
             var otherRemote = otherRemoteManager.GetGenericRemote("Server");
             await otherRemote.Pull(BranchManager.Master);
             
-            await otherBus.IsTrue(new RootInfoQuery("Root"), s => s.UpdatedAt > s.CreatedAt);
+            await otherBus.IsTrue(new RootInfoQuery(id), s => s.UpdatedAt > s.CreatedAt);
         }
 
         [Fact]
         public async void CanPullFromRemote()
         {
+            if (Configuration.EventStoreBackendType != EventStoreBackendType.SqlStreamStore)
+                return;
+            
             var container = CreateContainer(new List<Action<Container>> { c => c.UseLocalStore() });
             var bus = container.GetInstance<IBus>();
             var remote = container.GetInstance<IRemote>();
 
-            await await bus.CommandAsync(new CreateRoot("Root")); 
+            var id = $"{nameof(CanPullFromRemote)}-Root";
+            await await bus.CommandAsync(new CreateRoot(id)); 
             var pushResult = await remote.Push(BranchManager.Master);
             Assert.Equal(Status.Success, pushResult.ResultStatus);
 
-            await await bus.CommandAsync(new UpdateRoot("Root"));
+            await await bus.CommandAsync(new UpdateRoot(id));
             var pullResult = await remote.Pull(BranchManager.Master);
             Assert.Equal(Status.Success, pullResult.ResultStatus); 
             Assert.Equal(1, pullResult.NumberOfStreams);
@@ -562,18 +587,19 @@ namespace ZES.Tests
         [Fact]
         public async void CanPullFromGenericRemote()
         {
-            var container = CreateContainer();
-            var otherContainer = CreateContainer();
+            var container = CreateContainer(resetDb: true);
             var bus = container.GetInstance<IBus>();
             var remoteManager = container.GetInstance<IRemoteManager>();
             var localReplica = container.GetInstance<IFactory<LocalReplica>>().Create();
             remoteManager.RegisterLocalReplica("Server", localReplica.AggregateEventStore, localReplica.SagaEventStore, localReplica.CommandLog);
             var remote = remoteManager.GetGenericRemote("Server");
 
-            await await bus.CommandAsync(new CreateRoot("Root")); 
+            var id = $"{nameof(CanPullFromGenericRemote)}-Root";
+            await await bus.CommandAsync(new CreateRoot(id)); 
             var pushResult = await remote.Push(BranchManager.Master);
             Assert.Equal(Status.Success, pushResult.ResultStatus);
 
+            var otherContainer = CreateContainer(db: 1);
             var otherRemoteManager = otherContainer.GetInstance<IRemoteManager>();
             otherRemoteManager.RegisterLocalReplica("Server", localReplica.AggregateEventStore, localReplica.SagaEventStore, localReplica.CommandLog);
             var otherRemote = otherRemoteManager.GetGenericRemote("Server");
@@ -584,30 +610,33 @@ namespace ZES.Tests
             Assert.Equal(2, pullResult.NumberOfMessages);
             
             var repository = otherContainer.GetInstance<IEsRepository<IAggregate>>();
-            var root = await repository.Find<Root>("Root");
-            Assert.Equal("Root", root.Id);
+            var root = await repository.Find<Root>(id);
+            Assert.Equal(id, root.Id);
         }
 
         [Fact]
         public async void CanCancelPull()
         {
+            if (Configuration.EventStoreBackendType != EventStoreBackendType.SqlStreamStore)
+                return;
             var container = CreateContainer(new List<Action<Container>> { c => c.UseLocalStore() });
             var otherContainer = CreateContainer(new List<Action<Container>> { c => c.UseLocalStore(container) });
             
             var bus = container.GetInstance<IBus>();
             var remote = container.GetInstance<IRemote>();
 
-            await await bus.CommandAsync(new CreateRoot("Root")); 
+            var id = $"{nameof(CanCancelPull)}-Root";
+            await await bus.CommandAsync(new CreateRoot(id)); 
             var pushResult = await remote.Push(BranchManager.Master);
             Assert.Equal(Status.Success, pushResult.ResultStatus);
 
-            await await bus.CommandAsync(new UpdateRoot("Root"));
+            await await bus.CommandAsync(new UpdateRoot(id));
 
             var otherBus = otherContainer.GetInstance<IBus>();
             var otherRemote = otherContainer.GetInstance<IRemote>();
             await otherRemote.Pull(BranchManager.Master);
 
-            await await otherBus.CommandAsync(new UpdateRoot("Root"));
+            await await otherBus.CommandAsync(new UpdateRoot(id));
             await otherRemote.Push(BranchManager.Master);
             
             var pullResult = await remote.Pull(BranchManager.Master);
@@ -617,8 +646,7 @@ namespace ZES.Tests
         [Fact]
         public async void CanCancelPullFromGenericRemote()
         {
-            var container = CreateContainer();
-            var otherContainer = CreateContainer();
+            var container = CreateContainer(resetDb: true);
             
             var bus = container.GetInstance<IBus>();
             var remoteManager = container.GetInstance<IRemoteManager>();
@@ -626,19 +654,21 @@ namespace ZES.Tests
             remoteManager.RegisterLocalReplica("Server", localReplica.AggregateEventStore, localReplica.SagaEventStore, localReplica.CommandLog);
             var remote = remoteManager.GetGenericRemote("Server");
 
-            await await bus.CommandAsync(new CreateRoot("Root")); 
+            var id = $"{nameof(CanCancelPullFromGenericRemote)}-Root";
+            await await bus.CommandAsync(new CreateRoot(id)); 
             var pushResult = await remote.Push(BranchManager.Master);
             Assert.Equal(Status.Success, pushResult.ResultStatus);
 
-            await await bus.CommandAsync(new UpdateRoot("Root"));
+            await await bus.CommandAsync(new UpdateRoot(id));
 
+            var otherContainer = CreateContainer(db: 1);
             var otherBus = otherContainer.GetInstance<IBus>();
             var otherRemoteManager = otherContainer.GetInstance<IRemoteManager>();
             otherRemoteManager.RegisterLocalReplica("Server", localReplica.AggregateEventStore, localReplica.SagaEventStore, localReplica.CommandLog);
             var otherRemote = otherRemoteManager.GetGenericRemote("Server");
             await otherRemote.Pull(BranchManager.Master);
 
-            await await otherBus.CommandAsync(new UpdateRoot("Root"));
+            await await otherBus.CommandAsync(new UpdateRoot(id));
             await otherRemote.Push(BranchManager.Master);
             
             var pullResult = await remote.Pull(BranchManager.Master);
@@ -652,38 +682,42 @@ namespace ZES.Tests
             var bus = container.GetInstance<IBus>();
             var manager = container.GetInstance<IBranchManager>();
             var repository = container.GetInstance<IEsRepository<IAggregate>>();
-            
-            await bus.Command(new CreateRoot("Root"));
-            await manager.Branch("test");
-            await bus.Command(new UpdateRoot("Root"));
-            await bus.Command(new CreateRoot("OtherRoot"));
 
-            var otherRoot = await repository.Find<Root>("OtherRoot");
+            var id = $"{nameof(CanCancelMerge)}-Root";
+            await bus.Command(new CreateRoot(id));
+            await manager.Branch("test");
+            await bus.Command(new UpdateRoot(id));
+            await bus.Command(new CreateRoot($"{id}Other"));
+
+            var otherRoot = await repository.Find<Root>($"{id}Other");
             Assert.NotNull(otherRoot);
 
             manager.Reset();
 
-            await bus.Command(new UpdateRoot("Root"));
+            await bus.Command(new UpdateRoot(id));
             var mergeResult = await manager.Merge("test");
             Assert.False(mergeResult.success);
 
-            otherRoot = await repository.Find<Root>("OtherRoot");
+            otherRoot = await repository.Find<Root>($"{id}Other");
             Assert.Null(otherRoot);
         }
 
         [Fact]
         public async void CanPushBranch()
         {
+            if (Configuration.EventStoreBackendType != EventStoreBackendType.SqlStreamStore)
+                return;
             var container = CreateContainer(new List<Action<Container>> { c => c.UseLocalStore() });
             var bus = container.GetInstance<IBus>();
-            var remote = container.GetInstance<IRemote>(); 
-            
-            await await bus.CommandAsync(new CreateRoot("Root")); 
+            var remote = container.GetInstance<IRemote>();
+
+            var id = $"{nameof(CanPushBranch)}-Root";
+            await await bus.CommandAsync(new CreateRoot(id)); 
             
             var timeTraveller = container.GetInstance<IBranchManager>();
             await timeTraveller.Branch("test");
 
-            await await bus.CommandAsync(new CreateRoot("Root2"));
+            await await bus.CommandAsync(new CreateRoot($"{id}2"));
 
             var pushResult = await remote.Push("test");
             Assert.Equal(Status.Failed, pushResult.ResultStatus);
@@ -699,19 +733,20 @@ namespace ZES.Tests
         [Fact]
         public async void CanPushBranchToGenericRemote()
         {
-            var container = CreateContainer();
+            var container = CreateContainer(resetDb: true);
             var bus = container.GetInstance<IBus>();
             var remoteManager = container.GetInstance<IRemoteManager>();
             var localReplica = container.GetInstance<IFactory<LocalReplica>>().Create();
             remoteManager.RegisterLocalReplica("Server", localReplica.AggregateEventStore, localReplica.SagaEventStore, localReplica.CommandLog);
             var remote = remoteManager.GetGenericRemote("Server");
-            
-            await await bus.CommandAsync(new CreateRoot("Root")); 
+
+            var id = $"{nameof(CanPushBranchToGenericRemote)}-Root";
+            await await bus.CommandAsync(new CreateRoot(id)); 
             
             var timeTraveller = container.GetInstance<IBranchManager>();
             await timeTraveller.Branch("test");
 
-            await await bus.CommandAsync(new CreateRoot("Root2"));
+            await await bus.CommandAsync(new CreateRoot($"{id}2"));
 
             var pushResult = await remote.Push("test");
             Assert.Equal(Status.Failed, pushResult.ResultStatus);
@@ -723,7 +758,7 @@ namespace ZES.Tests
             var pullResult = await remote.Pull("test");
             Assert.Equal(Status.Success, pullResult.ResultStatus); 
             
-            var otherContainer = CreateContainer();
+            var otherContainer = CreateContainer(db: 1);
             var otherBus = otherContainer.GetInstance<IBus>();
             var otherManager = otherContainer.GetInstance<IBranchManager>();
             var otherRemoteManager = otherContainer.GetInstance<IRemoteManager>();
@@ -740,11 +775,15 @@ namespace ZES.Tests
         [Fact]
         public async void CanPushSaga()
         {
+            if (Configuration.EventStoreBackendType != EventStoreBackendType.SqlStreamStore)
+                return;
+
             var container = CreateContainer(new List<Action<Container>> { Config.RegisterSagas, c => c.UseLocalStore() });
             var bus = container.GetInstance<IBus>();
-            var remote = container.GetInstance<IRemote>(); 
-            
-            await await bus.CommandAsync(new CreateRoot("Root"));
+            var remote = container.GetInstance<IRemote>();
+
+            var id = $"{nameof(CanPushSaga)}-Root";
+            await await bus.CommandAsync(new CreateRoot(id));
             var result = await remote.Push(BranchManager.Master);
             Assert.Equal(Status.Success, result.ResultStatus);
             Assert.Equal(6, result.NumberOfMessages);
@@ -759,14 +798,15 @@ namespace ZES.Tests
         [Fact]
         public async void CanPushSagaToGenericRemote()
         {
-            var container = CreateContainer(new List<Action<Container>> { Config.RegisterSagas });
+            var container = CreateContainer(registrations: new List<Action<Container>> { Config.RegisterSagas }, resetDb: true);
             var bus = container.GetInstance<IBus>();
             var remoteManager = container.GetInstance<IRemoteManager>();
             var localReplica = container.GetInstance<IFactory<LocalReplica>>().Create();
             remoteManager.RegisterLocalReplica("Server", localReplica.AggregateEventStore, localReplica.SagaEventStore, localReplica.CommandLog);
             var remote = remoteManager.GetGenericRemote("Server");
-            
-            await await bus.CommandAsync(new CreateRoot("Root"));
+
+            var id = $"{nameof(CanPushSagaToGenericRemote)}-Root";
+            await await bus.CommandAsync(new CreateRoot(id));
             var result = await remote.Push(BranchManager.Master);
             Assert.Equal(Status.Success, result.ResultStatus);
             Assert.Equal(6, result.NumberOfMessages);
@@ -777,7 +817,7 @@ namespace ZES.Tests
             Assert.Equal(0, pullResult.NumberOfMessages);
             Assert.Equal(0, pullResult.NumberOfStreams);
             
-            var otherContainer = CreateContainer();
+            var otherContainer = CreateContainer(db: 1);
             var otherBus = otherContainer.GetInstance<IBus>();
             var otherRemoteManager = otherContainer.GetInstance<IRemoteManager>();
             otherRemoteManager.RegisterLocalReplica("Server", localReplica.AggregateEventStore, localReplica.SagaEventStore, localReplica.CommandLog);
@@ -790,12 +830,16 @@ namespace ZES.Tests
         [Fact]
         public async void CanPushGrandBranch()
         {
+            if (Configuration.EventStoreBackendType != EventStoreBackendType.SqlStreamStore)
+                return;
+            
             var container = CreateContainer(new List<Action<Container>> { c => c.UseLocalStore() });
             var bus = container.GetInstance<IBus>();
             var timeTraveller = container.GetInstance<IBranchManager>(); 
-            var remote = container.GetInstance<IRemote>(); 
-            
-            var command = new CreateRoot("Root");
+            var remote = container.GetInstance<IRemote>();
+
+            var id = $"{nameof(CanPushGrandBranch)}-Root";
+            var command = new CreateRoot(id);
             await await bus.CommandAsync(command);
 
             var result = await remote.Push(BranchManager.Master);
@@ -806,11 +850,11 @@ namespace ZES.Tests
 
             await timeTraveller.Branch("test");
 
-            await await bus.CommandAsync(new CreateRoot("testRoot"));
+            await await bus.CommandAsync(new CreateRoot($"{id}Test"));
 
             await timeTraveller.Branch("grandTest");
 
-            await await bus.CommandAsync(new CreateRoot("testRoot2"));
+            await await bus.CommandAsync(new CreateRoot($"{id}Test2"));
             await bus.IsTrue(new StatsQuery(), s => s.NumberOfRoots == 3);
 
             result = await remote.Push("grandTest");
@@ -829,15 +873,16 @@ namespace ZES.Tests
         [Fact]
         public async void CanPushGrandBranchToGenericRemote()
         {
-            var container = CreateContainer();
+            var container = CreateContainer(resetDb: true);
             var bus = container.GetInstance<IBus>();
             var timeTraveller = container.GetInstance<IBranchManager>(); 
             var remoteManager = container.GetInstance<IRemoteManager>();
             var localReplica = container.GetInstance<IFactory<LocalReplica>>().Create();
             remoteManager.RegisterLocalReplica("Server", localReplica.AggregateEventStore, localReplica.SagaEventStore, localReplica.CommandLog);
             var remote = remoteManager.GetGenericRemote("Server");
-            
-            var command = new CreateRoot("Root");
+
+            var id = $"{nameof(CanPushGrandBranchToGenericRemote)}-Root";
+            var command = new CreateRoot(id);
             await await bus.CommandAsync(command);
 
             var result = await remote.Push(BranchManager.Master);
@@ -848,11 +893,11 @@ namespace ZES.Tests
 
             await timeTraveller.Branch("test");
 
-            await await bus.CommandAsync(new CreateRoot("testRoot"));
+            await await bus.CommandAsync(new CreateRoot($"{id}Test"));
 
             await timeTraveller.Branch("grandTest");
 
-            await await bus.CommandAsync(new CreateRoot("testRoot2"));
+            await await bus.CommandAsync(new CreateRoot($"{id}Test2"));
             await bus.IsTrue(new StatsQuery(), s => s.NumberOfRoots == 3);
 
             result = await remote.Push("grandTest");
@@ -867,7 +912,7 @@ namespace ZES.Tests
             result = await remote.Pull("grandTest");
             Assert.Equal(Status.Success, result.ResultStatus);
             
-            var otherContainer = CreateContainer();
+            var otherContainer = CreateContainer(db: 1);
             var otherBus = otherContainer.GetInstance<IBus>();
             var otherManager = otherContainer.GetInstance<IBranchManager>(); 
             var otherRemoteManager = otherContainer.GetInstance<IRemoteManager>();
@@ -885,13 +930,16 @@ namespace ZES.Tests
         [Fact]
         public async void CanPushSnapshot()
         {
+            if (Configuration.EventStoreBackendType != EventStoreBackendType.SqlStreamStore)
+                return;
+
             var container = CreateContainer(new List<Action<Container>> { c => c.UseLocalStore() });
             var bus = container.GetInstance<IBus>();
             var manager = container.GetInstance<IBranchManager>(); 
             var remote = container.GetInstance<IRemote>();
             var repository = container.GetInstance<IEsRepository<IAggregate>>();
 
-            var id = "Root";
+            var id = $"{nameof(CanPushSnapshot)}-Root";
             var command = new CreateRoot(id);
             await await bus.CommandAsync(command);
             await await bus.CommandAsync(new UpdateRoot(id));
@@ -915,7 +963,7 @@ namespace ZES.Tests
         [Fact]
         public async void CanPushSnapshotToGenericRemote()
         {
-            var container = CreateContainer(new List<Action<Container>> { c => c.UseLocalStore() });
+            var container = CreateContainer(resetDb: true);
             var bus = container.GetInstance<IBus>();
             var manager = container.GetInstance<IBranchManager>(); 
             var remoteManager = container.GetInstance<IRemoteManager>();
@@ -924,7 +972,7 @@ namespace ZES.Tests
             var remote = remoteManager.GetGenericRemote("Server");
             var repository = container.GetInstance<IEsRepository<IAggregate>>();
 
-            var id = "Root";
+            var id = $"{nameof(CanPushSnapshotToGenericRemote)}-Root";
             var command = new CreateRoot(id);
             await await bus.CommandAsync(command);
             await await bus.CommandAsync(new UpdateRoot(id));
@@ -944,7 +992,7 @@ namespace ZES.Tests
             Assert.Equal(3, root.Version);
             Assert.Equal(2, root.SnapshotVersion);
             
-            var otherContainer = CreateContainer();
+            var otherContainer = CreateContainer(db: 1);
             var otherRepository = otherContainer.GetInstance<IEsRepository<IAggregate>>();
             var otherManager = otherContainer.GetInstance<IBranchManager>(); 
             var otherRemoteManager = otherContainer.GetInstance<IRemoteManager>();

@@ -85,9 +85,12 @@ namespace ZES.Persistence.SQLStreamStore
             var version = stream.Version;
             version += stream.DeletedCount;
             if (stream.Parent != null && stream.Parent.Version > ExpectedVersion.NoStream)
+            {
                 version -= stream.Parent.Version + 1;
-            if (version < 0)
-                version = ExpectedVersion.Any;
+                if (version < 0)
+                    version = ExpectedVersion.NoStream;
+            }
+
             version = GetExpectedVersion(version);
             
             #if USE_CUSTOM_SQLSTREAMSTORE
@@ -95,7 +98,7 @@ namespace ZES.Persistence.SQLStreamStore
             #else
                 var result = await _streamStore.AppendToStream(stream.Key, stream.AppendPosition(), streamMessages.ToArray());
             #endif
-            return result.CurrentVersion;
+            return result.CurrentVersion - stream.DeletedCount;
         }
 
         /// <inheritdoc />

@@ -2,6 +2,9 @@ using System;
 using System.Collections.Generic;
 using SimpleInjector;
 using Xunit.Abstractions;
+using ZES.Interfaces.Domain;
+using ZES.Interfaces.EventStore;
+using ZES.Persistence.Redis;
 using ZES.Tests.Domain;
 
 namespace ZES.Tests
@@ -15,7 +18,7 @@ namespace ZES.Tests
         
         protected override IEnumerable<Type> Configs => new List<Type> { typeof(Config) };
 
-        protected override Container CreateContainer(List<Action<Container>> registrations = null)
+        protected override Container CreateContainer(List<Action<Container>> registrations = null, bool resetDb = false, int db = 0)
         {
             var regs = new List<Action<Container>>
             {
@@ -24,7 +27,7 @@ namespace ZES.Tests
             if (registrations != null)
                 regs.AddRange(registrations);
 
-            return base.CreateContainer(regs);
+            return base.CreateContainer(regs, resetDb, db);
         }
     }
 }

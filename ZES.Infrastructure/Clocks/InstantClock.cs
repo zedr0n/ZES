@@ -20,5 +20,8 @@ namespace ZES.Infrastructure.Clocks
 
         /// <inheritdoc />
         public Time GetCurrentInstant() => new InstantTime(_physicalClock.GetCurrentInstant());
+
+        /// <inheritdoc />
+        public Time Receive(Time received) => GetCurrentInstant();
     }
 }

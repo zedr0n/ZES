@@ -190,7 +190,7 @@ namespace ZES.Infrastructure.Branching
 
                 // remove the snapshot events from the future
                 if (liveStream != null)
-                    laterEvents = await store.ReadStream<IEvent>(liveStream, version).Where(e => !(e is ISnapshotEvent)).ToList();
+                    laterEvents = await store.ReadStream<IEvent>(liveStream, version).Where(e => e is not ISnapshotEvent).ToList();
 
                 var newStream = await _streamLocator.FindBranched(stream, tempStreamId) ?? stream.Branch(tempStreamId, ExpectedVersion.NoStream);
                 _log.Debug($"Inserting events ({version}..{events.Count + version}) into {newStream.Key}");

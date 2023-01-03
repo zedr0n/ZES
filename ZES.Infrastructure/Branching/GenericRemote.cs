@@ -24,6 +24,7 @@ namespace ZES.Infrastructure.Branching
         private readonly ILog _log;
         private readonly IBranchManager _branchManager;
         private readonly IStreamLocator _streamLocator;
+        private readonly IClock _clock;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="GenericRemote"/> class.
@@ -38,6 +39,7 @@ namespace ZES.Infrastructure.Branching
         /// <param name="log">Logging service</param>
         /// <param name="branchManager">Branch manager service</param>
         /// <param name="streamLocator">Stream locator service</param>
+        /// <param name="clock">Clock instance</param>
         public GenericRemote(
             string replicaName,
             IEventStore<IAggregate> aggregateStore,
@@ -48,7 +50,8 @@ namespace ZES.Infrastructure.Branching
             ICommandLog remoteCommandLog,
             ILog log,
             IBranchManager branchManager,
-            IStreamLocator streamLocator)
+            IStreamLocator streamLocator,
+            IClock clock)
             {
                 ReplicaName = replicaName;
                 _aggregateStore = aggregateStore;
@@ -59,6 +62,7 @@ namespace ZES.Infrastructure.Branching
                 _log = log;
                 _branchManager = branchManager;
                 _streamLocator = streamLocator;
+                _clock = clock;
                 _remoteCommandLog = remoteCommandLog;
         }
 
@@ -109,6 +113,7 @@ namespace ZES.Infrastructure.Branching
 
             pushResult.ResultStatus = FastForwardResult.Status.Success;
 
+            var receivedTime = syncTime;
             foreach (var v in changes) 
             {
                 var localStore = GetEventStore(v.Key, false);
@@ -131,10 +136,14 @@ namespace ZES.Infrastructure.Branching
                     }
                 }
 
+                // update the clock
+                var maxStreamTime = _clock.Receive(eventsToSync.Max(e => e.Timestamp));
+                receivedTime = maxStreamTime > receivedTime ? maxStreamTime : receivedTime;
+                
                 foreach (var e in eventsToSync)
                 {
                     e.Stream = remoteStream.Key;
-                    e.LocalId = new EventId(ReplicaName, syncTime);
+                    e.LocalId = new EventId(ReplicaName, receivedTime);
                 }
 
                 await remoteStore.AppendToStream(remoteStream, eventsToSync, false);
@@ -145,7 +154,7 @@ namespace ZES.Infrastructure.Branching
 
             foreach (var c in commandChanges)
             {
-                c.LocalId = new EventId(ReplicaName, syncTime);
+                c.LocalId = new EventId(ReplicaName, receivedTime);
                 _remoteCommandLog.AppendCommand(c);
             }
 

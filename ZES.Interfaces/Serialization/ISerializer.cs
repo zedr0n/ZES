@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using ZES.Interfaces.Domain;
 using ZES.Interfaces.EventStore;
 
@@ -23,7 +24,8 @@ namespace ZES.Interfaces.Serialization
         /// <param name="e">Instance to serialize</param>
         /// <param name="eventJson">JSON payload</param>
         /// <param name="metadataJson">JSON metadata</param>
-        void SerializeEventAndMetadata(T e, out string eventJson, out string metadataJson);
+        /// <param name="ignoredProperties">Properties to not serialize</param>
+        void SerializeEventAndMetadata(T e, out string eventJson, out string metadataJson, IEnumerable<string> ignoredProperties = null);
 
         /// <summary>
         /// Serialize the metadata to json 

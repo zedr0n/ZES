@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using ZES.Infrastructure.Branching;
 using ZES.Interfaces;
 using ZES.Interfaces.Branching;
+using ZES.Interfaces.Clocks;
 using ZES.Interfaces.Domain;
 using ZES.Interfaces.EventStore;
 
@@ -17,6 +18,7 @@ namespace ZES.Infrastructure
         private readonly ILog _log;
         private readonly IBranchManager _branchManager;
         private readonly IStreamLocator _streamLocator;
+        private readonly IClock _clock;
         private readonly ConcurrentDictionary<string, IRemote> _remotes;
         private readonly Dictionary<string, IEventStore<IAggregate>> _aggregateEventStores;
         private readonly Dictionary<string, IEventStore<ISaga>> _sagaEventStores;
@@ -31,13 +33,15 @@ namespace ZES.Infrastructure
         /// <param name="log">Logging service</param>
         /// <param name="branchManager">Branch manager service</param>
         /// <param name="streamLocator">Stream locator service</param>
+        /// <param name="clock">Clock instance</param>
         public RemoteManager(
             IEventStore<IAggregate> aggregateStore, 
             IEventStore<ISaga> sagaStore, 
             ICommandLog commandLog,
             ILog log,
             IBranchManager branchManager,
-            IStreamLocator streamLocator)
+            IStreamLocator streamLocator,
+            IClock clock)
         {
             _aggregateStore = aggregateStore;
             _sagaStore = sagaStore;
@@ -45,6 +49,7 @@ namespace ZES.Infrastructure
             _log = log;
             _branchManager = branchManager;
             _streamLocator = streamLocator;
+            _clock = clock;
             _aggregateEventStores = new Dictionary<string, IEventStore<IAggregate>>();
             _sagaEventStores = new Dictionary<string, IEventStore<ISaga>>();
             _commandLogs = new Dictionary<string, ICommandLog>();
@@ -72,7 +77,8 @@ namespace ZES.Infrastructure
                         commandLog,
                         _log,
                         _branchManager,
-                        _streamLocator));
+                        _streamLocator, 
+                        _clock));
         }
 
         /// <inheritdoc />

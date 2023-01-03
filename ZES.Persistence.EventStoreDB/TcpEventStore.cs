@@ -126,12 +126,15 @@ namespace ZES.Persistence.EventStoreDB
         protected override string GetEventJson(EventData message) => Encoding.UTF8.GetString(message.Data);
 
         /// <inheritdoc />
-        protected override EventData EventToStreamMessage(IEvent e, string jsonData, string jsonMetadata) => 
-            new ( e.MessageId,
-                e.MessageType,
-                true,
-                Encoding.UTF8.GetBytes(jsonData),
-                Encoding.UTF8.GetBytes(jsonMetadata));
+        protected override EventData EventToStreamMessage(IEvent e)
+        {
+            Serializer.SerializeEventAndMetadata(e, out var jsonData, out var jsonMetadata);
+            return new ( e.MessageId,
+               e.MessageType,
+               true,
+               Encoding.UTF8.GetBytes(jsonData),
+               Encoding.UTF8.GetBytes(jsonMetadata));
+        }
 
         /// <inheritdoc />
         protected override async Task<T> StreamMessageToEvent<T>(RecordedEvent streamMessage)

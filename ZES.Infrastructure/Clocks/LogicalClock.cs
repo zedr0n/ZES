@@ -40,17 +40,19 @@ namespace ZES.Infrastructure.Clocks
                 _l = pt >= l ? pt : l; // max (l, pt)
                 if (_l == l)
                     _c++;
+                else
+                    _c = 0;
             }
         }
 
         /// <inheritdoc />
-        public void Receive(Time received)
+        public Time Receive(Time received)
         {
             LogicalTime m; 
             switch (received)
             {
                 case null:
-                    return;
+                    return new LogicalTime(_l, _c);
                 case InstantTime instantTime:
                     m = new LogicalTime (instantTime.instant.ToUnixTimeTicks(), 0 );
                     break;
@@ -75,6 +77,8 @@ namespace ZES.Infrastructure.Clocks
                 else
                     _c = 0;
             }
+
+            return new LogicalTime(_l, _c);
         }
     }
 }

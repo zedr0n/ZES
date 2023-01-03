@@ -357,10 +357,8 @@ namespace ZES.Infrastructure.EventStore
         /// Convert event to stream message
         /// </summary>
         /// <param name="e">Event</param>
-        /// <param name="jsonData">Serialized event</param>
-        /// <param name="jsonMetadata">Serialized event metadata</param>
         /// <returns>Event stream message</returns>
-        protected abstract TNewStreamMessage EventToStreamMessage(IEvent e, string jsonData, string jsonMetadata);
+        protected abstract TNewStreamMessage EventToStreamMessage(IEvent e);
 
         /// <summary>
         /// Convert stream message to event ( or event metadata )
@@ -397,8 +395,7 @@ namespace ZES.Infrastructure.EventStore
             }
             else
             {
-                _serializer.SerializeEventAndMetadata(events.Single(), out var eventJson, out var metadataJson);
-                streamMessages = new List<TNewStreamMessage> { EventToStreamMessage(events.Single(), eventJson, metadataJson) };
+                streamMessages = new List<TNewStreamMessage> { EventToStreamMessage(events.Single()) };
             }
                 
             Log.StopWatch.Stop("AppendToStream.Encode");
@@ -516,11 +513,7 @@ namespace ZES.Infrastructure.EventStore
                 : base(dataflowOptions)
             {
                 var block = new TransformBlock<IEvent, TNewStreamMessage>(
-                    e =>
-                    {
-                        serializer.SerializeEventAndMetadata(e, out var eventJson, out var metadataJson );
-                        return eventStore.EventToStreamMessage(e, eventJson, metadataJson);
-                    }, 
+                    e => eventStore.EventToStreamMessage(e), 
                     dataflowOptions.ToDataflowBlockOptions(true));  // dataflowOptions.ToExecutionBlockOption(true) );
 
                 RegisterChild(block);

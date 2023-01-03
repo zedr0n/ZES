@@ -10,5 +10,12 @@
         /// </summary>
         /// <returns>Current instant</returns>
         Time GetCurrentInstant();
+
+        /// <summary>
+        /// Update the clock for received event
+        /// </summary>
+        /// <param name="received">Received message clock</param>
+        /// <returns>Current time</returns>
+        Time Receive(Time received);
     }
 }

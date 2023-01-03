@@ -3,6 +3,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Runtime.Serialization;
 using System.Text;
 using Newtonsoft.Json;
@@ -99,14 +100,14 @@ namespace ZES.Infrastructure.Serialization
         }
 
         /// <inheritdoc />
-        public void SerializeEventAndMetadata(T e, out string eventJson, out string metadataJson)
+        public void SerializeEventAndMetadata(T e, out string eventJson, out string metadataJson, IEnumerable<string> ignoredProperties = null)
         {
             _log.StopWatch.Start(nameof(SerializeEventAndMetadata));
             eventJson = null;
             metadataJson = null;
 
 #if USE_EXPLICIT
-            SerializeEventAndMetadata(e as IEvent, out eventJson, out metadataJson);
+            SerializeEventAndMetadata(e as IEvent, out eventJson, out metadataJson, ignoredProperties);
             
             if (eventJson == null || metadataJson == null)
             {
@@ -167,13 +168,16 @@ namespace ZES.Infrastructure.Serialization
                 
                 jsonWriter.WritePropertyName(nameof(IStream.Version));
                 jsonWriter.WriteValue(stream.Version);
-                
-                jsonWriter.WritePropertyName(nameof(IStream.SnapshotVersion));
-                jsonWriter.WriteValue(stream.SnapshotVersion);
-                
-                jsonWriter.WritePropertyName(nameof(IStream.SnapshotTimestamp));
-                jsonWriter.WriteValue(stream.SnapshotTimestamp.ToExtendedIso());
-                
+
+                if (stream.SnapshotVersion > 0)
+                {
+                    jsonWriter.WritePropertyName(nameof(IStream.SnapshotVersion));
+                    jsonWriter.WriteValue(stream.SnapshotVersion);
+
+                    jsonWriter.WritePropertyName(nameof(IStream.SnapshotTimestamp));
+                    jsonWriter.WriteValue(stream.SnapshotTimestamp.ToExtendedIso());
+                }
+
                 if (stream.Parent != null)
                 {
                     jsonWriter.WritePropertyName($"Parent{nameof(IStream.Key)}");
@@ -181,12 +185,15 @@ namespace ZES.Infrastructure.Serialization
                     
                     jsonWriter.WritePropertyName($"Parent{nameof(IStream.Version)}");
                     jsonWriter.WriteValue(stream.Parent.Version);
+
+                    if (stream.Parent.SnapshotVersion > 0)
+                    {
+                        jsonWriter.WritePropertyName($"Parent{nameof(IStream.SnapshotVersion)}");
+                        jsonWriter.WriteValue(stream.Parent.SnapshotVersion);
                     
-                    jsonWriter.WritePropertyName($"Parent{nameof(IStream.SnapshotVersion)}");
-                    jsonWriter.WriteValue(stream.Parent.SnapshotVersion);
-                    
-                    jsonWriter.WritePropertyName($"Parent{nameof(IStream.SnapshotTimestamp)}");
-                    jsonWriter.WriteValue(stream.Parent.SnapshotTimestamp.ToExtendedIso());
+                        jsonWriter.WritePropertyName($"Parent{nameof(IStream.SnapshotTimestamp)}");
+                        jsonWriter.WriteValue(stream.Parent.SnapshotTimestamp.ToExtendedIso());
+                    }
                 }
                 
                 jsonWriter.WriteEndObject();
@@ -357,9 +364,12 @@ namespace ZES.Infrastructure.Serialization
             
             writer.WritePropertyName(nameof(IEventMetadata.AncestorId));
             writer.WriteValue(e.AncestorId);
-            
-            writer.WritePropertyName(nameof(IEventMetadata.CorrelationId));
-            writer.WriteValue(e.CorrelationId);
+
+            if (e.CorrelationId != null)
+            {
+                writer.WritePropertyName(nameof(IEventMetadata.CorrelationId));
+                writer.WriteValue(e.CorrelationId);
+            }
 
             writer.WritePropertyName(nameof(IEventMetadata.Timestamp));
             writer.WriteValue(e.Timestamp.ToExtendedIso());
@@ -434,6 +444,7 @@ namespace ZES.Infrastructure.Serialization
             
             var metadata = new EventMetadata();
             var currentProperty = string.Empty;
+            metadata.CorrelationId = null;
             while (reader.Read())
             {
                 if (reader.Value == null) 
@@ -464,6 +475,9 @@ namespace ZES.Infrastructure.Serialization
                         break;
                     case JsonToken.String when currentProperty == nameof(IEventMetadata.ContentHash):
                         metadata.ContentHash = (string)reader.Value;
+                        break;
+                    case JsonToken.String when currentProperty == nameof(IEventMetadata.StreamHash):
+                        metadata.StreamHash = (string)reader.Value;
                         break;
                     case JsonToken.String when currentProperty == nameof(IEventMetadata.Timeline):
                         metadata.Timeline = (string)reader.Value;
@@ -563,46 +577,59 @@ namespace ZES.Infrastructure.Serialization
 #endif
 #if USE_EXPLICIT
 
-        private void WriteEventMetadata(JsonWriter writer, IEventMetadata e)
+        private bool WritePropertyName(JsonWriter writer, string name, IEnumerable<string> ignoredProperties)
         {
-            writer.WritePropertyName(nameof(IEventMetadata.MessageId));
-            writer.WriteValue(e.MessageId);
-            
-            writer.WritePropertyName(nameof(IEventMetadata.AncestorId));
-            writer.WriteValue(e.AncestorId);
-            
-            writer.WritePropertyName(nameof(IEventMetadata.CorrelationId));
-            writer.WriteValue(e.CorrelationId);
+            if (ignoredProperties != null)
+            {
+                if (ignoredProperties.Contains(name))
+                    return false;
+            }
 
-            writer.WritePropertyName(nameof(IEventMetadata.Timestamp));
-            writer.WriteValue(e.Timestamp.ToExtendedIso());
-            
-            writer.WritePropertyName(nameof(IEventMetadata.LocalId));
-            writer.WriteValue(e.LocalId.ToString());
-            
-            writer.WritePropertyName(nameof(IEventMetadata.OriginId));
-            writer.WriteValue(e.OriginId.ToString());
-            
-            writer.WritePropertyName(nameof(IEventMetadata.StreamHash));
-            writer.WriteValue(e.StreamHash);
+            writer.WritePropertyName(name);
+            return true;
+        }
 
-            writer.WritePropertyName(nameof(IEventMetadata.Timeline));
-            writer.WriteValue(e.Timeline);
+        private void WriteEventMetadata(JsonWriter writer, IEventMetadata e, IEnumerable<string> ignoredProperties = null)
+        {
+            var properties = ignoredProperties as string[] ?? ignoredProperties?.ToArray();
+            if (WritePropertyName(writer, nameof(IEventMetadata.MessageId), properties))
+                writer.WriteValue(e.MessageId);
             
-            writer.WritePropertyName(nameof(IEventMetadata.MessageType));
-            writer.WriteValue(e.GetType().FullName);
+            if (WritePropertyName(writer, nameof(IEventMetadata.AncestorId), properties))
+                writer.WriteValue(e.AncestorId);
+
+            if (WritePropertyName(writer, nameof(IEventMetadata.CorrelationId), properties))
+                writer.WriteValue(e.CorrelationId);
+
+            if (WritePropertyName(writer, nameof(IEventMetadata.Timestamp), properties))
+                writer.WriteValue(e.Timestamp.ToExtendedIso());
             
-            writer.WritePropertyName(nameof(IEventMetadata.Version));
-            writer.WriteValue(e.Version);
+            if (WritePropertyName(writer, nameof(IEventMetadata.LocalId), properties))
+                writer.WriteValue(e.LocalId.ToString());
+            
+            if (WritePropertyName(writer, nameof(IEventMetadata.OriginId), properties))
+                writer.WriteValue(e.OriginId.ToString());
+            
+            if (WritePropertyName(writer, nameof(IEventMetadata.StreamHash), properties))
+                writer.WriteValue(e.StreamHash);
+
+            if (WritePropertyName(writer, nameof(IEventMetadata.Timeline), properties))
+                writer.WriteValue(e.Timeline);
+            
+            if (WritePropertyName(writer, nameof(IEventMetadata.MessageType), properties))
+                writer.WriteValue(e.GetType().FullName);
+            
+            if (WritePropertyName(writer, nameof(IEventMetadata.Version), properties))
+                writer.WriteValue(e.Version);
 
             if (e.ContentHash != string.Empty)
             {
-                writer.WritePropertyName(nameof(IEventMetadata.ContentHash));
-                writer.WriteValue(e.ContentHash);
+                if (WritePropertyName(writer, nameof(IEventMetadata.ContentHash), properties))
+                    writer.WriteValue(e.ContentHash);
             }
         }
 
-        private void SerializeEventAndMetadata(IEvent e, out string eventJson, out string metadataJson)
+        private void SerializeEventAndMetadata(IEvent e, out string eventJson, out string metadataJson, IEnumerable<string> ignoredProperties = null)
         {
             eventJson = null;
             metadataJson = null;
@@ -618,7 +645,7 @@ namespace ZES.Infrastructure.Serialization
             var writer = new JsonTextWriter(sw) { Formatting = Formatting.Indented };
 
             writer.WriteStartObject();
-            WriteEventMetadata(writer, e);
+            WriteEventMetadata(writer, e, ignoredProperties);
             
             metadataJson = sb + "\n}";
             
@@ -674,6 +701,7 @@ namespace ZES.Infrastructure.Serialization
                 return null;
 
             var e = deserializer.Create();
+            e.CorrelationId = null;
             
             var currentProperty = string.Empty;
             while (reader.Read())

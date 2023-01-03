@@ -133,8 +133,11 @@ namespace ZES.Persistence.SQLStreamStore
         protected override string GetEventJson(NewStreamMessage message) => message.JsonData;
 
         /// <inheritdoc />
-        protected override NewStreamMessage EventToStreamMessage(IEvent e, string jsonData, string jsonMetadata) =>
-            new (e.MessageId, e.MessageType, jsonData, jsonMetadata);
+        protected override NewStreamMessage EventToStreamMessage(IEvent e)
+        {
+            Serializer.SerializeEventAndMetadata(e, out var jsonData, out var jsonMetadata);
+            return new (e.MessageId, e.MessageType, jsonData, jsonMetadata);
+        }
 
         /// <inheritdoc />
         protected override async Task<T> StreamMessageToEvent<T>(StreamMessage streamMessage)

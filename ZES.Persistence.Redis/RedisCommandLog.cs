@@ -33,13 +33,8 @@ namespace ZES.Persistence.Redis
         /// <inheritdoc />
         public override async Task DeleteBranch(string branchId)
         {
-            var connection = _connection.Connection;
-            var endpoint = connection.GetEndPoints().FirstOrDefault();
-            if (endpoint == default)
-                throw new InvalidOperationException("No Redis server found");
-
-            var server = connection.GetServer(endpoint);
-            var db = connection.GetDatabase(_connection.Database);
+            var server = _connection.GetServer();
+            var db = _connection.GetDatabase();
             await foreach (var key in server.KeysAsync())
             {
                 if (!key.ToString().StartsWith($"{branchId}:Command"))
@@ -52,8 +47,7 @@ namespace ZES.Persistence.Redis
         /// <inheritdoc />
         protected override async Task ReadStreamStore(IObserver<ICommand> observer, IStream stream, int position, int count)
         {
-            var connection = _connection.Connection;
-            var db = connection.GetDatabase(_connection.Database);
+            var db = _connection.GetDatabase();
             var minId = $"1-{position}";
             var maxId = "+";
 
@@ -84,8 +78,7 @@ namespace ZES.Persistence.Redis
         /// <inheritdoc />
         protected override async Task<int> AppendToStream(string key, StreamEntry message)
         {
-            var connection = _connection.Connection;
-            var db = connection.GetDatabase(_connection.Database);
+            var db = _connection.GetDatabase();
             var id = await db.StreamAddAsync(key, message.Values);
             var version = await db.StreamLengthAsync(key);
             

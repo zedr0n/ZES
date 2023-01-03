@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Diagnostics;
 using NodaTime;
 using NodaTime.Text;
 
@@ -10,6 +11,7 @@ namespace ZES.Interfaces.Clocks
     /// <summary>
     /// Logical time record
     /// </summary>
+    [DebuggerDisplay("{ToExtendedIso()}")]
     public sealed record LogicalTime(long l, long c) : Time, IComparable<LogicalTime>, IComparable
     {
         /// <summary>

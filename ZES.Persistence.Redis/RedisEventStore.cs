@@ -5,8 +5,10 @@ using System.Threading;
 using System.Threading.Tasks;
 using StackExchange.Redis;
 using ZES.Infrastructure;
+using ZES.Infrastructure.Domain;
 using ZES.Infrastructure.EventStore;
 using ZES.Interfaces;
+using ZES.Interfaces.Clocks;
 using ZES.Interfaces.EventStore;
 using ZES.Interfaces.Pipes;
 using ZES.Interfaces.Serialization;
@@ -40,25 +42,15 @@ namespace ZES.Persistence.Redis
         /// <inheritdoc />
         public override async Task ResetDatabase()
         {
-            var connection = _connection.Connection;
-            var endpoint = connection.GetEndPoints().FirstOrDefault();
-            if (endpoint == default)
-                throw new InvalidOperationException("No Redis server found");
-
-            var server = connection.GetServer(endpoint);
+            var server = _connection.GetServer();
             await server.FlushAllDatabasesAsync();
         }
 
         /// <inheritdoc />
         protected override async Task ListStreamsObservable(IObserver<IStream> observer, Func<string, bool> predicate, CancellationToken token)
         {
-            var connection = _connection.Connection;
-            var endpoint = connection.GetEndPoints().FirstOrDefault();
-            if (endpoint == default)
-                throw new InvalidOperationException("No Redis server found");
-
-            var server = connection.GetServer(endpoint);
-            var db = connection.GetDatabase(_connection.Database);
+            var server = _connection.GetServer();
+            var db = _connection.GetDatabase();
             var keys = server.KeysAsync();
             await foreach (var key in server.KeysAsync())
             {
@@ -96,8 +88,7 @@ namespace ZES.Persistence.Redis
         /// <inheritdoc />
         protected override async Task ReadSingleStreamStore<TEvent>(IObserver<TEvent> observer, IStream stream, int position, int count)
         {
-            var connection = _connection.Connection;
-            var db = connection.GetDatabase(_connection.Database);
+            var db = _connection.GetDatabase();
             var minId = $"{1}-{position}";
             var maxId = "+";
 
@@ -123,8 +114,7 @@ namespace ZES.Persistence.Redis
             /* if (version < 0)
                 version = ExpectedVersion.Any; */
 
-            var connection = _connection.Connection;
-            var db = connection.GetDatabase(_connection.Database);
+            var db = _connection.GetDatabase();
             var success = true;
             
             // check version for optimistic concurrency
@@ -154,8 +144,7 @@ namespace ZES.Persistence.Redis
         /// <inheritdoc />
         protected override async Task UpdateStreamMetadata(IStream stream)
         {
-            var connection = _connection.Connection;
-            var db = connection.GetDatabase(_connection.Database);
+            var db = _connection.GetDatabase();
 
             // var success = await db.HashSetAsync(stream.Key, "metadataJson", Serializer.EncodeStreamMetadata(stream));
             var success = await db.StringSetAsync($"$${stream.Key}", Serializer.EncodeStreamMetadata(stream));
@@ -166,8 +155,7 @@ namespace ZES.Persistence.Redis
         /// <inheritdoc />
         protected override async Task TruncateStreamStore(IStream stream, int version)
         {
-            var connection = _connection.Connection;
-            var db = connection.GetDatabase(_connection.Database);
+            var db = _connection.GetDatabase();
             var minId = $"{1}-{version + 1}";
             var maxId = "+";
 
@@ -178,8 +166,7 @@ namespace ZES.Persistence.Redis
         /// <inheritdoc />
         protected override async Task DeleteStreamStore(IStream stream)
         {
-            var connection = _connection.Connection;
-            var db = connection.GetDatabase(_connection.Database);
+            var db = _connection.GetDatabase();
             await db.KeyDeleteAsync(stream.Key);
             await db.KeyDeleteAsync($"$${stream.Key}");
         }
@@ -193,15 +180,48 @@ namespace ZES.Persistence.Redis
             return null;
         }
 
-        /// <inheritdoc />
-        protected override StreamEntry EventToStreamMessage(IEvent e, string jsonData, string jsonMetadata)
+        private enum RedisMetadata 
         {
+            MessageId,
+            AncestorId,
+            Timestamp,
+            LocalId,
+            OriginId,
+            Version,
+            Timeline,
+            StreamHash,
+            ContentHash,
+        }
+        
+        /// <inheritdoc />
+        protected override StreamEntry EventToStreamMessage(IEvent e)
+        {
+            var ignoredProperties = new string[]
+            {
+                nameof(IEventMetadata.MessageId),
+                nameof(IEventMetadata.AncestorId),
+                nameof(IEventMetadata.Timestamp),
+                nameof(IEventMetadata.LocalId),
+                nameof(IEventMetadata.OriginId),
+                nameof(IEventMetadata.Version),
+                nameof(IEventMetadata.Timeline),
+                nameof(IEventMetadata.StreamHash),
+                nameof(IEventMetadata.ContentHash),
+            };
+            Serializer.SerializeEventAndMetadata(e, out var jsonData, out _, ignoredProperties);
             var entries = new NameValueEntry[]
             {
-                new ("MessageId", e.MessageId.ToString()),
-                new ("MessageType", e.MessageType),
+                new (nameof(IEventMetadata.MessageId), e.MessageId.ToString()),
+                new (nameof(IEventMetadata.AncestorId), e.AncestorId.ToString()),
+                new ( nameof(IEventMetadata.Timestamp), e.Timestamp.ToExtendedIso()),
+                new ( nameof(IEventMetadata.LocalId), e.LocalId.ToString()),
+                new ( nameof(IEventMetadata.OriginId), e.OriginId.ToString()),
+                new ( nameof(IEventMetadata.Version), e.Version), 
+                new ( nameof(IEventMetadata.Timeline), e.Timeline),
+                new ( nameof(IEventMetadata.StreamHash), e.StreamHash),
+                new ( nameof(IEventMetadata.ContentHash), e.ContentHash),
                 new ("jsonData", jsonData),
-                new ("jsonMetadata", jsonMetadata),
+                // new ("jsonMetadata", jsonMetadata),
             };
             return new StreamEntry(e.Version, entries);
         }
@@ -209,7 +229,55 @@ namespace ZES.Persistence.Redis
         /// <inheritdoc />
         protected override async Task<T> StreamMessageToEvent<T>(StreamEntry streamMessage)
         {
+            var json = streamMessage.Values.SingleOrDefault(v => v.Name == "jsonData");
+            if (json == default)
+                return null;
+
+            EventMetadata metadata = null;
+            T e = null;
             if (typeof(T) == typeof(IEvent))
+                e = Serializer.Deserialize(json.Value) as T;
+            if (typeof(T) == typeof(IEventMetadata))
+                e = Serializer.DecodeMetadata(json.Value) as T;
+            
+            metadata = e as EventMetadata;
+            for (var i = 0; i < streamMessage.Values.Length; ++i)
+            {
+                var val = streamMessage.Values[i].Value; 
+                switch (i)
+                {
+                    case (int)RedisMetadata.MessageId: // MessageId
+                        metadata.MessageId = Guid.Parse(val);
+                        break;
+                    case (int)RedisMetadata.AncestorId:
+                        metadata.AncestorId = Guid.Parse(val);
+                        break;
+                    case (int)RedisMetadata.Timestamp:
+                        metadata.Timestamp = Time.FromExtendedIso(val);
+                        break;
+                    case (int)RedisMetadata.LocalId:
+                        metadata.LocalId = EventId.Parse(val);
+                        break;
+                    case (int)RedisMetadata.OriginId:
+                        metadata.OriginId = EventId.Parse(val);
+                        break;
+                    case (int)RedisMetadata.Version:
+                        metadata.Version = (int)val;
+                        break;
+                    case (int)RedisMetadata.Timeline:
+                        metadata.Timeline = val;
+                        break;
+                    case (int)RedisMetadata.StreamHash:
+                        metadata.StreamHash = val;
+                        break;
+                    case (int)RedisMetadata.ContentHash:
+                        metadata.ContentHash = val;
+                        break;
+                }
+            }
+                
+            return e;
+            /*if (typeof(T) == typeof(IEvent))
             {
                 var json = streamMessage.Values.SingleOrDefault(v => v.Name == "jsonData");
                 if (json != default)
@@ -223,9 +291,7 @@ namespace ZES.Persistence.Redis
                 if (json != default)
                     return Serializer.DecodeMetadata(json.Value) as T;
                 return null;
-            }
-
-            return null;
+            }*/
         }
 
         /// <inheritdoc />

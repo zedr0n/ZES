@@ -39,6 +39,19 @@ namespace ZES.Persistence.Redis
             _connection = connection;
         }
 
+        private enum RedisMetadata 
+        {
+            MessageId,
+            AncestorId,
+            Timestamp,
+            LocalId,
+            OriginId,
+            Version,
+            Timeline,
+            StreamHash,
+            ContentHash,
+        }
+
         /// <inheritdoc />
         public override async Task ResetDatabase()
         {
@@ -62,18 +75,12 @@ namespace ZES.Persistence.Redis
                 if (stream == null)
                     stream = new Stream(key);
 
-                /* var count = await streamStore.DeletedCount(key);
-                 stream.AddDeleted(count); */
-
                 var parent = stream.Parent;
                 while (parent != null && parent.Version > ExpectedVersion.EmptyStream)
                 {
                     var parentMetadata = await db.StringGetAsync($"$${parent.Key}");
                     if (parentMetadata == RedisValue.Null)
                         break;
-
-                    /* count = await streamStore.DeletedCount(parent.Key);
-                     parent.AddDeleted(count);*/
 
                     var grandParent = Serializer.DecodeStreamMetadata(parentMetadata)?.Parent; 
                 
@@ -111,8 +118,6 @@ namespace ZES.Persistence.Redis
             var version = stream.Version;
             if (stream.Parent != null && stream.Parent.Version > ExpectedVersion.NoStream)
                 version -= stream.Parent.Version + 1;
-            /* if (version < 0)
-                version = ExpectedVersion.Any; */
 
             var db = _connection.GetDatabase();
             var success = true;
@@ -179,19 +184,6 @@ namespace ZES.Persistence.Redis
                 return json.Value;
             return null;
         }
-
-        private enum RedisMetadata 
-        {
-            MessageId,
-            AncestorId,
-            Timestamp,
-            LocalId,
-            OriginId,
-            Version,
-            Timeline,
-            StreamHash,
-            ContentHash,
-        }
         
         /// <inheritdoc />
         protected override StreamEntry EventToStreamMessage(IEvent e)
@@ -221,7 +213,6 @@ namespace ZES.Persistence.Redis
                 new ( nameof(IEventMetadata.StreamHash), e.StreamHash),
                 new ( nameof(IEventMetadata.ContentHash), e.ContentHash),
                 new ("jsonData", jsonData),
-                // new ("jsonMetadata", jsonMetadata),
             };
             return new StreamEntry(e.Version, entries);
         }
@@ -277,21 +268,6 @@ namespace ZES.Persistence.Redis
             }
                 
             return e;
-            /*if (typeof(T) == typeof(IEvent))
-            {
-                var json = streamMessage.Values.SingleOrDefault(v => v.Name == "jsonData");
-                if (json != default)
-                    return Serializer.Deserialize(json.Value) as T;
-                return null;
-            }
-
-            if (typeof(T) == typeof(IEventMetadata))
-            {
-                var json = streamMessage.Values.SingleOrDefault(v => v.Name == "jsonMetadata");
-                if (json != default)
-                    return Serializer.DecodeMetadata(json.Value) as T;
-                return null;
-            }*/
         }
 
         /// <inheritdoc />

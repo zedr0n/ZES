@@ -1,6 +1,6 @@
+using System.Collections.Generic;
 using System.Linq;
 using HotChocolate.Execution;
-using NodaTime;
 using Xunit;
 using Xunit.Abstractions;
 using ZES.GraphQL;
@@ -78,16 +78,17 @@ namespace ZES.Tests
             var executor = schemaProvider.Build();
             var query = generator.Query(new RootInfoQuery(id));
             var rootInfoResult = await executor.ExecuteAsync(query) as IReadOnlyQueryResult;
-            dynamic rootInfoDict = rootInfoResult?.Data.SingleOrDefault().Value;
+            var rootInfoDict = rootInfoResult?.Data.SingleOrDefault().Value as IReadOnlyDictionary<string, object>;
             log.Info(rootInfoDict);
             Assert.NotNull(rootInfoDict);
-            var time = rootInfoDict["createdAt"] as Time;
+            var timeStr = rootInfoDict["createdAt"] as string;
+            var time = Time.FromExtendedIso(timeStr);
             Assert.NotNull(time);
             Assert.NotEqual(default, time.ToInstant());
 
             query = generator.Query(new StatsQuery());  
             var statsResult = await executor.ExecuteAsync(query) as IReadOnlyQueryResult;
-            dynamic statsDict = statsResult?.Data.SingleOrDefault().Value;
+            var statsDict = statsResult?.Data.SingleOrDefault().Value as IReadOnlyDictionary<string, object>;
             log.Info(statsDict);
             Assert.NotNull(statsDict);
             Assert.Equal(1, statsDict["numberOfRoots"]);
@@ -107,24 +108,32 @@ namespace ZES.Tests
             var id = $"{nameof(CanExecuteMutation)}-Root";
             var command = generator.Mutation(new CreateRoot(id));
             var commandResult = executor.Execute(command);
-            foreach (var e in commandResult.Errors)
-                log.Error(e.Message, this);
+            if (commandResult.Errors != null)
+            {
+                foreach (var e in commandResult.Errors)
+                    log.Error(e.Message, this);
+            }
             
             command = generator.Mutation(new CreateRecord(id));
             commandResult = executor.Execute(command);
-            foreach (var e in commandResult.Errors)
-                log.Error(e.Message, this); 
-
+            if (commandResult.Errors != null)
+            {
+                foreach (var e in commandResult.Errors)
+                    log.Error(e.Message, this); 
+            }
+            
             command = generator.Mutation(new AddRecord(id, 1));
             commandResult = executor.Execute(command);
-            foreach (var e in commandResult.Errors)
-                log.Error(e.Message, this);
-
-            var query = generator.Query(new StatsQuery());
+            if (commandResult.Errors != null)
+            {
+                foreach (var e in commandResult.Errors)
+                    log.Error(e.Message, this);
+            }
             
+            var query = generator.Query(new StatsQuery());
             var statsResult = executor.Execute(query) as IReadOnlyQueryResult;
             
-            dynamic statsDict = statsResult?.Data["statsQuery"];
+            var statsDict = statsResult?.Data["statsQuery"] as IReadOnlyDictionary<string, object>;
             log.Info(statsDict);
             Assert.NotNull(statsDict);
             Assert.Equal(1, statsDict["numberOfRoots"]);
@@ -173,12 +182,16 @@ namespace ZES.Tests
 
             var command = generator.Mutation(new CreateRoot(id));
             var commandResult = executor.Execute(command);
-            foreach (var e in commandResult.Errors)
-                log.Error(e.Message, this);
+            if (commandResult.Errors != null)
+            {
+                foreach (var e in commandResult.Errors)
+                    log.Error(e.Message, this);
+            }
  
             await executor.ExecuteAsync(@"mutation { branch( branch : ""test"") } ");
 
             var result = await executor.ExecuteAsync(@"query { activeBranch }") as IReadOnlyQueryResult;
+            Assert.Null(result?.Errors);
             var branchId = result?.Data["activeBranch"];
             Assert.Equal("test", branchId);
         }
@@ -198,17 +211,23 @@ namespace ZES.Tests
             var executor = schemaProvider.Build();
 
             var commandResult = await executor.ExecuteAsync(command);
-            foreach (var e in commandResult.Errors)
-                log.Error(e.Message, this);
-            
+            if (commandResult.Errors != null)
+            {
+                foreach (var e in commandResult.Errors)
+                    log.Error(e.Message, this);
+            }
+
             commandResult = await executor.ExecuteAsync(command);
-            foreach (var e in commandResult.Errors)
-                log.Error(e.Message, this);
+            if (commandResult.Errors != null)
+            {
+                foreach (var e in commandResult.Errors)
+                    log.Error(e.Message, this);
+            }
 
             var errorResult = await executor.ExecuteAsync(@"query{ error { message } }") as IReadOnlyQueryResult;
-            dynamic messageDict = errorResult?.Data["error"];
+            var messageDict = errorResult?.Data["error"] as IReadOnlyDictionary<string, object>;
             Assert.NotNull(messageDict);
-            Assert.Contains("ahead", messageDict["message"]);
+            Assert.Contains("ahead", messageDict["message"] as string);
         }
     }
 }

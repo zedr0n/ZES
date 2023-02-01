@@ -91,7 +91,6 @@ namespace ZES.Tests
                 container.Register<IGraphQlGenerator, GraphQlGenerator>(Lifestyle.Singleton);
                 container.Register<IServiceCollection>(() => new ServiceCollection(), Lifestyle.Singleton);
                 container.Register<ISchemaProvider, SchemaProvider>(Lifestyle.Singleton);
-                container.Register<IDiagnosticObserver, DiagnosticObserver>(Lifestyle.Singleton);
 
                 container.Options.AllowOverridingRegistrations = true;
                 container.Register(typeof(ILogger), () => _logger, Lifestyle.Singleton);

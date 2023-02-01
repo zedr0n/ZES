@@ -8,7 +8,7 @@ using ZES.Interfaces.Clocks;
 namespace ZES.GraphQL
 {
     /// <inheritdoc />
-    public class TimeType : ScalarType
+    public class TimeType : ScalarType<Time, StringValueNode>
     {
         /// <summary>
         /// Initializes a new instance of the <see cref="TimeType"/> class.
@@ -19,84 +19,17 @@ namespace ZES.GraphQL
         }
 
         /// <inheritdoc />
-        public override Type ClrType => typeof(Time);
+        public override IValueNode ParseResult(object resultValue) => ParseValue(resultValue);
 
         /// <inheritdoc />
-        public override bool IsInstanceOfType(IValueNode literal)
+        public override bool TrySerialize(object runtimeValue, out object resultValue)
         {
-            if (literal == null)
-            {
-                throw new ArgumentNullException(nameof(literal));
-            }
-
-            if (literal is NullValueNode)
-            {
-                return true;
-            }
-
-            if (literal is StringValueNode stringLiteral
-                && TryParseTime(stringLiteral.Value, out _))
-            {
-                return true;
-            }
-
-            return false;
-        }
-
-        /// <inheritdoc />
-        public override object ParseLiteral(IValueNode literal)
-        {
-            if (literal == null)
-            {
-                throw new ArgumentNullException(nameof(literal));
-            }
-
-            if (literal is NullValueNode)
-            {
-                return null;
-            }
-
-            if (literal is StringValueNode stringLiteral
-                && TryParseTime(stringLiteral.Value, out var time))
-            {
-                return time;
-            }
-
-            throw new ScalarSerializationException(
-                $"Cannot parse {Name} with type {literal.GetType()}");
-        }
-
-        /// <inheritdoc />
-        public override IValueNode ParseValue(object value)
-        {
-            if (value == default)
-            {
-                return new NullValueNode(null);
-            }
-
-            if (value is Time time)
-            {
-                return new StringValueNode(time.ToExtendedIso());
-            }
-
-            throw new ScalarSerializationException(
-                $"Cannot parse {Name} with type {value.GetType()}");
-        }
-
-        /// <inheritdoc />
-        public override object Serialize(object value)
-        {
-            if (value == default)
-            {
-                return null;
-            }
-
-            if (value is Time time)
-            {
-                return time;
-            }
-
-            throw new ScalarSerializationException($"Cannot serialize {Name}");
+            resultValue = null;
+            if (runtimeValue is not Time time)
+                throw new SerializationException($"Cannot serialize {Name}", this);
+            
+            resultValue = time.ToExtendedIso();
+            return true;
         }
 
         /// <inheritdoc />
@@ -122,6 +55,42 @@ namespace ZES.GraphQL
 
             value = null;
             return false;
+        }
+
+        /// <inheritdoc />
+        protected override bool IsInstanceOfType(StringValueNode literal)
+        {
+            if (literal == null)
+            {
+                throw new ArgumentNullException(nameof(literal));
+            }
+
+            return TryParseTime(literal.Value, out _);
+        }
+
+        /// <inheritdoc />
+        protected override Time ParseLiteral(StringValueNode literal)
+        {
+            if (literal == null)
+            {
+                throw new ArgumentNullException(nameof(literal));
+            }
+
+            if (TryParseTime(literal.Value, out var time))
+                return time;
+
+            throw new SerializationException($"Cannot parse {Name} with type {literal.GetType()}", this);
+        }
+
+        /// <inheritdoc />
+        protected override StringValueNode ParseValue(Time value)
+        {
+            if (value == default)
+            {
+                return new StringValueNode(string.Empty);
+            }
+
+            return new StringValueNode(value.ToExtendedIso());
         }
 
         private bool TryParseTime(string value, out Time time)

@@ -12,9 +12,9 @@ namespace ZES.GraphQL
         /// </summary>
         /// <param name="message">Message event</param>
         /// <returns>Log contents</returns>
-        public LogMessage Log(IEventMessage message)
+        /*public LogMessage Log(IEventMessage message)
         {
             return (LogMessage)message.Payload;
-        }
+        }*/
     }
 }

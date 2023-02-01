@@ -1,5 +1,6 @@
 using System.Linq;
 using System.Reactive.Linq;
+using HotChocolate.Types;
 using ZES.Infrastructure.GraphQl;
 using ZES.Interfaces;
 using ZES.Interfaces.Branching;

@@ -10,8 +10,8 @@ namespace ZES.GraphQL
         /// <inheritdoc />
         protected override void Configure(IObjectTypeDescriptor<BaseSubscription> descriptor)
         {
-            descriptor.Field(t => t.Log(default))
-                .Type<NonNullType<ObjectType<LogMessage>>>();
+            // descriptor.Field(t => t.Log(default))
+            //    .Type<NonNullType<ObjectType<LogMessage>>>();
         }
     }
 }

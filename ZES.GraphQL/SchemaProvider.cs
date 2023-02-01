@@ -1,4 +1,3 @@
-using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
@@ -7,21 +6,20 @@ using System.Reflection;
 using System.Threading.Tasks;
 using HotChocolate;
 using HotChocolate.Execution;
-using HotChocolate.Execution.Instrumentation;
-using HotChocolate.Stitching;
-using HotChocolate.Subscriptions;
 using HotChocolate.Types;
-using HotChocolate.Utilities;
+using HotChocolate.Types.Descriptors;
 using JetBrains.Annotations;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using NodaTime;
-using NodaTime.Text;
 using ZES.Interfaces;
 using ZES.Interfaces.Branching;
 using ZES.Interfaces.Causality;
+using ZES.Interfaces.Clocks;
 using ZES.Interfaces.Domain;
 using ZES.Interfaces.GraphQL;
 using ZES.Interfaces.Pipes;
+using ZES.Utils;
 using IError = HotChocolate.IError;
 using IQuery = ZES.Interfaces.Domain.IQuery;
 
@@ -38,7 +36,6 @@ namespace ZES.GraphQL
         private readonly IEnumerable<IGraphQlQuery> _queries;
         private readonly IServiceCollection _services;
         private readonly IMessageQueue _messageQueue;
-        private readonly IDiagnosticObserver _observer;
         private readonly IRecordLog _recordLog;
         private readonly IRemote _remote;
         private readonly ITimeline _timeline;
@@ -54,11 +51,10 @@ namespace ZES.GraphQL
         /// <param name="services">Asp.Net services collection</param>
         /// <param name="graph">QGraph</param>
         /// <param name="messageQueue">Message queue</param>
-        /// <param name="observer">Diagnostic observer</param>
         /// <param name="recordLog">Record log</param>
         /// <param name="remote">Remote service</param>
         /// <param name="timeline">Timeline</param>
-        public SchemaProvider(IBus bus, ILog log, IBranchManager manager, IEnumerable<IGraphQlMutation> mutations, IEnumerable<IGraphQlQuery> queries, IServiceCollection services, IGraph graph, IMessageQueue messageQueue, IDiagnosticObserver observer, IRecordLog recordLog, IRemote remote, ITimeline timeline)
+        public SchemaProvider(IBus bus, ILog log, IBranchManager manager, IEnumerable<IGraphQlMutation> mutations, IEnumerable<IGraphQlQuery> queries, IServiceCollection services, IGraph graph, IMessageQueue messageQueue, IRecordLog recordLog, IRemote remote, ITimeline timeline)
         {
             _bus = bus;
             _log = log;
@@ -68,7 +64,6 @@ namespace ZES.GraphQL
             _services = services;
             _graph = graph;
             _messageQueue = messageQueue;
-            _observer = observer;
             _recordLog = recordLog;
             _remote = remote;
             _timeline = timeline;
@@ -77,14 +72,16 @@ namespace ZES.GraphQL
         }
 
         /// <inheritdoc />
-        public IQueryExecutor Build()
+        public IRequestExecutor Build()
         {
             var provider = _services.BuildServiceProvider();
-            var executor = provider.GetService<IQueryExecutor>();
-            var sender = provider.GetService<IEventSender>();
+            var resolver = provider.GetService<IRequestExecutorResolver>();
+            var executor = resolver.GetRequestExecutorAsync().Result;
+            
+            /* var sender = provider.GetService<IEventSender>();
 
             _log.Logs.Subscribe(async m => await sender.SendAsync(
-                new OnLogMessage(new LogMessage(m))));
+                new OnLogMessage(new LogMessage(m))));*/
 
             return executor;
         }
@@ -119,74 +116,119 @@ namespace ZES.GraphQL
             _services.AddSingleton(typeof(IRecordLog), _recordLog);
             _services.AddSingleton(typeof(IRemote), _remote);
             _services.AddSingleton(typeof(ITimeline), _timeline);
-            _services.AddDiagnosticObserver(_observer);
+            _services.TryAddEnumerable(_queries.Select(ServiceDescriptor.Singleton));
+            _services.TryAddEnumerable(_mutations.Select(ServiceDescriptor.Singleton));
 
-            _services.AddInMemorySubscriptionProvider();
+            var builder = _services.AddGraphQL()
+                .BindRuntimeType<Instant, InstantType>()
+                .BindRuntimeType<Time, TimeType>()
+                .AddQueryType<BaseQueries>(c => c.Name("Query"))
+                .AddMutationType<BaseMutations>(c => c.Name("Mutation"))
+                .AddTypeExtension<QueryTypeExtensions>()
+                .AddTypeExtension<MutationTypeExtensions>()
+                .AddDiagnosticEventListener<DiagnosticListener>();
 
-            var baseSchema = Schema.Create(c =>
+            foreach (var queryType in rootQuery)
             {
-                c.RegisterExtendedScalarTypes();
-                
-                c.RegisterType<InstantType>();
-                c.RegisterType<TimeType>();
-                c.RegisterQueryType(typeof(BaseQueries));
-                c.RegisterMutationType(typeof(BaseMutations));
-                c.RegisterSubscriptionType<SubscriptionType>();
-            });
-            
-            var domainSchemas = rootQuery.Zip(rootMutation, (a, b) =>
-                                                                (a, b))
-                .Select(t => Schema.Create(c =>            
-            {
-                c.RegisterExtendedScalarTypes();
-                c.RegisterType<InstantType>();
-                c.RegisterType<TimeType>();
-
-                if (t.Item1 != null)
+                foreach (var p in queryType.GetMethods(BindingFlags.Public | BindingFlags.Instance |
+                                                     BindingFlags.DeclaredOnly))
                 {
-                    foreach (var p in t.Item1.GetMethods(BindingFlags.Public | BindingFlags.Instance |
-                                                         BindingFlags.DeclaredOnly))
-                    {
-                        var arg = p.GetParameters().FirstOrDefault()?.ParameterType;
-                        if (arg != null && arg.GetInterfaces().Contains(typeof(IQuery)))
-                            c.RegisterType(typeof(QueryType<>).MakeGenericType(arg));
-                    }
-
-                    c.RegisterQueryType(typeof(ObjectType<>).MakeGenericType(t.Item1));
+                    var arg = p.GetParameters().FirstOrDefault()?.ParameterType;
+                    if (arg != null && arg.GetInterfaces().Contains(typeof(IQuery)))
+                        builder.AddType(typeof(QueryType<>).MakeGenericType(arg));
                 }
 
-                if (t.Item2 == null) 
-                    return;
-                
-                foreach (var p in t.Item2.GetMethods(BindingFlags.Public | BindingFlags.Instance |
+                // builder.AddQueryType(queryType);
+            }
+
+            foreach (var mutationType in rootMutation)
+            {
+                foreach (var p in mutationType.GetMethods(BindingFlags.Public | BindingFlags.Instance |
                                                      BindingFlags.DeclaredOnly))
                 {
                     var arg = p.GetParameters().FirstOrDefault()?.ParameterType;
                     if (arg != null && arg.GetInterfaces().Contains(typeof(ICommand)))
-                        c.RegisterType(typeof(CommandType<>).MakeGenericType(arg));
+                        builder.AddType(typeof(CommandType<>).MakeGenericType(arg));
+                }
+
+                // builder.AddMutationType(mutationType);
+            }
+        }
+
+        [UsedImplicitly]
+        private class QueryTypeExtensions : ObjectTypeExtension
+        {
+            private readonly IEnumerable<IGraphQlQuery> _queries;
+
+            public QueryTypeExtensions(IEnumerable<IGraphQlQuery> queries)
+            {
+                _queries = queries;
+            }
+            
+            protected override void Configure(IObjectTypeDescriptor descriptor)
+            {
+                descriptor.Name("Query");
+
+                var rootQuery = _queries.Select(t => t.GetType());
+
+                foreach (var queryType in rootQuery)
+                {
+                    foreach (var mi in queryType.GetMethods(BindingFlags.Public | BindingFlags.Instance |
+                                                            BindingFlags.DeclaredOnly))
+                    {
+                        descriptor.Field(mi.Name.FirstCharacterToLower())
+                            .Type(mi.ReturnType)
+                            .ResolveWith(mi);
+                        
+                        foreach (var arg in mi.GetParameters())
+                        {
+                            descriptor.Field(mi.Name.FirstCharacterToLower())
+                                .Argument(arg.Name.FirstCharacterToLower(), argDescriptor => 
+                                    argDescriptor.Type(arg.ParameterType));
+                        }
+                    }
                 }
                 
-                c.RegisterMutationType(typeof(ObjectType<>).MakeGenericType(t.Item2));
-            })).ToList();
-
-            void AggregateSchemas(IStitchingBuilder b)
-            {
-                b.AddSchemaConfiguration(c =>
-                {
-                    c.RegisterType<InstantType>();
-                    c.RegisterType<TimeType>();
-                });
-                b.AddSchema("Base", baseSchema);
-
-                var i = 0;
-                foreach (var s in domainSchemas)
-                {
-                    b = b.AddSchema($"Domain{i}", s);
-                    i++;
-                }
+                base.Configure(descriptor);
             }
-           
-            _services.AddStitchedSchema(AggregateSchemas).AddErrorFilter<ErrorFilter>();
+        }
+
+        [UsedImplicitly]
+        private class MutationTypeExtensions : ObjectTypeExtension
+        {
+            private readonly IEnumerable<IGraphQlMutation> _mutations;
+
+            public MutationTypeExtensions(IEnumerable<IGraphQlMutation> mutations)
+            {
+                _mutations = mutations;
+            }
+            
+            protected override void Configure(IObjectTypeDescriptor descriptor)
+            {
+                descriptor.Name("Mutation");
+
+                var rootMutation = _mutations.Select(t => t.GetType());
+
+                foreach (var queryType in rootMutation)
+                {
+                    foreach (var mi in queryType.GetMethods(BindingFlags.Public | BindingFlags.Instance |
+                                                            BindingFlags.DeclaredOnly))
+                    {
+                        descriptor.Field(mi.Name.FirstCharacterToLower())
+                            .Type(mi.ReturnType)
+                            .ResolveWith(mi);
+
+                        foreach (var arg in mi.GetParameters())
+                        {
+                            descriptor.Field(mi.Name.FirstCharacterToLower())
+                                .Argument(arg.Name.FirstCharacterToLower(), argDescriptor => 
+                                    argDescriptor.Type(arg.ParameterType));
+                        }
+                    }
+                }
+                
+                base.Configure(descriptor);
+            }
         }
 
         [UsedImplicitly]

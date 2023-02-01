@@ -1,3 +1,4 @@
+using HotChocolate.Types;
 using ZES.Infrastructure.Alerts;
 using ZES.Infrastructure.GraphQl;
 using ZES.Interfaces;

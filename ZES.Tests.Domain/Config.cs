@@ -54,22 +54,27 @@ namespace ZES.Tests.Domain
             c.RegisterEvents(Assembly.GetExecutingAssembly());   
         }
         
-        public class Queries : GraphQlQuery 
+        public class Query : GraphQlQuery 
         {
-            public Queries(IBus bus)
+            public Query(IBus bus)
                 : base(bus)
             {
             }
             
+            /// <summary>
+            /// Gets the root info
+            /// </summary>
+            /// <param name="id">Root id</param>
+            /// <returns>Root info</returns>
             public RootInfo RootInfoQuery(string id) => Resolve(new RootInfoQuery(id));
             public RootInfo RootInfoQueryEx(RootInfoQuery query) => Resolve(query);
             public Stats StatsQuery() => Resolve(new StatsQuery());
             public LastRecord LastRecordQuery(string id) => Resolve(new LastRecordQuery(id));
         }
         
-        public class Mutations : GraphQlMutation
+        public class Mutation : GraphQlMutation
         {
-            public Mutations(IBus bus, ILog log, IBranchManager manager)
+            public Mutation(IBus bus, ILog log, IBranchManager manager)
                 : base(bus, log, manager)
             {
             }

@@ -7,7 +7,7 @@ using NodaTime.Text;
 namespace ZES.GraphQL
 {
     /// <inheritdoc />
-    public class InstantType : ScalarType
+    public class InstantType : ScalarType<Instant, StringValueNode>
     {
         /// <summary>
         /// Initializes a new instance of the <see cref="InstantType"/> class.
@@ -18,55 +18,7 @@ namespace ZES.GraphQL
         }
 
         /// <inheritdoc />
-        public override Type ClrType => typeof(Instant);
-
-        /// <inheritdoc />
-        public override bool IsInstanceOfType(IValueNode literal)
-        {
-            if (literal == null)
-            {
-                throw new ArgumentNullException(nameof(literal));
-            }
-
-            if (literal is NullValueNode)
-            {
-                return true;
-            }
-
-            if (literal is StringValueNode stringLiteral
-                && TryParseInstant(stringLiteral.Value, out _))
-            {
-                return true;
-            }
-
-            return false;
-        }
-
-        /// <inheritdoc />
-        public override object ParseLiteral(IValueNode literal)
-        {
-            if (literal == null)
-            {
-                throw new ArgumentNullException(nameof(literal));
-            }
-
-            if (literal is NullValueNode)
-            {
-                return null;
-            }
-
-            if (literal is StringValueNode stringLiteral
-                && TryParseInstant(stringLiteral.Value, out var instant))
-            {
-                return instant;
-            }
-
-            throw new ScalarSerializationException(
-                $"Cannot parse {Name} with type {literal.GetType()}");
-        }
-
-        /// <inheritdoc />
-        public override IValueNode ParseValue(object value)
+        public override IValueNode ParseResult(object value)
         {
             if (value == default)
             {
@@ -74,53 +26,73 @@ namespace ZES.GraphQL
             }
 
             if (value is Instant instant)
-            {
-                return new StringValueNode(InstantPattern.ExtendedIso.Format(instant));
-            }
+                return ParseValue(instant);
 
-            throw new ScalarSerializationException(
-                $"Cannot parse {Name} with type {value.GetType()}");
+            throw new SerializationException($"Cannot parse {Name} with type {value.GetType()}", this);
         }
 
         /// <inheritdoc />
-        public override object Serialize(object value)
+        public override bool TrySerialize(object runtimeValue, out object resultValue)
         {
-            if (value == default)
-            {
-                return null;
-            }
-
-            if (value is Instant instant)
-            {
-                return instant;
-            }
-
-            throw new ScalarSerializationException($"Cannot serialize {Name}");
+            resultValue = null;
+            if (runtimeValue is not Instant instant) 
+                throw new SerializationException($"Cannot serialize {Name}", this);
+            
+            resultValue = instant;
+            return true;
         }
 
         /// <inheritdoc />
         public override bool TryDeserialize(object serialized, out object value)
         {
-            if (serialized is null)
+            switch (serialized)
             {
-                value = null;
-                return true;
+                case null:
+                    value = null;
+                    return true;
+                case string s when TryParseInstant(s, out var instant):
+                    value = instant;
+                    return true;
+                case Instant i:
+                    value = i;
+                    return true;
+                default:
+                    value = null;
+                    return false;
+            }
+        }
+
+        /// <inheritdoc />
+        protected override bool IsInstanceOfType(StringValueNode literal)
+        {
+            if (literal == null)
+            {
+                throw new ArgumentNullException(nameof(literal));
             }
 
-            if (serialized is string s && TryParseInstant(s, out var instant))
+            return TryParseInstant(literal.Value, out _);
+        }
+
+        /// <inheritdoc />
+        protected override Instant ParseLiteral(StringValueNode literal)
+        {
+            if (literal == null)
             {
-                value = instant;
-                return true;
+                throw new ArgumentNullException(nameof(literal));
             }
 
-            if (serialized is Instant i)
+            if (TryParseInstant(literal.Value, out var instant))
             {
-                value = i;
-                return true;
+                return instant;
             }
 
-            value = null;
-            return false;
+            throw new SerializationException($"Cannot parse {Name} with type {literal.GetType()}", this);
+        }
+
+        /// <inheritdoc />
+        protected override StringValueNode ParseValue(Instant instant)
+        {
+            return new StringValueNode(InstantPattern.ExtendedIso.Format(instant));
         }
 
         private bool TryParseInstant(string value, out Instant instant)

@@ -9,16 +9,11 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="HotChocolate.AspNetCore">
-      <Version>10.3.5</Version>
-    </PackageReference>
-    <PackageReference Include="HotChocolate.AspNetCore.Subscriptions">
-      <Version>10.3.5</Version>
-    </PackageReference>
+    <PackageReference Include="HotChocolate.AspNetCore" Version="12.16.0" />
     <PackageReference Include="SimpleInjector.Integration.AspNetCore">
       <Version>4.5.1</Version>
     </PackageReference>
-    <PackageReference Include="Microsoft.Bcl.AsyncInterfaces" Version="5.0.0"/>
+    <PackageReference Include="Microsoft.Bcl.AsyncInterfaces" Version="5.0.0" />
   </ItemGroup>
 
   <ItemGroup>

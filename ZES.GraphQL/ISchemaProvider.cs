@@ -12,8 +12,8 @@ namespace ZES.GraphQL
         /// <summary>
         /// Generates the schema from specified root query and mutation 
         /// </summary>
-        /// <returns><see cref="IQueryExecutor"/></returns>
-        IQueryExecutor Build();
+        /// <returns><see cref="IRequestExecutor"/></returns>
+        IRequestExecutor Build();
 
         /// <summary>
         /// Replay the scenario

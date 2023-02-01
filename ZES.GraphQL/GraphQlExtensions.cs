@@ -29,7 +29,7 @@ namespace ZES.GraphQL
             var container = new Container();
             container.Options.DefaultLifestyle = Lifestyle.Singleton;
 
-            services.AddInMemorySubscriptionProvider();
+            // services.AddInMemorySubscriptionProvider();
             UseGraphQl(services, container, new[] { config }, logger);
         }
 
@@ -45,7 +45,7 @@ namespace ZES.GraphQL
             var container = new Container();
             container.Options.DefaultLifestyle = Lifestyle.Singleton;
 
-            services.AddInMemorySubscriptionProvider();
+            // services.AddInMemorySubscriptionProvider();
             UseGraphQl(services, container, configs, logger, useRemoteStore);
         }
 
@@ -64,7 +64,6 @@ namespace ZES.GraphQL
             root.ComposeApplication(container);
             container.Register(() => services, Lifestyle.Singleton);
             container.Register<ISchemaProvider, SchemaProvider>(Lifestyle.Singleton);
-            container.Register<IDiagnosticObserver, DiagnosticObserver>(Lifestyle.Singleton);
             if (useRemoteStore)
                 root.RegisterRemoteStore(container, false);
 

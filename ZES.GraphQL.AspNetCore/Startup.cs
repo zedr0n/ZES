@@ -22,7 +22,7 @@ namespace ZES.GraphQL.AspNetCore
         public void ConfigureServices(IServiceCollection services)
         {
             services.AddCors();
-            services.AddGraphQLSubscriptions();
+            services.AddGraphQLServer();
             services.UseGraphQl(typeof(Config));
         }
 
@@ -43,8 +43,10 @@ namespace ZES.GraphQL.AspNetCore
                     .AllowAnyOrigin()
                     .AllowAnyHeader()
                     .AllowAnyMethod());
+            
             app.UseWebSockets()
-                .UseGraphQL();
+                .UseRouting()
+                .UseEndpoints(x => x.MapGraphQL("/"));
         }
     }
 }

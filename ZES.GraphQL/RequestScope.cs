@@ -40,8 +40,12 @@ namespace ZES.GraphQL
             {
                 case OperationType.Query:
                 {
-                    var vars = _context.Request.VariableValues;
-                    _recordLog.AddQuery(query, _context.Result.ToJson());
+                    if (_context.Request.OperationName == null || !_context.Request.OperationName.Contains("introspection"))
+                    {
+                        var vars = _context.Request.VariableValues;
+                        _recordLog.AddQuery(query, _context.Result.ToJson());
+                    }
+                    
                     break;
                 }
                 

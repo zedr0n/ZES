@@ -54,7 +54,7 @@ namespace ZES.Infrastructure.Clocks
                 case null:
                     return new LogicalTime(_l, _c);
                 case InstantTime instantTime:
-                    m = new LogicalTime (instantTime.instant.ToUnixTimeTicks(), 0 );
+                    m = new LogicalTime (instantTime.Instant.ToUnixTimeTicks(), 0 );
                     break;
                 case LogicalTime logicalTime:
                     m = logicalTime;

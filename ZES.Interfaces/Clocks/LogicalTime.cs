@@ -17,30 +17,12 @@ namespace ZES.Interfaces.Clocks
         /// <summary>
         /// Gets the largest possible time instance
         /// </summary>
-        public new static LogicalTime MaxValue => new (Instant.MaxValue.ToUnixTimeTicks(), 0);
+        public new static LogicalTime MaxValue => new(Instant.MaxValue.ToUnixTimeTicks(), 0);
 
         /// <summary>
         /// Gets the smallest possible time instance
         /// </summary>
-        public new static LogicalTime MinValue => new (Instant.MinValue.ToUnixTimeTicks(), 0);
-
-        /// <summary>
-        /// Gets the time instance from extended iso string
-        /// </summary>
-        /// <param name="time">Extended iso string</param>
-        /// <returns>Time instance</returns>
-        public new static LogicalTime FromExtendedIso(string time)
-        {
-            if (time == null)
-                return default;
-            var tokens = time.Split(';');
-            long c = 0;
-            if (tokens.Length > 1)
-                c = long.Parse(tokens[1]);
-            
-            var parseResult = InstantPattern.ExtendedIso.Parse(tokens[0]);
-            return parseResult.Success ? new LogicalTime(parseResult.Value.ToUnixTimeTicks(), c) : default;
-        }
+        public new static LogicalTime MinValue => new(Instant.MinValue.ToUnixTimeTicks(), 0);
 
         /// <summary>
         /// Lexicographic comparison for logical time
@@ -86,6 +68,24 @@ namespace ZES.Interfaces.Clocks
         public static bool operator >=(LogicalTime a, LogicalTime b)
         {
             return a > b || a == b;
+        }
+
+        /// <summary>
+        /// Gets the time instance from extended iso string
+        /// </summary>
+        /// <param name="time">Extended iso string</param>
+        /// <returns>Time instance</returns>
+        public new static LogicalTime FromExtendedIso(string time)
+        {
+            if (time == null)
+                return default;
+            var tokens = time.Split(';');
+            long c = 0;
+            if (tokens.Length > 1)
+                c = long.Parse(tokens[1]);
+            
+            var parseResult = InstantPattern.ExtendedIso.Parse(tokens[0]);
+            return parseResult.Success ? new LogicalTime(parseResult.Value.ToUnixTimeTicks(), c) : default;
         }
 
         /// <inheritdoc />
@@ -164,6 +164,5 @@ namespace ZES.Interfaces.Clocks
         /// <inheritdoc />
         public override string ToString(string format, IFormatProvider formatProvider) =>
             Instant.FromUnixTimeTicks(l).ToString(format, formatProvider);
-
     }
 }

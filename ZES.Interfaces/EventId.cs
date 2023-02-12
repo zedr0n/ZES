@@ -6,7 +6,7 @@ namespace ZES.Interfaces
     /// <summary>
     /// Replica event id
     /// </summary>
-    public record EventId(string replicaName, Time timestamp) : IComparable<EventId>, IComparable
+    public record EventId(string ReplicaName, Time Timestamp) : IComparable<EventId>, IComparable
     {
         /// <summary>
         /// Operator less than for <see cref="EventId"/> 
@@ -14,7 +14,7 @@ namespace ZES.Interfaces
         /// <param name="a">Left value</param>
         /// <param name="b">Right value</param>
         /// <returns>True if a less than b </returns>
-        public static bool operator <(EventId a, EventId b) => a.timestamp < b.timestamp;
+        public static bool operator <(EventId a, EventId b) => a.Timestamp < b.Timestamp;
 
         /// <summary>
         /// Operator less or than for <see cref="EventId"/> 
@@ -22,7 +22,7 @@ namespace ZES.Interfaces
         /// <param name="a">Left value</param>
         /// <param name="b">Right value</param>
         /// <returns>True if a less or equal than b by lexicographical comparison</returns>
-        public static bool operator <=(EventId a, EventId b) => a.timestamp <= b.timestamp;
+        public static bool operator <=(EventId a, EventId b) => a.Timestamp <= b.Timestamp;
 
         /// <summary>
         /// Operator greater than for <see cref="EventId"/> 
@@ -30,7 +30,7 @@ namespace ZES.Interfaces
         /// <param name="a">Left value</param>
         /// <param name="b">Right value</param>
         /// <returns>True if a more than b </returns>
-        public static bool operator >(EventId a, EventId b) => b.timestamp > a.timestamp;
+        public static bool operator >(EventId a, EventId b) => b.Timestamp > a.Timestamp;
 
         /// <summary>
         /// Lexicographic comparison for logical time
@@ -38,10 +38,10 @@ namespace ZES.Interfaces
         /// <param name="a">Left value</param>
         /// <param name="b">Right value</param>
         /// <returns>True if a more or equal than b </returns>
-        public static bool operator >=(EventId a, EventId b) => a.timestamp >= b.timestamp;
+        public static bool operator >=(EventId a, EventId b) => a.Timestamp >= b.Timestamp;
 
         /// <inheritdoc />
-        public int CompareTo(EventId other) => timestamp.CompareTo(other.timestamp);
+        public int CompareTo(EventId other) => Timestamp.CompareTo(other.Timestamp);
 
         /// <inheritdoc />
         public int CompareTo(object obj)
@@ -66,17 +66,17 @@ namespace ZES.Interfaces
         {
             var tokens = str.Split('@');
             if (tokens.Length != 2)
-                throw new InvalidCastException($"EventId should be of format {nameof(timestamp)}@{nameof(replicaName)}");
-            return new EventId(replicaName: tokens[1], timestamp: Time.FromExtendedIso(tokens[0]));
+                throw new InvalidCastException($"EventId should be of format {nameof(Timestamp)}@{nameof(ReplicaName)}");
+            return new EventId(ReplicaName: tokens[1], Timestamp: Time.FromExtendedIso(tokens[0]));
         }
         
         /// <summary>
         /// Convert the associated timestamp to extended ISO
         /// </summary>
         /// <returns>Extended ISO string</returns>
-        public string ToExtendedIso() => timestamp.ToExtendedIso();
+        public string ToExtendedIso() => Timestamp.ToExtendedIso();
         
         /// <inheritdoc />
-        public override string ToString() => $"{ToExtendedIso()}@{replicaName}";
+        public override string ToString() => $"{ToExtendedIso()}@{ReplicaName}";
     }
 }

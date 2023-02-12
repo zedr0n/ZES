@@ -9,13 +9,13 @@ namespace ZES.Interfaces.Clocks
     /// <summary>
     /// Nodatime instant time
     /// </summary>
-    /// <param name="instant"></param>
-    public sealed record InstantTime(Instant instant) : Time
+    /// <param name="Instant">Instant value</param>
+    public sealed record InstantTime(Instant Instant) : Time
     {
         /// <summary>
         /// Gets the NodaTime instant
         /// </summary>
-        public Instant instant { get; init; } = instant;
+        public Instant Instant { get; init; } = Instant;
 
         /// <summary>
         /// Gets the largest possible time instance
@@ -26,17 +26,6 @@ namespace ZES.Interfaces.Clocks
         /// Gets the smallest possible time instance
         /// </summary>
         public new static InstantTime MinValue => Instant.MinValue; 
-        
-        /// <summary>
-        /// Gets the time instance from extended iso string
-        /// </summary>
-        /// <param name="time">Extended iso string</param>
-        /// <returns>Time instance</returns>
-        public new static InstantTime FromExtendedIso(string time)
-        {
-            var parseResult = InstantPattern.ExtendedIso.Parse(time);
-            return parseResult.Success ? parseResult.Value : default(InstantTime);
-        }
         
         /// <summary>
         /// Instant -> InstantTime operator 
@@ -51,7 +40,7 @@ namespace ZES.Interfaces.Clocks
         /// <param name="a">Left value</param>
         /// <param name="b">Right value</param>
         /// <returns>True if a less than b </returns> 
-        public static bool operator <(InstantTime a, InstantTime b) => a.instant < b.instant;
+        public static bool operator <(InstantTime a, InstantTime b) => a.Instant < b.Instant;
         
         /// <summary>
         /// Less or equal than operator 
@@ -59,7 +48,7 @@ namespace ZES.Interfaces.Clocks
         /// <param name="a">Left value</param>
         /// <param name="b">Right value</param>
         /// <returns>True if a less than b </returns> 
-        public static bool operator <=(InstantTime a, InstantTime b) => a.instant <= b.instant;
+        public static bool operator <=(InstantTime a, InstantTime b) => a.Instant <= b.Instant;
 
         /// <summary>
         /// Greater than operator 
@@ -67,7 +56,7 @@ namespace ZES.Interfaces.Clocks
         /// <param name="a">Left value</param>
         /// <param name="b">Right value</param>
         /// <returns>True if a greter than b </returns> 
-        public static bool operator >(InstantTime a, InstantTime b) => a.instant > b.instant;
+        public static bool operator >(InstantTime a, InstantTime b) => a.Instant > b.Instant;
 
         /// <summary>
         /// Greater or equal than operator 
@@ -75,16 +64,27 @@ namespace ZES.Interfaces.Clocks
         /// <param name="a">Left value</param>
         /// <param name="b">Right value</param>
         /// <returns>True if a less than b </returns> 
-        public static bool operator >=(InstantTime a, InstantTime b) => a.instant >= b.instant;
+        public static bool operator >=(InstantTime a, InstantTime b) => a.Instant >= b.Instant;
+
+        /// <summary>
+        /// Gets the time instance from extended iso string
+        /// </summary>
+        /// <param name="time">Extended iso string</param>
+        /// <returns>Time instance</returns>
+        public new static InstantTime FromExtendedIso(string time)
+        {
+            var parseResult = InstantPattern.ExtendedIso.Parse(time);
+            return parseResult.Success ? parseResult.Value : default(InstantTime);
+        }
 
         /// <inheritdoc />
-        public override string ToExtendedIso() => InstantPattern.ExtendedIso.Format(instant);
+        public override string ToExtendedIso() => InstantPattern.ExtendedIso.Format(Instant);
 
         /// <inheritdoc />
-        public override Instant ToInstant() => instant;
+        public override Instant ToInstant() => Instant;
 
         /// <inheritdoc />
-        public override Time JustBefore() => new InstantTime(instant - Duration.FromMilliseconds(1));
+        public override Time JustBefore() => new InstantTime(Instant - Duration.FromMilliseconds(1));
 
         /// <inheritdoc />
         protected override Duration DurationTo(Time other)
@@ -94,17 +94,17 @@ namespace ZES.Interfaces.Clocks
                 case null:
                     return Duration.Zero;
                 case InstantTime instantTime:
-                    return instantTime.instant - instant;
+                    return instantTime.Instant - Instant;
                 default:
                     throw new InvalidCastException($"Object must be of type {this.GetType()}");
             }    
         }
 
         /// <inheritdoc />
-        protected override Time AddDuration(Duration duration) => new InstantTime(instant + duration);
+        protected override Time AddDuration(Duration duration) => new InstantTime(Instant + duration);
         
         /// <inheritdoc />
-        public override long ToUnixTimeMilliseconds() => instant.ToUnixTimeMilliseconds();
+        public override long ToUnixTimeMilliseconds() => Instant.ToUnixTimeMilliseconds();
 
         /// <inheritdoc />
         public override int CompareTo(Time other)
@@ -114,7 +114,7 @@ namespace ZES.Interfaces.Clocks
                 case null:
                     return 1;
                 case InstantTime instantTime:
-                    return instant.CompareTo(instantTime.instant);
+                    return Instant.CompareTo(instantTime.Instant);
                 default:
                     throw new InvalidCastException($"Object must be of type {this.GetType()}");
             }
@@ -136,6 +136,6 @@ namespace ZES.Interfaces.Clocks
 
         /// <inheritdoc />
         public override string ToString(string format, IFormatProvider formatProvider) =>
-            instant.ToString(format, formatProvider);
+            Instant.ToString(format, formatProvider);
     }
 }

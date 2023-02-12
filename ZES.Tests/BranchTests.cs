@@ -172,8 +172,8 @@ namespace ZES.Tests
             await await bus.CommandAsync(new UpdateRoot(id));
             await time.Branch("test");
             var mergeResult = await time.Merge(BranchManager.Master);
-            Assert.True(mergeResult.success);
-            Assert.Equal(1, mergeResult.changes.SingleOrDefault().Value);
+            Assert.True(mergeResult.Success);
+            Assert.Equal(1, mergeResult.Changes.SingleOrDefault().Value);
         }
 
         [Fact]
@@ -696,7 +696,7 @@ namespace ZES.Tests
 
             await bus.Command(new UpdateRoot(id));
             var mergeResult = await manager.Merge("test");
-            Assert.False(mergeResult.success);
+            Assert.False(mergeResult.Success);
 
             otherRoot = await repository.Find<Root>($"{id}Other");
             Assert.Null(otherRoot);

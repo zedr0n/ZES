@@ -11,16 +11,6 @@ using ZES.Interfaces.EventStore;
 namespace ZES.Interfaces.Branching
 {
     /// <summary>
-    /// Merge result record 
-    /// </summary>
-    /// <param name="success">Merge status</param>
-    /// <param name="changes">Merge changes</param>
-    /// <param name="commandChanges">Commmands merge changes</param>
-    public record MergeResult(bool success, Dictionary<IStream, int> changes, IEnumerable<ICommand> commandChanges)
-    {
-    }
-    
-    /// <summary>
     /// Timeline manager
     /// </summary>
     public interface IBranchManager
@@ -82,5 +72,15 @@ namespace ZES.Interfaces.Branching
         /// <param name="branchId">Branch identifier</param>
         /// <returns>Current time</returns>
         Time GetTime(string branchId);
+    }
+    
+    /// <summary>
+    /// Merge result record 
+    /// </summary>
+    /// <param name="Success">Merge status</param>
+    /// <param name="Changes">Merge changes</param>
+    /// <param name="CommandChanges">Commmands merge changes</param>
+    public record MergeResult(bool Success, Dictionary<IStream, int> Changes, IEnumerable<ICommand> CommandChanges)
+    {
     }
 }

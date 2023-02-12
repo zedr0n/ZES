@@ -135,7 +135,7 @@ namespace ZES.Infrastructure.Clocks
         public override void WriteJson(JsonWriter writer, object value, JsonSerializer serializer)
         {
             var instantTime = value as InstantTime;
-            _instantConverter.WriteJson(writer, instantTime.instant, serializer);
+            _instantConverter.WriteJson(writer, instantTime.Instant, serializer);
         }
 
         /// <inheritdoc />

@@ -86,11 +86,11 @@ namespace ZES.Infrastructure.Branching
             var mergeResult = await _branchManager.Merge(branchId);
             await _branchManager.Branch(activeTimeline);
 
-            if (!mergeResult.success) 
+            if (!mergeResult.Success) 
                 return pushResult;
 
-            var changes = mergeResult.changes;
-            var commandChanges = mergeResult.commandChanges.ToList();
+            var changes = mergeResult.Changes;
+            var commandChanges = mergeResult.CommandChanges.ToList();
 
             var remoteAggregateStore = GetEventStore<IAggregate>(true);
             var remoteSagaStore = GetEventStore<ISaga>(true);
@@ -180,12 +180,12 @@ namespace ZES.Infrastructure.Branching
             await CopyRemoteToTimeline<ISaga>(branchId, syncRemoteTimeline);
            
             var mergeResult = await _branchManager.Merge(syncRemoteTimeline);
-            if (!mergeResult.success)
+            if (!mergeResult.Success)
                 return pullResult;
 
             pullResult.ResultStatus = FastForwardResult.Status.Success;
-            pullResult.NumberOfMessages += mergeResult.changes.Sum(m => m.Value);
-            pullResult.NumberOfStreams += mergeResult.changes.Count();
+            pullResult.NumberOfMessages += mergeResult.Changes.Sum(m => m.Value);
+            pullResult.NumberOfStreams += mergeResult.Changes.Count();
 
             var remoteCommands = await _remoteCommandLog.GetCommands(branchId);
             var localCommands = await _commandLog.GetCommands(branchId);

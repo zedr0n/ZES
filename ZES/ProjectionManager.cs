@@ -3,6 +3,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using SimpleInjector;
+using SqlStreamStore.Streams;
 using ZES.Infrastructure;
 using ZES.Interfaces.Domain;
 
@@ -70,36 +71,16 @@ namespace ZES
             return p;
         }
         
-        private abstract class Descriptor : ValueObject
+        private abstract record Descriptor(string StreamId, string Timeline) 
         {
-            protected Descriptor(string streamId, string timeline)
-            {
-                StreamId = streamId;
-                Timeline = timeline;
-            }
-
             public abstract Type StateType { get; }
-            public string StreamId { get; }
-            public string Timeline { get; }
         }
 
         /// <inheritdoc />
-        private class Descriptor<TState> : Descriptor
+        private record Descriptor<TState>(string StreamId, string Timeline) : Descriptor(StreamId, Timeline)
             where TState : IState
         {
-            public Descriptor(string streamId = "", string timeline = "") 
-                : base(streamId, timeline)
-            {
-            }
-            
             public override Type StateType => typeof(TState);
-
-            /// <inheritdoc />
-            protected override IEnumerable<object> GetAtomicValues()
-            {
-                yield return StreamId;
-                yield return Timeline;
-            }
         }
     }
 }

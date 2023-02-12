@@ -15,16 +15,6 @@ namespace ZES.Interfaces.Clocks
     public sealed record LogicalTime(long l, long c) : Time, IComparable<LogicalTime>, IComparable
     {
         /// <summary>
-        /// Gets physical part
-        /// </summary>
-        public long l { get; init; } = l;
-
-        /// <summary>
-        /// Gets concurrency part
-        /// </summary>
-        public long c { get; init; } = c;
-
-        /// <summary>
         /// Gets the largest possible time instance
         /// </summary>
         public new static LogicalTime MaxValue => new (Instant.MaxValue.ToUnixTimeTicks(), 0);

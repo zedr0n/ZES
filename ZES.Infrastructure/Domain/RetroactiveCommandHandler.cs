@@ -7,6 +7,7 @@ using ZES.Infrastructure.Alerts;
 using ZES.Infrastructure.Utils;
 using ZES.Interfaces;
 using ZES.Interfaces.Branching;
+using ZES.Interfaces.Clocks;
 using ZES.Interfaces.Domain;
 using ZES.Interfaces.Pipes;
 
@@ -42,7 +43,7 @@ namespace ZES.Infrastructure.Domain
         /// <inheritdoc />
         public async Task Handle(RetroactiveCommand<TCommand> iCommand)
         {
-            if (iCommand.Timestamp == default)
+            if (iCommand.Timestamp == Time.Default)
             {
                 iCommand.StoreInLog = false;
                 await _handler.Handle(iCommand.Command);

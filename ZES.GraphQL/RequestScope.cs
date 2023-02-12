@@ -32,10 +32,10 @@ namespace ZES.GraphQL
         {
             var query = _context.Request.Query.ToString();
             var request = _context.Document.Definitions.OfType<OperationDefinitionNode>()
-                .SingleOrDefault(o => o.Name?.Value == _context.Request.OperationName);
+                .SingleOrDefault();
             if (request == default)
                 return;
-            
+
             switch (request.Operation)
             {
                 case OperationType.Query:

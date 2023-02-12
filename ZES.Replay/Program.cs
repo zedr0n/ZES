@@ -16,7 +16,10 @@ namespace ZES.Replay
             var player = new Replayer();
             player.UseGraphQl(typeof(Config));
             if (args.Length != 1)
+            {
                 Console.WriteLine("ZES.Replayer log.json");
+                return;
+            }
 
             var logFile = args[0];
             var task = Task.Run(() => player.Replay(logFile));

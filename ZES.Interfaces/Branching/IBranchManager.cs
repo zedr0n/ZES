@@ -80,7 +80,7 @@ namespace ZES.Interfaces.Branching
     /// <param name="Success">Merge status</param>
     /// <param name="Changes">Merge changes</param>
     /// <param name="CommandChanges">Commmands merge changes</param>
-    public record MergeResult(bool Success, Dictionary<IStream, int> Changes, IEnumerable<ICommand> CommandChanges)
+    public readonly record struct MergeResult(bool Success, Dictionary<IStream, int> Changes, IEnumerable<ICommand> CommandChanges)
     {
     }
 }

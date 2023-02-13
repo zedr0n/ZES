@@ -5,29 +5,8 @@ namespace ZES.Interfaces.Stochastic
     /// <summary>
     /// Markov value for MDP
     /// </summary>
-    public readonly struct Value : IEquatable<Value>
+    public readonly record struct Value(double Mean = 0.0, double Variance = 0.0)
     {
-        /// <summary>
-        /// Initializes a new instance of the <see cref="Value"/> struct.
-        /// </summary>
-        /// <param name="mean">Mean</param>
-        /// <param name="variance">Second moment(and variance)</param>
-        public Value(double mean, double variance)
-        {
-            Mean = mean;
-            Variance = variance;
-        }
-        
-        /// <summary>
-        /// Gets the mean value
-        /// </summary>
-        public double Mean { get; }
-        
-        /// <summary>
-        /// Gets the second moment(or variance)
-        /// </summary>
-        public double Variance { get; }
-
         /*public class CdfFunction
         {
             private readonly List<double> _abscissas;
@@ -94,34 +73,6 @@ namespace ZES.Interfaces.Stochastic
         }
 
         /// <inheritdoc />
-        public bool Equals(Value other)
-        {
-            var b = Mean.Equals(other.Mean) && Variance.Equals(other.Variance);
-            return b;
-        }
-
-        /// <inheritdoc />
-        public override bool Equals(object obj)
-        {
-            return obj is Value other && Equals(other);
-        }
-
-        /// <inheritdoc />
         public override string ToString() => $"{Mean}";
-
-        /// <inheritdoc />
-        public override int GetHashCode()
-        {
-            unchecked
-            {
-                var hash = (Mean.GetHashCode() * 397) ^ Variance.GetHashCode();
-                /*foreach (var x in Cdf.Abscissas)
-                {
-                    hash = (hash * 397) ^ Cdf[x].GetHashCode();
-                }*/
-
-                return hash;
-            }
-        }
     }
 }

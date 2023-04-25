@@ -1,6 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
+﻿using System.Linq;
 using System.Reactive.Linq;
 using System.Threading.Tasks;
 using ZES.Infrastructure.EventStore;
@@ -9,8 +7,9 @@ using ZES.Interfaces.Branching;
 using ZES.Interfaces.Clocks;
 using ZES.Interfaces.Domain;
 using ZES.Interfaces.EventStore;
+using ZES.Interfaces.Replicas;
 
-namespace ZES.Infrastructure.Branching
+namespace ZES.Infrastructure.Replicas
 {
     /// <inheritdoc />
     public class GenericRemote : IRemote

@@ -1,6 +1,6 @@
 using System.Threading.Tasks;
 
-namespace ZES.Interfaces
+namespace ZES.Interfaces.Replicas
 {
     /// <summary>
     /// Remote interface 

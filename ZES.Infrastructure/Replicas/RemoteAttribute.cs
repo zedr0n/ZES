@@ -1,6 +1,6 @@
 using System;
 
-namespace ZES.Infrastructure
+namespace ZES.Infrastructure.Replicas
 {
     /// <summary>
     /// Defines remote store attribute 

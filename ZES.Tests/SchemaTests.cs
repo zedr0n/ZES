@@ -140,6 +140,33 @@ namespace ZES.Tests
         }
 
         [Fact]
+        public void CannotCreateRootTwice()
+        {
+            var container = CreateContainer();
+            var log = container.GetInstance<ILog>(); 
+            
+            var schemaProvider = container.GetInstance<ISchemaProvider>();
+            var generator = container.GetInstance<IGraphQlGenerator>();
+            
+            var executor = schemaProvider.Build();
+
+            var id = $"{nameof(CannotCreateRootTwice)}-Root";
+            var command = generator.Mutation(new CreateRoot(id));
+            var commandResult = executor.Execute(command);
+            if (commandResult.Errors != null)
+            {
+                foreach (var e in commandResult.Errors)
+                    log.Error(e.Message, this);
+            }
+
+            commandResult = executor.Execute(command);
+            if (commandResult.Errors != null)
+            {
+                foreach (var e in commandResult.Errors)
+                    log.Error(e.Message, this);
+            }
+        }
+        [Fact]
         public async void CanReplayLog()
         {
             var container = CreateContainer();

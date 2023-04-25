@@ -21,8 +21,9 @@ namespace ZES.GraphQL.AspNetCore
         /// <param name="services">Services collection</param>
         public void ConfigureServices(IServiceCollection services)
         {
-            services.AddCors();
-            services.AddGraphQLServer();
+            services.AddCors()
+                .AddGraphQLServer()
+                .ModifyRequestOptions(opt => opt.IncludeExceptionDetails = true);
             services.UseGraphQl(typeof(Config));
         }
 

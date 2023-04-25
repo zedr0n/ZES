@@ -6,8 +6,9 @@ using ZES.Interfaces.Branching;
 using ZES.Interfaces.Clocks;
 using ZES.Interfaces.Domain;
 using ZES.Interfaces.EventStore;
+using ZES.Interfaces.Replicas;
 
-namespace ZES.Infrastructure
+namespace ZES.Infrastructure.Replicas
 {
     /// <inheritdoc />
     public class RemoteManager : IRemoteManager

@@ -21,6 +21,7 @@ using ZES.Interfaces.Clocks;
 using ZES.Interfaces.Domain;
 using ZES.Interfaces.EventStore;
 using ZES.Interfaces.Pipes;
+using ZES.Interfaces.Replicas;
 using ZES.Interfaces.Stochastic;
 using ZES.Tests.Domain;
 using ZES.Tests.Domain.Commands;

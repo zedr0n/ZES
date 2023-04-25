@@ -1,8 +1,9 @@
 using System.Threading.Tasks;
 using ZES.Interfaces;
+using ZES.Interfaces.Replicas;
 using static ZES.Interfaces.FastForwardResult;
 
-namespace ZES.Infrastructure.Branching
+namespace ZES.Infrastructure.Replicas
 {
     /// <inheritdoc />
     public class NullRemote : IRemote

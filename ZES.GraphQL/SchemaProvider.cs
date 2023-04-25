@@ -19,6 +19,7 @@ using ZES.Interfaces.Clocks;
 using ZES.Interfaces.Domain;
 using ZES.Interfaces.GraphQL;
 using ZES.Interfaces.Pipes;
+using ZES.Interfaces.Replicas;
 using ZES.Utils;
 using IError = HotChocolate.IError;
 using IQuery = ZES.Interfaces.Domain.IQuery;

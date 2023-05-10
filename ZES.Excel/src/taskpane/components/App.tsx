@@ -1,8 +1,8 @@
-import * as React from 'react';
-import { Button, ButtonType } from 'office-ui-fabric-react';
-import Header from './Header';
-import HeroList, { HeroListItem } from './HeroList';
-import Progress from './Progress';
+import * as React from "react";
+import { DefaultButton } from "@fluentui/react";
+import Header from "./Header";
+import HeroList, { HeroListItem } from "./HeroList";
+import Progress from "./Progress";
 import { request } from 'graphql-request';
 import RangeInput from "./RangeInput";
 

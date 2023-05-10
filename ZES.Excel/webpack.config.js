@@ -1,8 +1,6 @@
 const devCerts = require("office-addin-dev-certs");
-const { CleanWebpackPlugin } = require("clean-webpack-plugin");
 const CopyWebpackPlugin = require("copy-webpack-plugin");
 const CustomFunctionsMetadataPlugin = require("custom-functions-metadata-plugin");
-const ExtractTextPlugin = require('extract-text-webpack-plugin');
 const HtmlWebpackPlugin = require("html-webpack-plugin");
 const webpack = require("webpack");
 
@@ -15,14 +13,14 @@ module.exports = async (env, options) => {
       vendor: [
         'react',
         'react-dom',
-        'core-js',
-        'office-ui-fabric-react'
+        'core-js'
     ],
     taskpane: [
         'react-hot-loader/patch',
         './src/taskpane/index.tsx'
     ],
-    commands: './src/commands/commands.ts'
+    commands: './src/commands/commands.ts',
+    functions: './src/functions/functions.ts'  
     },
     resolve: {
       extensions: [".ts", ".tsx", ".html", ".js"]
@@ -55,7 +53,7 @@ module.exports = async (env, options) => {
           test: /\.(png|jpe?g|gif|svg|woff|woff2|ttf|eot|ico)$/,
           use: {
               loader: 'file-loader',
-              query: {
+              options: {
                   name: 'assets/[name].[ext]'
                 }
               }  
@@ -63,9 +61,6 @@ module.exports = async (env, options) => {
           ]
     },    
     plugins: [
-      new CleanWebpackPlugin({
-        cleanOnceBeforeBuildPatterns: dev ? [] : ["**/*"]
-      }),
       new CustomFunctionsMetadataPlugin({
         output: "functions.json",
         input: "./src/functions/functions.ts"
@@ -75,25 +70,18 @@ module.exports = async (env, options) => {
           template: './src/taskpane/taskpane.html',
           chunks: ['taskpane', 'vendor', 'polyfills', 'functions']
       }),
-      new CopyWebpackPlugin([
-        {
-          to: "taskpane.css",
-          from: "./src/taskpane/taskpane.css"
-        }
-      ]),
-      new ExtractTextPlugin('[name].[hash].css'),
+      new CopyWebpackPlugin({
+            patterns: [
+              { from: "./src/taskpane/taskpane.css", to: "taskpane.css" },
+              { from: "./assets", to: "assets"}
+            ],
+          }
+      ),
       new HtmlWebpackPlugin({
           filename: "commands.html",
           template: "./src/commands/commands.html",
           chunks: ["commands"]
-      }),
-      new CopyWebpackPlugin([
-          {
-              from: './assets',
-              ignore: ['*.scss'],
-              to: 'assets',
-          }
-      ])
+      })
     ],
     devServer: {
       headers: {

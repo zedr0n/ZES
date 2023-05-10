@@ -1,0 +1,12 @@
+{
+    "name": "zes-docs",
+    "version": "1.0.0",
+    "author": "Zinnos",
+    "description": "ZES docs",
+    "scripts": {
+      "serve": "light-server -s ./_build/html -p 8080"
+    },
+    "devDependencies": {
+      "light-server": "^2.2.1"
+    }
+  }

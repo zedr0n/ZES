@@ -18,6 +18,7 @@
       <PackageReference Include="EventStore.Client" Version="20.6.0" />
       <PackageReference Include="JetBrains.Annotations" Version="2019.1.1" />
       <PackageReference Include="Microsoft.Extensions.Options" Version="5.0.0" />
+      <PackageReference Include="NeoSmart.AsyncLock" Version="3.2.1" />
       <PackageReference Include="NLog" Version="4.6.8" />
       <PackageReference Include="SimpleInjector" Version="4.4.2" />
       <PackageReference Include="StackExchange.Redis" Version="2.6.86" />

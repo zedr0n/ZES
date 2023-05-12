@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Concurrent;
 using System.Linq;
+using System.Reactive.Concurrency;
 using System.Reactive.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -14,6 +15,7 @@ using ZES.Infrastructure.Utils;
 using ZES.Interfaces;
 using ZES.Interfaces.Domain;
 using ZES.Interfaces.Pipes;
+using AsyncLock = NeoSmart.AsyncLock.AsyncLock;
 
 #pragma warning disable CS4014
 
@@ -30,6 +32,7 @@ namespace ZES
         private readonly ITimeline _timeline;
         private readonly IMessageQueue _messageQueue;
         private readonly ICommandLog _commandLog;
+        private readonly AsyncLock _lock = new();
 
         /// <summary>
         /// Initializes a new instance of the <see cref="Bus"/> class.
@@ -73,8 +76,11 @@ namespace ZES
         {
             if (command.GetType().IsClosedTypeOf(typeof(RetroactiveCommand<>)))
             {
-                await _messageQueue.RetroactiveExecution.FirstAsync(b => b == false).Timeout(Configuration.Timeout);
-                await _messageQueue.UncompletedMessages.FirstAsync(b => b == 0).Timeout(Configuration.Timeout);
+                using (await _lock.LockAsync())
+                {
+                    await _messageQueue.RetroactiveExecution.FirstAsync(b => b == false).Timeout(Configuration.Timeout);
+                    await _messageQueue.UncompletedMessages.FirstAsync(b => b == 0).Timeout(Configuration.Timeout);
+                }
             }
 
             command.Timeline = _timeline.Id;

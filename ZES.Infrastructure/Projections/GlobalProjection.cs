@@ -26,8 +26,13 @@ namespace ZES.Infrastructure.Projections
         public GlobalProjection(IEventStore<IAggregate> eventStore, ILog log, ITimeline activeTimeline, IMessageQueue messageQueue, IStreamLocator streamLocator)
             : base(eventStore, log, activeTimeline, streamLocator)
         {
+            var gate = messageQueue.RetroactiveExecution;
+
             InvalidateSubscription = new LazySubscription(() =>
                 messageQueue.Alerts.OfType<InvalidateProjections>()
+                    .Window(gate.StartWith(true).DistinctUntilChanged())
+                    .Select((w, i) => i % 2 == 1 ? w.ToList().SelectMany(x => x).TakeLast(1) : w)
+                    .Concat()
                     .Throttle(Configuration.Throttle)
                     .Subscribe(Build.InputBlock.AsObserver()));
         }

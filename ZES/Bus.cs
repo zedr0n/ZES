@@ -80,12 +80,18 @@ namespace ZES
                 {
                     await _messageQueue.RetroactiveExecution.FirstAsync(b => b == false).Timeout(Configuration.Timeout);
                     await _messageQueue.UncompletedMessages.FirstAsync(b => b == 0).Timeout(Configuration.Timeout);
+                    
+                    command.Timeline = _timeline.Id;
+                    await _messageQueue.UncompleteMessage(command);
                 }
             }
+            else
+            {
+                command.Timeline = _timeline.Id;
+                if (!command.Pure)
+                    await _messageQueue.UncompleteMessage(command);
+            }
 
-            command.Timeline = _timeline.Id;
-            if (!command.Pure)
-                await _messageQueue.UncompleteMessage(command);
             
             var tracked = new Tracked<ICommand>(command);
             var dispatcher = _dispatchers.GetOrAdd(_timeline.Id, CreateDispatcher);
@@ -108,7 +114,7 @@ namespace ZES
             if (handler != null)
                 return (TResult)await handler.Handle(query);
 
-            return default(TResult);            
+            return default;            
         }
         
         private void DeleteDispatcher(string timeline)

@@ -11,6 +11,7 @@ ZES.Taskpane/
 _build/
 doxyxml/
 python/
+Doxyfile
 
 # User-specific files
 *.suo

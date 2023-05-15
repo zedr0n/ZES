@@ -1,5 +1,5 @@
 import * as React from "react";
-import { DefaultButton } from "@fluentui/react";
+import {PrimaryButton} from "@fluentui/react";
 import Header from "./Header";
 import HeroList, { HeroListItem } from "./HeroList";
 import Progress from "./Progress";
@@ -97,6 +97,12 @@ export default class App extends React.Component<AppProps, AppState> {
     this.setState( { branch : data.activeBranch.toString() });
   }
   
+  flushLog = async() =>
+  {
+    const mutation = "mutation { flushLog }"
+    await request(window.server, mutation)
+  }
+  
   render() {
     const {
       title,
@@ -122,10 +128,11 @@ export default class App extends React.Component<AppProps, AppState> {
     //window.branch = "Test";
     
     return (
-      <div className='ms-welcome'>
-        <Header logo='assets/logo-filled.png' title={this.props.title} message='Welcome' />
-        <HeroList message={this.state.branch} items={this.state.listItems}>
-        </HeroList>
+      <div>
+        <Header logo='assets/logo-filled.png' title={this.props.title} message={this.state.branch} />
+        <div style={{display: "flex", justifyContent: "center"}}>
+          <PrimaryButton onClick={this.flushLog}>Flush log</PrimaryButton>
+        </div>  
       </div>
     );
   }

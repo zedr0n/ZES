@@ -33,6 +33,11 @@ namespace ZES
             _log = log;
             _timeline = timeline;
             _messagesHolderDict = new ConcurrentDictionary<string, UncompletedMessagesSingleHolder>();
+            RetroactiveExecution.DistinctUntilChanged()
+                .Throttle(x => Observable.Timer(TimeSpan.FromMilliseconds(x ? 0 : 10)))
+                .StartWith(false)
+                .DistinctUntilChanged()
+                .Subscribe(x => log.Info($"Retroactive execution : {x}"));
         }
 
         /// <inheritdoc />

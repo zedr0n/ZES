@@ -1,6 +1,7 @@
 #define USE_EXPLICIT
 
 using System;
+using System.Buffers;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -19,12 +20,64 @@ using Stream = ZES.Infrastructure.EventStore.Stream;
 namespace ZES.Infrastructure.Serialization
 {
     /// <inheritdoc />
+    public class JsonArrayPool : IArrayPool<char>
+    {
+        public static readonly JsonArrayPool Instance = new JsonArrayPool();
+
+        /// <inheritdoc />
+        public char[] Rent(int minimumLength)
+        {
+            // get char array from System.Buffers shared pool
+            return ArrayPool<char>.Shared.Rent(minimumLength);
+        }
+
+        /// <inheritdoc />
+        public void Return(char[] array)
+        {
+            // return char array to System.Buffers shared pool
+            ArrayPool<char>.Shared.Return(array);
+        }
+    }    
+    
+    /// <inheritdoc />
+    public class AutomaticJsonNameTable : DefaultJsonNameTable
+    {
+        private int _nAutoAdded = 0;
+        private readonly int _maxToAutoAdd;
+
+        /// <inheritdoc />
+        public AutomaticJsonNameTable(int maxToAdd)
+        {
+            _maxToAutoAdd = maxToAdd;
+        }
+
+        /// <inheritdoc />
+        public override string Get(char[] key, int start, int length)
+        {
+            var s = base.Get(key, start, length);
+
+            if (s != null || _nAutoAdded >= _maxToAutoAdd) 
+                return s;
+            
+            s = new string(key, start, length);
+            Add(s);
+            _nAutoAdded++;
+
+            return s;
+        }
+    }    
+    
+    /// <inheritdoc />
     public class Serializer<T> : ISerializer<T>
         where T : class
     {
         private readonly ILog _log;
         private readonly JsonSerializer _serializer;
         private readonly IEventSerializationRegistry _serializationRegistry;
+
+        private const int MaxPropertyNamesToCache = 200;
+        private readonly AutomaticJsonNameTable _jsonNameTable;
+        private readonly IArrayPool<char> _jsonArrayPool;
 #if USE_JSON        
         private readonly JsonSerializer _simpleSerializer;
 #endif
@@ -39,6 +92,13 @@ namespace ZES.Infrastructure.Serialization
         {
             _serializationRegistry = serializationRegistry;
             _log = log;
+
+            _jsonNameTable = null;
+            _jsonArrayPool = null;
+            if (Configuration.UseJsonNameTable)
+                _jsonNameTable = new AutomaticJsonNameTable(MaxPropertyNamesToCache);
+            if (Configuration.UseJsonArrayPool)
+                _jsonArrayPool = JsonArrayPool.Instance;
             _serializer = JsonSerializer.Create(new JsonSerializerSettings
             {
                 // Allows deserializing to the actual runtime type
@@ -122,13 +182,15 @@ namespace ZES.Infrastructure.Serialization
         }
 
         /// <inheritdoc />
-        public T Deserialize(string payload)
+        public T Deserialize(string payload, bool full = true)
         {
             T result = null;
             _log.StopWatch.Start(nameof(Deserialize));
             using (var reader = new StringReader(payload))
             {
-                var jsonReader = new JsonTextReader(reader) { DateParseHandling = DateParseHandling.None };
+                var jsonReader = new JsonTextReader(reader) { DateParseHandling = DateParseHandling.None, PropertyNameTable = _jsonNameTable };
+                if(_jsonArrayPool != null)
+                    jsonReader.ArrayPool = _jsonArrayPool;
 
                 try
                 {
@@ -136,7 +198,7 @@ namespace ZES.Infrastructure.Serialization
                     if (typeof(T) != typeof(IEvent))
                         result = _serializer.Deserialize<T>(jsonReader);
                     else
-                        result = DeserializeEvent(payload) as T;
+                        result = DeserializeEvent(payload, full) as T;
 
 #endif
                     if (result == null)
@@ -160,7 +222,10 @@ namespace ZES.Infrastructure.Serialization
 #if USE_EXPLICIT
             using (var writer = new StringWriter())
             {
-                var jsonWriter = new JsonTextWriter(writer) { Formatting = Formatting.Indented };
+                var jsonWriter = new JsonTextWriter(writer) { Formatting = Formatting.Indented};
+                if(_jsonArrayPool != null)
+                    jsonWriter.ArrayPool = _jsonArrayPool;
+
                 jsonWriter.WriteStartObject();
                 
                 jsonWriter.WritePropertyName(nameof(IStream.Key));
@@ -245,8 +310,11 @@ namespace ZES.Infrastructure.Serialization
             if (json == null || json == "{}")
                 return null;
 #if USE_EXPLICIT
-            
-            var reader = new JsonTextReader(new StringReader(json)) { DateParseHandling = DateParseHandling.None };
+
+            var reader = new JsonTextReader(new StringReader(json))
+                { DateParseHandling = DateParseHandling.None, PropertyNameTable = _jsonNameTable };
+            if(_jsonArrayPool != null)
+                reader.ArrayPool = _jsonArrayPool;
             
             var currentProperty = string.Empty;
             var key = string.Empty;
@@ -440,7 +508,10 @@ namespace ZES.Infrastructure.Serialization
         {
             _log.StopWatch.Start(nameof(DecodeMetadata));
 #if USE_EXPLICIT
-            var reader = new JsonTextReader(new StringReader(json)) { DateParseHandling = DateParseHandling.None };
+            var reader = new JsonTextReader(new StringReader(json))
+                { DateParseHandling = DateParseHandling.None, PropertyNameTable = _jsonNameTable };
+            if(_jsonArrayPool != null)
+                reader.ArrayPool = _jsonArrayPool;
             
             var metadata = new EventMetadata();
             var currentProperty = string.Empty;
@@ -689,18 +760,23 @@ namespace ZES.Infrastructure.Serialization
             return sw.ToString();
         }
         
-        private Event DeserializeEvent(string payload)
+        private Event DeserializeEvent(string payload, bool full = true)
         {
             if (payload == null)
                 return null;
 
-            var reader = new JsonTextReader(new StringReader(payload)) { DateParseHandling = DateParseHandling.None };
+            var reader = new JsonTextReader(new StringReader(payload))
+                { DateParseHandling = DateParseHandling.None, PropertyNameTable = _jsonNameTable };
+            if(_jsonArrayPool != null)
+                reader.ArrayPool = _jsonArrayPool;
 
             var deserializer = _serializationRegistry.GetDeserializer(payload);
             if (deserializer == null)
                 return null;
 
             var e = deserializer.Create();
+            if (!full)
+                return e;
             e.CorrelationId = null;
             
             var currentProperty = string.Empty;

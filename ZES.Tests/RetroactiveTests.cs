@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Reactive.Linq;
+using System.Threading.Tasks;
 using NodaTime;
 using SimpleInjector;
 using Xunit;
@@ -16,6 +17,7 @@ using ZES.Interfaces.Pipes;
 using ZES.Tests.Domain;
 using ZES.Tests.Domain.Commands;
 using ZES.Tests.Domain.Queries;
+using ZES.Utils;
 
 namespace ZES.Tests
 {
@@ -85,6 +87,8 @@ namespace ZES.Tests
             await await bus.CommandAsync(new RetroactiveCommand<UpdateRoot>(new UpdateRoot(id), lastTime));
 
             await await bus.CommandAsync(new RetroactiveCommand<UpdateRoot>(new UpdateRoot(id), midTime));
+            var rootInfo = await bus.QueryUntil(new RootInfoQuery(id), r => r.UpdatedAt == lastTime);
+            Assert.Equal(2, rootInfo.NumberOfUpdates);
             await graph.Serialise(nameof(CanProcessRetroactiveCommand));
         }
 

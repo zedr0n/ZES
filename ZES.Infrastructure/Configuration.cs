@@ -54,7 +54,39 @@ namespace ZES.Infrastructure
             if (env != null && 1.ToString() == env)
                 EventStoreBackendType = EventStoreBackendType.EventStore;
             ReplicaName = Environment.GetEnvironmentVariable("ReplicaName".ToUpper()) ?? "None";
+            if (Environment.GetEnvironmentVariable("USEVERSIONCACHE") == "0")
+                UseVersionCache = false;
         }
+
+        /// <summary>
+        /// Gets a value indicating whether to use compact deserialization when doing retroactive actions
+        /// </summary>
+        public static bool UseCompactDeserializationForRetroactiveOperations { get; } = false;
+        
+        /// <summary>
+        /// Gets a value indicating whether to use the version cache
+        /// </summary>
+        public static bool UseVersionCache { get; } = true;
+        
+        /// <summary>
+        /// Gets a value indicating whether to use merge functionality during retroactive insert
+        /// </summary>
+        public static bool UseMergeForRetroactiveInsert { get; } = false;
+        
+        /// <summary>
+        /// Gets a value indicating whether to use json name table during serialisation
+        /// </summary>
+        public static bool UseJsonNameTable { get; } = false;
+
+        /// <summary>
+        /// Gets a value indicating whether to use json array pool 
+        /// </summary>
+        public static bool UseJsonArrayPool { get; } = false;
+        
+        /// <summary>
+        /// Gets a value indicating whether to delete streams instead of trimming
+        /// </summary>
+        public static bool DeleteStreamsInsteadOfTrimming { get; } = true;
 
         /// <summary>
         /// Gets a value indicating whether to use legacy merge

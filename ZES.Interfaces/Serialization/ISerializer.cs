@@ -59,7 +59,8 @@ namespace ZES.Interfaces.Serialization
         /// Deserialize the json string to an object instance
         /// </summary>
         /// <param name="json">Serialized json string</param>
+        /// <param name="full">Deserialize the event fully</param>
         /// <returns><see cref="ICommand"/>/<see cref="IEvent"/> instance</returns>
-        T Deserialize(string json);
+        T Deserialize(string json, bool full = true);
     }
 }

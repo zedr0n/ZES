@@ -42,5 +42,15 @@ namespace ZES.Interfaces
         /// Gets or sets the message origin id
         /// </summary>
         EventId OriginId { get; set; }
+        
+        /// <summary>
+        /// Gets or sets the serialized json
+        /// </summary>
+        string Json { get; set; }
+
+        /// <summary>
+        /// Gets or sets the serialized json metadata
+        /// </summary>
+        string JsonMetadata { get; set; }
     }
 }

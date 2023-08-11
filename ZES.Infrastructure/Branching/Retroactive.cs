@@ -1,24 +1,17 @@
-// #define USE_MERGE_FOR_INSERT
-
 using System;
 using System.Collections.Generic;
-using System.Globalization;
 using System.Linq;
 using System.Reactive.Linq;
 using System.Threading.Tasks;
-using System.Threading.Tasks.Dataflow;
 using Gridsum.DataflowEx;
-using NodaTime;
 using ZES.Infrastructure.Domain;
 using ZES.Infrastructure.EventStore;
-using ZES.Infrastructure.Utils;
 using ZES.Interfaces;
 using ZES.Interfaces.Branching;
 using ZES.Interfaces.Causality;
 using ZES.Interfaces.Clocks;
 using ZES.Interfaces.Domain;
 using ZES.Interfaces.EventStore;
-using ZES.Interfaces.Pipes;
 
 namespace ZES.Infrastructure.Branching
 {
@@ -202,8 +195,51 @@ namespace ZES.Infrastructure.Branching
             
             _log.StopWatch.Stop("TryInsert.AppendChanges");
             await _manager.Branch(currentBranch);
-            _log.StopWatch.Start("TryInsert.Merge");
-            if (!invalidEvents.Any())
+
+            if (invalidEvents.Any())
+            {
+                await _manager.DeleteBranch(tempStreamId);
+                return invalidEvents;
+            }
+
+            if (Configuration.DeleteStreamsInsteadOfTrimming)
+            {
+                if (Configuration.UseCompactDeserializationForRetroactiveOperations)
+                    throw new InvalidOperationException(
+                        "Compact deserialization not supported for retroactive operations");
+                foreach (var k in allEvents.Keys)
+                {
+                    var liveStream = await _streamLocator.FindBranched(k, currentBranch);
+                    var store = GetStore(k);
+
+                    var events = allEvents[k];
+                    if (liveStream != null)
+                    {
+                        var earlierEvents = await store.ReadStream<IEvent>(liveStream, 0, k.Version + 1, !Configuration.UseCompactDeserializationForRetroactiveOperations).ToList();
+                        // var version = 0;
+                        foreach (var e in earlierEvents)
+                        {
+                            // e.Version = version++;
+                            if (Configuration.UseCompactDeserializationForRetroactiveOperations && Configuration.UseVersionCache)
+                                e.Timestamp = await store.GetTimestamp(liveStream, e.Version);
+                        }
+
+                        events = earlierEvents.Concat(events).ToList();
+                        await store.DeleteStream(liveStream);
+                    }
+
+                    liveStream = k.Branch(currentBranch, ExpectedVersion.NoStream);
+
+                    foreach (var e in events)
+                    {
+                        e.Stream = liveStream.Key;
+                        e.Timeline = liveStream.Timeline;
+                    }
+
+                    await store.AppendToStream(liveStream, events, false);
+                }    
+            }
+            else
             {
                 _log.StopWatch.Start("TryInsert.Merge.TrimStream");
                 
@@ -214,34 +250,34 @@ namespace ZES.Infrastructure.Branching
                 }
                 
                 _log.StopWatch.Stop("TryInsert.Merge.TrimStream");
-#if !USE_MERGE_FOR_INSERT
-                foreach (var l in allEvents)
+                if (!Configuration.UseMergeForRetroactiveInsert)
                 {
-                    var k = l.Key;
-                    var events = l.Value;
-
-                    var liveStream = await _streamLocator.FindBranched(k, currentBranch) ??
-                                 k.Branch(currentBranch, ExpectedVersion.NoStream);
-
-                    var store = GetStore(liveStream);
-                    foreach (var e in events)
+                    foreach (var l in allEvents)
                     {
-                        e.Stream = liveStream.Key;
-                        e.Timeline = liveStream.Timeline;
+                        var k = l.Key;
+                        var events = l.Value;
+
+                        var liveStream = await _streamLocator.FindBranched(k, currentBranch) ??
+                                         k.Branch(currentBranch, ExpectedVersion.NoStream);
+
+                        var store = GetStore(liveStream);
+                        foreach (var e in events)
+                        {
+                            e.Stream = liveStream.Key;
+                            e.Timeline = liveStream.Timeline;
+                        }
+
+                        _log.StopWatch.Start("TryInsert.Merge.AppendToStream");
+                        await store.AppendToStream(liveStream, events, false);
+                        _log.StopWatch.Stop("TryInsert.Merge.AppendToStream");
                     }
-
-                    _log.StopWatch.Start("TryInsert.Merge.AppendToStream");
-                    await store.AppendToStream(liveStream, events, false);
-                    _log.StopWatch.Stop("TryInsert.Merge.AppendToStream");
-#endif
                 }
-
-#if USE_MERGE_FOR_INSERT
-                await _manager.Merge(tempStreamId, true);
-#endif
+                else
+                {
+                    await _manager.Merge(tempStreamId, true);
+                }
+                _log.StopWatch.Stop("TryInsert.Merge");
             }
-            
-            _log.StopWatch.Stop("TryInsert.Merge");
 
             await _manager.DeleteBranch(tempStreamId);
             return invalidEvents;
@@ -298,6 +334,11 @@ namespace ZES.Infrastructure.Branching
 
             foreach (var e in enumerable)
             {
+                if (e.Version != version)
+                {
+                    e.JsonMetadata = null;
+                    e.Json = null;
+                }
                 e.Version = version;
                 e.Timeline = stream.Timeline;
                 e.Stream = stream.Key;
@@ -338,7 +379,8 @@ namespace ZES.Infrastructure.Branching
             }
             
             var laterEvents = await store.ReadStream<IEvent>(liveStream, version + 1).ToList();
-            var time = (await store.ReadStream<IEvent>(stream, version - 1, 1).SingleAsync()).Timestamp;
+            var time = await store.GetTimestamp(stream, version - 1);
+            // var time = (await store.ReadStream<IEvent>(stream, version - 1, 1).SingleAsync()).Timestamp;
 
             var tempStreamId = $"{stream.Timeline}-{stream.Id}-{version}";
             var branch = await _manager.Branch(tempStreamId, time);

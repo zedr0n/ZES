@@ -40,5 +40,11 @@ namespace ZES.Infrastructure.Domain
 
         /// <inheritdoc />
         public EventId OriginId { get; set; }
+
+        /// <inheritdoc />
+        public string Json { get; set; }
+
+        /// <inheritdoc />
+        public string JsonMetadata { get; set; }
     }
 }

@@ -49,9 +49,7 @@ namespace ZES.Infrastructure.EventStore
         /// <param name="log">Application log</param>
         protected EventStoreBase(IMessageQueue messageQueue, ISerializer<IEvent> serializer, ILog log)
         {
-            _useVersionCache = true;
-            if (Environment.GetEnvironmentVariable("USEVERSIONCACHE") == "0")
-                _useVersionCache = false;
+            _useVersionCache = Configuration.UseVersionCache;
 
             _messageQueue = messageQueue;
             _serializer = serializer;
@@ -99,7 +97,7 @@ namespace ZES.Infrastructure.EventStore
         }
 
         /// <inheritdoc />
-        public IObservable<T> ReadStream<T>(IStream stream, int start, int count = -1) 
+        public IObservable<T> ReadStream<T>(IStream stream, int start, int count = -1, bool deserialize = true) 
             where T : class, IEventMetadata
         { 
             var allStreams = stream.Ancestors.Reverse().ToList();
@@ -118,7 +116,7 @@ namespace ZES.Infrastructure.EventStore
                 start += readCount;
                 
                 var observable = Observable.Create(async (IObserver<T> observer) =>
-                    await ReadSingleStream(observer, s, cStart, readCount)); 
+                    await ReadSingleStream(observer, s, cStart, readCount, deserialize)); 
                 allObservables.Add(observable);
             }
 
@@ -127,6 +125,24 @@ namespace ZES.Infrastructure.EventStore
             return Observable.Empty<T>();
         }
 
+        /// <inheritdoc />
+        public async Task<Time> GetTimestamp(IStream stream, int version)
+        {
+            if (_useVersionCache && _versions.TryGetValue(stream.Key, out var versions))
+            {
+                if (versions.TryGetValue(version, out var timestamp))
+                    return timestamp;
+            }
+
+            var metadata = await ReadStream<IEventMetadata>(stream, version, 1)
+                .SingleOrDefaultAsync();
+
+            if (metadata == default)
+                throw new InvalidOperationException(
+                    $"Cannot read timestamp of version {version} in stream {stream.Key}");
+            return metadata?.Timestamp;
+        }
+        
         /// <inheritdoc />
         public async Task<int> GetVersion(IStream stream, Time timestamp)
         {
@@ -247,7 +263,7 @@ namespace ZES.Infrastructure.EventStore
         /// <param name="token">Cancellation token</param>
         /// <returns>Task indicating completion of the observable</returns>
         protected abstract Task ListStreamsObservable(IObserver<IStream> observer, Func<string, bool> predicate, CancellationToken token);
-        
+
         /// <summary>
         /// Store implementation of stream read as observable 
         /// </summary>
@@ -255,9 +271,10 @@ namespace ZES.Infrastructure.EventStore
         /// <param name="stream">Stream definition</param>
         /// <param name="position">Stream position</param>
         /// <param name="count">Number of events to read</param>
+        /// <param name="deserialize">Deserialize the event fully</param>
         /// <typeparam name="TEvent">Event or metadata type</typeparam>
         /// <returns>Task representing the completion of the observable</returns>
-        protected abstract Task ReadSingleStreamStore<TEvent>(IObserver<TEvent> observer, IStream stream, int position, int count) 
+        protected abstract Task ReadSingleStreamStore<TEvent>(IObserver<TEvent> observer, IStream stream, int position, int count, bool deserialize = true) 
             where TEvent : class, IEventMetadata;
         
         /// <summary>
@@ -299,17 +316,18 @@ namespace ZES.Infrastructure.EventStore
         {
             return _serializer.EncodeStreamMetadata(s);
         }
-        
+
         /// <summary>
         /// An observable producing the decoded events ( or metadata ) 
         /// </summary>
         /// <param name="observer">Observer instance</param>
         /// <param name="streamMessages">Stream messages</param>
         /// <param name="count">Number of events to decode</param>
+        /// <param name="deserialize">Deserialize the event fully</param>
         /// <typeparam name="T">Event or metadata</typeparam>
         /// <returns>Task representing the observable completion</returns>
         /// <exception cref="InvalidOperationException">Throws if decode failed</exception>
-        protected async Task<int> DecodeEventsObservable<T>(IObserver<T> observer, IEnumerable<TStreamMessage> streamMessages, int count)
+        protected async Task<int> DecodeEventsObservable<T>(IObserver<T> observer, IEnumerable<TStreamMessage> streamMessages, int count, bool deserialize = true)
             where T : class, IEventMetadata
         {
             Log.StopWatch.Start("ReadSingleStream.Deserialize");
@@ -320,7 +338,7 @@ namespace ZES.Infrastructure.EventStore
                 var aCount = Math.Min(count, Configuration.BatchSize);
 
                 if (!_deserializeBag.TryTake<T>(out var dataflow))
-                    dataflow = new DeserializeFlow<T>(Configuration.DataflowOptions, this);
+                    dataflow = new DeserializeFlow<T>(Configuration.DataflowOptions, this, deserialize);
 
                 if (!await (dataflow as DeserializeFlow<T>).ProcessAsync(streamMessages, events, aCount))
                     throw new InvalidOperationException("Not all events have been processed");
@@ -330,7 +348,7 @@ namespace ZES.Infrastructure.EventStore
             }
             else
             {
-                var e = await StreamMessageToEvent<T>(streamMessages.SingleOrDefault());
+                var e = await StreamMessageToEvent<T>(streamMessages.SingleOrDefault(), deserialize);
                 Log.StopWatch.Stop("ReadSingleStream.Deserialize");
                 events.Add(e);
             }
@@ -364,9 +382,19 @@ namespace ZES.Infrastructure.EventStore
         /// Convert stream message to event ( or event metadata )
         /// </summary>
         /// <param name="streamMessage">Stream message</param>
+        /// <param name="deserialize">Deserialize the event fully</param>
         /// <typeparam name="T">Event or metadata type</typeparam>
         /// <returns>Event or event metadata</returns>
-        protected abstract Task<T> StreamMessageToEvent<T>(TStreamMessage streamMessage)
+        protected abstract Task<T> StreamMessageToEvent<T>(TStreamMessage streamMessage, bool deserialize = true)
+            where T : class, IEventMetadata;
+        
+        /// <summary>
+        /// Convert stream message to json 
+        /// </summary>
+        /// <param name="streamMessage">Stream message</param>
+        /// <typeparam name="T">Event or metadata type</typeparam>
+        /// <returns>JSON string</returns>
+        protected abstract Task<T> StreamMessageToJson<T>(TStreamMessage streamMessage)
             where T : class, IEventMetadata;
 
         /// <summary>
@@ -386,7 +414,7 @@ namespace ZES.Infrastructure.EventStore
             if (events.Count > 1)
             {
                 if (!_encodeBag.TryTake(out var encodeFlow))
-                    encodeFlow = new EncodeFlow(Configuration.DataflowOptions, _serializer, this);
+                    encodeFlow = new EncodeFlow(Configuration.DataflowOptions, this);
 
                 if (!await encodeFlow.ProcessAsync(events, streamMessages, events.Count)) 
                     throw new InvalidOperationException($"Encoded {streamMessages.Count} of {events.Count} events");
@@ -402,7 +430,7 @@ namespace ZES.Infrastructure.EventStore
             return streamMessages;
         }
 
-        private async Task ReadSingleStream<T>(IObserver<T> observer, IStream stream, int start, int count)
+        private async Task ReadSingleStream<T>(IObserver<T> observer, IStream stream, int start, int count, bool deserialize)
             where T : class, IEventMetadata
         {
             Log.StopWatch.Start(nameof(ReadSingleStream));
@@ -417,7 +445,7 @@ namespace ZES.Infrastructure.EventStore
                 return;
             }
 
-            await ReadSingleStreamStore(observer as IObserver<IEvent>, stream, position, count);
+            await ReadSingleStreamStore(observer as IObserver<IEvent>, stream, position, count, deserialize);
             Log.StopWatch.Stop(nameof(ReadSingleStream));
         }
         
@@ -507,9 +535,8 @@ namespace ZES.Infrastructure.EventStore
             /// Initializes a new instance of the <see cref="EncodeFlow"/> class.
             /// </summary>
             /// <param name="dataflowOptions">Dataflow options</param>
-            /// <param name="serializer">Event serializer</param>
             /// <param name="eventStore">Event store</param>
-            public EncodeFlow(DataflowOptions dataflowOptions, ISerializer<IEvent> serializer, EventStoreBase<TEventSourced, TNewStreamMessage, TStreamMessage> eventStore)
+            public EncodeFlow(DataflowOptions dataflowOptions, EventStoreBase<TEventSourced, TNewStreamMessage, TStreamMessage> eventStore)
                 : base(dataflowOptions)
             {
                 var block = new TransformBlock<IEvent, TNewStreamMessage>(
@@ -540,7 +567,8 @@ namespace ZES.Infrastructure.EventStore
             /// </summary>
             /// <param name="dataflowOptions">Dataflow options</param>
             /// <param name="eventStore">Event store</param>
-            public DeserializeFlow(DataflowOptions dataflowOptions, EventStoreBase<TEventSourced, TNewStreamMessage, TStreamMessage> eventStore) 
+            /// <param name="deserialize">Deserialize the event</param>
+            public DeserializeFlow(DataflowOptions dataflowOptions, EventStoreBase<TEventSourced, TNewStreamMessage, TStreamMessage> eventStore, bool deserialize = true) 
                 : base(dataflowOptions)
             {
                 TransformBlock<TStreamMessage, TEvent> block = null;

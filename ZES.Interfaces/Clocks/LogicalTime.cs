@@ -69,7 +69,7 @@ namespace ZES.Interfaces.Clocks
         {
             return a > b || a == b;
         }
-
+        
         /// <summary>
         /// Gets the time instance from extended iso string
         /// </summary>

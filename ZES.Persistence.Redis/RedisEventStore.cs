@@ -93,7 +93,7 @@ namespace ZES.Persistence.Redis
         }
 
         /// <inheritdoc />
-        protected override async Task ReadSingleStreamStore<TEvent>(IObserver<TEvent> observer, IStream stream, int position, int count)
+        protected override async Task ReadSingleStreamStore<TEvent>(IObserver<TEvent> observer, IStream stream, int position, int count, bool deserialize = true)
         {
             var db = _connection.GetDatabase();
             var minId = $"{1}-{position}";
@@ -200,7 +200,10 @@ namespace ZES.Persistence.Redis
                 nameof(IEventMetadata.StreamHash),
                 nameof(IEventMetadata.ContentHash),
             };
-            Serializer.SerializeEventAndMetadata(e, out var jsonData, out _, ignoredProperties);
+            var jsonData = e.Json;
+            if (jsonData == null)
+                Serializer.SerializeEventAndMetadata(e, out jsonData, out _, ignoredProperties);
+            
             var entries = new NameValueEntry[]
             {
                 new (nameof(IEventMetadata.MessageId), e.MessageId.ToString()),
@@ -218,8 +221,32 @@ namespace ZES.Persistence.Redis
         }
 
         /// <inheritdoc />
-        protected override async Task<T> StreamMessageToEvent<T>(StreamEntry streamMessage)
+        protected override async Task<T> StreamMessageToJson<T>(StreamEntry streamMessage)
         {
+            var json = streamMessage.Values.SingleOrDefault(v => v.Name == "jsonData");
+            if (json == default)
+                return null;
+
+            if (typeof(T) == typeof(IEvent))
+            {
+                var e = Serializer.Deserialize(json.Value, false);
+                e.Json = json.Value;
+                e.JsonMetadata = json.Value;
+                return e as T;
+            }
+
+            if (typeof(T) == typeof(IEventMetadata))
+                return new EventMetadata { Json = json.Value, JsonMetadata = json.Value } as T;
+
+            return null;
+        }
+
+        /// <inheritdoc />
+        protected override async Task<T> StreamMessageToEvent<T>(StreamEntry streamMessage, bool deserialize = true)
+        {
+            if (!deserialize)
+                return await StreamMessageToJson<T>(streamMessage);
+            
             var json = streamMessage.Values.SingleOrDefault(v => v.Name == "jsonData");
             if (json == default)
                 return null;

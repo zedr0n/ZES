@@ -148,6 +148,11 @@ namespace ZES.Infrastructure.Projections
         protected LazySubscription InvalidateSubscription { get; set; } = new LazySubscription();
 
         /// <summary>
+        /// Gets or sets the <see cref="ZES.Infrastructure.Alerts.ImmediateInvalidateProjections"/> subscription
+        /// </summary>
+        protected LazySubscription ImmediateInvalidateSubscription { get; set; } = new LazySubscription();
+        
+        /// <summary>
         /// Gets or sets gets the cancellation source for the  projection
         /// </summary>
         protected RepeatableCancellationTokenSource CancellationSource { get; set; }
@@ -266,6 +271,7 @@ namespace ZES.Infrastructure.Projections
                 return;
 
             InvalidateSubscription.Start();
+            ImmediateInvalidateSubscription.Start();
 
             await Rebuild();
         }

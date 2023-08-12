@@ -39,6 +39,11 @@ namespace ZES.Infrastructure.Projections
                     .Select((w, i) => i % 2 == 0 ? w.ToList().SelectMany(x => x).TakeLast(1) : w)
                     .Concat()
                     .Subscribe(Build.InputBlock.AsObserver()));
+
+            ImmediateInvalidateSubscription = new LazySubscription(() =>
+                messageQueue.Alerts.OfType<ImmediateInvalidateProjections>()
+                    .Select(x => new InvalidateProjections())
+                    .Subscribe(Build.InputBlock.AsObserver()));
         }
     }
 }

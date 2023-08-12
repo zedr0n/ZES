@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
+using System.Threading;
 using NodaTime;
 using NodaTime.Extensions;
 using SimpleInjector;
@@ -331,13 +332,12 @@ namespace ZES.Tests
             await await bus.CommandAsync(new CreateRoot($"{id}Test"));
 
             await timeTraveller.Branch("grandTest");
-            queue.Alert(new InvalidateProjections());
 
             await await bus.CommandAsync(new CreateRoot($"{id}Test2"));
             await bus.IsTrue(new StatsQuery(), s => s.NumberOfRoots == 3);
             
             await timeTraveller.Branch("test");
-            queue.Alert(new InvalidateProjections());
+            queue.Alert(new ImmediateInvalidateProjections());
             await bus.IsTrue(new StatsQuery(), s => s.NumberOfRoots == 2);
 
             await timeTraveller.Merge("grandTest");

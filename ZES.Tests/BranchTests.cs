@@ -304,7 +304,7 @@ namespace ZES.Tests
             await bus.IsTrue(new RootInfoQuery($"{id}Test"), r => r.CreatedAt == r.UpdatedAt);
 
             await manager.Branch("test");
-            queue.Alert(new InvalidateProjections());
+            queue.Alert(new ImmediateInvalidateProjections());
             await bus.IsTrue(new RootInfoQuery($"{id}Test"), r => r.CreatedAt != default);
             await bus.IsTrue(new RootInfoQuery(id), r => r.CreatedAt != default && r.CreatedAt == r.UpdatedAt);
 
@@ -382,7 +382,7 @@ namespace ZES.Tests
             await bus.IsTrue(new StatsQuery(), s => s.NumberOfRoots == 3);
 
             await timeTraveller.Branch("test");
-            queue.Alert(new InvalidateProjections());
+            queue.Alert(new ImmediateInvalidateProjections());
             await bus.IsTrue(new StatsQuery(), s => s.NumberOfRoots == 2);
 
             await timeTraveller.Merge("grandTest");

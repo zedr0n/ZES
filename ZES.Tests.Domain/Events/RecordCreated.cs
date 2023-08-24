@@ -4,11 +4,6 @@ namespace ZES.Tests.Domain.Events
 {
     public class RecordCreated : Event
     {
-        public RecordCreated(string rootId)
-        {
-            RootId = rootId;
-        }
-        
-        public string RootId { get; }
+        public string RootId { get; set; }
     }
 }

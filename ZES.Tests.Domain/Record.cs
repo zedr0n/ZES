@@ -18,14 +18,14 @@ namespace ZES.Tests.Domain
         public Record(string rootId)
             : this()
         {
-            When(new RecordCreated(rootId));
+            When(new RecordCreated { RootId = rootId } );
         }
         
         public Dictionary<Time, double> Values { get; } = new Dictionary<Time, double>();
 
         public void Root(double recordValue, Time timestamp)
         {
-            When(new RootRecorded(recordValue) { Timestamp = timestamp });
+            When(new RootRecorded { RecordValue  = recordValue, Timestamp = timestamp });
         }
 
         private void ApplyEvent(RecordCreated e)

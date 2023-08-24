@@ -66,8 +66,12 @@ namespace ZES.Infrastructure.Projections
             if (s.Version <= ExpectedVersion.EmptyStream)
                 s.Version = 0;
 
-            if (version > s.Version) 
-                _log?.Warn($"Stream {s.Key} update is version {s.Version}, behind projection version {version}", GetDetailedName());
+            if (version > s.Version)
+            {
+                _log?.Warn($"Stream {s.Key} update is version {s.Version}, behind projection version {version}",
+                    GetDetailedName());
+                version = ExpectedVersion.EmptyStream;
+            }
 
             if (version < s.Version)
             {
@@ -78,12 +82,13 @@ namespace ZES.Infrastructure.Projections
                     .Timeout(Configuration.Timeout)
                     .LastOrDefaultAsync();
 
+                _log?.Debug($"{s.Key}@{s.Version} <- {version}", $"{Parents.Select(p => p.Name).Aggregate((a, n) => a + n)}->{Name}");
                 version += t.Count;
                 await Task.WhenAll(t);
-                _log?.Debug($"{s.Key}@{s.Version} <- {version}", $"{Parents.Select(p => p.Name).Aggregate((a, n) => a + n)}->{Name}");
 
                 if (!_versions.TryUpdate(s.Key, version, origVersion))
-                    throw new InvalidOperationException("Failed updating concurrent versions of projections");
+                    _log?.Error($"Failed updating concurrent versions of projections for {s.Key}, {_versions[s.Key]} != {origVersion}");
+                    // throw new InvalidOperationException($"Failed updating concurrent versions of projections for {s.Key}, {_versions[s.Key]} != {origVersion}");
             }
                 
             trackedStream.Complete();

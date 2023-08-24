@@ -1,4 +1,5 @@
 using System.Threading.Tasks;
+using ZES.Interfaces;
 using ZES.Interfaces.Domain;
 
 namespace ZES.Infrastructure.Domain
@@ -13,8 +14,9 @@ namespace ZES.Infrastructure.Domain
         /// Initializes a new instance of the <see cref="DefaultSingleQueryHandler{TQuery, TResult, TState}"/> class.
         /// </summary>
         /// <param name="manager">Projection manager</param>
-        public DefaultSingleQueryHandler(IProjectionManager manager)
-            : base(manager)
+        /// <param name="activeTimeline">Active timeline</param>
+        public DefaultSingleQueryHandler(IProjectionManager manager, ITimeline activeTimeline)
+            : base(manager, activeTimeline)
         {
         }
 
@@ -36,8 +38,9 @@ namespace ZES.Infrastructure.Domain
         /// Initializes a new instance of the <see cref="DefaultSingleQueryHandler{TQuery,TResult}"/> class.
         /// </summary>
         /// <param name="manager">Projection manager</param>
-        public DefaultSingleQueryHandler(IProjectionManager manager)
-            : base(manager)
+        /// <param name="activeTimeline">Active timeline</param>
+        public DefaultSingleQueryHandler(IProjectionManager manager, ITimeline activeTimeline)
+            : base(manager, activeTimeline)
         {
         }
     }

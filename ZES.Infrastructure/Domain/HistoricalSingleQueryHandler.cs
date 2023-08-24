@@ -1,4 +1,5 @@
 using System.Threading.Tasks;
+using ZES.Interfaces;
 using ZES.Interfaces.Domain;
 
 namespace ZES.Infrastructure.Domain
@@ -14,8 +15,9 @@ namespace ZES.Infrastructure.Domain
         /// </summary>
         /// <param name="handler">Original query handler</param>
         /// <param name="manager">Projection manager</param>
-        public HistoricalSingleQueryHandler(IQueryHandler<TQuery, TResult> handler, IProjectionManager manager)
-            : base(handler, manager)
+        /// <param name="activeTimeline">Active timeline</param>
+        public HistoricalSingleQueryHandler(IQueryHandler<TQuery, TResult> handler, IProjectionManager manager, ITimeline activeTimeline)
+            : base(handler, manager, activeTimeline)
         {
         }
 

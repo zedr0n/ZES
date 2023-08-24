@@ -3,6 +3,7 @@ using System.Reactive.Linq;
 using System.Threading.Tasks;
 using System.Threading.Tasks.Dataflow;
 using Gridsum.DataflowEx;
+using ZES.Interfaces;
 using ZES.Interfaces.Domain;
 using ZES.Interfaces.EventStore;
 
@@ -14,12 +15,16 @@ namespace ZES.Infrastructure.Domain
         where TResult : class
         where TState : IState, new()
     {
+        private readonly ITimeline _activeTimeline;
+
         /// <summary>
         /// Initializes a new instance of the <see cref="QueryHandlerBase{TQuery,TResult,TState}"/> class.
         /// </summary>
         /// <param name="manager">Projection manager</param>
-        protected QueryHandlerBase(IProjectionManager manager)
+        /// <param name="activeTimeline">Active timeline service</param>
+        protected QueryHandlerBase(IProjectionManager manager, ITimeline activeTimeline)
         {
+            _activeTimeline = activeTimeline;
             Projection = manager.GetProjection<TState>();
             Manager = manager;
         }
@@ -59,11 +64,13 @@ namespace ZES.Infrastructure.Domain
             }
             else if (query.Timestamp != default)
             {
-                var historicalProjection = Manager.GetHistoricalProjection<TState>(); 
+                var historicalProjection = Manager.GetHistoricalProjection<TState>();
                 historicalProjection.Timestamp = query.Timestamp;
                 historicalProjection.Predicate = Predicate;
                 projection = historicalProjection;
             }
+            else if (projection.Timeline != _activeTimeline.Id)
+                projection = Manager.GetProjection<TState>(timeline: _activeTimeline.Id);
 
             await projection.Ready;
             return await Handle(projection, query);

@@ -1,6 +1,7 @@
 using System.Reactive.Linq;
 using System.Threading.Tasks;
 using ZES.Infrastructure.Projections;
+using ZES.Interfaces;
 using ZES.Interfaces.Domain;
 
 namespace ZES.Infrastructure.Domain
@@ -24,8 +25,9 @@ namespace ZES.Infrastructure.Domain
         /// </summary>
         /// <param name="handler">Original query handler</param>
         /// <param name="manager">Projection manager</param>
-        public HistoricalQueryHandler(IQueryHandler<TQuery, TResult> handler, IProjectionManager manager)
-            : base(manager)
+        /// <param name="activeTimeline">Active timeline</param>
+        public HistoricalQueryHandler(IQueryHandler<TQuery, TResult> handler, IProjectionManager manager, ITimeline activeTimeline)
+            : base(manager, activeTimeline)
         {
             _handler = handler;
         }

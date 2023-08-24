@@ -63,8 +63,8 @@ namespace ZES.Infrastructure.Projections
             {
                 var unused = _start.Value;
                 return StatusSubject.AsObservable()
-                    .Timeout(Configuration.Timeout)
-                    .FirstAsync(s => s == Listening);
+                    .FirstAsync(s => s == Listening)
+                    .Timeout(Configuration.Timeout);
             }
         }
 
@@ -93,8 +93,7 @@ namespace ZES.Infrastructure.Projections
         /// <value>
         /// Registered handlers ( State, Event ) -> State
         /// </value>
-        public Dictionary<Type, Func<IMessage, TState, TState>> Handlers { get; } =
-            new Dictionary<Type, Func<IMessage, TState, TState>>();
+        public Dictionary<Type, Func<IEvent, TState, TState>> Handlers { get; } = new();
 
         /// <summary>
         /// Gets projection version state
@@ -190,7 +189,7 @@ namespace ZES.Infrastructure.Projections
         protected virtual async Task Rebuild()
         {
             StatusSubject.OnNext(Building);
-            _updateStateBlock = new ActionBlock<Tracked<IEvent>>(UpdateState, Configuration.DataflowOptions.ToDataflowBlockOptions(false)); // new ExecutionDataflowBlockOptions { MaxDegreeOfParallelism = 1 });
+            _updateStateBlock = new ActionBlock<Tracked<IEvent>>(UpdateState, Configuration.DataflowOptions.ToDataflowBlockOptions(false)); 
 
             CancellationSource.Dispose();
             Versions.Clear();
@@ -199,55 +198,47 @@ namespace ZES.Infrastructure.Projections
                 State = new TState();
             }
 
-            var rebuildDispatcher = new ProjectionDispatcher<TState>(Configuration.DataflowOptions, this);
-            var liveDispatcher = new ProjectionBufferedDispatcher<TState>(Configuration.DataflowOptions, this);
+            var dispatcher = new ProjectionDispatcher<TState>(Configuration.DataflowOptions, this);
 
             CancellationToken.Register(async () =>
             {
                 try
                 {
-                    if (!rebuildDispatcher.CompletionTask.IsFaulted)
+                    // Log.Info($"Processed {Versions.Count} streams!");
+                    if (!dispatcher.CompletionTask.IsFaulted)
                     {
-                        if (!await rebuildDispatcher.SignalAndWaitForCompletionAsync().Timeout())
-                            throw new TimeoutException();
-                    }
-
-                    if (!liveDispatcher.CompletionTask.IsFaulted)
-                    {
-                        if (!await liveDispatcher.SignalAndWaitForCompletionAsync().Timeout())
+                        if (!await dispatcher.SignalAndWaitForCompletionAsync().Timeout())
                             throw new TimeoutException();
                     }
                 }
                 catch (Exception e)
                 {
-                    // StatusSubject.OnNext(Failed);
                     Log?.Errors.Add(e);
                 }
                 
                 StatusSubject.OnNext(Sleeping);
             });
+
+            var liveStreams = EventStore.Streams
+                .TakeWhile(_ => !CancellationSource.IsCancellationRequested)
+                .Where(s => s.Timeline == Timeline)
+                .Where(Predicate)
+                .Select(s => new Tracked<IStream>(s, CancellationToken));
             
-            EventStore.Streams
-                .TakeWhile(_ => !CancellationSource.IsCancellationRequested)
-                .Where(s => s.Timeline == Timeline) 
-                .Where(Predicate)
-                .Select(s => new Tracked<IStream>(s, CancellationToken))
-                .SubscribeOn(Scheduler.Default)
-                .Subscribe(liveDispatcher.InputBlock.AsObserver());
+            liveStreams.Replay().Connect();
 
-            // EventStore.ListStreams(Timeline.Id, StreamIdPredicate, CancellationToken)
             var streams = await _streamLocator.ListStreams(Timeline);
-            streams.Where(s => !s.IsSaga && StreamIdPredicate(s.Key)).ToObservable()
-                .TakeWhile(_ => !CancellationSource.IsCancellationRequested)
+            var buildStreams = streams.Where(s => !s.IsSaga && StreamIdPredicate(s.Key))
                 .Where(Predicate)
                 .Select(s => new Tracked<IStream>(s, CancellationToken))
-                .SubscribeOn(Scheduler.Default)
-                .Subscribe(rebuildDispatcher.InputBlock.AsObserver());
+                .ToList();
 
+            var allStreams = buildStreams.ToObservable().Concat(liveStreams);
+            allStreams.TakeWhile(_ => !CancellationSource.IsCancellationRequested).Subscribe(dispatcher.InputBlock.AsObserver());
+            
             try
             {
-                await rebuildDispatcher.CompletionTask;
-                await liveDispatcher.Start();
+                await Task.WhenAll(buildStreams.Select(s => s.Task)); 
 
                 if (!CancellationToken.IsCancellationRequested)
                     StatusSubject.OnNext(Listening);

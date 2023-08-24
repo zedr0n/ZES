@@ -1,4 +1,5 @@
 using System.Threading.Tasks;
+using ZES.Interfaces;
 using ZES.Interfaces.Domain;
 
 #pragma warning disable 1998
@@ -15,8 +16,9 @@ namespace ZES.Infrastructure.Domain
         /// Initializes a new instance of the <see cref="DefaultQueryHandler{TQuery, TResult, TState}"/> class.
         /// </summary>
         /// <param name="manager">Projection manager</param>
-        public DefaultQueryHandler(IProjectionManager manager)
-            : base(manager)
+        /// <param name="activeTimeline">Active timeline</param>
+        public DefaultQueryHandler(IProjectionManager manager, ITimeline activeTimeline)
+            : base(manager, activeTimeline)
         {
         }
 
@@ -34,8 +36,9 @@ namespace ZES.Infrastructure.Domain
         /// Initializes a new instance of the <see cref="DefaultQueryHandler{TQuery,TResult}"/> class.
         /// </summary>
         /// <param name="manager">Projection manager</param>
-        public DefaultQueryHandler(IProjectionManager manager)
-            : base(manager)
+        /// <param name="activeTimeline">Active timeline</param>
+        public DefaultQueryHandler(IProjectionManager manager, ITimeline activeTimeline)
+            : base(manager, activeTimeline)
         {
         }
     }

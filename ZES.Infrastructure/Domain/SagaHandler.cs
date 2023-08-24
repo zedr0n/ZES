@@ -119,14 +119,14 @@ namespace ZES.Infrastructure.Domain
                     
                     if (saga == null)
                         return;
-                    var saveEvent = ((Event)e).Copy(); 
+                    var saveEvent = e.Copy(); 
                     
                     saga.When(saveEvent);
                     
                     var commands = saga.GetUncommittedCommands().OfType<Command>();
                     foreach (var c in commands)
                     {
-                        c.AncestorId = e.MessageId;
+                        c.AncestorId = e.AncestorId != default ? e.AncestorId : e.MessageId;
                         c.CorrelationId = id;
                     }
 

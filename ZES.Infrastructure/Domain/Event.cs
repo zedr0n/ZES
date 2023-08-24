@@ -21,13 +21,10 @@ namespace ZES.Infrastructure.Domain
         public string Stream { get; set; }
 
         /// <inheritdoc />
-        public string OriginatingStream { get; set; } 
-        
-        /// <summary>
-        /// Create a copy of the event with new guid
-        /// </summary>
-        /// <returns>Event copy</returns>
-        public Event Copy()
+        public string OriginatingStream { get; set; }
+
+        /// <inheritdoc />
+        public IEvent Copy()
         {
             var copy = MemberwiseClone() as Event;
             copy.OriginatingStream = Stream;

@@ -21,6 +21,12 @@ namespace ZES.Interfaces
         /// Gets or sets originating stream key
         /// </summary>
         string OriginatingStream { get; set; }
+        
+        /// <summary>
+        /// Create a copy of the event with new guid
+        /// </summary>
+        /// <returns>Event copy</returns>
+        public IEvent Copy();
     }
 
     /// <summary>

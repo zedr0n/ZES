@@ -6,6 +6,7 @@ using NodaTime;
 using SimpleInjector;
 using Xunit;
 using Xunit.Abstractions;
+using ZES.Infrastructure;
 using ZES.Infrastructure.Alerts;
 using ZES.Infrastructure.Domain;
 using ZES.Interfaces;
@@ -124,7 +125,10 @@ namespace ZES.Tests
             await bus.Equal(new RootInfoQuery(id), r => r.NumberOfUpdates, 0);
 
             canDelete = await retroactive.TryDelete(stream, 0);
-            Assert.False(canDelete);
+            if(!Configuration.DeleteStreamsInsteadOfTrimming)
+                Assert.False(canDelete);
+            else
+                Assert.True(canDelete);
         }
 
         [Fact]

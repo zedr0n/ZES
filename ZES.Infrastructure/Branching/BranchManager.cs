@@ -226,7 +226,7 @@ namespace ZES.Infrastructure.Branching
         public ITimeline Reset()
         {
             Branch(Master).Wait();
-            _messageQueue.Alert(new InvalidateProjections());
+            _messageQueue.Alert(new ImmediateInvalidateProjections());
             return _activeTimeline;
         }
 

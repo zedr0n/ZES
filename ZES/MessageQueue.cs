@@ -19,8 +19,8 @@ namespace ZES
     {
         private readonly ILog _log;
         private readonly ITimeline _timeline;
-        private readonly Subject<IEvent> _messages = new Subject<IEvent>();
-        private readonly BehaviorSubject<IAlert> _alerts = new BehaviorSubject<IAlert>(null);
+        private readonly Subject<IEvent> _messages = new();
+        private readonly Subject<IAlert> _alerts = new();
         private readonly ConcurrentDictionary<string, UncompletedMessagesSingleHolder> _messagesHolderDict;
 
         /// <summary>

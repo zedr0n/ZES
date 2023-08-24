@@ -43,8 +43,9 @@ namespace ZES.Interfaces.Branching
         /// </summary>
         /// <param name="stream">Stream descriptor</param>
         /// <param name="version">Event version to delete</param>
+        /// <param name="count">Number of events to delete</param>
         /// <returns>Invalid events if any</returns>
-        Task<IEnumerable<IEvent>> ValidateDelete(IStream stream, int version);
+        Task<IEnumerable<IEvent>> ValidateDelete(IStream stream, int version, int count = 1);
         
         /// <summary>
         /// Insert the events into the stream 
@@ -53,14 +54,15 @@ namespace ZES.Interfaces.Branching
         /// <param name="time">Time to insert at</param>
         /// <returns>List of invalid events if any</returns>
         Task<List<IEvent>> TryInsert(Dictionary<IStream, IEnumerable<IEvent>> changes, Time time);
-        
+
         /// <summary>
         /// Delete event from the stream
         /// </summary>
         /// <param name="stream">Stream descriptor</param>
         /// <param name="version">Event version to delete</param>
+        /// <param name="count">Number of events to delete</param>
         /// <returns>True if deletion is valid</returns>
-        Task<bool> TryDelete(IStream stream, int version);
+        Task<bool> TryDelete(IStream stream, int version, int count = 1);
 
         /// <summary>
         /// Get changes caused by the command
@@ -70,6 +72,13 @@ namespace ZES.Interfaces.Branching
         /// <returns>List of events by stream</returns>
         Task<Dictionary<IStream, IEnumerable<IEvent>>> GetChanges(ICommand command, Time time);
 
+        /// <summary>
+        /// Get changes caused by the command
+        /// </summary>
+        /// <param name="command">Command to process</param>
+        /// <returns>List of events by stream</returns>
+        Task<Dictionary<IStream, IEnumerable<IEvent>>> GetChanges(ICommand command);
+        
         /// <summary>
         /// Replay the command retroactively
         /// </summary>

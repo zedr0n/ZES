@@ -86,12 +86,12 @@ namespace ZES.Infrastructure.Branching
         }
 
         /// <inheritdoc />
-        public async Task<IEnumerable<IEvent>> ValidateDelete(IStream stream, int version) =>
-            await Delete(stream, version, false);
+        public async Task<IEnumerable<IEvent>> ValidateDelete(IStream stream, int version, int count = 1) =>
+            await Delete(stream, version, count, false);
 
         /// <inheritdoc />
-        public async Task<bool> TryDelete(IStream stream, int version) =>
-            !(await Delete(stream, version, true)).Any();
+        public async Task<bool> TryDelete(IStream stream, int version, int count = 1) =>
+            !(await Delete(stream, version, count, true)).Any();
 
         /// <inheritdoc />
         public async Task<IEnumerable<IEvent>> ValidateInsert(IStream stream, int version, IEnumerable<IEvent> events) =>
@@ -123,6 +123,28 @@ namespace ZES.Infrastructure.Branching
         }
 
         /// <inheritdoc />
+        public async Task<Dictionary<IStream, IEnumerable<IEvent>>> GetChanges(ICommand command)
+        {
+            var dict = new Dictionary<IStream, IEnumerable<IEvent>>();
+            var streams = await _streamLocator.ListStreams(_manager.ActiveBranch);
+            foreach (var s in streams)
+            {
+                IList<IEvent> events;
+                if (!s.IsSaga)
+                    events = await _eventStore.ReadStream<IEvent>(s, 0).Where(e =>
+                        e.AncestorId == command.MessageId).ToList();
+                else
+                    events = await _sagaStore.ReadStream<IEvent>(s, 0).Where(e =>
+                        e.AncestorId == command.MessageId).ToList();
+                if(events.Count > 0)
+                    dict[s] = events;
+            }
+
+            return dict;
+
+        }
+        
+        /// <inheritdoc />
         public async Task<Dictionary<IStream, IEnumerable<IEvent>>> GetChanges(ICommand command, Time time)
         {
             var activeBranch = _manager.ActiveBranch;
@@ -150,6 +172,7 @@ namespace ZES.Infrastructure.Branching
                 var e = await _eventStore.ReadStream<IEvent>(stream, stream.Version - c.Value + 1, c.Value).ToList();
 
                 dict[c.Key] = e;
+                // _log.Debug($"Recording change in stream {stream.Key}: events ({stream.Version - c.Value + 1}..{stream.Version})");
             }
             
             _log.StopWatch.Stop("GetChanges.Read");
@@ -186,7 +209,7 @@ namespace ZES.Infrastructure.Branching
                     laterEvents = await store.ReadStream<IEvent>(liveStream, version).Where(e => e is not ISnapshotEvent).ToList();
 
                 var newStream = await _streamLocator.FindBranched(stream, tempStreamId) ?? stream.Branch(tempStreamId, ExpectedVersion.NoStream);
-                _log.Debug($"Inserting events ({version}..{events.Count + version}) into {newStream.Key}");
+                // _log.Debug($"Inserting events ({version}..{events.Count + version}) into {newStream.Key}");
                 var list = events.Concat(laterEvents).ToList();
                 allEvents[stream] = list;
                 var invalidStreamEvents = (await Append(newStream, version, list, laterEvents.Count > 0)).ToList();
@@ -236,6 +259,7 @@ namespace ZES.Infrastructure.Branching
                         e.Timeline = liveStream.Timeline;
                     }
 
+                    _log.Debug($"Inserting events ({k.Version + 1}..{k.Version + 1 + changes[k].Count()}) into {liveStream.Key}");
                     await store.AppendToStream(liveStream, events, false);
                 }    
             }
@@ -287,26 +311,45 @@ namespace ZES.Infrastructure.Branching
         {
             var time = c.Timestamp.JustBefore();
             var changes = await GetChanges(c, time);
+            _log.Debug($"Rolling back command {c.GetType().FullName} from timeline {c.Timeline}");
+            // var changes = await GetChanges(c);
             var canDelete = true;
             foreach (var change in changes)
             {
-                var eventsToDelete = new List<Guid>();
-                foreach (var e in change.Value.OrderByDescending(x => x.Version))
+                var rollbackMultipleEvents = Configuration.RollbackMultipleEventsAtOnce;
+                var events = change.Value.OrderByDescending(x => x.Version).ToList();
+                var version = events.Min(x => x.Version);
+                var count = events.Count;
+                rollbackMultipleEvents &= events.Max(x => x.Version) - version == count - 1; 
+                if (rollbackMultipleEvents)
                 {
-                    _log.Debug($"Rolling back {change.Key}:{e.GetType().GetFriendlyName()} with version {e.Version} at {e.Timestamp}");
-                    var invalidEvents = (await ValidateDelete(change.Key, e.Version)).ToList();
-                    if (invalidEvents.Any(x => !eventsToDelete.Contains(x.MessageId)))
+                    _log.Debug($"Rolling back events ({version}..{version + count - 1}) from stream {change.Key.Key}");
+                    var invalidEvents = (await ValidateDelete(change.Key, version, count)).ToList();
+                    if (!invalidEvents.Any()) 
+                        continue;
+                    canDelete = false;
+                    _log.Warn($"Error rolling back events ({version}..{version + count - 1}) from stream {change.Key.Key} with ${invalidEvents.Count} invalid events");
+                }
+                else
+                {
+                    var eventsToDelete = new List<Guid>();
+                    foreach (var e in change.Value.OrderByDescending(x => x.Version))
                     {
-                        canDelete = false;
-                        _log.Warn($"Error rolling back {change.Key}:{e.GetType().GetFriendlyName()} with version {e.Version} with {invalidEvents.Count} invalid events");
-                        break;
-                    }
+                        _log.Debug($"Rolling back {change.Key}:{e.GetType().GetFriendlyName()} with version {e.Version} at {e.Timestamp}");
+                        var invalidEvents = (await ValidateDelete(change.Key, e.Version)).ToList();
+                        if (invalidEvents.Any(x => !eventsToDelete.Contains(x.MessageId)))
+                        {
+                            canDelete = false;
+                            _log.Warn($"Error rolling back {change.Key}:{e.GetType().GetFriendlyName()} with version {e.Version} with {invalidEvents.Count} invalid events");
+                            break;
+                        }
 
-                    var stream = change.Key;
-                    var store = GetStore(stream);
-                    var currentBranch = _manager.ActiveBranch;
-                    var liveStream = await _streamLocator.FindBranched(stream, currentBranch);
-                    eventsToDelete.Add((await store.ReadStream<IEventMetadata>(liveStream, e.Version, 1)).MessageId);
+                        var stream = change.Key;
+                        var store = GetStore(stream);
+                        var currentBranch = _manager.ActiveBranch;
+                        var liveStream = await _streamLocator.FindBranched(stream, currentBranch);
+                        eventsToDelete.Add((await store.ReadStream<IEvent>(liveStream, e.Version, 1)).MessageId);
+                    }
                 }
             }
 
@@ -318,8 +361,20 @@ namespace ZES.Infrastructure.Branching
 
             foreach (var change in changes)
             {
-                foreach (var e in change.Value.OrderByDescending(x => x.Version))
-                    await TryDelete(change.Key, e.Version);
+                var rollbackMultipleEvents = Configuration.RollbackMultipleEventsAtOnce;
+                var events = change.Value.OrderByDescending(x => x.Version).ToList();
+                var version = events.Min(x => x.Version);
+                var count = events.Count;
+                rollbackMultipleEvents &= events.Max(x => x.Version) - version == count - 1;
+                if (rollbackMultipleEvents)
+                {
+                    await TryDelete(change.Key, version, count);
+                }
+                else
+                {
+                    foreach (var e in change.Value.OrderByDescending(x => x.Version))
+                        await TryDelete(change.Key, e.Version);
+                }
             }
 
             return true;
@@ -359,6 +414,73 @@ namespace ZES.Infrastructure.Branching
             return invalidEvents ?? new List<IEvent>();
         }
 
+        private async Task<IEnumerable<IEvent>> Delete(IStream stream, int version, int count, bool doDelete)
+        {
+            var store = GetStore(stream);
+            var currentBranch = _manager.ActiveBranch;
+            var liveStream = await _streamLocator.FindBranched(stream, currentBranch);
+            
+            if (liveStream == null || liveStream.Version < version)
+                return new List<IEvent>() { new Event() };
+
+            if (liveStream.Version == version)
+            {
+                if (!doDelete)
+                    return new List<IEvent>();
+
+                if(!Configuration.DeleteStreamsInsteadOfTrimming)
+                    await TrimStream(liveStream, version - count);
+                else
+                {
+                    var events = await store.ReadStream<IEvent>(liveStream, 0, version - count + 1).ToList();
+                    await store.DeleteStream(liveStream);
+                    if (events.Count > 0)
+                    {
+                        liveStream = stream.Branch(currentBranch, ExpectedVersion.NoStream);
+                        await store.AppendToStream(liveStream, events, false);
+                    }
+                }
+
+                return new List<IEvent>();
+            }
+            
+            var laterEvents = await store.ReadStream<IEvent>(liveStream, version + count).ToList();
+            var time = await store.GetTimestamp(stream, version - 1);
+            
+            var tempStreamId = $"{stream.Timeline}-{stream.Id}-{version}";
+            var branch = await _manager.Branch(tempStreamId, time);
+
+            var newStream = await _streamLocator.FindBranched(stream, branch.Id);
+            if (newStream == null)
+                throw new InvalidOperationException($"Stream {tempStreamId}:{stream.Type}:{stream.Id} not found!");
+             
+            var invalidEvents = (await Append(newStream, version, laterEvents)).ToList();
+
+            foreach (var e in invalidEvents)
+                _log.Debug($"Invalid event {e.GetType().GetFriendlyName()} with version {e.Version} found in stream {newStream.Key}");
+            
+            await _manager.Branch(currentBranch);
+            if (doDelete && !invalidEvents.Any())
+            {
+                if (!Configuration.DeleteStreamsInsteadOfTrimming)
+                {
+                    await TrimStream(liveStream, version - 1);
+                    await _manager.Merge(tempStreamId);
+                }
+                else
+                {
+                    var events = await store.ReadStream<IEvent>(newStream, 0).ToList();
+                    await store.DeleteStream(liveStream);
+                    liveStream = stream.Branch(currentBranch, ExpectedVersion.NoStream);
+                    await store.AppendToStream(liveStream, events, false);
+                }
+            }
+
+            await _manager.DeleteBranch(tempStreamId);
+
+            return invalidEvents;
+        }
+        
         private async Task<IEnumerable<IEvent>> Delete(IStream stream, int version, bool doDelete)
         {
             if (version == 0)

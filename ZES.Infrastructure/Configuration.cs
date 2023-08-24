@@ -82,7 +82,12 @@ namespace ZES.Infrastructure
         /// Gets a value indicating whether to use json array pool 
         /// </summary>
         public static bool UseJsonArrayPool { get; } = false;
-        
+
+        /// <summary>
+        /// Gets a value indicating whether to roll back multiple consecutive events at once
+        /// </summary>
+        public static bool RollbackMultipleEventsAtOnce { get; } = true;
+
         /// <summary>
         /// Gets a value indicating whether to delete streams instead of trimming
         /// </summary>

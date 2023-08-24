@@ -57,6 +57,7 @@ namespace ZES.Infrastructure.Domain
 
             _log.StopWatch.Start("GetChanges_1");
             var changes = await _retroactive.GetChanges(iCommand.Command, time);
+
             _log.StopWatch.Stop("GetChanges_1");
 
             if (changes.Count == 0)
@@ -83,8 +84,9 @@ namespace ZES.Infrastructure.Domain
                 }
             }
 
-            await _commandLog.AppendCommand(iCommand.Command);
             iCommand.EventType = iCommand.Command.EventType;
+            iCommand.Command.Timeline = iCommand.Timeline;
+            await _commandLog.AppendCommand(iCommand.Command);
             _messageQueue.Alert(new InvalidateProjections());
             _log.StopWatch.Stop($"{nameof(RetroactiveCommandHandler<TCommand>)}");
         }
@@ -105,7 +107,12 @@ namespace ZES.Infrastructure.Domain
             {
                 _log.Warn($"Invalid event found in stream {e.Stream} : {e.MessageType}@{e.Version}", this);
                 var c = await _commandLog.GetCommand(e);
-                
+                if (c == null)
+                {
+                    _log.Error($"Couldn't find command for the event {e.Stream}@{e.Version}");
+                    continue;
+                }
+
                 if (!commands.ContainsKey(e.Stream))
                     commands[e.Stream] = new List<ICommand>();
                 

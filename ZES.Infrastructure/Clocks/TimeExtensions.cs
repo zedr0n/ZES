@@ -2,6 +2,7 @@
 using Newtonsoft.Json;
 using NodaTime;
 using NodaTime.Serialization.JsonNet;
+using ZES.Infrastructure.Utils;
 using ZES.Interfaces;
 using ZES.Interfaces.Clocks;
 
@@ -25,7 +26,8 @@ namespace ZES.Infrastructure.Clocks
             }
            
             settings.Converters.Add(new TimeConverter());
-            settings.Converters.Add(new EventIdConverter());
+            settings.Converters.Add(new EventExtensions.EventIdConverter());
+            settings.Converters.Add(new EventExtensions.MessageIdConverter());
  
             // Disable automatic conversion of anything that looks like a date and time to BCL types.
             settings.DateParseHandling = DateParseHandling.None;
@@ -47,7 +49,8 @@ namespace ZES.Infrastructure.Clocks
             }
             
             serializer.Converters.Add(new TimeConverter());
-            serializer.Converters.Add(new EventIdConverter());
+            serializer.Converters.Add(new EventExtensions.EventIdConverter());
+            serializer.Converters.Add(new EventExtensions.MessageIdConverter());
 
             // Disable automatic conversion of anything that looks like a date and time to BCL types.
             serializer.DateParseHandling = DateParseHandling.None;
@@ -57,28 +60,6 @@ namespace ZES.Infrastructure.Clocks
         }
     }
 
-    /// <inheritdoc />
-    public class EventIdConverter : JsonConverter
-    {
-        /// <inheritdoc />
-        public override void WriteJson(JsonWriter writer, object value, JsonSerializer serializer)
-        {
-            var eventId = value as EventId;
-            writer.WriteValue(eventId.ToString()); 
-        }
-
-        /// <inheritdoc />
-        public override object ReadJson(JsonReader reader, Type objectType, object existingValue, JsonSerializer serializer)
-        {
-            var str = reader.Value.ToString();
-            if (str == null)
-                return null;
-            return (EventId)EventId.Parse(str);
-        }
-
-        /// <inheritdoc />
-        public override bool CanConvert(Type objectType) => objectType == typeof(EventId);
-    }
 
     /// <inheritdoc />
     public class TimeConverter : JsonConverter

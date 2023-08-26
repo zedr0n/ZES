@@ -15,7 +15,7 @@ namespace ZES.Infrastructure.Domain
         }
 
         /// <inheritdoc />
-        public Guid CommandId { get; set; }
+        public MessageId CommandId { get; set; }
 
         /// <inheritdoc />
         public string Stream { get; set; }
@@ -28,7 +28,7 @@ namespace ZES.Infrastructure.Domain
         {
             var copy = MemberwiseClone() as Event;
             copy.OriginatingStream = Stream;
-            copy.MessageId = Guid.NewGuid();
+            copy.MessageId = new MessageId(MessageType,Guid.NewGuid());
             copy.AncestorId = MessageId;
             copy.LocalId = LocalId;
             return copy;

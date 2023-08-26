@@ -9,22 +9,33 @@ namespace ZES.Infrastructure.Domain
     /// </summary>
     public abstract class Message : IMessage
     {
-        private Guid _messageId;
+        private MessageId _messageId;
 
+        /// <summary>
+        /// Message constuctor
+        /// </summary>
+        public Message()
+        {
+            MessageType = GetType().Name;
+        }
+        
         /// <inheritdoc />
-        public Guid MessageId
+        public MessageId MessageId
         {
             get
             {
                 if (_messageId == default)
-                    _messageId = Guid.NewGuid();
+                    _messageId = new MessageId(MessageType, Guid.NewGuid());
                 return _messageId;
             }
             set => _messageId = value;
         }
 
         /// <inheritdoc />
-        public Guid AncestorId { get; set; }
+        public string MessageType { get; set; }
+        
+        /// <inheritdoc />
+        public MessageId AncestorId { get; set; }
 
         /// <inheritdoc />
         public string CorrelationId { get; set; }

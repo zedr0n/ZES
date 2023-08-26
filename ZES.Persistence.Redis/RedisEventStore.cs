@@ -265,10 +265,10 @@ namespace ZES.Persistence.Redis
                 switch (i)
                 {
                     case (int)RedisMetadata.MessageId: // MessageId
-                        metadata.MessageId = Guid.Parse(val);
+                        metadata.MessageId = MessageId.Parse(val);
                         break;
                     case (int)RedisMetadata.AncestorId:
-                        metadata.AncestorId = Guid.Parse(val);
+                        metadata.AncestorId = MessageId.Parse(val);
                         break;
                     case (int)RedisMetadata.Timestamp:
                         metadata.Timestamp = Time.FromExtendedIso(val);

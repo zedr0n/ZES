@@ -134,7 +134,7 @@ namespace ZES.Persistence.EventStoreDB
             if(jsonData == null)
                 Serializer.SerializeEventAndMetadata(e, out jsonData, out jsonMetadata);
             
-            return new ( e.MessageId,
+            return new ( e.MessageId.Id,
                e.MessageType,
                true,
                Encoding.UTF8.GetBytes(jsonData),

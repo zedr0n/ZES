@@ -84,7 +84,6 @@ namespace ZES.Infrastructure.Domain
                 }
             }
 
-            iCommand.EventType = iCommand.Command.EventType;
             iCommand.Command.Timeline = iCommand.Timeline;
             await _commandLog.AppendCommand(iCommand.Command);
             _messageQueue.Alert(new InvalidateProjections());

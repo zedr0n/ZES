@@ -69,8 +69,8 @@ namespace ZES.Persistence.EventStoreDB
         /// <inheritdoc />
         protected override EventData Encode(ICommand command) =>
             new (
-                command.MessageId,
-                command.GetType().Name, 
+                command.MessageId.Id,
+                command.MessageType, 
                 true, 
                 Encoding.UTF8.GetBytes(Serializer.Serialize(command)),
                 Encoding.UTF8.GetBytes(Serializer.EncodeMetadata(command) ?? string.Empty));

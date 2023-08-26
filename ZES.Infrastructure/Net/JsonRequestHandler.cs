@@ -33,7 +33,6 @@ namespace ZES.Infrastructure.Net
         /// <inheritdoc />
         public async Task Handle(RequestJson command)
         {
-            command.EventType = "JsonRequest";
             var res = await _connector.SubmitRequest(command.Url);
             var alert = new JsonRequestSubmitted(command.Target, command.Url) { Timeline = command.Timeline };
             _messageQueue.Alert(alert);

@@ -428,10 +428,13 @@ namespace ZES.Infrastructure.Serialization
             writer.WriteStartObject();
             
             writer.WritePropertyName(nameof(IEventMetadata.MessageId));
-            writer.WriteValue(e.MessageId);
-            
-            writer.WritePropertyName(nameof(IEventMetadata.AncestorId));
-            writer.WriteValue(e.AncestorId);
+            writer.WriteValue(e.MessageId.ToString());
+
+            if (e.AncestorId != default)
+            {
+                writer.WritePropertyName(nameof(IEventMetadata.AncestorId));
+                writer.WriteValue(e.AncestorId.ToString());
+            }
 
             if (e.CorrelationId != null)
             {
@@ -527,13 +530,13 @@ namespace ZES.Infrastructure.Serialization
                         currentProperty = reader.Value.ToString();
                         break;
                     case JsonToken.String when currentProperty == nameof(IEventMetadata.AncestorId):
-                        metadata.AncestorId = Guid.Parse(reader.Value.ToString());
+                        metadata.AncestorId = MessageId.Parse(reader.Value.ToString());
                         break;
                     case JsonToken.String when currentProperty == nameof(IEventMetadata.CorrelationId):
                         metadata.CorrelationId = reader.Value.ToString();
                         break;
                     case JsonToken.String when currentProperty == nameof(IEventMetadata.MessageId):
-                        metadata.MessageId = Guid.Parse(reader.Value.ToString());
+                        metadata.MessageId = MessageId.Parse(reader.Value.ToString());
                         break;
                     case JsonToken.String when currentProperty == nameof(IEventMetadata.Timestamp):
                         metadata.Timestamp = Time.FromExtendedIso((string)reader.Value);
@@ -664,10 +667,10 @@ namespace ZES.Infrastructure.Serialization
         {
             var properties = ignoredProperties as string[] ?? ignoredProperties?.ToArray();
             if (WritePropertyName(writer, nameof(IEventMetadata.MessageId), properties))
-                writer.WriteValue(e.MessageId);
+                writer.WriteValue(e.MessageId.ToString());
             
             if (WritePropertyName(writer, nameof(IEventMetadata.AncestorId), properties))
-                writer.WriteValue(e.AncestorId);
+                writer.WriteValue(e.AncestorId.ToString());
 
             if (WritePropertyName(writer, nameof(IEventMetadata.CorrelationId), properties))
                 writer.WriteValue(e.CorrelationId);
@@ -719,9 +722,12 @@ namespace ZES.Infrastructure.Serialization
             WriteEventMetadata(writer, e, ignoredProperties);
             
             metadataJson = sb + "\n}";
-            
-            writer.WritePropertyName(nameof(IEvent.CommandId));
-            writer.WriteValue(e.CommandId);
+
+            if (e.CommandId != default)
+            {
+                writer.WritePropertyName(nameof(IEvent.CommandId));
+                writer.WriteValue(e.CommandId.ToString());
+            }
             
             writer.WritePropertyName(nameof(IEvent.Stream));
             writer.WriteValue(e.Stream);
@@ -746,9 +752,12 @@ namespace ZES.Infrastructure.Serialization
             writer.WriteStartObject();
             
             WriteEventMetadata(writer, e);
-            
-            writer.WritePropertyName(nameof(IEvent.CommandId));
-            writer.WriteValue(e.CommandId);
+
+            if (e.CommandId != null)
+            {
+                writer.WritePropertyName(nameof(IEvent.CommandId));
+                writer.WriteValue(e.CommandId.ToString());
+            }
             
             writer.WritePropertyName(nameof(IEvent.Stream));
             writer.WriteValue(e.Stream);
@@ -790,10 +799,10 @@ namespace ZES.Infrastructure.Serialization
                         currentProperty = reader.Value.ToString();
                         break;
                     case JsonToken.String when currentProperty == nameof(Message.MessageId):
-                        e.MessageId = Guid.Parse(reader.Value.ToString());
+                        e.MessageId = MessageId.Parse(reader.Value.ToString());
                         break;
                     case JsonToken.String when currentProperty == nameof(Message.AncestorId):
-                        e.AncestorId = Guid.Parse(reader.Value.ToString());
+                        e.AncestorId = MessageId.Parse(reader.Value.ToString());
                         break;
                     case JsonToken.String when currentProperty == nameof(Message.CorrelationId):
                         e.CorrelationId = reader.Value.ToString();
@@ -823,7 +832,7 @@ namespace ZES.Infrastructure.Serialization
                         e.ContentHash = (string)reader.Value;
                         break;
                     case JsonToken.String when currentProperty == nameof(Event.CommandId):
-                        e.CommandId = Guid.Parse(reader.Value.ToString());
+                        e.CommandId = MessageId.Parse(reader.Value.ToString());
                         break;
                     case JsonToken.String when currentProperty == nameof(Event.Stream):
                         e.Stream = (string)reader.Value;

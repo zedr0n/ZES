@@ -6,11 +6,6 @@ namespace ZES.Interfaces
     public interface IEventMetadata : IMessage
     {
         /// <summary>
-        /// Gets event type
-        /// </summary>
-        string MessageType { get; }
-        
-        /// <summary>
         /// Gets or sets gets event version in appropriate stream
         /// </summary>
         int Version { get; set; }

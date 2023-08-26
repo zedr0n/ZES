@@ -70,7 +70,7 @@ namespace ZES.Infrastructure.Domain
         /// <inheritdoc />
         public async Task<ICommand> GetCommand(IEvent e)
         {
-            var stream = new Stream(Key(e.MessageType), ExpectedVersion.Any);
+            var stream = new Stream(Key(e.CommandId.MessageType), ExpectedVersion.Any);
             var obs = ReadStream(stream, ExpectedVersion.EmptyStream + 1); 
 
             var command = await obs.FirstOrDefaultAsync(c => e.CommandId == c.MessageId).Timeout(Configuration.Timeout);
@@ -90,7 +90,7 @@ namespace ZES.Infrastructure.Domain
         /// <inheritdoc />
         public IStream GetStream(ICommand c, string branchId = null)
         {
-            return _streams.SingleOrDefault(x => x.Key == Key(c.EventType, branchId)).Value;
+            return _streams.SingleOrDefault(x => x.Key == Key(c.MessageType, branchId)).Value;
         }
 
         /// <inheritdoc />
@@ -108,12 +108,9 @@ namespace ZES.Infrastructure.Domain
         /// <inheritdoc />
         public async Task AppendCommand(ICommand command)
         {
-            if (command.EventType == null && !Debugger.IsAttached)
-                return;
-            
             var message = Encode(command);
 
-            var key = Key(command.EventType);
+            var key = Key(command.MessageType);
             var version = await AppendToStream(key, message);
             var stream = _streams.GetOrAdd(key, new Stream(key, version));
 
@@ -159,12 +156,12 @@ namespace ZES.Infrastructure.Domain
         /// <returns>Command stream message</returns>
         protected abstract TNewStreamMessage Encode(ICommand command);
         
-        private string Key(string eventType, string branchId = null)
+        private string Key(string commandType, string branchId = null)
         {
-            if (string.IsNullOrEmpty(eventType))
-                throw new InvalidOperationException("Event type not known for commmand");
+            if (string.IsNullOrEmpty(commandType))
+                throw new InvalidOperationException("Event type not known for command");
             branchId ??= _timeline.Id;
-            return $"{branchId}:Command:{eventType.Split('.').Last()}";
+            return $"{branchId}:Command:{commandType.Split('.').Last()}";
         }
     }
 }

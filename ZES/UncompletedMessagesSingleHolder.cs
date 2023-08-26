@@ -3,6 +3,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using ZES.Infrastructure.Branching;
 using ZES.Infrastructure.Utils;
+using ZES.Interfaces;
 
 namespace ZES
 {
@@ -38,7 +39,7 @@ namespace ZES
             /// <param name="timeline">Timeline</param>
             /// <param name="count">Number of uncomplete messages</param>
             /// <param name="retroactiveId">Retroactive command id being executed</param>
-            public State(string timeline, int count, Guid retroactiveId = default)
+            public State(string timeline, int count, MessageId retroactiveId = default)
             {
                 Timeline = timeline;
                 Count = count;
@@ -58,7 +59,7 @@ namespace ZES
             /// <summary>
             /// Gets the current retroactive id being executed
             /// </summary>
-            public Guid RetroactiveId { get; }
+            public MessageId RetroactiveId { get; }
         }
 
         /// <inheritdoc />
@@ -72,7 +73,7 @@ namespace ZES
             /// <summary>
             /// Gets or sets the current retroactive command id being executed
             /// </summary>
-            public Guid RetroactiveId { get; set; }
+            public MessageId RetroactiveId { get; set; }
             
             /// <summary>
             /// Gets or sets the associated timeline

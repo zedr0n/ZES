@@ -11,12 +11,17 @@ namespace ZES.Interfaces
         /// <summary>
         /// Gets unique message identifier
         /// </summary>
-        Guid MessageId { get; }
+        MessageId MessageId { get; }
 
+        /// <summary>
+        /// Gets event type
+        /// </summary>
+        string MessageType { get; }
+        
         /// <summary>
         /// Gets id of a message in a causality relationship with this message
         /// </summary>
-        Guid AncestorId { get; }
+        MessageId AncestorId { get; }
 
         /// <summary>
         /// Gets or sets the correlation id for the message

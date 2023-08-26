@@ -27,15 +27,10 @@ namespace ZES.Infrastructure.Domain
             var root = Create(command);
             
             var events = root.GetUncommittedEvents().OfType<Event>().ToList(); 
-            var eventType = events.Select(e => e.MessageType).SingleOrDefault();
-            if (eventType == null)
-                throw new InvalidOperationException("More than one event type produced by a command");
-            command.EventType = eventType;
-            
             foreach (var e in events)
             {
                 e.CommandId = command.MessageId;
-                e.AncestorId = command.AncestorId != default ? command.AncestorId : command.MessageId;
+                e.AncestorId = command.AncestorId ?? command.MessageId;
                 e.CorrelationId = command.CorrelationId;
             }
             

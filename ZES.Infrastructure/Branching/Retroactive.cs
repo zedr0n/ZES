@@ -332,7 +332,7 @@ namespace ZES.Infrastructure.Branching
                 }
                 else
                 {
-                    var eventsToDelete = new List<Guid>();
+                    var eventsToDelete = new List<MessageId>();
                     foreach (var e in change.Value.OrderByDescending(x => x.Version))
                     {
                         _log.Debug($"Rolling back {change.Key}:{e.GetType().GetFriendlyName()} with version {e.Version} at {e.Timestamp}");

@@ -10,7 +10,7 @@ namespace ZES.Interfaces
         /// <summary>
         /// Gets originating command id
         /// </summary>
-        Guid CommandId { get; }
+        MessageId CommandId { get; }
 
         /// <summary>
         /// Gets or sets stream key

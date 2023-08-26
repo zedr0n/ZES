@@ -158,7 +158,7 @@ namespace ZES.Infrastructure.Replicas
             }
 
             pushResult.NumberOfMessages += commandChanges.Count();
-            pushResult.NumberOfStreams += commandChanges.Select(c => c.EventType).Distinct().Count();
+            pushResult.NumberOfStreams += commandChanges.Select(c => c.MessageType).Distinct().Count();
 
             await _branchManager.DeleteBranch(syncRemoteTimeline);
 
@@ -196,7 +196,7 @@ namespace ZES.Infrastructure.Replicas
             }
 
             pullResult.NumberOfMessages += commandsToSync.Count;
-            pullResult.NumberOfStreams += commandsToSync.Select(c => c.EventType).Distinct().Count();
+            pullResult.NumberOfStreams += commandsToSync.Select(c => c.MessageType).Distinct().Count();
             
             await _branchManager.DeleteBranch(syncRemoteTimeline);
 

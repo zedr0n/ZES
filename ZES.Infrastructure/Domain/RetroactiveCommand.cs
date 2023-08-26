@@ -18,7 +18,7 @@ namespace ZES.Infrastructure.Domain
         /// <param name="timestamp">Time at which the command will be actioned</param>
         public RetroactiveCommand(TCommand command, Time timestamp)
         {
-            command.AncestorId = MessageId;
+            // command.AncestorId = AncestorId != default ? AncestorId : MessageId;
             Target = command.Target;
             Command = command;
             Timestamp = timestamp;

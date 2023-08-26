@@ -260,7 +260,7 @@ namespace ZES.Persistence.SQLStreamStore
             var metadata = _serializer.DecodeMetadata(m.JsonMetadata);
 
             var streamVertex = await AddStream(m.StreamId); 
-            var vertex = new EventVertex(m.MessageId, metadata.AncestorId, metadata.MessageType, m.StreamId, metadata.Version, metadata.Timestamp.ToUnixTimeMilliseconds());
+            var vertex = new EventVertex(new MessageId(m.Type, m.MessageId), metadata.AncestorId, metadata.MessageType, m.StreamId, metadata.Version, metadata.Timestamp.ToUnixTimeMilliseconds());
             _graph.AddVertex(vertex);
 
             var previousInStream = _graph.Vertices.OfType<EventVertex>().SingleOrDefault(s =>
@@ -272,7 +272,7 @@ namespace ZES.Persistence.SQLStreamStore
             else
                 LinkStream(streamVertex, vertex);
 
-            var dependents = _graph.Vertices.OfType<EventVertex>().Where(s => s.AncestorId == m.MessageId);
+            var dependents = _graph.Vertices.OfType<EventVertex>().Where(s => s.AncestorId.Id == m.MessageId);
             foreach (var d in dependents)
                 LinkCause(vertex, d);
 
@@ -291,7 +291,7 @@ namespace ZES.Persistence.SQLStreamStore
             var vertex = new CommandVertex(metadata.MessageId, metadata.AncestorId, metadata.MessageType, m.StreamId, metadata.Timestamp.ToUnixTimeMilliseconds());
             _graph.AddVertex(vertex);
 
-            var dependents = _graph.Vertices.OfType<CausalityVertex>().Where(v => v.AncestorId == m.MessageId);
+            var dependents = _graph.Vertices.OfType<CausalityVertex>().Where(v => v.AncestorId.Id == m.MessageId);
             foreach (var d in dependents)
                 LinkCause(vertex, d);
 
@@ -463,7 +463,7 @@ namespace ZES.Persistence.SQLStreamStore
         [DebuggerDisplay("{Label}")]
         private abstract class CausalityVertex : ICVertex
         {
-            public CausalityVertex(Guid messageId, Guid ancestorId, long timestamp, string streamKey)
+            public CausalityVertex(MessageId messageId, MessageId ancestorId, long timestamp, string streamKey)
             {
                 MessageId = messageId;
                 AncestorId = ancestorId;
@@ -472,8 +472,8 @@ namespace ZES.Persistence.SQLStreamStore
                 StreamKey = streamKey;
             }
                 
-            public Guid MessageId { get; }
-            public Guid AncestorId { get; }
+            public MessageId MessageId { get; }
+            public MessageId AncestorId { get; }
             public string MerkleHash { get; set; }
             public string StreamKey { get; }
             public string Id => $"{StreamKey}:{MessageId.ToString()}";
@@ -487,7 +487,7 @@ namespace ZES.Persistence.SQLStreamStore
         private class EventVertex : CausalityVertex
         {
             private string _prefix = string.Empty;
-            public EventVertex(Guid messageId, Guid ancestorId, string eventType, string streamKey, int version, long timestamp)
+            public EventVertex(MessageId messageId, MessageId ancestorId, string eventType, string streamKey, int version, long timestamp)
                 : base(messageId, ancestorId, timestamp, streamKey)
             {
                 SagaEvent = streamKey.Contains("Saga");
@@ -508,7 +508,7 @@ namespace ZES.Persistence.SQLStreamStore
         [DebuggerDisplay("{Label}")]
         private class CommandVertex : CausalityVertex
         {
-            public CommandVertex(Guid messageId, Guid ancestorId, string commandType, string streamKey, long timestamp)
+            public CommandVertex(MessageId messageId, MessageId ancestorId, string commandType, string streamKey, long timestamp)
                 : base(messageId, ancestorId, timestamp, streamKey)
             {
                 CommandType = commandType;

@@ -8,14 +8,6 @@ namespace ZES.Infrastructure.Domain
     /// <inheritdoc cref="ICommand" />
     public class Command : Message, ICommand
     {
-        /// <summary>
-        /// Initializes a new instance of the <see cref="Command"/> class.
-        /// </summary>
-        protected Command()
-        {
-            MessageId = Guid.NewGuid();
-        }
-
         /// <inheritdoc />
         [JsonIgnore]
         public virtual string Target { get; set; }

@@ -121,7 +121,7 @@ namespace ZES.Persistence.SQLStreamStore
         {
             var events = await ReadStream<IEventMetadata>(stream, version + 1).ToList();
             foreach (var e in events.Reverse())
-                await _streamStore.DeleteMessage(stream.Key, e.MessageId);
+                await _streamStore.DeleteMessage(stream.Key, e.MessageId.Id);
         }
 
         /// <inheritdoc />
@@ -141,7 +141,7 @@ namespace ZES.Persistence.SQLStreamStore
             if(jsonData == null)
                 Serializer.SerializeEventAndMetadata(e, out jsonData, out jsonMetadata);
             
-            return new (e.MessageId, e.MessageType, jsonData, jsonMetadata);
+            return new (e.MessageId.Id, e.MessageType, jsonData, jsonMetadata);
         }
 
         /// <inheritdoc />

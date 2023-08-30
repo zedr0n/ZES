@@ -70,10 +70,14 @@ namespace ZES.Infrastructure.Domain
         /// <inheritdoc />
         public async Task<ICommand> GetCommand(IEvent e)
         {
-            var stream = new Stream(Key(e.CommandId.MessageType), ExpectedVersion.Any);
+            var key = Key(e.AncestorId.MessageType);
+            var stream = new Stream(key, ExpectedVersion.Any);
             var obs = ReadStream(stream, ExpectedVersion.EmptyStream + 1); 
 
-            var command = await obs.FirstOrDefaultAsync(c => e.CommandId == c.MessageId).Timeout(Configuration.Timeout);
+            if(e.AncestorId == default)
+                _log.Error($"No ancestor id found for {e.MessageId}");
+            _log.Debug($"Searching for originating command in stream {key} for {e}");
+            var command = await obs.FirstOrDefaultAsync(c => e.AncestorId == c.MessageId).Timeout(Configuration.Timeout);
             return command;
         }
 
@@ -111,6 +115,7 @@ namespace ZES.Infrastructure.Domain
             var message = Encode(command);
 
             var key = Key(command.MessageType);
+            _log.Debug($"Adding command to stream {key}: {command}");
             var version = await AppendToStream(key, message);
             var stream = _streams.GetOrAdd(key, new Stream(key, version));
 

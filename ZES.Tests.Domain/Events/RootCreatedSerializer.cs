@@ -3,7 +3,7 @@ using ZES.Infrastructure.Serialization;
 
 namespace ZES.Tests.Domain.Events
 {
-    public class RootCreatedSerializer : EventSerializerBase<RootCreated>
+    /*public class RootCreatedSerializer : EventSerializerBase<RootCreated>
     {
         public override void Write(JsonTextWriter writer, RootCreated e)
         {
@@ -13,5 +13,5 @@ namespace ZES.Tests.Domain.Events
             writer.WritePropertyName(nameof(RootCreated.Type));
             writer.WriteValue(e.Type);
         }
-    }
+    }*/
 }

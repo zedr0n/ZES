@@ -68,12 +68,12 @@ namespace ZES.Persistence.SQLStreamStore
         }
 
         /// <inheritdoc />
-        protected override async Task ReadSingleStreamStore<TEvent>(IObserver<TEvent> observer, IStream stream, int position, int count, bool deserialize = true)
+        protected override async Task ReadSingleStreamStore<TEvent>(IObserver<TEvent> observer, IStream stream, int position, int count, SerializationType serializationType = SerializationType.PayloadAndMetadata)
         {
             var page = await _streamStore.ReadStreamForwards(stream.Key, position, Math.Min(Configuration.BatchSize, count));
             while (page.Messages.Length > 0 && count > 0)
             {
-                count = await DecodeEventsObservable(observer, page.Messages, count, deserialize);
+                count = await DecodeEventsObservable(observer, page.Messages, count, serializationType);
                 page = await page.ReadNext();
             }
             
@@ -119,7 +119,7 @@ namespace ZES.Persistence.SQLStreamStore
         /// <inheritdoc />
         protected override async Task TruncateStreamStore(IStream stream, int version)
         {
-            var events = await ReadStream<IEventMetadata>(stream, version + 1).ToList();
+            var events = await ReadStream<IEvent>(stream, version + 1, -1, SerializationType.Metadata).ToList();
             foreach (var e in events.Reverse())
                 await _streamStore.DeleteMessage(stream.Key, e.MessageId.Id);
         }
@@ -137,54 +137,22 @@ namespace ZES.Persistence.SQLStreamStore
         protected override NewStreamMessage EventToStreamMessage(IEvent e)
         {
             var jsonData = e.Json;
-            var jsonMetadata = e.JsonMetadata;
-            if(jsonData == null)
+            var jsonMetadata = e.MetadataJson;
+            if (jsonData == null)
                 Serializer.SerializeEventAndMetadata(e, out jsonData, out jsonMetadata);
+            else if (jsonMetadata == null)
+                jsonMetadata = Serializer.EncodeMetadata(e); 
             
-            return new (e.MessageId.Id, e.MessageType, jsonData, jsonMetadata);
+            return new (e.MessageId.Id, e.GetType().Name, jsonData, jsonMetadata);
         }
 
         /// <inheritdoc />
-        protected override async Task<T> StreamMessageToJson<T>(StreamMessage streamMessage)
+        protected override async Task<T> StreamMessageToEvent<T>(StreamMessage streamMessage, SerializationType serializationType = SerializationType.PayloadAndMetadata)
         {
-            if (typeof(T) == typeof(IEvent))
-            {
-                var json = await streamMessage.GetJsonData();
-                var e = Serializer.Deserialize(json, false);
-                e.Json = json;
-                e.JsonMetadata = streamMessage.JsonMetadata;
-                return e as T;
-            }
-
-            if (typeof(T) == typeof(IEventMetadata))
-            {
-                var json = streamMessage.JsonMetadata;
-                return new EventMetadata { Json = json } as T;
-            }
-
-            return null;
-        }
-
-        /// <inheritdoc />
-        protected override async Task<T> StreamMessageToEvent<T>(StreamMessage streamMessage, bool deserialize = true)
-        {
-            if (typeof(T) == typeof(IEvent))
-            {
-                var json = await streamMessage.GetJsonData();
-                var e = Serializer.Deserialize(json, deserialize);
-                //e.Version = await GetVersion()
-                e.Json = json;
-                e.JsonMetadata = streamMessage.JsonMetadata;
-                return e as T;
-            }
-
-            if (typeof(T) == typeof(IEventMetadata))
-            {
-                var json = streamMessage.JsonMetadata;
-                return Serializer.DecodeMetadata(json) as T;
-            }
-
-            return null;
+            var json = await streamMessage.GetJsonData();
+            var jsonMetadata = streamMessage.JsonMetadata;
+            var e = Serializer.Deserialize(json, jsonMetadata, serializationType);
+            return e as T;
         }
 
         /// <inheritdoc />

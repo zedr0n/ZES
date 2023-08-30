@@ -13,6 +13,7 @@ using ZES.Infrastructure.Domain;
 using ZES.Infrastructure.EventStore;
 using ZES.Interfaces;
 using ZES.Interfaces.Clocks;
+using ZES.Interfaces.Domain;
 using ZES.Interfaces.EventStore;
 using ZES.Interfaces.Serialization;
 using Stream = ZES.Infrastructure.EventStore.Stream;
@@ -22,6 +23,9 @@ namespace ZES.Infrastructure.Serialization
     /// <inheritdoc />
     public class JsonArrayPool : IArrayPool<char>
     {
+        /// <summary>
+        /// Json array pool instance
+        /// </summary>
         public static readonly JsonArrayPool Instance = new JsonArrayPool();
 
         /// <inheritdoc />
@@ -103,9 +107,19 @@ namespace ZES.Infrastructure.Serialization
             {
                 // Allows deserializing to the actual runtime type
                 TypeNameHandling = TypeNameHandling.Objects,
+                NullValueHandling = NullValueHandling.Ignore,
 
                 // In a version resilient way
                 TypeNameAssemblyFormatHandling = TypeNameAssemblyFormatHandling.Simple,
+                Converters = new List<JsonConverter>(),
+                DateParseHandling = DateParseHandling.None,
+            }).ConfigureForTime(); 
+            JsonSerializer.Create(new JsonSerializerSettings
+            {
+                TypeNameHandling = TypeNameHandling.None,
+                NullValueHandling = NullValueHandling.Ignore,
+
+                // In a version resilient way
                 Converters = new List<JsonConverter>(),
                 DateParseHandling = DateParseHandling.None,
             }).ConfigureForTime(); 
@@ -182,38 +196,55 @@ namespace ZES.Infrastructure.Serialization
         }
 
         /// <inheritdoc />
-        public T Deserialize(string payload, bool full = true)
+        public T Deserialize(string payload, string metadata, SerializationType serializationType = SerializationType.PayloadAndMetadata)
         {
             T result = null;
             _log.StopWatch.Start(nameof(Deserialize));
-            using (var reader = new StringReader(payload))
+            using var reader = new StringReader(payload);
+            try
             {
-                var jsonReader = new JsonTextReader(reader) { DateParseHandling = DateParseHandling.None, PropertyNameTable = _jsonNameTable };
-                if(_jsonArrayPool != null)
-                    jsonReader.ArrayPool = _jsonArrayPool;
-
-                try
-                {
 #if USE_EXPLICIT
-                    if (typeof(T) != typeof(IEvent))
-                        result = _serializer.Deserialize<T>(jsonReader);
-                    else
-                        result = DeserializeEvent(payload, full) as T;
-
+                result = DeserializeEvent(payload, metadata, out var jsonMetadata, out var jsonStaticMetadata, serializationType) as T;
 #endif
-                    if (result == null)
-                        result = _serializer.Deserialize<T>(jsonReader);
-                }
-                catch (Exception e)
+                if (result == null)
                 {
-                    // Wrap in a standard .NET exception.
-                    if (e is JsonSerializationException)
-                        throw new SerializationException(e.Message, e);
-                }
+                    var jsonReader = new JsonTextReader(reader) { DateParseHandling = DateParseHandling.None, PropertyNameTable = _jsonNameTable};
+                    if(_jsonArrayPool != null)
+                        jsonReader.ArrayPool = _jsonArrayPool;
+                        
+                    result = _serializer.Deserialize<T>(jsonReader);
+                    if (result == null)
+                        throw new JsonSerializationException($"Couldn't deserialize event: {payload}");
 
-                _log.StopWatch.Stop(nameof(Deserialize));
-                return result;
+                    if (result is IMessage message)
+                    {
+                        if (Configuration.StoreMetadataSeparately )
+                        {
+                            using var metadataReader = new StringReader(metadata);
+                            var jsonMetadataReader = new JsonTextReader(metadataReader) { DateParseHandling = DateParseHandling.None, PropertyNameTable = _jsonNameTable};
+                            if(_jsonArrayPool != null)
+                                jsonMetadataReader.ArrayPool = _jsonArrayPool;
+                            var metadataEvent = _serializer.Deserialize<T>(jsonMetadataReader) as IMessage;
+                            message.CopyMetadata(metadataEvent);
+                        }
+                        
+                        message.Json = payload;
+                        message.MetadataJson = jsonMetadata;
+                        message.StaticMetadataJson = jsonStaticMetadata;
+                        
+                        //_log.Warn($"Used generic serializer for {message.MessageId} of type {typeof(T)}");
+                    }
+                }
             }
+            catch (Exception e)
+            {
+                // Wrap in a standard .NET exception.
+                if (e is JsonSerializationException)
+                    throw new SerializationException(e.Message, e);
+            }
+
+            _log.StopWatch.Stop(nameof(Deserialize));
+            return result;
         }
 
         /// <inheritdoc />
@@ -240,7 +271,7 @@ namespace ZES.Infrastructure.Serialization
                     jsonWriter.WriteValue(stream.SnapshotVersion);
 
                     jsonWriter.WritePropertyName(nameof(IStream.SnapshotTimestamp));
-                    jsonWriter.WriteValue(stream.SnapshotTimestamp.ToExtendedIso());
+                    jsonWriter.WriteValue(stream.SnapshotTimestamp.Serialise());
                 }
 
                 if (stream.Parent != null)
@@ -257,7 +288,7 @@ namespace ZES.Infrastructure.Serialization
                         jsonWriter.WriteValue(stream.Parent.SnapshotVersion);
                     
                         jsonWriter.WritePropertyName($"Parent{nameof(IStream.SnapshotTimestamp)}");
-                        jsonWriter.WriteValue(stream.Parent.SnapshotTimestamp.ToExtendedIso());
+                        jsonWriter.WriteValue(stream.Parent.SnapshotTimestamp.Serialise());
                     }
                 }
                 
@@ -351,13 +382,13 @@ namespace ZES.Infrastructure.Serialization
                         snapshotVersion = (int)(long)reader.Value;
                         break;
                     case JsonToken.String when currentProperty == nameof(IStream.SnapshotTimestamp):
-                        snapshotTimestamp = Time.FromExtendedIso((string)reader.Value);
+                        snapshotTimestamp = Time.Parse((string)reader.Value);
                         break;
                     case JsonToken.Integer when currentProperty == $"Parent{nameof(IStream.SnapshotVersion)}":
                         parentSnapshotVersion = (int)(long)reader.Value;
                         break;
                     case JsonToken.String when currentProperty == $"Parent{nameof(IStream.SnapshotTimestamp)}":
-                        parentSnapshotTimestamp = Time.FromExtendedIso((string)reader.Value); 
+                        parentSnapshotTimestamp = Time.Parse((string)reader.Value); 
                         break;
                 }
             }
@@ -417,62 +448,41 @@ namespace ZES.Infrastructure.Serialization
             var e = message as IEvent;
             if (e == null)
                 return null;
-            var version = e?.Version ?? 0;
-            var hash = e?.ContentHash ?? string.Empty;
 #if USE_EXPLICIT
             
             var sw = new StringWriter();
             var writer = new JsonTextWriter(sw);
 
-            // {
             writer.WriteStartObject();
             
-            writer.WritePropertyName(nameof(IEventMetadata.MessageId));
-            writer.WriteValue(e.MessageId.ToString());
-
-            if (e.AncestorId != default)
+            writer.WritePropertyName("$type");
+            writer.WriteValue(e.GetType().FullName + "," + e.GetType().Assembly.FullName.Split(',')[0]);
+            
+            writer.WritePropertyName(nameof(Event.Metadata));
+            writer.WriteStartObject();
             {
-                writer.WritePropertyName(nameof(IEventMetadata.AncestorId));
-                writer.WriteValue(e.AncestorId.ToString());
+                WriteEventMetadata(writer, e.Metadata);
             }
+            writer.WriteEndObject();
 
-            if (e.CorrelationId != null)
+            if (!Configuration.StoreMetadataSeparately)
             {
-                writer.WritePropertyName(nameof(IEventMetadata.CorrelationId));
-                writer.WriteValue(e.CorrelationId);
+                writer.WritePropertyName(nameof(Event.StaticMetadata));
+                writer.WriteStartObject();
+                {
+                    WriteEventStaticMetadata(writer, e.StaticMetadata);
+                }
+                writer.WriteEndObject();
             }
-
-            writer.WritePropertyName(nameof(IEventMetadata.Timestamp));
-            writer.WriteValue(e.Timestamp.ToExtendedIso());
-            
-            writer.WritePropertyName(nameof(IEventMetadata.LocalId));
-            writer.WriteValue(e.LocalId.ToString());
-            
-            writer.WritePropertyName(nameof(IEventMetadata.OriginId));
-            writer.WriteValue(e.OriginId.ToString());
-            
-            writer.WritePropertyName(nameof(IEventMetadata.StreamHash));
-            writer.WriteValue(e.StreamHash);
-
-            writer.WritePropertyName(nameof(IEventMetadata.Version));
-            writer.WriteValue(version);
-            
-            writer.WritePropertyName(nameof(IEventMetadata.MessageType));
-            writer.WriteValue(e.GetType().Name);
-            
-            writer.WritePropertyName(nameof(IEventMetadata.ContentHash));
-            writer.WriteValue(hash);
-            
-            writer.WritePropertyName(nameof(IEventMetadata.Timeline));
-            writer.WriteValue(e.Timeline);
             
             writer.WriteEndObject();
+            
             return sw.ToString();
 #else
             var meta = new JObject(
                 new JProperty(nameof(IEventMetadata.MessageId), e.MessageId),
                 new JProperty(nameof(IEventMetadata.AncestorId), e.AncestorId),
-                new JProperty(nameof(IEventMetadata.Timestamp), e.Timestamp.ToExtendedIso()),
+                new JProperty(nameof(IEventMetadata.Timestamp), e.Timestamp.Serialise()),
                 new JProperty(nameof(IEventMetadata.LocalId), e.LocalId.ToString()),
                 new JProperty(nameof(IEventMetadata.OriginId), e.OriginId.ToString()),
                 new JProperty(nameof(IEventMetadata.Version), version),
@@ -507,7 +517,7 @@ namespace ZES.Infrastructure.Serialization
         /// "MessageType": "RecordCreated",
         /// "Hash": "" }
         /// </example>
-        public IEventMetadata DecodeMetadata(string json)
+        public IEvent DecodeMetadata(string json)
         {
             _log.StopWatch.Start(nameof(DecodeMetadata));
 #if USE_EXPLICIT
@@ -516,9 +526,9 @@ namespace ZES.Infrastructure.Serialization
             if(_jsonArrayPool != null)
                 reader.ArrayPool = _jsonArrayPool;
             
-            var metadata = new EventMetadata();
+            var metadata = new Event();
             var currentProperty = string.Empty;
-            metadata.CorrelationId = null;
+            // metadata.CorrelationId = null;
             while (reader.Read())
             {
                 if (reader.Value == null) 
@@ -529,32 +539,32 @@ namespace ZES.Infrastructure.Serialization
                     case JsonToken.PropertyName:
                         currentProperty = reader.Value.ToString();
                         break;
-                    case JsonToken.String when currentProperty == nameof(IEventMetadata.AncestorId):
-                        metadata.AncestorId = MessageId.Parse(reader.Value.ToString());
+                    case JsonToken.String when currentProperty == nameof(IEventStaticMetadata.AncestorId):
+                        metadata.StaticMetadata.AncestorId = MessageId.Parse(reader.Value.ToString());
                         break;
-                    case JsonToken.String when currentProperty == nameof(IEventMetadata.CorrelationId):
-                        metadata.CorrelationId = reader.Value.ToString();
+                    case JsonToken.String when currentProperty == nameof(IEventStaticMetadata.CorrelationId):
+                        metadata.StaticMetadata.CorrelationId = reader.Value.ToString();
                         break;
                     case JsonToken.String when currentProperty == nameof(IEventMetadata.MessageId):
-                        metadata.MessageId = MessageId.Parse(reader.Value.ToString());
+                        metadata.Metadata.MessageId = MessageId.Parse(reader.Value.ToString());
                         break;
                     case JsonToken.String when currentProperty == nameof(IEventMetadata.Timestamp):
-                        metadata.Timestamp = Time.FromExtendedIso((string)reader.Value);
+                        metadata.Metadata.Timestamp = Time.Parse((string)reader.Value);
                         break;
                     case JsonToken.Integer when currentProperty == nameof(IEventMetadata.Version):
-                        metadata.Version = (int)(long)reader.Value;
+                        metadata.Metadata.Version = (int)(long)reader.Value;
                         break;
-                    case JsonToken.String when currentProperty == nameof(IEventMetadata.MessageType):
-                        metadata.MessageType = (string)reader.Value;
+                    case JsonToken.String when currentProperty == nameof(IEventStaticMetadata.MessageType):
+                        metadata.StaticMetadata.MessageType = (string)reader.Value;
                         break;
                     case JsonToken.String when currentProperty == nameof(IEventMetadata.ContentHash):
-                        metadata.ContentHash = (string)reader.Value;
+                        metadata.Metadata.ContentHash = (string)reader.Value;
                         break;
                     case JsonToken.String when currentProperty == nameof(IEventMetadata.StreamHash):
-                        metadata.StreamHash = (string)reader.Value;
+                        metadata.Metadata.StreamHash = (string)reader.Value;
                         break;
                     case JsonToken.String when currentProperty == nameof(IEventMetadata.Timeline):
-                        metadata.Timeline = (string)reader.Value;
+                        metadata.Metadata.Timeline = (string)reader.Value;
                         break;
                 }
             }
@@ -663,44 +673,79 @@ namespace ZES.Infrastructure.Serialization
             return true;
         }
 
+        private void WriteMessageMetadata(JsonWriter writer, IMessageMetadata e, IEnumerable<string> ignoredProperties = null)
+        {
+            var properties = ignoredProperties as string[] ?? ignoredProperties?.ToArray();
+            
+            writer.WritePropertyName("$type");
+            writer.WriteValue(e.GetType().FullName + "," + e.GetType().Assembly.FullName.Split(',')[0]);
+            
+            if (WritePropertyName(writer, nameof(IMessageMetadata.MessageId), properties))
+                writer.WriteValue(e.MessageId.ToString());
+
+            if (WritePropertyName(writer, nameof(IMessageMetadata.Timestamp), properties))
+                writer.WriteValue(e.Timestamp.Serialise());
+            
+            if (WritePropertyName(writer, nameof(IMessageMetadata.Timeline), properties))
+                writer.WriteValue(e.Timeline);
+        }
+        
         private void WriteEventMetadata(JsonWriter writer, IEventMetadata e, IEnumerable<string> ignoredProperties = null)
         {
             var properties = ignoredProperties as string[] ?? ignoredProperties?.ToArray();
-            if (WritePropertyName(writer, nameof(IEventMetadata.MessageId), properties))
-                writer.WriteValue(e.MessageId.ToString());
-            
-            if (WritePropertyName(writer, nameof(IEventMetadata.AncestorId), properties))
-                writer.WriteValue(e.AncestorId.ToString());
 
-            if (WritePropertyName(writer, nameof(IEventMetadata.CorrelationId), properties))
-                writer.WriteValue(e.CorrelationId);
-
-            if (WritePropertyName(writer, nameof(IEventMetadata.Timestamp), properties))
-                writer.WriteValue(e.Timestamp.ToExtendedIso());
-            
-            if (WritePropertyName(writer, nameof(IEventMetadata.LocalId), properties))
-                writer.WriteValue(e.LocalId.ToString());
-            
-            if (WritePropertyName(writer, nameof(IEventMetadata.OriginId), properties))
-                writer.WriteValue(e.OriginId.ToString());
-            
-            if (WritePropertyName(writer, nameof(IEventMetadata.StreamHash), properties))
-                writer.WriteValue(e.StreamHash);
-
-            if (WritePropertyName(writer, nameof(IEventMetadata.Timeline), properties))
-                writer.WriteValue(e.Timeline);
-            
-            if (WritePropertyName(writer, nameof(IEventMetadata.MessageType), properties))
-                writer.WriteValue(e.GetType().FullName);
+            WriteMessageMetadata(writer, e, properties);
             
             if (WritePropertyName(writer, nameof(IEventMetadata.Version), properties))
                 writer.WriteValue(e.Version);
-
+            
+            if (WritePropertyName(writer,nameof(IEventMetadata.Stream), properties))
+                writer.WriteValue(e.Stream);
+            
             if (e.ContentHash != string.Empty)
             {
                 if (WritePropertyName(writer, nameof(IEventMetadata.ContentHash), properties))
                     writer.WriteValue(e.ContentHash);
             }
+            
+            if (WritePropertyName(writer, nameof(IEventMetadata.StreamHash), properties))
+                writer.WriteValue(e.StreamHash);
+        }
+
+        private void WriteMessageStaticMetadata(JsonWriter writer, IMessageStaticMetadata e, IEnumerable<string> ignoredProperties = null)
+        {
+            var properties = ignoredProperties as string[] ?? ignoredProperties?.ToArray();
+            
+            writer.WritePropertyName("$type");
+            writer.WriteValue(e.GetType().FullName + "," + e.GetType().Assembly.FullName.Split(',')[0]);
+            
+            if (WritePropertyName(writer, nameof(IMessageStaticMetadata.MessageType), properties))
+                writer.WriteValue(e.MessageType);
+            
+            if (e.AncestorId != default && WritePropertyName(writer, nameof(IMessageStaticMetadata.AncestorId), properties))
+                writer.WriteValue(e.AncestorId.ToString());
+
+            if (WritePropertyName(writer, nameof(IMessageStaticMetadata.CorrelationId), properties))
+                writer.WriteValue(e.CorrelationId);
+
+            if (WritePropertyName(writer, nameof(IMessageStaticMetadata.LocalId), properties))
+                writer.WriteValue(e.LocalId.ToString());
+            
+            if (/*e.OriginId != e.LocalId &&*/ WritePropertyName(writer, nameof(IMessageStaticMetadata.OriginId), properties))
+                writer.WriteValue(e.OriginId.ToString());
+        }
+        
+        private void WriteEventStaticMetadata(JsonWriter writer, IEventStaticMetadata e, IEnumerable<string> ignoredProperties = null)
+        {
+            var properties = ignoredProperties as string[] ?? ignoredProperties?.ToArray();
+
+            WriteMessageStaticMetadata(writer, e, properties);
+            
+            if(WritePropertyName(writer, nameof(IEventStaticMetadata.OriginatingStream), properties))
+                writer.WriteValue(e.OriginatingStream);
+            
+            if(e.CommandId != default && WritePropertyName(writer, nameof(IEventStaticMetadata.CommandId), properties))
+                writer.WriteValue(e.CommandId.ToString());
         }
 
         private void SerializeEventAndMetadata(IEvent e, out string eventJson, out string metadataJson, IEnumerable<string> ignoredProperties = null)
@@ -711,28 +756,71 @@ namespace ZES.Infrastructure.Serialization
                return;
             
             var serializer = _serializationRegistry.GetSerializer(e);
-            if (serializer == null)
-                return;
-            
+
             var sb = new StringBuilder();
             var sw = new StringWriter(sb);
             var writer = new JsonTextWriter(sw) { Formatting = Formatting.Indented };
-
-            writer.WriteStartObject();
-            WriteEventMetadata(writer, e, ignoredProperties);
             
-            metadataJson = sb + "\n}";
-
-            if (e.CommandId != default)
+            var metadataSb = new StringBuilder();
+            var swMetadata = new StringWriter(metadataSb);
+            var metadataWriter = new JsonTextWriter(swMetadata) { Formatting = Formatting.Indented };
+            
+            var properties = ignoredProperties as string[] ?? ignoredProperties?.ToArray();
+            
+            writer.WriteStartObject();
+            
+            writer.WritePropertyName("$type");
+            writer.WriteValue(e.GetType().FullName + "," + e.GetType().Assembly.FullName.Split(',')[0]);
+            if (Configuration.StoreMetadataSeparately)
             {
-                writer.WritePropertyName(nameof(IEvent.CommandId));
-                writer.WriteValue(e.CommandId.ToString());
+               metadataWriter.WriteStartObject();
+               metadataWriter.WritePropertyName("$type");
+               metadataWriter.WriteValue(e.GetType().FullName + "," + e.GetType().Assembly.FullName.Split(',')[0]);
             }
             
-            writer.WritePropertyName(nameof(IEvent.Stream));
-            writer.WriteValue(e.Stream);
-            
-            serializer.Write(writer, e);
+            var currentWriter = Configuration.StoreMetadataSeparately ? metadataWriter : writer;
+            currentWriter.WritePropertyName(nameof(Event.Metadata));
+            currentWriter.WriteStartObject();
+            {
+                WriteEventMetadata(currentWriter, e.Metadata, properties);
+            }
+            currentWriter.WriteEndObject();
+
+            if (Configuration.StoreMetadataSeparately)
+            {
+                metadataWriter.WriteEndObject();
+                metadataJson = metadataSb.ToString();
+            }
+
+            writer.WritePropertyName(nameof(Event.StaticMetadata));
+            writer.WriteStartObject();
+            {
+                WriteEventStaticMetadata(writer, e.StaticMetadata, properties);
+            }
+            writer.WriteEndObject();
+
+            if (!Configuration.StoreMetadataSeparately)
+                metadataJson = sb + Environment.NewLine + "}";
+
+            if(serializer != null)
+                serializer.Write(writer, e);
+            else
+            {
+                var payloadSb = new StringBuilder();
+                using var payloadWriter = new StringWriter(payloadSb);
+                var jsonWriter = new JsonTextWriter(payloadWriter) { Formatting = Formatting.Indented };
+
+                var copy = e.CopyPayload();
+                _serializer.Serialize(jsonWriter, copy);
+                var payloadJson = payloadSb.ToString();
+                sw.Write(',');
+                if (payloadJson.Length > 2)
+                {
+                    // remove {}
+                    payloadJson = payloadJson.Substring(1, payloadJson.Length - 2);
+                    sw.Write(payloadJson);
+                }
+            }
             writer.WriteEndObject();
             eventJson = sw.ToString();
         }
@@ -750,17 +838,12 @@ namespace ZES.Infrastructure.Serialization
                 return null;
 
             writer.WriteStartObject();
+            writer.WritePropertyName("$type");
+            writer.WriteValue(e.GetType().FullName);
             
-            WriteEventMetadata(writer, e);
-
-            if (e.CommandId != null)
-            {
-                writer.WritePropertyName(nameof(IEvent.CommandId));
-                writer.WriteValue(e.CommandId.ToString());
-            }
-            
-            writer.WritePropertyName(nameof(IEvent.Stream));
-            writer.WriteValue(e.Stream);
+            if(!Configuration.StoreMetadataSeparately)
+                WriteEventMetadata(writer, e.Metadata);
+            WriteEventStaticMetadata(writer, e.StaticMetadata);
             
             serializer.Write(writer, e);
             
@@ -768,83 +851,210 @@ namespace ZES.Infrastructure.Serialization
             sw.Flush();
             return sw.ToString();
         }
-        
-        private Event DeserializeEvent(string payload, bool full = true)
+
+        private EventMetadata DeserializeEventMetadata(JsonReader reader)
         {
-            if (payload == null)
-                return null;
-
-            var reader = new JsonTextReader(new StringReader(payload))
-                { DateParseHandling = DateParseHandling.None, PropertyNameTable = _jsonNameTable };
-            if(_jsonArrayPool != null)
-                reader.ArrayPool = _jsonArrayPool;
-
-            var deserializer = _serializationRegistry.GetDeserializer(payload);
-            if (deserializer == null)
-                return null;
-
-            var e = deserializer.Create();
-            if (!full)
-                return e;
-            e.CorrelationId = null;
-            
+            var e = new EventMetadata();
             var currentProperty = string.Empty;
+
             while (reader.Read())
             {
+                if (reader.TokenType == JsonToken.EndObject)
+                    return e;
+
                 if (reader.Value == null)
                     continue;
+
                 switch (reader.TokenType)
                 {
                     case JsonToken.PropertyName:
                         currentProperty = reader.Value.ToString();
                         break;
-                    case JsonToken.String when currentProperty == nameof(Message.MessageId):
+                    case JsonToken.String when currentProperty == nameof(EventMetadata.MessageId):
                         e.MessageId = MessageId.Parse(reader.Value.ToString());
                         break;
-                    case JsonToken.String when currentProperty == nameof(Message.AncestorId):
-                        e.AncestorId = MessageId.Parse(reader.Value.ToString());
+                    case JsonToken.String when currentProperty == nameof(EventMetadata.Timestamp):
+                        e.Timestamp = Time.Parse((string)reader.Value);
                         break;
-                    case JsonToken.String when currentProperty == nameof(Message.CorrelationId):
-                        e.CorrelationId = reader.Value.ToString();
+                    case JsonToken.Date when currentProperty == nameof(EventMetadata.Timestamp):
+                        e.Timestamp = Time.Parse(reader.Value.ToString());
                         break;
-                    case JsonToken.String when currentProperty == nameof(Message.Timestamp):
-                        e.Timestamp = Time.FromExtendedIso((string)reader.Value);
-                        break;
-                    case JsonToken.Date when currentProperty == nameof(Message.Timestamp):
-                        e.Timestamp = Time.FromExtendedIso(reader.Value.ToString());
-                        break;
-                    case JsonToken.String when currentProperty == nameof(Message.LocalId):
-                        e.LocalId = EventId.Parse((string)reader.Value); 
-                        break;
-                    case JsonToken.String when currentProperty == nameof(Message.OriginId):
-                        e.OriginId = EventId.Parse((string)reader.Value); 
-                        break;
-                    case JsonToken.String when currentProperty == nameof(EventMetadata.StreamHash):
-                        e.StreamHash = (string)reader.Value;
+                    case JsonToken.String when currentProperty == nameof(EventMetadata.Timeline):
+                        e.Timeline = (string)reader.Value;
                         break;
                     case JsonToken.Integer when currentProperty == nameof(EventMetadata.Version):
                         e.Version = (int)(long)reader.Value;
                         break;
-                    case JsonToken.String when currentProperty == nameof(EventMetadata.MessageType):
-                        e.MessageType = (string)reader.Value;
+                    case JsonToken.String when currentProperty == nameof(EventMetadata.Stream):
+                        e.Stream = (string)reader.Value;
+                        break;
+                    case JsonToken.String when currentProperty == nameof(EventMetadata.StreamHash):
+                        e.StreamHash = (string)reader.Value;
                         break;
                     case JsonToken.String when currentProperty == nameof(EventMetadata.ContentHash):
                         e.ContentHash = (string)reader.Value;
                         break;
-                    case JsonToken.String when currentProperty == nameof(Event.CommandId):
-                        e.CommandId = MessageId.Parse(reader.Value.ToString());
-                        break;
-                    case JsonToken.String when currentProperty == nameof(Event.Stream):
-                        e.Stream = (string)reader.Value;
-                        break;
-                    case JsonToken.String when currentProperty == nameof(Event.Timeline):
-                        e.Timeline = (string)reader.Value;
-                        break;
                 }
-                
-                deserializer.Switch(reader, currentProperty, e);
             }
 
+            return e;
+        }
+
+        private EventStaticMetadata DeserializeEventStaticMetadata(JsonReader reader)
+        {
+            var e = new EventStaticMetadata();
+            var currentProperty = string.Empty;
+            
+            using var writer = new StringWriter();
+
+            while (reader.Read())
+            {
+                if (reader.TokenType == JsonToken.EndObject)
+                    return e;
+
+                if(reader.Value == null)
+                    continue;
+
+                switch (reader.TokenType)
+                {
+                    case JsonToken.PropertyName:
+                        currentProperty = reader.Value.ToString();
+                        break;
+                    case JsonToken.String when currentProperty == nameof(EventStaticMetadata.AncestorId):
+                        e.AncestorId = MessageId.Parse(reader.Value.ToString());
+                        break;
+                    case JsonToken.String when currentProperty == nameof(EventStaticMetadata.CorrelationId):
+                        e.CorrelationId = reader.Value.ToString();
+                        break;
+                    case JsonToken.String when currentProperty == nameof(EventStaticMetadata.LocalId):
+                        e.LocalId = EventId.Parse((string)reader.Value); 
+                        break;
+                    case JsonToken.String when currentProperty == nameof(EventStaticMetadata.OriginId):
+                        e.OriginId = EventId.Parse((string)reader.Value); 
+                        break;
+                    case JsonToken.String when currentProperty == nameof(EventStaticMetadata.MessageType):
+                        e.MessageType = (string)reader.Value;
+                        break;
+                    case JsonToken.String when currentProperty == nameof(EventStaticMetadata.CommandId):
+                        e.CommandId = MessageId.Parse(reader.Value.ToString());
+                        break;
+                } 
+            }
+
+            e.OriginId ??= e.LocalId;
+
+            return null;
+        }
+
+        private static bool TryGetJson(string payload, string metadata, out string jsonMetadata, out string jsonStaticMetadata, out string eventPayload)
+        {
+            jsonMetadata = jsonStaticMetadata = eventPayload = null;
+            var split = Configuration.StoreMetadataSeparately ? nameof(Event.StaticMetadata) : nameof(Event.Metadata);
+            var tokens = payload.Split(new[] { $"{split}\": ", "}," }, StringSplitOptions.None);
+            if (Configuration.StoreMetadataSeparately)
+            {
+                if (tokens.Length < 3)
+                    return false;
+                jsonMetadata = metadata;
+                jsonStaticMetadata = tokens[1] + "}";
+                if (tokens.Length > 2)
+                    eventPayload = "{" + Environment.NewLine + tokens[2];
+            }
+            else
+            {
+                if (tokens.Length < 4)
+                    return false;
+                jsonMetadata = tokens[1] + Environment.NewLine + "}";
+                jsonStaticMetadata = tokens[3] + "}";
+                if (tokens.Length > 4)
+                    eventPayload = "{" + Environment.NewLine + tokens[4];
+            }
+            return true;
+        }
+        
+        private Event DeserializeEvent(string payload, string metadata, out string jsonMetadata, out string jsonStaticMetadata, SerializationType serializationType = SerializationType.PayloadAndMetadata )
+        {
+            jsonMetadata = jsonStaticMetadata = null;
+            if (payload == null || metadata == null)
+                return null;
+
+            if (!TryGetJson(payload, metadata, out jsonMetadata, out jsonStaticMetadata, out var eventPayload))
+                throw new SerializationException($"Cannot extract json : {payload}");
+            
+            var reader = new JsonTextReader(new StringReader(payload))
+                { DateParseHandling = DateParseHandling.None, PropertyNameTable = _jsonNameTable };
+            if(_jsonArrayPool != null)
+                reader.ArrayPool = _jsonArrayPool;
+
+            var metadataReader = new JsonTextReader(new StringReader(jsonMetadata)) 
+                { DateParseHandling = DateParseHandling.None, PropertyNameTable = _jsonNameTable };
+            if(_jsonArrayPool != null)
+                metadataReader.ArrayPool = _jsonArrayPool;
+
+            var deserializer = _serializationRegistry.GetDeserializer(payload);
+            if (deserializer == null)
+                return null;
+            var e = deserializer.Create();
+            e.Json = payload;
+            
+            var currentProperty = string.Empty;
+            
+            if (!deserializer.SupportsPayload && serializationType == SerializationType.PayloadAndMetadata)
+                return null;
+
+            e.StaticMetadata = new EventStaticMetadata();
+            e.StaticMetadata.Json = jsonStaticMetadata;
+            
+            if (Configuration.StoreMetadataSeparately)
+            {
+                e.Metadata = DeserializeEventMetadata(metadataReader);
+                e.Metadata.Json = jsonMetadata;
+            }
+            
+            while (reader.Read())
+            {
+                if (reader.Value == null)
+                    continue;
+
+                if (reader.TokenType != JsonToken.PropertyName)
+                    continue;
+                
+                currentProperty = reader.Value.ToString();
+                if (currentProperty == nameof(Event.Metadata))
+                {
+                    e.Metadata = DeserializeEventMetadata(reader);
+                    e.Metadata.Json = jsonMetadata;
+                }
+                if (currentProperty == nameof(Event.StaticMetadata) && serializationType != SerializationType.Metadata)
+                {
+                    e.StaticMetadata = DeserializeEventStaticMetadata(reader);
+                    break;
+                }
+            }
+
+            if (serializationType is SerializationType.FullMetadata or SerializationType.Metadata)
+                return e;
+
+            reader = new JsonTextReader(new StringReader(eventPayload))
+                { DateParseHandling = DateParseHandling.None, PropertyNameTable = _jsonNameTable };
+            if(_jsonArrayPool != null)
+                reader.ArrayPool = _jsonArrayPool;
+            
+            while (reader.Read())
+            {
+                if (reader.Value == null)
+                    continue;
+
+                switch (reader.TokenType)
+                {
+                    case JsonToken.PropertyName:
+                        currentProperty = reader.Value.ToString();
+                        break;
+                    default:
+                        deserializer.Switch(reader, currentProperty, e);
+                        break;
+                } 
+            }
             return e;
         }
         #endif

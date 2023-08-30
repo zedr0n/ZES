@@ -25,4 +25,3 @@ namespace ZES.Interfaces
         public override string ToString() => $"{MessageType}:{Id}";
     }    
 }
-

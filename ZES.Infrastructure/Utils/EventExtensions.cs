@@ -17,7 +17,7 @@ namespace ZES.Infrastructure.Utils
             public override void WriteJson(JsonWriter writer, object value, JsonSerializer serializer)
             {
                 var messageId = value as MessageId;
-                writer.WriteValue(messageId.ToString()); 
+                writer.WriteValue(messageId?.ToString()); 
             }
 
             /// <inheritdoc />
@@ -40,13 +40,13 @@ namespace ZES.Infrastructure.Utils
             public override void WriteJson(JsonWriter writer, object value, JsonSerializer serializer)
             {
                 var eventId = value as EventId;
-                writer.WriteValue(eventId.ToString()); 
+                writer.WriteValue(eventId?.ToString()); 
             }
 
             /// <inheritdoc />
             public override object ReadJson(JsonReader reader, Type objectType, object existingValue, JsonSerializer serializer)
             {
-                var str = reader.Value.ToString();
+                var str = reader.Value?.ToString();
                 if (str == null)
                     return null;
                 return (EventId)EventId.Parse(str);

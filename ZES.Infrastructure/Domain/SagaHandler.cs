@@ -126,7 +126,7 @@ namespace ZES.Infrastructure.Domain
                     var commands = saga.GetUncommittedCommands().OfType<Command>();
                     foreach (var c in commands)
                     {
-                        c.AncestorId = e.AncestorId != default ? e.AncestorId : e.MessageId;
+                        c.AncestorId = e.AncestorId ?? e.MessageId;
                         c.CorrelationId = id;
                     }
 

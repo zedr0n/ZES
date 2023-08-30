@@ -123,6 +123,8 @@ namespace ZES.GraphQL
             var builder = _services.AddGraphQL()
                 .BindRuntimeType<Instant, InstantType>()
                 .BindRuntimeType<Time, TimeType>()
+                .AddType<CommandMetadataType>()
+                .AddType<CommandStaticMetadataType>()
                 .AddQueryType<BaseQueries>(c => c.Name("Query"))
                 .AddMutationType<BaseMutations>(c => c.Name("Mutation"))
                 .AddTypeExtension<QueryTypeExtensions>()

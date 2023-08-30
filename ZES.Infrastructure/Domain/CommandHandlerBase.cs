@@ -56,12 +56,10 @@ namespace ZES.Infrastructure.Domain
             foreach (var e in events)
             {
                 e.CommandId = command.MessageId;
-                e.AncestorId = command.AncestorId != default ? command.AncestorId : command.MessageId;
+                e.AncestorId = command.AncestorId ?? command.MessageId;
                 e.CorrelationId = command.CorrelationId;
             }
 
-            command.EventType = eventType;
-            
             await _repository.Save(root);
         }
         

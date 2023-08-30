@@ -76,9 +76,22 @@ namespace ZES.Interfaces.Clocks
             var parseResult = InstantPattern.ExtendedIso.Parse(time);
             return parseResult.Success ? parseResult.Value : default(InstantTime);
         }
+        
+        /// <summary>
+        /// Gets the time instance from ticks string string
+        /// </summary>
+        /// <param name="ticks">Ticks string</param>
+        /// <returns>Time instance</returns>
+        public new static Time FromUnixTicks(string ticks)
+        {
+            return long.TryParse(ticks, out var time) ? new InstantTime(Instant.FromUnixTimeTicks(time)) : default(Time);
+        }
 
         /// <inheritdoc />
         public override string ToExtendedIso() => InstantPattern.ExtendedIso.Format(Instant);
+
+        /// <inheritdoc />
+        public override string ToUnixTicks() => Instant.ToUnixTimeTicks().ToString();
 
         /// <inheritdoc />
         public override Instant ToInstant() => Instant;

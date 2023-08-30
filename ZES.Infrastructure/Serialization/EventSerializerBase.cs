@@ -1,4 +1,5 @@
 using Newtonsoft.Json;
+using ZES.Infrastructure.Domain;
 using ZES.Interfaces;
 
 namespace ZES.Infrastructure.Serialization

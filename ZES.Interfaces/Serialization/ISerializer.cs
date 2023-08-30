@@ -39,7 +39,7 @@ namespace ZES.Interfaces.Serialization
         /// </summary>
         /// <param name="json">Serialized json</param>
         /// <returns>Event metadata</returns>
-        IEventMetadata DecodeMetadata(string json);
+        IEvent DecodeMetadata(string json);
 
         /// <summary>
         /// Serialize the stream metadata to json 
@@ -59,8 +59,9 @@ namespace ZES.Interfaces.Serialization
         /// Deserialize the json string to an object instance
         /// </summary>
         /// <param name="json">Serialized json string</param>
-        /// <param name="full">Deserialize the event fully</param>
+        /// <param name="jsonMetadata"> Serialized metadata json string</param>
+        /// <param name="serializationType">Serialization type</param>
         /// <returns><see cref="ICommand"/>/<see cref="IEvent"/> instance</returns>
-        T Deserialize(string json, bool full = true);
+        T Deserialize(string json, string jsonMetadata = null, SerializationType serializationType = SerializationType.PayloadAndMetadata);
     }
 }

@@ -3,34 +3,29 @@ namespace ZES.Interfaces.Domain
     /// <summary>
     /// CQRS Command definition
     /// </summary>
-    public interface ICommand : IMessage
+    public interface ICommand : IMessageEx<ICommandStaticMetadata, ICommandMetadata>
     {
         /// <summary>
         /// Gets aggregate target id
         /// </summary>
         string Target { get; }
-
-        /// <summary>
-        /// Gets resulting event type 
-        /// </summary>
-        string EventType { get; }
-
-        /// <summary>
-        /// Gets or sets a value indicating whether to use timestamp for aggregate events
-        /// </summary>
+        
+        /// <inheritdoc cref="ICommandStaticMetadata.UseTimestamp"/>
         bool UseTimestamp { get; set; }
         
-        /// <summary>
-        /// Gets or sets a value indicating whether to store the command in the log
-        /// </summary>
+        /// <inheritdoc cref="ICommandStaticMetadata.StoreInLog"/>
         bool StoreInLog { get; set; }
-        
-        /// <summary>
-        /// Gets or sets a value indicating whether the command is pure, i.e. only delegating to other commands
-        /// </summary>
-        bool Pure { get; set; }
-    }
 
+        /// <inheritdoc cref="ICommandStaticMetadata.Pure"/>
+        bool Pure { get; set; }
+
+        /// <summary>
+        /// Copy the command
+        /// </summary>
+        /// <returns>Command copy</returns>
+        ICommand Copy();
+    }
+    
     /// <inheritdoc />
     public interface ICreateCommand : ICommand { }
 }

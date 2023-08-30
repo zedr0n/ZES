@@ -93,7 +93,7 @@ namespace ZES.Persistence.Redis
         }
 
         /// <inheritdoc />
-        protected override async Task ReadSingleStreamStore<TEvent>(IObserver<TEvent> observer, IStream stream, int position, int count, bool deserialize = true)
+        protected override async Task ReadSingleStreamStore<TEvent>(IObserver<TEvent> observer, IStream stream, int position, int count, SerializationType serializationType = SerializationType.PayloadAndMetadata)
         {
             var db = _connection.GetDatabase();
             var minId = $"{1}-{position}";
@@ -191,10 +191,10 @@ namespace ZES.Persistence.Redis
             var ignoredProperties = new string[]
             {
                 nameof(IEventMetadata.MessageId),
-                nameof(IEventMetadata.AncestorId),
+                nameof(IEventStaticMetadata.AncestorId),
                 nameof(IEventMetadata.Timestamp),
-                nameof(IEventMetadata.LocalId),
-                nameof(IEventMetadata.OriginId),
+                nameof(IEventStaticMetadata.LocalId),
+                nameof(IEventStaticMetadata.OriginId),
                 nameof(IEventMetadata.Version),
                 nameof(IEventMetadata.Timeline),
                 nameof(IEventMetadata.StreamHash),
@@ -206,90 +206,62 @@ namespace ZES.Persistence.Redis
             
             var entries = new NameValueEntry[]
             {
-                new (nameof(IEventMetadata.MessageId), e.MessageId.ToString()),
-                new (nameof(IEventMetadata.AncestorId), e.AncestorId.ToString()),
-                new ( nameof(IEventMetadata.Timestamp), e.Timestamp.ToExtendedIso()),
-                new ( nameof(IEventMetadata.LocalId), e.LocalId.ToString()),
-                new ( nameof(IEventMetadata.OriginId), e.OriginId.ToString()),
-                new ( nameof(IEventMetadata.Version), e.Version), 
-                new ( nameof(IEventMetadata.Timeline), e.Timeline),
-                new ( nameof(IEventMetadata.StreamHash), e.StreamHash),
-                new ( nameof(IEventMetadata.ContentHash), e.ContentHash),
+                new (nameof(IEventMetadata.MessageId), e.Metadata.MessageId.ToString()),
+                new (nameof(IEventStaticMetadata.AncestorId), e.StaticMetadata.AncestorId.ToString()),
+                new ( nameof(IEventMetadata.Timestamp), e.Metadata.Timestamp.Serialise()),
+                new ( nameof(IEventStaticMetadata.LocalId), e.StaticMetadata.LocalId.ToString()),
+                new ( nameof(IEventStaticMetadata.OriginId), e.StaticMetadata.OriginId.ToString()),
+                new ( nameof(IEventMetadata.Version), e.Metadata.Version), 
+                new ( nameof(IEventMetadata.Timeline), e.Metadata.Timeline),
+                new ( nameof(IEventMetadata.StreamHash), e.Metadata.StreamHash),
+                new ( nameof(IEventMetadata.ContentHash), e.Metadata.ContentHash),
                 new ("jsonData", jsonData),
             };
-            return new StreamEntry(e.Version, entries);
+            return new StreamEntry(e.Metadata.Version, entries);
         }
 
         /// <inheritdoc />
-        protected override async Task<T> StreamMessageToJson<T>(StreamEntry streamMessage)
+        protected override async Task<T> StreamMessageToEvent<T>(StreamEntry streamMessage, SerializationType serializationType = SerializationType.PayloadAndMetadata)
         {
             var json = streamMessage.Values.SingleOrDefault(v => v.Name == "jsonData");
             if (json == default)
                 return null;
 
-            if (typeof(T) == typeof(IEvent))
-            {
-                var e = Serializer.Deserialize(json.Value, false);
-                e.Json = json.Value;
-                e.JsonMetadata = json.Value;
-                return e as T;
-            }
-
-            if (typeof(T) == typeof(IEventMetadata))
-                return new EventMetadata { Json = json.Value, JsonMetadata = json.Value } as T;
-
-            return null;
-        }
-
-        /// <inheritdoc />
-        protected override async Task<T> StreamMessageToEvent<T>(StreamEntry streamMessage, bool deserialize = true)
-        {
-            if (!deserialize)
-                return await StreamMessageToJson<T>(streamMessage);
+            var e = Serializer.Deserialize(json.Value) as T;
+            if (e == null)
+                throw new InvalidOperationException("Cannot deserialize event!");
             
-            var json = streamMessage.Values.SingleOrDefault(v => v.Name == "jsonData");
-            if (json == default)
-                return null;
-
-            EventMetadata metadata = null;
-            T e = null;
-            if (typeof(T) == typeof(IEvent))
-                e = Serializer.Deserialize(json.Value) as T;
-            if (typeof(T) == typeof(IEventMetadata))
-                e = Serializer.DecodeMetadata(json.Value) as T;
-            
-            metadata = e as EventMetadata;
             for (var i = 0; i < streamMessage.Values.Length; ++i)
             {
                 var val = streamMessage.Values[i].Value; 
                 switch (i)
                 {
                     case (int)RedisMetadata.MessageId: // MessageId
-                        metadata.MessageId = MessageId.Parse(val);
+                        e.Metadata.MessageId = MessageId.Parse(val);
                         break;
                     case (int)RedisMetadata.AncestorId:
-                        metadata.AncestorId = MessageId.Parse(val);
+                        e.StaticMetadata.AncestorId = MessageId.Parse(val);
                         break;
                     case (int)RedisMetadata.Timestamp:
-                        metadata.Timestamp = Time.FromExtendedIso(val);
+                        e.Metadata.Timestamp = Time.Parse(val);
                         break;
                     case (int)RedisMetadata.LocalId:
-                        metadata.LocalId = EventId.Parse(val);
+                        e.StaticMetadata.LocalId = EventId.Parse(val);
                         break;
                     case (int)RedisMetadata.OriginId:
-                        metadata.OriginId = EventId.Parse(val);
+                        e.StaticMetadata.OriginId = EventId.Parse(val);
                         break;
                     case (int)RedisMetadata.Version:
-                        metadata.Version = (int)val;
+                        e.Metadata.Version = (int)val;
                         break;
                     case (int)RedisMetadata.Timeline:
-                        metadata.Timeline = val;
+                        e.Metadata.Timeline = val;
                         break;
                     case (int)RedisMetadata.StreamHash:
-                        metadata.StreamHash = val;
+                        e.Metadata.StreamHash = val;
                         break;
                     case (int)RedisMetadata.ContentHash:
-                        metadata.ContentHash = val;
+                        e.Metadata.ContentHash = val;
                         break;
                 }
             }

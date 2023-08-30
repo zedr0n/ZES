@@ -152,7 +152,7 @@ namespace ZES.Infrastructure.Branching
 
             await _manager.Branch(branch, time, deleteExisting: true);
 
-            var copy = command;
+            var copy = command.Copy();
             copy.Timeline = branch;
             
             var handler = _commandRegistry.GetHandler(copy);
@@ -169,7 +169,10 @@ namespace ZES.Infrastructure.Branching
             foreach (var c in changes)
             {
                 var stream = await _streamLocator.FindBranched(c.Key, branch);
-                var e = await _eventStore.ReadStream<IEvent>(stream, stream.Version - c.Value + 1, c.Value).ToList();
+                var serializationType = Configuration.UseCompactDeserializationForRetroactiveOperations
+                    ? SerializationType.Metadata
+                    : SerializationType.PayloadAndMetadata;
+                var e = await _eventStore.ReadStream<IEvent>(stream, stream.Version - c.Value + 1, c.Value, serializationType).ToList();
 
                 dict[c.Key] = e;
                 // _log.Debug($"Recording change in stream {stream.Key}: events ({stream.Version - c.Value + 1}..{stream.Version})");
@@ -205,8 +208,11 @@ namespace ZES.Infrastructure.Branching
                 IList<IEvent> laterEvents = new List<IEvent>();
 
                 // remove the snapshot events from the future
+                var serialisationType = Configuration.UseCompactDeserializationForRetroactiveOperations
+                    ? SerializationType.Metadata
+                    : SerializationType.PayloadAndMetadata;
                 if (liveStream != null)
-                    laterEvents = await store.ReadStream<IEvent>(liveStream, version).Where(e => e is not ISnapshotEvent).ToList();
+                    laterEvents = await store.ReadStream<IEvent>(liveStream, version, -1, serialisationType).Where(e => e is not ISnapshotEvent).ToList();
 
                 var newStream = await _streamLocator.FindBranched(stream, tempStreamId) ?? stream.Branch(tempStreamId, ExpectedVersion.NoStream);
                 // _log.Debug($"Inserting events ({version}..{events.Count + version}) into {newStream.Key}");
@@ -227,9 +233,6 @@ namespace ZES.Infrastructure.Branching
 
             if (Configuration.DeleteStreamsInsteadOfTrimming)
             {
-                if (Configuration.UseCompactDeserializationForRetroactiveOperations)
-                    throw new InvalidOperationException(
-                        "Compact deserialization not supported for retroactive operations");
                 foreach (var k in allEvents.Keys)
                 {
                     var liveStream = await _streamLocator.FindBranched(k, currentBranch);
@@ -238,14 +241,10 @@ namespace ZES.Infrastructure.Branching
                     var events = allEvents[k];
                     if (liveStream != null)
                     {
-                        var earlierEvents = await store.ReadStream<IEvent>(liveStream, 0, k.Version + 1, !Configuration.UseCompactDeserializationForRetroactiveOperations).ToList();
-                        // var version = 0;
-                        foreach (var e in earlierEvents)
-                        {
-                            // e.Version = version++;
-                            if (Configuration.UseCompactDeserializationForRetroactiveOperations && Configuration.UseVersionCache)
-                                e.Timestamp = await store.GetTimestamp(liveStream, e.Version);
-                        }
+                        var serializationType = Configuration.UseCompactDeserializationForRetroactiveOperations
+                            ? SerializationType.Metadata
+                            : SerializationType.PayloadAndMetadata; 
+                        var earlierEvents = await store.ReadStream<IEvent>(liveStream, 0, k.Version + 1, serializationType).ToList();
 
                         events = earlierEvents.Concat(events).ToList();
                         await store.DeleteStream(liveStream);
@@ -311,7 +310,8 @@ namespace ZES.Infrastructure.Branching
         {
             var time = c.Timestamp.JustBefore();
             var changes = await GetChanges(c, time);
-            _log.Debug($"Rolling back command {c.GetType().FullName} from timeline {c.Timeline}");
+            // var changes = await GetChanges(c);
+            _log.Debug($"Rolling back command: {c}");
             // var changes = await GetChanges(c);
             var canDelete = true;
             foreach (var change in changes)
@@ -323,12 +323,13 @@ namespace ZES.Infrastructure.Branching
                 rollbackMultipleEvents &= events.Max(x => x.Version) - version == count - 1; 
                 if (rollbackMultipleEvents)
                 {
-                    _log.Debug($"Rolling back events ({version}..{version + count - 1}) from stream {change.Key.Key}");
+                    _log.Debug($"Rolling back events ({version}..{version + count - 1}) from stream {change.Key.Key} for command {c.MessageId}");
                     var invalidEvents = (await ValidateDelete(change.Key, version, count)).ToList();
                     if (!invalidEvents.Any()) 
                         continue;
                     canDelete = false;
-                    _log.Warn($"Error rolling back events ({version}..{version + count - 1}) from stream {change.Key.Key} with ${invalidEvents.Count} invalid events");
+                    _log.Error($"Error rolling back events ({version}..{version + count - 1}) from stream {change.Key.Key} " +
+                               $"with invalid events ({invalidEvents.Select(e => e.Version).Aggregate(string.Empty, (a,b) => $"{a},{b}")})");
                 }
                 else
                 {
@@ -340,7 +341,9 @@ namespace ZES.Infrastructure.Branching
                         if (invalidEvents.Any(x => !eventsToDelete.Contains(x.MessageId)))
                         {
                             canDelete = false;
-                            _log.Warn($"Error rolling back {change.Key}:{e.GetType().GetFriendlyName()} with version {e.Version} with {invalidEvents.Count} invalid events");
+                            
+                            _log.Error($"Error rolling back {change.Key}:{e.GetType().GetFriendlyName()} with version {e.Version}" +
+                                       $" with invalid events ({invalidEvents.Select(e => e.Version).Aggregate(string.Empty, (a,b) => $"{a},{b}")})");
                             break;
                         }
 
@@ -389,11 +392,6 @@ namespace ZES.Infrastructure.Branching
 
             foreach (var e in enumerable)
             {
-                if (e.Version != version)
-                {
-                    e.JsonMetadata = null;
-                    e.Json = null;
-                }
                 e.Version = version;
                 e.Timeline = stream.Timeline;
                 e.Stream = stream.Key;
@@ -423,6 +421,10 @@ namespace ZES.Infrastructure.Branching
             if (liveStream == null || liveStream.Version < version)
                 return new List<IEvent>() { new Event() };
 
+            var serialisationType = Configuration.UseCompactDeserializationForRetroactiveOperations
+                ? SerializationType.Metadata
+                : SerializationType.PayloadAndMetadata;
+            
             if (liveStream.Version == version)
             {
                 if (!doDelete)
@@ -432,7 +434,7 @@ namespace ZES.Infrastructure.Branching
                     await TrimStream(liveStream, version - count);
                 else
                 {
-                    var events = await store.ReadStream<IEvent>(liveStream, 0, version - count + 1).ToList();
+                    var events = await store.ReadStream<IEvent>(liveStream, 0, version - count + 1, serialisationType).ToList();
                     await store.DeleteStream(liveStream);
                     if (events.Count > 0)
                     {
@@ -469,7 +471,7 @@ namespace ZES.Infrastructure.Branching
                 }
                 else
                 {
-                    var events = await store.ReadStream<IEvent>(newStream, 0).ToList();
+                    var events = await store.ReadStream<IEvent>(newStream, 0, -1, serialisationType).ToList();
                     await store.DeleteStream(liveStream);
                     liveStream = stream.Branch(currentBranch, ExpectedVersion.NoStream);
                     await store.AppendToStream(liveStream, events, false);

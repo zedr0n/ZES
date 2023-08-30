@@ -53,7 +53,7 @@ namespace ZES.GraphQL
                 {
                     var arguments = request.SelectionSet.Selections.OfType<FieldNode>().SelectMany(s => s.Arguments);
                     var timestampStr = (string)arguments.SingleOrDefault(x => x.Name.Value == "timestamp" || x.Name.Value == "date")?.Value?.Value;
-                    var timestamp = Time.FromExtendedIso(timestampStr);
+                    var timestamp = Time.Parse(timestampStr);
                     _recordLog.AddMutation(query, timestamp);
                     break;
                 }

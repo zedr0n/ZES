@@ -127,7 +127,7 @@ namespace ZES.Infrastructure.Domain
                 ApplyEvent(e);
                 e.ContentHash = Hash;
                 
-                ((Event)e).Version = Version;
+                e.Version = Version;
                 if (!IgnoreCurrentEvent)
                     _changes.Add(e);
             }

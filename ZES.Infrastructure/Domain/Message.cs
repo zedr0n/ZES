@@ -1,61 +1,130 @@
 using System;
+using Gridsum.DataflowEx;
+using Newtonsoft.Json;
 using ZES.Interfaces;
 using ZES.Interfaces.Clocks;
 
 namespace ZES.Infrastructure.Domain
 {
-    /// <summary>
-    /// Base message class
-    /// </summary>
-    public abstract class Message : IMessage
+    /// <inheritdoc />
+    public abstract class MessageEx<TStaticMetadata, TMetadata> : IMessageEx<TStaticMetadata, TMetadata> 
+        where TStaticMetadata : class, IMessageStaticMetadata, new()
+        where TMetadata : IMessageMetadata, new()
     {
-        private MessageId _messageId;
-
         /// <summary>
-        /// Message constuctor
+        /// Creates a new instance of <see cref="MessageEx{TStaticMetadata,TMetadata}"/>
         /// </summary>
-        public Message()
+        public MessageEx()
         {
-            MessageType = GetType().Name;
+            StaticMetadata.MessageType = GetType().GetFriendlyName();
+            Metadata.MessageId = new MessageId(MessageType, Guid.NewGuid());
         }
         
         /// <inheritdoc />
-        public MessageId MessageId
+        public TMetadata Metadata { get; protected set; } = new();
+        
+        /// <inheritdoc />
+        public TStaticMetadata StaticMetadata { get; protected set; } = new();
+
+        /// <inheritdoc />
+        [JsonIgnore]
+        public MessageId MessageId => Metadata.MessageId;
+        
+        /// <inheritdoc />
+        [JsonIgnore]
+        public string MessageType => StaticMetadata.MessageType;
+
+        /// <inheritdoc />
+        [JsonIgnore]
+        public MessageId AncestorId
         {
-            get
+            get => StaticMetadata.AncestorId;
+            set => StaticMetadata.AncestorId = value;
+        }
+
+        /// <inheritdoc />
+        [JsonIgnore]
+        public string CorrelationId
+        {
+            get => StaticMetadata.CorrelationId;
+            set => StaticMetadata.CorrelationId = value;
+        }
+
+        /// <inheritdoc />
+        [JsonIgnore]
+        public EventId LocalId
+        {
+            get => StaticMetadata.LocalId;
+            set => StaticMetadata.LocalId = value;
+        }
+
+        /// <inheritdoc />
+        [JsonIgnore]
+        public EventId OriginId
+        {
+            get => StaticMetadata.OriginId;
+            set => StaticMetadata.OriginId = value;
+        }
+
+        /// <inheritdoc />
+        [JsonIgnore]
+        public Time Timestamp
+        {
+            get => Metadata.Timestamp;
+            set
             {
-                if (_messageId == default)
-                    _messageId = new MessageId(MessageType, Guid.NewGuid());
-                return _messageId;
+                Metadata.Json = null;
+                Metadata.Timestamp = value;
             }
-            set => _messageId = value;
         }
 
         /// <inheritdoc />
-        public string MessageType { get; set; }
+        [JsonIgnore]
+        public string Timeline
+        {
+            get => Metadata.Timeline;
+            set
+            {
+                Metadata.Json = null;
+                Metadata.Timeline = value;
+            }
+        }
+
+        /// <inheritdoc />
+        [JsonIgnore]
+        public string MetadataJson
+        {
+            get => Metadata.Json;
+            set => Metadata.Json = value;
+        }
+
+        /// <inheritdoc />
+        [JsonIgnore]
+        public string StaticMetadataJson 
+        { 
+            get => StaticMetadata.Json; 
+            set => StaticMetadata.Json = value; 
+        }
         
         /// <inheritdoc />
-        public MessageId AncestorId { get; set; }
-
-        /// <inheritdoc />
-        public string CorrelationId { get; set; }
-
-        /// <inheritdoc />
-        public Time Timestamp { get; set; }
-
-        /// <inheritdoc />
-        public string Timeline { get; set; }
-
-        /// <inheritdoc />
-        public EventId LocalId { get; set; }
-
-        /// <inheritdoc />
-        public EventId OriginId { get; set; }
-
-        /// <inheritdoc />
+        [JsonIgnore]
         public string Json { get; set; }
 
         /// <inheritdoc />
-        public string JsonMetadata { get; set; }
+        public void CopyMetadata(IMessage other)
+        {
+            var message = other as MessageEx<TStaticMetadata, TMetadata>;
+            Metadata = message.Metadata;
+        }
+    }
+    
+    /// <inheritdoc cref="IMessageEx{TStaticMetadata,TMetadata}"/>
+    public abstract class MessageEx<TStaticMetadata, TMetadata, TPayload> : MessageEx<TStaticMetadata, TMetadata>, IMessageEx<TStaticMetadata, TMetadata, TPayload> 
+        where TStaticMetadata : class, IMessageStaticMetadata, new()
+        where TMetadata : IMessageMetadata, new()
+        where TPayload : class, new()
+    {
+        /// <inheritdoc />
+        public TPayload Payload { get; set; }
     }
 }

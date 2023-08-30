@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Reactive.Linq;
 using System.Threading;
+using NLog.Fluent;
 using NodaTime;
 using NodaTime.Extensions;
 using SimpleInjector;
@@ -212,6 +213,81 @@ namespace ZES.Tests
             var graph = container.GetInstance<IGraph>();
             await graph.Serialise(nameof(CanUpdateRoot));
         }
+        
+        [Fact]
+        public async void CanDeserializeJustMetadata()
+        {
+            var container = CreateContainer();
+            var bus = container.GetInstance<IBus>();
+            var streamLocator = container.GetInstance<IStreamLocator>();
+            var store = container.GetInstance<IEventStore<IAggregate>>();
+            var log = container.GetInstance<ILog>();
+
+            var id = $"{nameof(CanUpdateRoot)}-Root";
+            var command = new CreateRoot(id); 
+            await await bus.CommandAsync(command);
+
+            var updateCommand = new UpdateRoot(id);
+            await await bus.CommandAsync(updateCommand);
+
+            var stream = await streamLocator.Find<Root>(id);
+            var metadata = await store.ReadStream<IEvent>(stream, 0, 1, SerializationType.Metadata);
+            var e = await store.ReadStream<IEvent>(stream, 0, 1);
+            Assert.Equal(metadata.MessageId, e.MessageId);
+            Assert.Equal(metadata.Version, e.Version);
+            Assert.Equal(metadata.Stream, e.Stream);
+            
+            Assert.Null(metadata.StaticMetadata.CommandId);
+            Assert.Null(metadata.StaticMetadata.LocalId);
+            Assert.Null(metadata.StaticMetadata.OriginId);
+
+            var copy = e.Copy();
+            copy.Version = e.Version + 1;
+            await store.AppendToStream(stream, new[] { copy }, false);
+            // log.Info(e);
+        }
+        
+        [Theory]
+        [InlineData(50000, SerializationType.Metadata)]
+        [InlineData(50000, SerializationType.Metadata)]
+        [InlineData(50000, SerializationType.FullMetadata)]
+        [InlineData(50000, SerializationType.PayloadAndMetadata)]
+        public async void CanDeserializeJustMetadataPerformance(int nLoops, SerializationType serializationType)
+        {
+            var container = CreateContainer();
+            var bus = container.GetInstance<IBus>();
+            var streamLocator = container.GetInstance<IStreamLocator>();
+            var store = container.GetInstance<IEventStore<IAggregate>>();
+            var log = container.GetInstance<ILog>();
+
+            var id = $"{nameof(CanUpdateRoot)}-Root";
+            var command = new CreateRoot(id); 
+            await await bus.CommandAsync(command);
+
+            var updateCommand = new UpdateRoot(id);
+            await await bus.CommandAsync(updateCommand);
+
+            var stream = await streamLocator.Find<Root>(id);
+            
+            var stopWatch = Stopwatch.StartNew();
+            for (var i = 0; i < nLoops; i++)
+                await store.ReadStream<IEvent>(stream, 0, 1, serializationType);
+            stopWatch.Stop();
+            log.Info($"{stopWatch.ElapsedMilliseconds}ms per {nLoops} iterations");
+            
+            /*stopWatch = Stopwatch.StartNew();
+            for (var i = 0; i < nLoops; i++)
+                await store.ReadStream<IEvent>(stream, 0, 1, SerializationType.FullMetadata);
+            stopWatch.Stop();
+            log.Info($"{stopWatch.ElapsedMilliseconds}ms per {nLoops} iterations of full metadata");
+            
+            stopWatch = Stopwatch.StartNew();
+            for (var i = 0; i < nLoops; i++)
+                await store.ReadStream<IEvent>(stream, 0, 1, SerializationType.PayloadAndMetadata);
+            stopWatch.Stop();
+            log.Info($"{stopWatch.ElapsedMilliseconds}ms per {nLoops} iterations of full metadata and payload");*/
+        }
+
 
         [Theory]
         [InlineData(1000)]

@@ -10,6 +10,11 @@ namespace ZES.Infrastructure.Serialization
     public interface IEventDeserializer
     {
         /// <summary>
+        /// Gets the value indicating whether the deserializer supports the event payload
+        /// </summary>
+        bool SupportsPayload { get; }
+
+        /// <summary>
         /// Gets the event type 
         /// </summary>
         string EventType { get; }

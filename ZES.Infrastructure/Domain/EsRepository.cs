@@ -68,12 +68,9 @@ namespace ZES.Infrastructure.Domain
 
             foreach (var e in events.Cast<Event>())
             {
-                if (e.Timestamp == default)
-                    e.Timestamp = _timeline.Now;
-                if (e.LocalId == default)
-                    e.LocalId = new EventId(Configuration.ReplicaName, e.Timestamp);
-                if (e.OriginId == default)
-                    e.OriginId = e.LocalId;
+                e.Timestamp ??= _timeline.Now;
+                e.LocalId ??= new EventId(Configuration.ReplicaName, e.Timestamp);
+                e.OriginId ??= e.LocalId;
                 e.Stream = stream.Key;
                 e.Timeline = _timeline.Id;
             }

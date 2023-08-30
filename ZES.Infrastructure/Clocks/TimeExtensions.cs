@@ -116,12 +116,18 @@ namespace ZES.Infrastructure.Clocks
         public override void WriteJson(JsonWriter writer, object value, JsonSerializer serializer)
         {
             var instantTime = value as InstantTime;
-            _instantConverter.WriteJson(writer, instantTime.Instant, serializer);
+            if (Time.UseExtendedIsoForSerialisation)
+                _instantConverter.WriteJson(writer, instantTime.Instant, serializer);
+            else
+                writer.WriteValue(instantTime.ToUnixTicks());
         }
 
         /// <inheritdoc />
         public override object ReadJson(JsonReader reader, Type objectType, object existingValue, JsonSerializer serializer)
         {
+            if (!Time.UseExtendedIsoForSerialisation)
+                return reader?.Value != null ? InstantTime.FromUnixTicks(reader.Value.ToString()) : default(InstantTime);
+            
             var instant = (Instant)_instantConverter.ReadJson(reader, typeof(Instant), existingValue, serializer);
             return new InstantTime(instant);
         }
@@ -147,13 +153,22 @@ namespace ZES.Infrastructure.Clocks
         public override void WriteJson(JsonWriter writer, object value, JsonSerializer serializer)
         {
             var logicalTime = value as LogicalTime;
-            var instant = Instant.FromUnixTimeTicks(logicalTime.l);
-            _instantConverter.WriteJson(writer, instant, serializer);
+            if (Time.UseExtendedIsoForSerialisation)
+            {
+                var instant = Instant.FromUnixTimeTicks(logicalTime.l);
+                _instantConverter.WriteJson(writer, instant, serializer);
+            }
+            else
+                writer.WriteValue(logicalTime.ToUnixTicks());
+            
         }
 
         /// <inheritdoc />
         public override object ReadJson(JsonReader reader, Type objectType, object existingValue, JsonSerializer serializer)
         {
+            if (!Time.UseExtendedIsoForSerialisation)
+                return reader?.Value != null ? LogicalTime.FromUnixTicks(reader.Value.ToString()) : default(LogicalTime);
+            
             var instant = (Instant)_instantConverter.ReadJson(reader, typeof(Instant), existingValue, serializer);
             return new LogicalTime(instant.ToUnixTimeTicks(), 0);
         }

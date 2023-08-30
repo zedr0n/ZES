@@ -68,7 +68,7 @@ namespace ZES.Infrastructure.Domain
             }
             
             _log.StopWatch.Start("TryInsert_1");
-            var invalidEvents = await _retroactive.TryInsert(changes, time); 
+            var invalidEvents = await _retroactive.TryInsert(changes, time);
             _log.StopWatch.Stop("TryInsert_1");
 
             if (invalidEvents.Count > 0)
@@ -85,6 +85,7 @@ namespace ZES.Infrastructure.Domain
             }
 
             iCommand.Command.Timeline = iCommand.Timeline;
+            _log.Debug($"Setting retroactive command {iCommand.Command.MessageId} timeline to {iCommand.Timeline}");
             await _commandLog.AppendCommand(iCommand.Command);
             _messageQueue.Alert(new InvalidateProjections());
             _log.StopWatch.Stop($"{nameof(RetroactiveCommandHandler<TCommand>)}");
@@ -104,7 +105,8 @@ namespace ZES.Infrastructure.Domain
             var commands = new Dictionary<string, List<ICommand>>();
             foreach (var e in invalidEvents)
             {
-                _log.Warn($"Invalid event found in stream {e.Stream} : {e.MessageType}@{e.Version}", this);
+                //_log.Warn($"Invalid event found in stream {e.Stream} : {e.MessageType}@{e.Version}", this);
+                _log.Warn($"Invalid event found: {e}");
                 var c = await _commandLog.GetCommand(e);
                 if (c == null)
                 {

@@ -84,7 +84,7 @@ namespace ZES.Persistence.EventStoreDB
         }
 
         /// <inheritdoc />
-        protected override async Task ReadSingleStreamStore<TEvent>(IObserver<TEvent> observer, IStream stream, int position, int count, bool deserialize = true)
+        protected override async Task ReadSingleStreamStore<TEvent>(IObserver<TEvent> observer, IStream stream, int position, int count, SerializationType serializationType = SerializationType.PayloadAndMetadata)
         {
             StreamEventsSlice slice;
             do
@@ -130,7 +130,7 @@ namespace ZES.Persistence.EventStoreDB
         protected override EventData EventToStreamMessage(IEvent e)
         {
             var jsonData = e.Json;
-            var jsonMetadata = e.Json;
+            var jsonMetadata = e.MetadataJson;
             if(jsonData == null)
                 Serializer.SerializeEventAndMetadata(e, out jsonData, out jsonMetadata);
             
@@ -140,46 +140,13 @@ namespace ZES.Persistence.EventStoreDB
                Encoding.UTF8.GetBytes(jsonData),
                Encoding.UTF8.GetBytes(jsonMetadata));
         }
-        
-        /// <inheritdoc />
-        protected override async Task<T> StreamMessageToJson<T>(RecordedEvent streamMessage)
-        {
-            if (typeof(T) == typeof(IEvent))
-            {
-                var json = Encoding.UTF8.GetString(streamMessage.Data);
-                var e = Serializer.Deserialize(json, false);
-                e.Json = json;
-                e.JsonMetadata =  Encoding.UTF8.GetString(streamMessage.Metadata);;
-                return e as T;
-            }
-
-            if (typeof(T) == typeof(IEventMetadata))
-            {
-                var json = Encoding.UTF8.GetString(streamMessage.Metadata);
-                return new EventMetadata { Json = json } as T;
-            }
-
-            return null;
-        }
 
         /// <inheritdoc />
-        protected override async Task<T> StreamMessageToEvent<T>(RecordedEvent streamMessage, bool deserialize = true)
+        protected override async Task<T> StreamMessageToEvent<T>(RecordedEvent streamMessage, SerializationType serializationType = SerializationType.PayloadAndMetadata)
         {
-            if (!deserialize)
-                return await StreamMessageToJson<T>(streamMessage);
+            var json = Encoding.UTF8.GetString(streamMessage.Data);
+            return Serializer.Deserialize(json) as T;
             
-            if (typeof(T) == typeof(IEvent))
-            {
-                var json = Encoding.UTF8.GetString(streamMessage.Data);
-                return Serializer.Deserialize(json) as T;
-            }
-
-            if (typeof(T) == typeof(IEventMetadata))
-            {
-                var json = Encoding.UTF8.GetString(streamMessage.Metadata);
-                return Serializer.DecodeMetadata(json) as T;
-            }
-
             return null;
         }
 

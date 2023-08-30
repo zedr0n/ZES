@@ -67,16 +67,16 @@ namespace ZES.Interfaces
             var tokens = str.Split('@');
             if (tokens.Length != 2)
                 throw new InvalidCastException($"EventId should be of format {nameof(Timestamp)}@{nameof(ReplicaName)}");
-            return new EventId(ReplicaName: tokens[1], Timestamp: Time.FromExtendedIso(tokens[0]));
+            return new EventId(ReplicaName: tokens[1], Timestamp: Time.Parse(tokens[0]));
         }
         
         /// <summary>
-        /// Convert the associated timestamp to extended ISO
+        /// Convert the associated timestamp to serialised string 
         /// </summary>
-        /// <returns>Extended ISO string</returns>
-        public string ToExtendedIso() => Timestamp.ToExtendedIso();
+        /// <returns>Serialised string</returns>
+        public string Serialise() => Timestamp.Serialise();
         
         /// <inheritdoc />
-        public override string ToString() => $"{ToExtendedIso()}@{ReplicaName}";
+        public override string ToString() => $"{Serialise()}@{ReplicaName}";
     }
 }

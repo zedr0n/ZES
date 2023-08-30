@@ -34,10 +34,10 @@ namespace ZES.Interfaces.EventStore
         /// <param name="stream">Target stream</param>
         /// <param name="start">Starting version for the read</param>
         /// <param name="count">Number of events to read</param>
-        /// <param name="deserialize">Deserialize the event fully</param>
+        /// <param name="serializationType">Serialization type</param>
         /// <returns>Cold observable of read events</returns>
-        IObservable<T> ReadStream<T>(IStream stream, int start, int count = -1, bool deserialize = true)
-            where T : class, IEventMetadata;
+        IObservable<T> ReadStream<T>(IStream stream, int start, int count = -1, SerializationType serializationType = SerializationType.PayloadAndMetadata)
+            where T : class, IEvent;
 
         /// <summary>
         /// Gets the timestamp of the particular event version in the stream

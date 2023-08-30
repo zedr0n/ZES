@@ -88,6 +88,24 @@ namespace ZES.Interfaces.Clocks
             return parseResult.Success ? new LogicalTime(parseResult.Value.ToUnixTimeTicks(), c) : default;
         }
 
+        /// <summary>
+        /// Gets the time instance from ticks string string
+        /// </summary>
+        /// <param name="ticks">Ticks string</param>
+        /// <returns>Time instance</returns>
+        public new static Time FromUnixTicks(string ticks)
+        {
+            if (ticks == null)
+                return default;
+            
+            var tokens = ticks.Split(';');
+            long c = 0;
+            if (tokens.Length > 1)
+                c = long.Parse(tokens[1]);
+
+            return long.TryParse(tokens[0], out var time) ? new LogicalTime(time, c) : default(Time);
+        }
+
         /// <inheritdoc />
         public int CompareTo(LogicalTime other)
         {
@@ -102,6 +120,15 @@ namespace ZES.Interfaces.Clocks
         public override string ToExtendedIso()
         {
             var str = InstantPattern.ExtendedIso.Format(Instant.FromUnixTimeTicks(l));
+            if (c > 0)
+                str += $";{c}";
+            return str;
+        }
+        
+        /// <inheritdoc />
+        public override string ToUnixTicks()
+        {
+            var str = l.ToString(); 
             if (c > 0)
                 str += $";{c}";
             return str;

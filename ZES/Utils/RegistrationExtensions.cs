@@ -71,9 +71,19 @@ namespace ZES.Utils
         /// <param name="assembly">Assembly containing the domain to register</param>
         public static void RegisterEvents(this Container c, Assembly assembly)
         {
-            var deserializers = assembly.GetTypesFromInterface(typeof(IEventDeserializer)).Where(t => !t.IsAbstract);
+            var deserializers = assembly.GetTypesFromInterface(typeof(IEventDeserializer)).Where(t => !t.IsAbstract).ToList();
             foreach (var d in deserializers)
                 c.Collection.Append(typeof(IEventDeserializer), d);
+
+            var explicitTypes = deserializers.Select(d =>
+                d.GetInterfaces().FirstOrDefault(i => i.IsGenericType)?.GetGenericArguments().SingleOrDefault()).ToList();
+            var eventTypes = assembly.GetTypesFromInterface(typeof(IEvent)).Where(t => !t.GetInterfaces().Contains(typeof(ISnapshotEvent)));
+            foreach (var t in eventTypes)
+            {
+                if (explicitTypes.Contains(t))
+                    continue;
+                c.Collection.Append(typeof(IEventDeserializer), typeof(DefaultEventDeserializer<>).MakeGenericType(t));
+            }
 
             var serializers = assembly.GetTypesFromInterface(typeof(IEventSerializer)).Where(t => !t.IsAbstract);
             foreach (var s in serializers)

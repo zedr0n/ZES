@@ -28,7 +28,7 @@ namespace ZES.GraphQL
             if (runtimeValue is not Time time)
                 throw new SerializationException($"Cannot serialize {Name}", this);
             
-            resultValue = time.ToExtendedIso();
+            resultValue = time.Serialise();
             return true;
         }
 
@@ -90,12 +90,12 @@ namespace ZES.GraphQL
                 return new StringValueNode(string.Empty);
             }
 
-            return new StringValueNode(value.ToExtendedIso());
+            return new StringValueNode(value.Serialise());
         }
 
         private bool TryParseTime(string value, out Time time)
         {
-            time = Time.FromExtendedIso(value);
+            time = Time.Parse(value);
             return time != default;
         }
     }

@@ -4,58 +4,89 @@ using ZES.Interfaces.Clocks;
 namespace ZES.Interfaces
 {
     /// <summary>
-    /// Base message
+    /// Base message interface 
     /// </summary>
     public interface IMessage
     {
-        /// <summary>
-        /// Gets unique message identifier
-        /// </summary>
+        /// <inheritdoc cref="IMessageMetadata.MessageId"/>
         MessageId MessageId { get; }
-
-        /// <summary>
-        /// Gets event type
-        /// </summary>
+        
+        /// <inheritdoc cref="IMessageStaticMetadata.MessageType"/>
         string MessageType { get; }
         
-        /// <summary>
-        /// Gets id of a message in a causality relationship with this message
-        /// </summary>
-        MessageId AncestorId { get; }
-
-        /// <summary>
-        /// Gets or sets the correlation id for the message
-        /// </summary>
+        /// <inheritdoc cref="IMessageStaticMetadata.AncestorId"/>
+        MessageId AncestorId { get; set; }
+        
+        /// <inheritdoc cref="IMessageStaticMetadata.CorrelationId"/>
         string CorrelationId { get; set; }
         
-        /// <summary>
-        /// Gets or sets gets event timestamp
-        /// </summary>
+        /// <inheritdoc cref="IMessageStaticMetadata.LocalId"/>
+        EventId LocalId { get; set; }
+        
+        /// <inheritdoc cref="IMessageStaticMetadata.OriginId"/>
+        EventId OriginId { get; set; }
+
+        /// <inheritdoc cref="IMessageMetadata.Timestamp"/>
         Time Timestamp { get; set; }
         
-        /// <summary>
-        /// Gets or sets the corresponding message timeline
-        /// </summary>
+        /// <inheritdoc cref="IMessageMetadata.Timeline"/>
         string Timeline { get; set; }
         
         /// <summary>
-        /// Gets or sets the message local id
+        /// Gets or sets the serialised json
         /// </summary>
-        EventId LocalId { get; set; }
+        public string Json { get; set; }
         
         /// <summary>
-        /// Gets or sets the message origin id
+        /// Gets or sets metadata json
         /// </summary>
-        EventId OriginId { get; set; }
+        string MetadataJson { get; set; }
         
         /// <summary>
-        /// Gets or sets the serialized json
+        /// Gets or sets static metadata json
         /// </summary>
-        string Json { get; set; }
+        string StaticMetadataJson { get; set; }
 
         /// <summary>
-        /// Gets or sets the serialized json metadata
+        /// Copies the metadata from other message
         /// </summary>
-        string JsonMetadata { get; set; }
+        /// <param name="other">Other message</param>
+        void CopyMetadata(IMessage other);
+    }
+    
+    /// <summary>
+    /// Base message interface 
+    /// </summary>
+    /// <typeparam name="TStaticMetadata">Static metadata type</typeparam>
+    /// <typeparam name="TMetadata">Mutable metadata type</typeparam>
+    public interface IMessageEx<out TStaticMetadata, out TMetadata> : IMessage
+        where TStaticMetadata : IMessageStaticMetadata
+        where TMetadata : IMessageMetadata
+    {
+        /// <summary>
+        /// Gets the mutable metadata
+        /// </summary>
+        TMetadata Metadata { get; }
+        
+        /// <summary>
+        /// Gets the static metadata
+        /// </summary>
+        TStaticMetadata StaticMetadata { get; }
+    }
+
+    /// <summary>
+    /// Base message interface 
+    /// </summary>
+    /// <typeparam name="TStaticMetadata">Static metadata type</typeparam>
+    /// <typeparam name="TMetadata">Mutable metadata type</typeparam>
+    /// <typeparam name="TPayload">Payload type</typeparam>
+    public interface IMessageEx<out TStaticMetadata, out TMetadata, TPayload> : IMessageEx<TStaticMetadata, TMetadata>
+        where TStaticMetadata : IMessageStaticMetadata
+        where TMetadata : IMessageMetadata
+    {
+        /// <summary>
+        /// Gets or sets the payload
+        /// </summary>
+        TPayload Payload { get; set; }
     }
 }

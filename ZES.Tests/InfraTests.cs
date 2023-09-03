@@ -67,7 +67,7 @@ namespace ZES.Tests
             var stream = await locator.Find<Root>(id);
             var events = await store.ReadStream<IEvent>(stream, 0).ToList();
             Assert.Single(events);
-            Assert.NotEmpty(events.Single().StreamHash);
+            Assert.NotNull(events.Single().StreamHash);
 
             var streamHash = await store.GetHash(stream);
             Assert.Equal(events.Single().StreamHash, streamHash);

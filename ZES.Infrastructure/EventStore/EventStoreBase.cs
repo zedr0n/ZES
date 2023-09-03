@@ -154,7 +154,7 @@ namespace ZES.Infrastructure.EventStore
                 return versions.Last(v => v.Value <= timestamp).Key;
             }
             
-            var metadata = await ReadStream<IEvent>(stream, 0, 1, SerializationType.Metadata)
+            var metadata = await ReadStream<IEvent>(stream, 0, -1, SerializationType.Metadata)
                 .LastOrDefaultAsync(e => e.Timestamp <= timestamp);
 
             return metadata?.Version ?? ExpectedVersion.NoStream;

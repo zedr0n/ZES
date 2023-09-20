@@ -20,6 +20,9 @@ namespace ZES.Interfaces
         /// <inheritdoc cref="IMessageStaticMetadata.CorrelationId"/>
         string CorrelationId { get; set; }
         
+        /// <inheritdoc cref="IMessageStaticMetadata.RetroactiveId"/>
+        MessageId RetroactiveId { get; set; }
+        
         /// <inheritdoc cref="IMessageStaticMetadata.LocalId"/>
         EventId LocalId { get; set; }
         
@@ -59,7 +62,7 @@ namespace ZES.Interfaces
     /// </summary>
     /// <typeparam name="TStaticMetadata">Static metadata type</typeparam>
     /// <typeparam name="TMetadata">Mutable metadata type</typeparam>
-    public interface IMessageEx<out TStaticMetadata, out TMetadata> : IMessage
+    public interface IMessage<out TStaticMetadata, out TMetadata> : IMessage
         where TStaticMetadata : IMessageStaticMetadata
         where TMetadata : IMessageMetadata
     {
@@ -80,7 +83,7 @@ namespace ZES.Interfaces
     /// <typeparam name="TStaticMetadata">Static metadata type</typeparam>
     /// <typeparam name="TMetadata">Mutable metadata type</typeparam>
     /// <typeparam name="TPayload">Payload type</typeparam>
-    public interface IMessageEx<out TStaticMetadata, out TMetadata, TPayload> : IMessageEx<TStaticMetadata, TMetadata>
+    public interface IMessage<out TStaticMetadata, out TMetadata, TPayload> : IMessage<TStaticMetadata, TMetadata>
         where TStaticMetadata : IMessageStaticMetadata
         where TMetadata : IMessageMetadata
     {

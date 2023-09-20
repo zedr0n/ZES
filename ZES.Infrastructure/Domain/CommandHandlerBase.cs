@@ -8,14 +8,14 @@ using ZES.Interfaces.Domain;
 namespace ZES.Infrastructure.Domain
 {
     /// <inheritdoc />
-    public abstract class CommandHandlerBase<TCommand, TRoot> : ICommandHandler<TCommand, TRoot> 
+    public abstract class CommandHandlerBase<TCommand, TRoot> : CommandHandlerAbstractBase<TCommand>, ICommandHandler<TCommand, TRoot>
         where TRoot : class, IAggregate, new()
         where TCommand : Command
     {
         private readonly IEsRepository<IAggregate> _repository;
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="CommandHandlerBase{TCommand, TRoot}"/> class.
+        /// Initializes a new instance of the <see cref="CommandHandlerBase{TCommand,TRoot}"/> class.
         /// </summary>
         /// <param name="repository">ES repository</param>
         protected CommandHandlerBase(IEsRepository<IAggregate> repository)
@@ -29,7 +29,7 @@ namespace ZES.Infrastructure.Domain
         protected bool ComputeHash { get; set; } = false;
 
         /// <inheritdoc />
-        public virtual async Task Handle(TCommand command)
+        public override async Task Handle(TCommand command)
         {
             if (command == null)
                 throw new ArgumentNullException(typeof(TCommand).GetFriendlyName());
@@ -57,21 +57,13 @@ namespace ZES.Infrastructure.Domain
             {
                 e.CommandId = command.MessageId;
                 e.AncestorId = command.AncestorId ?? command.MessageId;
+                e.RetroactiveId = command.RetroactiveId;
                 e.CorrelationId = command.CorrelationId;
             }
 
             await _repository.Save(root);
         }
         
-        /// <inheritdoc />
-        public async Task Handle(ICommand command)
-        {
-            await Handle((TCommand)command);
-        }
-
-        /// <inheritdoc />
-        public bool CanHandle(ICommand command) => command is TCommand;
-
         /// <summary>
         /// Command action on the aggregate 
         /// </summary>

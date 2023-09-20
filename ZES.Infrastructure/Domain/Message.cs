@@ -7,14 +7,14 @@ using ZES.Interfaces.Clocks;
 namespace ZES.Infrastructure.Domain
 {
     /// <inheritdoc />
-    public abstract class MessageEx<TStaticMetadata, TMetadata> : IMessageEx<TStaticMetadata, TMetadata> 
+    public abstract class Message<TStaticMetadata, TMetadata> : IMessage<TStaticMetadata, TMetadata> 
         where TStaticMetadata : class, IMessageStaticMetadata, new()
         where TMetadata : IMessageMetadata, new()
     {
         /// <summary>
-        /// Creates a new instance of <see cref="MessageEx{TStaticMetadata,TMetadata}"/>
+        /// Creates a new instance of <see cref="Message{TStaticMetadata,TMetadata}"/>
         /// </summary>
-        public MessageEx()
+        public Message()
         {
             StaticMetadata.MessageType = GetType().GetFriendlyName();
             Metadata.MessageId = new MessageId(MessageType, Guid.NewGuid());
@@ -48,6 +48,14 @@ namespace ZES.Infrastructure.Domain
         {
             get => StaticMetadata.CorrelationId;
             set => StaticMetadata.CorrelationId = value;
+        }
+        
+        /// <inheritdoc />
+        [JsonIgnore]
+        public MessageId RetroactiveId
+        {
+            get => StaticMetadata.RetroactiveId; 
+            set => StaticMetadata.RetroactiveId = value;
         }
 
         /// <inheritdoc />
@@ -113,13 +121,13 @@ namespace ZES.Infrastructure.Domain
         /// <inheritdoc />
         public void CopyMetadata(IMessage other)
         {
-            var message = other as MessageEx<TStaticMetadata, TMetadata>;
+            var message = other as Message<TStaticMetadata, TMetadata>;
             Metadata = message.Metadata;
         }
     }
     
-    /// <inheritdoc cref="IMessageEx{TStaticMetadata,TMetadata}"/>
-    public abstract class MessageEx<TStaticMetadata, TMetadata, TPayload> : MessageEx<TStaticMetadata, TMetadata>, IMessageEx<TStaticMetadata, TMetadata, TPayload> 
+    /// <inheritdoc cref="IMessage{TStaticMetadata,TMetadata}"/>
+    public abstract class Message<TStaticMetadata, TMetadata, TPayload> : Message<TStaticMetadata, TMetadata>, IMessage<TStaticMetadata, TMetadata, TPayload> 
         where TStaticMetadata : class, IMessageStaticMetadata, new()
         where TMetadata : IMessageMetadata, new()
         where TPayload : class, new()

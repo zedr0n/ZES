@@ -14,12 +14,7 @@ namespace ZES.Interfaces.Domain
         /// Gets or sets a value indicating whether to store the command in the log
         /// </summary>
         bool StoreInLog { get; set; }
-        
-        /// <summary>
-        /// Gets or sets a value indicating whether the command is pure, i.e. only delegating to other commands
-        /// </summary>
-        bool Pure { get; set; }
-
+               
         /// <summary>
         /// Create a copy of metadata
         /// </summary>

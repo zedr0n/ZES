@@ -5,7 +5,7 @@ namespace ZES.Interfaces
     /// <summary>
     /// Base event with payload
     /// </summary>
-    public interface IEvent : IMessageEx<IEventStaticMetadata, IEventMetadata>
+    public interface IEvent : IMessage<IEventStaticMetadata, IEventMetadata>
     {
         /// <inheritdoc cref="IEventStaticMetadata.CommandId"/>
         MessageId CommandId { get; set; }
@@ -42,7 +42,7 @@ namespace ZES.Interfaces
     /// Base event with payload
     /// </summary>
     /// <typeparam name="TPayload">Payload type</typeparam>
-    public interface IEvent<TPayload> : IEvent, IMessageEx<IEventStaticMetadata, IEventMetadata, TPayload>
+    public interface IEvent<TPayload> : IEvent, IMessage<IEventStaticMetadata, IEventMetadata, TPayload>
         where TPayload : class, new()
     {
     }

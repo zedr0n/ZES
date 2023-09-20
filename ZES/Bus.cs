@@ -74,30 +74,14 @@ namespace ZES
         /// <inheritdoc />
         public async Task<Task> CommandAsync(ICommand command)
         {
-            if (command.GetType().IsClosedTypeOf(typeof(RetroactiveCommand<>)))
-            {
-                using (await _lock.LockAsync())
-                {
-                    await _messageQueue.RetroactiveExecution.FirstAsync(b => b == false).Timeout(Configuration.Timeout);
-                    await _messageQueue.UncompletedMessages.FirstAsync(b => b == 0).Timeout(Configuration.Timeout);
-                    
-                    command.Timeline = _timeline.Id;
-                    await _messageQueue.UncompleteMessage(command);
-                }
-            }
-            else
-            {
-                command.Timeline = _timeline.Id;
-                if (!command.Pure)
-                    await _messageQueue.UncompleteMessage(command);
-            }
+            command.Timeline = _timeline.Id;
+            if (!command.Pure)
+                await _messageQueue.UncompleteMessage(command);
 
-            
             var tracked = new Tracked<ICommand>(command);
             var dispatcher = _dispatchers.GetOrAdd(_timeline.Id, CreateDispatcher);
             await dispatcher.SendAsync(tracked);
 
-            // return tracked.Task;
             if (command.Pure)
                 return tracked.Task;
             
@@ -123,10 +107,10 @@ namespace ZES
         }
 
         private CommandDispatcher CreateDispatcher(string timeline) => new CommandDispatcher(
-            HandleCommand,
-            timeline,
+                GetHandler,
+                timeline,
             Configuration.DataflowOptions);
-        
+
         private object GetInstance(Type type)
         {
             try
@@ -142,25 +126,33 @@ namespace ZES
                 throw;
             }
         }
-        
-        private async Task HandleCommand(ICommand command)
+
+        private ICommandHandler GetHandler(ICommand command)
         {
             var handlerType = typeof(ICommandHandler<>).MakeGenericType(command.GetType());
             var handler = (ICommandHandler)GetInstance(handlerType);
-            if (handler != null)
-                await handler.Handle(command).ConfigureAwait(false);
+            return handler;
         }
-
+        
         private class CommandDispatcher : ParallelDataDispatcher<string, Tracked<ICommand>>
         {
-            private readonly Func<ICommand, Task> _handler;
+            private readonly Func<ICommand, ICommandHandler> _handler;
             private readonly DataflowOptions _options;
 
-            public CommandDispatcher(Func<ICommand, Task> handler, string timeline, DataflowOptions options) 
+            private readonly BroadcastBlock<Tracked<ICommand>> _broadcastBlock;
+
+            public CommandDispatcher(Func<ICommand, ICommandHandler> handler, string timeline, DataflowOptions options) 
                 : base(c => $"{timeline}:{c.Value.Target}", options, CancellationToken.None)
             {
                 _handler = handler;
                 _options = options;
+                _broadcastBlock = new BroadcastBlock<Tracked<ICommand>>(null);
+                var uncompletionBlock = new ActionBlock<Tracked<ICommand>>(async c =>
+                {
+                    await _handler(c.Value).Uncomplete(c.Value);
+                });
+                _broadcastBlock.LinkTo(uncompletionBlock);
+                _broadcastBlock.LinkTo(DispatcherBlock);
             }
             
             protected override Dataflow<Tracked<ICommand>> CreateChildFlow(string target)
@@ -168,12 +160,14 @@ namespace ZES
                 var block = new ActionBlock<Tracked<ICommand>>(
                     async c =>
                     {
-                        await _handler(c.Value);
+                        await _handler(c.Value).Handle(c.Value, false);
                         c.Complete();
-                    }, _options.ToDataflowBlockOptions()); 
+                    }, _options.ToDataflowBlockOptions());
                 
                 return block.ToDataflow(_options);
             }
+
+            public override ITargetBlock<Tracked<ICommand>> InputBlock => _broadcastBlock;
         }
     }
 }

@@ -7,14 +7,6 @@ namespace ZES.Infrastructure.Domain;
 /// <inheritdoc />
 public class MessageStaticMetadata : IMessageStaticMetadata
 {
-    // private MessageId _messageId;
-
-    /*public MessageId MessageId
-    {
-        get => _messageId ??= new MessageId(MessageType, Guid.NewGuid());
-        set => _messageId = value;
-    }*/
-
     /// <inheritdoc />
     public string MessageType { get; set; }
     
@@ -23,6 +15,9 @@ public class MessageStaticMetadata : IMessageStaticMetadata
 
     /// <inheritdoc />
     public string CorrelationId { get; set; }
+    
+    /// <inheritdoc />
+    public MessageId RetroactiveId { get; set; }
     
     /// <inheritdoc />
     public EventId LocalId { get; set; }

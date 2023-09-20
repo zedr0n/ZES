@@ -40,9 +40,6 @@
       <Compile Update="Projections\Dispatcher.Flow.cs">
         <DependentUpon>Projection.cs</DependentUpon>
       </Compile>
-      <Compile Update="Domain\CommandHandlerBase.cs">
-        <DependentUpon>CommandHandler.cs</DependentUpon>
-      </Compile>
       <Compile Update="Domain\CreateCommandHandlerBase.cs">
         <DependentUpon>CommandHandler.cs</DependentUpon>
       </Compile>

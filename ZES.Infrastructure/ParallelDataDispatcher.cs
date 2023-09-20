@@ -26,7 +26,7 @@ namespace ZES.Infrastructure
     {
         private readonly Func<TIn, TKey> _dispatchFunc;
     
-        private readonly ActionBlock<TIn> _dispatcherBlock;
+        protected readonly ActionBlock<TIn> DispatcherBlock;
     
         private readonly ConcurrentDictionary<TKey, Lazy<Dataflow<TIn>>> _destinations;
         private readonly Func<TKey, Lazy<Dataflow<TIn>>> _initer;
@@ -70,13 +70,13 @@ namespace ZES.Infrastructure
             {
                 var childFlow = CreateChildFlow(key);
                 RegisterChild(childFlow);
-                childFlow.RegisterDependency(_dispatcherBlock);
+                childFlow.RegisterDependency(DispatcherBlock);
                 return childFlow;
             });
 
-            _dispatcherBlock = new ActionBlock<TIn>(async input => await Dispatch(input), option.ToDataflowBlockOptions(true)); // .ToExecutionBlockOption(true));
+            DispatcherBlock = new ActionBlock<TIn>(async input => await Dispatch(input), option.ToDataflowBlockOptions(true)); // .ToExecutionBlockOption(true));
 
-            RegisterChild(_dispatcherBlock);
+            RegisterChild(DispatcherBlock);
         }
 
         /// <summary>
@@ -88,7 +88,7 @@ namespace ZES.Infrastructure
         public int ParallelCount => _parallelCount;
 
         /// <inheritdoc />
-        public override ITargetBlock<TIn> InputBlock => _dispatcherBlock;
+        public override ITargetBlock<TIn> InputBlock => DispatcherBlock;
 
         /// <summary>
         /// Gets or sets log services

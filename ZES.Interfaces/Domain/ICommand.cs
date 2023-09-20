@@ -3,7 +3,7 @@ namespace ZES.Interfaces.Domain
     /// <summary>
     /// CQRS Command definition
     /// </summary>
-    public interface ICommand : IMessageEx<ICommandStaticMetadata, ICommandMetadata>
+    public interface ICommand : IMessage<ICommandStaticMetadata, ICommandMetadata>
     {
         /// <summary>
         /// Gets aggregate target id
@@ -16,8 +16,15 @@ namespace ZES.Interfaces.Domain
         /// <inheritdoc cref="ICommandStaticMetadata.StoreInLog"/>
         bool StoreInLog { get; set; }
 
-        /// <inheritdoc cref="ICommandStaticMetadata.Pure"/>
+        /// <summary>
+        /// Gets or sets a value indicating whether the command is pure
+        /// </summary>
         bool Pure { get; set; }
+        
+        /// <summary>
+        /// Gets or sets a value indicating whether the command execution should include all the consequences ( sagas, etc... )
+        /// </summary>
+        bool Recursive { get; set; }
 
         /// <summary>
         /// Copy the command

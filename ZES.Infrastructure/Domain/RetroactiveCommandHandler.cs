@@ -14,7 +14,7 @@ using ZES.Interfaces.Pipes;
 namespace ZES.Infrastructure.Domain
 {
     /// <inheritdoc />
-    public class RetroactiveCommandHandler<TCommand> : ICommandHandler<RetroactiveCommand<TCommand>>
+    public class RetroactiveCommandHandler<TCommand> : CommandHandlerAbstractBase<RetroactiveCommand<TCommand>>
         where TCommand : Command 
     {
         private readonly IRetroactive _retroactive;
@@ -41,7 +41,7 @@ namespace ZES.Infrastructure.Domain
         }
 
         /// <inheritdoc />
-        public async Task Handle(RetroactiveCommand<TCommand> iCommand)
+        public override async Task Handle(RetroactiveCommand<TCommand> iCommand)
         {
             if (iCommand.Timestamp == Time.Default)
             {
@@ -55,10 +55,9 @@ namespace ZES.Infrastructure.Domain
             iCommand.Command.UseTimestamp = true;
             var time = iCommand.Timestamp;
 
-            _log.StopWatch.Start("GetChanges_1");
+            _log.StopWatch.Start($"{nameof(RetroactiveCommandHandler<TCommand>)}.GetChanges");
             var changes = await _retroactive.GetChanges(iCommand.Command, time);
-
-            _log.StopWatch.Stop("GetChanges_1");
+            _log.StopWatch.Stop($"{nameof(RetroactiveCommandHandler<TCommand>)}.GetChanges");
 
             if (changes.Count == 0)
             {
@@ -67,21 +66,31 @@ namespace ZES.Infrastructure.Domain
                 return;
             }
             
-            _log.StopWatch.Start("TryInsert_1");
+            _log.StopWatch.Start($"{nameof(RetroactiveCommandHandler<TCommand>)}.TryInsert");
             var invalidEvents = await _retroactive.TryInsert(changes, time);
-            _log.StopWatch.Stop("TryInsert_1");
+            _log.StopWatch.Stop($"{nameof(RetroactiveCommandHandler<TCommand>)}.TryInsert");
 
             if (invalidEvents.Count > 0)
             {
+                _log.StopWatch.Start($"{nameof(RetroactiveCommandHandler<TCommand>)}.RollbackEvents");
                 var commands = await RollbackEvents(invalidEvents);
+                _log.StopWatch.Stop($"{nameof(RetroactiveCommandHandler<TCommand>)}.RollbackEvents");
+                
+                _log.StopWatch.Start($"{nameof(RetroactiveCommandHandler<TCommand>)}.GetChanges");
                 changes = await _retroactive.GetChanges(iCommand.Command, time);
+                _log.StopWatch.Stop($"{nameof(RetroactiveCommandHandler<TCommand>)}.GetChanges");
+                
+                _log.StopWatch.Start($"{nameof(RetroactiveCommandHandler<TCommand>)}.TryInsert");
                 await _retroactive.TryInsert(changes, time);
+                _log.StopWatch.Stop($"{nameof(RetroactiveCommandHandler<TCommand>)}.TryInsert");
 
+                _log.StopWatch.Start($"{nameof(RetroactiveCommandHandler<TCommand>)}.ReplayCommand");
                 foreach (var c in commands)
                 {
                     _log.Debug($"Replaying command {c.GetType().GetFriendlyName()} with timestamp {c.Timestamp}");
                     await _retroactive.ReplayCommand(c);
                 }
+                _log.StopWatch.Stop($"{nameof(RetroactiveCommandHandler<TCommand>)}.ReplayCommand");
             }
 
             iCommand.Command.Timeline = iCommand.Timeline;
@@ -90,15 +99,6 @@ namespace ZES.Infrastructure.Domain
             _messageQueue.Alert(new InvalidateProjections());
             _log.StopWatch.Stop($"{nameof(RetroactiveCommandHandler<TCommand>)}");
         }
-
-        /// <inheritdoc />
-        public async Task Handle(ICommand command)
-        {
-            await Handle((RetroactiveCommand<TCommand>)command);
-        }
-
-        /// <inheritdoc />
-        public bool CanHandle(ICommand command) => command is RetroactiveCommand<TCommand>;
 
         private async Task<IEnumerable<ICommand>> RollbackEvents(IEnumerable<IEvent> invalidEvents)
         {

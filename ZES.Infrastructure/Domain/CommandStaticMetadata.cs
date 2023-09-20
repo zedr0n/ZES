@@ -1,3 +1,4 @@
+using ZES.Interfaces;
 using ZES.Interfaces.Domain;
 
 namespace ZES.Infrastructure.Domain
@@ -12,9 +13,6 @@ namespace ZES.Infrastructure.Domain
 
         /// <inheritdoc />
         public bool StoreInLog { get; set; } = true;
-
-        /// <inheritdoc />
-        public bool Pure { get; set; }
         
         /// <inheritdoc />
         public ICommandStaticMetadata Copy()

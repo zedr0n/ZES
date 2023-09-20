@@ -14,7 +14,7 @@ namespace ZES.Infrastructure.Net
     /// <summary>
     /// Json request command handler
     /// </summary>
-    public class JsonRequestHandler : ICommandHandler<RequestJson>
+    public class JsonRequestHandler : CommandHandlerAbstractBase<RequestJson>
     {
         private readonly IJSonConnector _connector;
         private readonly IMessageQueue _messageQueue;
@@ -31,7 +31,7 @@ namespace ZES.Infrastructure.Net
         }
 
         /// <inheritdoc />
-        public async Task Handle(RequestJson command)
+        public override async Task Handle(RequestJson command)
         {
             var res = await _connector.SubmitRequest(command.Url);
             var alert = new JsonRequestSubmitted(command.Target, command.Url) { Timeline = command.Timeline };
@@ -43,19 +43,13 @@ namespace ZES.Infrastructure.Net
                 _messageQueue.Alert(new JsonRequestCompleted(command.Target, command.Url, r.Result));
             });
         }
-
-        /// <inheritdoc />
-        public async Task Handle(ICommand command) => await Handle(command as RequestJson);
-
-        /// <inheritdoc />
-        public bool CanHandle(ICommand command) => command is RequestJson;
     }
 
     /// <summary>
     /// JSON deserialized request command handler
     /// </summary>
     /// <typeparam name="T">Deserialized type</typeparam>
-    public class JsonRequestHandler<T> : ICommandHandler<RequestJson<T>>
+    public class JsonRequestHandler<T> : CommandHandlerAbstractBase<RequestJson<T>>
         where T : class, IJsonResult
     {
         private readonly IMessageQueue _messageQueue;
@@ -79,7 +73,7 @@ namespace ZES.Infrastructure.Net
         }
         
         /// <inheritdoc />
-        public virtual async Task Handle(RequestJson<T> command)
+        public override async Task Handle(RequestJson<T> command)
         {
             _messageQueue.Alerts.OfType<JsonRequestCompleted>()
                 .Where(r => r.Url == command.Url)
@@ -93,12 +87,6 @@ namespace ZES.Infrastructure.Net
                 });
             await _handler.Handle(command);
         }
-
-        /// <inheritdoc />
-        public async Task Handle(ICommand command) => await Handle(command as RequestJson<T>);
-
-        /// <inheritdoc />
-        public bool CanHandle(ICommand command) => command is RequestJson<T>;
 
         private void PostEvents(T response, ICommand command)
         {

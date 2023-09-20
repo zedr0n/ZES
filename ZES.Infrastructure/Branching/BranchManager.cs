@@ -93,8 +93,11 @@ namespace ZES.Infrastructure.Branching
         public async Task DeleteBranch(string branchId)
         {
             _log.StopWatch.Start("DeleteBranch");
+            
+            _log.StopWatch.Start($"{nameof(DeleteBranch)}.Wait");
             await _messageQueue.UncompletedMessagesOnBranch(branchId).Timeout(Configuration.Timeout)
                 .FirstAsync(s => s == 0);
+            _log.StopWatch.Stop($"{nameof(DeleteBranch)}.Wait");
 
             await DeleteBranch<IAggregate>(branchId);
             await DeleteBranch<ISaga>(branchId);

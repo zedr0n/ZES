@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Linq;
 using System.Reactive.Linq;
 using System.Reactive.Subjects;
 using System.Threading.Tasks;
@@ -8,6 +9,7 @@ using SimpleInjector;
 using ZES.Infrastructure.Domain;
 using ZES.Infrastructure.Utils;
 using ZES.Interfaces;
+using ZES.Interfaces.Domain;
 using ZES.Interfaces.EventStore;
 using ZES.Interfaces.Pipes;
 using ZES.Utils;
@@ -22,6 +24,7 @@ namespace ZES
         private readonly Subject<IEvent> _messages = new();
         private readonly Subject<IAlert> _alerts = new();
         private readonly ConcurrentDictionary<string, UncompletedMessagesSingleHolder> _messagesHolderDict;
+        private readonly ConcurrentDictionary<Guid, CommandStateHolder> _commandStateHolders;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="MessageQueue"/> class.
@@ -33,17 +36,25 @@ namespace ZES
             _log = log;
             _timeline = timeline;
             _messagesHolderDict = new ConcurrentDictionary<string, UncompletedMessagesSingleHolder>();
+            _commandStateHolders = new ConcurrentDictionary<Guid, CommandStateHolder>();
             RetroactiveExecution.DistinctUntilChanged()
                 .Throttle(x => Observable.Timer(TimeSpan.FromMilliseconds(x ? 0 : 10)))
                 .StartWith(false)
                 .DistinctUntilChanged()
                 .Subscribe(x => log.Info($"Retroactive execution : {x}"));
-        }
+            
+            // var combinedStates = _commandStateHolders.Select(x => x.Value.CommandState().Select(s => new { x.Key, s }) ).Merge();
 
+        }
+        
         /// <inheritdoc />
         public IObservable<int> UncompletedMessages =>
             _messagesHolderDict.GetOrAdd(_timeline.Id, s => new UncompletedMessagesSingleHolder())
                 .UncompletedMessages();
+
+        /// <inheritdoc />
+        public IObservable<CommandState> CommandState(MessageId commandId) =>
+            _commandStateHolders[commandId.Id].CommandState();
 
         /// <inheritdoc />
         public IObservable<bool> RetroactiveExecution => _messagesHolderDict
@@ -73,6 +84,55 @@ namespace ZES
             _messages.OnNext(e);
         }
 
+        /// <inheritdoc />
+        public async Task UncompleteCommand(MessageId commandId, bool isRetroactive = false)
+        {
+            if (commandId == default)
+                return;
+
+            var stateHolder = _commandStateHolders.GetOrAdd(commandId.Id, new CommandStateHolder());
+            await stateHolder.UpdateState(b =>
+            {
+                b.Counter++;
+                // _log.Debug($"Uncompleting command {commandId}: {b.Counter}");
+                return b;
+            }).ConfigureScheduler(TaskScheduler.Default);
+        }
+        
+        /// <inheritdoc />
+        public async Task FailCommand(MessageId commandId)
+        {
+            if (commandId == default)
+                return;
+            
+            if (!_commandStateHolders.TryGetValue(commandId.Id, out var stateHolder))
+                return;
+            
+            await stateHolder.UpdateState(b =>
+            {
+                b.HasFailed = true;
+                return b;
+            }).ConfigureScheduler(TaskScheduler.Default);
+            
+        }
+        
+        /// <inheritdoc />
+        public async Task CompleteCommand(MessageId commandId)
+        {
+            if (commandId == default)
+                return;
+
+            if (!_commandStateHolders.TryGetValue(commandId.Id, out var stateHolder))
+                return;
+        
+            await stateHolder.UpdateState(b =>
+            {
+                b.Counter--;
+                //_log.Debug($"Completing command {commandId}: {b.Counter}");
+                return b;
+            }).ConfigureScheduler(TaskScheduler.Default);
+        }
+        
         /// <inheritdoc />
         public async Task CompleteMessage(IMessage message)
         {

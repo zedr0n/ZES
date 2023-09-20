@@ -23,6 +23,11 @@ namespace ZES.Interfaces
         string CorrelationId { get; set; }
         
         /// <summary>
+        /// Gets or sets the id of the origin retroactive command if any
+        /// </summary>
+        MessageId RetroactiveId { get; set; }
+        
+        /// <summary>
         /// Gets or sets the message local id
         /// </summary>
         EventId LocalId { get; set; }

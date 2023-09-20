@@ -61,11 +61,6 @@ namespace ZES.Infrastructure
         }
 
         /// <summary>
-        /// Gets a value indicating whether to use extended iso format for serialisation
-        /// </summary>
-        public static bool UseExtendedIsoForSerialisation { get; } = false;
-        
-        /// <summary>
         /// Gets a value indicating whether to exclude static metadata from the stream message metadata
         /// </summary>
         public static bool StoreMetadataSeparately { get; } = true;

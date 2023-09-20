@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Linq;
 using System.Reactive.Linq;
@@ -99,7 +100,7 @@ namespace ZES.GraphQL
             foreach (var r in scenario.Results)
                 await executor.ExecuteAsync(r.GraphQl);
 
-            foreach (var pair in _log.StopWatch.Totals)
+            foreach (var pair in _log.StopWatch.Totals.ToImmutableSortedDictionary())
                 _log.Info($"{pair.Key} : {pair.Value}ms");
             return new ReplayResult(sw.ElapsedMilliseconds);
         }

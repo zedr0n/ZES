@@ -34,7 +34,12 @@ namespace ZES.Infrastructure.Domain
             var source = new CancellationTokenSource();
             _messageQueue.Messages
                 .Where(e => new TSaga().SagaId(e) != null)
-                .Do(e => _messageQueue.UncompleteMessage(e).Wait())
+                .Do(e =>
+                {
+                    _messageQueue.UncompleteCommand(e.AncestorId).Wait();
+                    _messageQueue.UncompleteCommand(e.RetroactiveId).Wait();
+                    _messageQueue.UncompleteMessage(e).Wait();
+                })
                 .Subscribe(_dispatcher.InputBlock.AsObserver(), source.Token);
             
             _dispatcher.CompletionTask.ContinueWith(t => source.Cancel());
@@ -91,6 +96,8 @@ namespace ZES.Infrastructure.Domain
                     async e =>
                     {
                         await Handle(e);
+                        await messageQueue.CompleteCommand(e.RetroactiveId);
+                        await messageQueue.CompleteCommand(e.AncestorId);
                         await messageQueue.CompleteMessage(e);
                     }, DataflowOptions.ToDataflowBlockOptions(false)); // .ToExecutionBlockOption());
             
@@ -127,6 +134,7 @@ namespace ZES.Infrastructure.Domain
                     foreach (var c in commands)
                     {
                         c.AncestorId = e.AncestorId ?? e.MessageId;
+                        c.RetroactiveId = e.RetroactiveId;
                         c.CorrelationId = id;
                     }
 

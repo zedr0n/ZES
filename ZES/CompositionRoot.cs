@@ -222,7 +222,11 @@ namespace ZES
             container.Register(typeof(IStreamLocator), typeof(StreamLocator), Lifestyle.Singleton);    
             container.Register(typeof(IEsRepository<>), typeof(EsRepository<>), Lifestyle.Singleton);
             container.Register<IGraph, NullGraph>(Lifestyle.Singleton);
-            container.Register<IStopWatch, StopWatch>(Lifestyle.Singleton);
+            if(Environment.GetEnvironmentVariable("PERF") == 1.ToString())
+                container.Register<IStopWatch, StopWatch>(Lifestyle.Singleton);
+            else
+                container.Register<IStopWatch, NullStopWatch>(Lifestyle.Singleton);
+            // container.Register<IStopWatch, ThreadStopwatch>();
             
             container.RegisterDecorator(
                 typeof(ICommandHandler<>),

@@ -528,7 +528,6 @@ namespace ZES.Infrastructure.Serialization
             
             var metadata = new Event();
             var currentProperty = string.Empty;
-            // metadata.CorrelationId = null;
             while (reader.Read())
             {
                 if (reader.Value == null) 
@@ -544,6 +543,9 @@ namespace ZES.Infrastructure.Serialization
                         break;
                     case JsonToken.String when currentProperty == nameof(IEventStaticMetadata.CorrelationId):
                         metadata.StaticMetadata.CorrelationId = reader.Value.ToString();
+                        break;
+                    case JsonToken.String when currentProperty == nameof(IEventStaticMetadata.RetroactiveId):
+                        metadata.StaticMetadata.RetroactiveId = MessageId.Parse(reader.Value.ToString());
                         break;
                     case JsonToken.String when currentProperty == nameof(IEventMetadata.MessageId):
                         metadata.Metadata.MessageId = MessageId.Parse(reader.Value.ToString());
@@ -724,6 +726,9 @@ namespace ZES.Infrastructure.Serialization
             
             if (e.AncestorId != default && WritePropertyName(writer, nameof(IMessageStaticMetadata.AncestorId), properties))
                 writer.WriteValue(e.AncestorId.ToString());
+            
+            if (e.RetroactiveId != default && WritePropertyName(writer, nameof(IMessageStaticMetadata.RetroactiveId), properties))
+                writer.WriteValue(e.RetroactiveId.ToString());
 
             if (WritePropertyName(writer, nameof(IMessageStaticMetadata.CorrelationId), properties))
                 writer.WriteValue(e.CorrelationId);
@@ -925,6 +930,9 @@ namespace ZES.Infrastructure.Serialization
                         break;
                     case JsonToken.String when currentProperty == nameof(EventStaticMetadata.CorrelationId):
                         e.CorrelationId = reader.Value.ToString();
+                        break;
+                    case JsonToken.String when currentProperty == nameof(EventStaticMetadata.RetroactiveId):
+                        e.RetroactiveId = MessageId.Parse(reader.Value.ToString());
                         break;
                     case JsonToken.String when currentProperty == nameof(EventStaticMetadata.LocalId):
                         e.LocalId = EventId.Parse((string)reader.Value); 

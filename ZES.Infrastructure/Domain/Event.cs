@@ -6,7 +6,7 @@ using ZES.Interfaces;
 namespace ZES.Infrastructure.Domain
 {
     /// <inheritdoc cref="IEvent"/>
-    public class Event : MessageEx<EventStaticMetadata, EventMetadata>, IEvent
+    public class Event : Message<EventStaticMetadata, EventMetadata>, IEvent
     {
         /// <inheritdoc />
        [JsonProperty(Order = -2)]

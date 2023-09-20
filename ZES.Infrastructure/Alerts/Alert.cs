@@ -4,7 +4,7 @@ using ZES.Interfaces;
 namespace ZES.Infrastructure.Alerts
 {
     /// <inheritdoc cref="IAlert" />
-    public class Alert : MessageEx<MessageStaticMetadata, MessageMetadata>, IAlert
+    public class Alert : Message<MessageStaticMetadata, MessageMetadata>, IAlert
     {
         /// <inheritdoc />
         public Alert()

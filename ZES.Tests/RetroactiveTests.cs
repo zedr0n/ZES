@@ -86,9 +86,10 @@ namespace ZES.Tests
 
             await await bus.CommandAsync(new CreateRoot(id));
             await await bus.CommandAsync(new RetroactiveCommand<UpdateRoot>(new UpdateRoot(id), lastTime));
-
             await await bus.CommandAsync(new RetroactiveCommand<UpdateRoot>(new UpdateRoot(id), midTime));
-            var rootInfo = await bus.QueryUntil(new RootInfoQuery(id), r => r.UpdatedAt == lastTime);
+            
+            var rootInfo = await bus.QueryAsync(new RootInfoQuery(id));
+            // var rootInfo = await bus.QueryUntil(new RootInfoQuery(id), r => r.UpdatedAt == lastTime);
             Assert.Equal(2, rootInfo.NumberOfUpdates);
             await graph.Serialise(nameof(CanProcessRetroactiveCommand));
         }

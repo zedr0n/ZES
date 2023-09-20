@@ -6,14 +6,14 @@ using ZES.Interfaces.Domain;
 namespace ZES.Infrastructure.Domain
 {
     /// <inheritdoc />
-    public abstract class CreateCommandHandlerBase<TCommand, TRoot> : ICommandHandler<TCommand, TRoot> 
+    public abstract class CreateCommandHandlerBase<TCommand, TRoot> : CommandHandlerAbstractBase<TCommand>, ICommandHandler<TCommand, TRoot> 
         where TRoot : class, IAggregate, new()
         where TCommand : Command, ICreateCommand
     {
         private readonly IEsRepository<IAggregate> _repository;
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="CreateCommandHandlerBase{TCommand, TRoot}"/> class.
+        /// Initializes a new instance of the <see cref="CreateCommandHandlerBase{TCommand,TRoot}"/> class.
         /// </summary>
         /// <param name="repository">ES repository</param>
         protected CreateCommandHandlerBase(IEsRepository<IAggregate> repository)
@@ -22,7 +22,7 @@ namespace ZES.Infrastructure.Domain
         }
         
         /// <inheritdoc />
-        public async Task Handle(TCommand command)
+        public override async Task Handle(TCommand command)
         {
             var root = Create(command);
             
@@ -39,15 +39,6 @@ namespace ZES.Infrastructure.Domain
 
             await _repository.Save(root);
         }
-
-        /// <inheritdoc />
-        public async Task Handle(ICommand command)
-        {
-            await Handle((TCommand)command);
-        }
-
-        /// <inheritdoc />
-        public bool CanHandle(ICommand command) => command is TCommand;
 
         /// <summary>
         /// Initialisation of the new aggregate root

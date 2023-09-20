@@ -150,22 +150,30 @@ namespace ZES.Infrastructure.Branching
             var activeBranch = _manager.ActiveBranch;
             var branch = $"{command.GetType().Name}-{time.ToUnixTimeMilliseconds()}";
 
+            _log.StopWatch.Start($"{nameof(GetChanges)}.Branch");
             await _manager.Branch(branch, time, deleteExisting: true);
+            _log.StopWatch.Stop($"{nameof(GetChanges)}.Branch");
 
+            _log.StopWatch.Start($"{nameof(GetChanges)}.HandleCommand");
             var copy = command.Copy();
+            copy.Recursive = true;
             copy.Timeline = branch;
             
             var handler = _commandRegistry.GetHandler(copy);
             if (handler == null)
                 throw new InvalidOperationException($"No handler found for command {command.GetType().Name}");
             await handler.Handle(copy);
+            _log.StopWatch.Stop($"{nameof(GetChanges)}.HandleCommand");
             
+            _log.StopWatch.Start($"{nameof(GetChanges)}.Branch");
             await _manager.Branch(activeBranch);
+            _log.StopWatch.Stop($"{nameof(GetChanges)}.Branch");
             
             var dict = new Dictionary<IStream, IEnumerable<IEvent>>();
 
             var changes = await _manager.GetChanges(branch);
-            _log.StopWatch.Start("GetChanges.Read");
+            
+            _log.StopWatch.Start("GetChanges.ReadStream");
             foreach (var c in changes)
             {
                 var stream = await _streamLocator.FindBranched(c.Key, branch);
@@ -178,9 +186,11 @@ namespace ZES.Infrastructure.Branching
                 // _log.Debug($"Recording change in stream {stream.Key}: events ({stream.Version - c.Value + 1}..{stream.Version})");
             }
             
-            _log.StopWatch.Stop("GetChanges.Read");
+            _log.StopWatch.Stop("GetChanges.ReadStream");
 
+            _log.StopWatch.Start($"{nameof(GetChanges)}.{nameof(_manager.DeleteBranch)}");
             await _manager.DeleteBranch(branch);
+            _log.StopWatch.Stop($"{nameof(GetChanges)}.{nameof(_manager.DeleteBranch)}");
             return dict;
         }
         
@@ -309,6 +319,7 @@ namespace ZES.Infrastructure.Branching
         private async Task<bool> RollbackCommand(ICommand c)
         {
             var time = c.Timestamp.JustBefore();
+            c.Recursive = true;
             var changes = await GetChanges(c, time);
             // var changes = await GetChanges(c);
             _log.Debug($"Rolling back command: {c}");

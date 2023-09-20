@@ -8,7 +8,7 @@ using ZES.Interfaces.Domain;
 namespace ZES.Infrastructure.Domain
 {
     /// <inheritdoc cref="ICommand" />
-    public class Command : MessageEx<CommandStaticMetadata, CommandMetadata>, ICommand
+    public class Command : Message<CommandStaticMetadata, CommandMetadata>, ICommand
     {
         /// <inheritdoc />
         [JsonIgnore]
@@ -43,14 +43,15 @@ namespace ZES.Infrastructure.Domain
             get => StaticMetadata.StoreInLog;
             set => StaticMetadata.StoreInLog = value;
         }
+        
+        /// <inheritdoc />
+        [JsonIgnore]
+        public bool Pure { get; set; }
 
         /// <inheritdoc />
         [JsonIgnore]
-        public bool Pure
-        {
-            get => StaticMetadata.Pure; 
-            set => StaticMetadata.Pure = value;
-        }
+        public bool Recursive { get; set; } = false;
+        
 
         /// <inheritdoc />
         public ICommand Copy()

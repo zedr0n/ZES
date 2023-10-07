@@ -504,9 +504,9 @@ namespace ZES.Tests
             var statsQuery = new StatsQuery();
             await bus.IsTrue(statsQuery, s => s?.NumberOfRoots == numberOfRoots);
             
-            messageQueue.Alert(new InvalidateProjections());
-            messageQueue.Alert(new InvalidateProjections());
-            messageQueue.Alert(new InvalidateProjections());
+            messageQueue.Alert(new ImmediateInvalidateProjections());
+            messageQueue.Alert(new ImmediateInvalidateProjections());
+            messageQueue.Alert(new ImmediateInvalidateProjections());
             
             Thread.Sleep(50);
             

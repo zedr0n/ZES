@@ -49,17 +49,30 @@ namespace ZES.Infrastructure.Domain
         public class SagaDispatcher : ParallelDataDispatcher<string, IEvent>
         {
             private readonly IFactory<SagaFlow> _sagaFlow;
+            private readonly BroadcastBlock<IEvent> _broadcastBlock;
 
             /// <summary>
             /// Initializes a new instance of the <see cref="SagaDispatcher"/> class.
             /// </summary>
             /// <param name="log">Log helper</param>
             /// <param name="sagaFlow">Fluent builder</param>
-            public SagaDispatcher(ILog log, IFactory<SagaFlow> sagaFlow)
+            /// <param name="messageQueue">Message queue</param>
+            public SagaDispatcher(ILog log, IFactory<SagaFlow> sagaFlow, IMessageQueue messageQueue)
                 : base(e => new TSaga().SagaId(e), Configuration.DataflowOptions, CancellationToken.None, typeof(TSaga))
             {
                 Log = log;
                 _sagaFlow = sagaFlow;
+                _broadcastBlock = new BroadcastBlock<IEvent>(null);
+                var uncompletionBlock = new TransformBlock<IEvent,IEvent>(async e =>
+                {
+                    await messageQueue.UncompleteMessage(e);
+                    await messageQueue.UncompleteCommand(e.AncestorId);
+                    await messageQueue.UncompleteCommand(e.RetroactiveId);
+                    return e;
+                });
+                // _broadcastBlock.LinkTo(uncompletionBlock);
+                //uncompletionBlock.LinkTo(DispatcherBlock);
+                _broadcastBlock.LinkTo(DispatcherBlock);
             }
 
             /// <inheritdoc />
@@ -72,6 +85,9 @@ namespace ZES.Infrastructure.Domain
                 Log?.Errors.Add(dataflowException?.InnerException);
                 Log?.Fatal($"SagaHandler<{typeof(TSaga)}> failed");  
             }
+
+            /// <inheritdoc />
+            public override ITargetBlock<IEvent> InputBlock => _broadcastBlock;
         }
         
         /// <inheritdoc />
@@ -96,9 +112,9 @@ namespace ZES.Infrastructure.Domain
                     async e =>
                     {
                         await Handle(e);
+                        await messageQueue.CompleteMessage(e);
                         await messageQueue.CompleteCommand(e.RetroactiveId);
                         await messageQueue.CompleteCommand(e.AncestorId);
-                        await messageQueue.CompleteMessage(e);
                     }, DataflowOptions.ToDataflowBlockOptions(false)); // .ToExecutionBlockOption());
             
                 RegisterChild(block);

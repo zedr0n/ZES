@@ -25,6 +25,7 @@ namespace ZES
         private readonly Subject<IAlert> _alerts = new();
         private readonly ConcurrentDictionary<string, UncompletedMessagesSingleHolder> _messagesHolderDict;
         private readonly ConcurrentDictionary<Guid, CommandStateHolder> _commandStateHolders;
+        private readonly RetroactiveIdHolder _retroactiveIdHolder;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="MessageQueue"/> class.
@@ -37,12 +38,13 @@ namespace ZES
             _timeline = timeline;
             _messagesHolderDict = new ConcurrentDictionary<string, UncompletedMessagesSingleHolder>();
             _commandStateHolders = new ConcurrentDictionary<Guid, CommandStateHolder>();
+            _retroactiveIdHolder = new RetroactiveIdHolder();
             RetroactiveExecution.DistinctUntilChanged()
                 .Throttle(x => Observable.Timer(TimeSpan.FromMilliseconds(x ? 0 : 10)))
                 .StartWith(false)
                 .DistinctUntilChanged()
                 .Subscribe(x => log.Info($"Retroactive execution : {x}"));
-            
+             
             // var combinedStates = _commandStateHolders.Select(x => x.Value.CommandState().Select(s => new { x.Key, s }) ).Merge();
 
         }
@@ -57,8 +59,9 @@ namespace ZES
             _commandStateHolders[commandId.Id].CommandState();
 
         /// <inheritdoc />
-        public IObservable<bool> RetroactiveExecution => _messagesHolderDict
-            .GetOrAdd(_timeline.Id, s => new UncompletedMessagesSingleHolder()).RetroactiveExecution();
+        public IObservable<bool> RetroactiveExecution =>
+            _retroactiveIdHolder.RetroactiveExecution();
+            // _messagesHolderDict.GetOrAdd(_timeline.Id, s => new UncompletedMessagesSingleHolder()).RetroactiveExecution();
 
         /// <inheritdoc />
         public IObservable<IEvent> Messages => _messages.AsObservable();
@@ -91,6 +94,18 @@ namespace ZES
                 return;
 
             var stateHolder = _commandStateHolders.GetOrAdd(commandId.Id, new CommandStateHolder());
+            await _retroactiveIdHolder.UpdateState(b =>
+            {
+                if (isRetroactive && b.Counter == 0)
+                    b.CommandId = commandId.Id;
+                
+                if (b.CommandId == commandId.Id)
+                    b.Counter++;
+                else if (isRetroactive)
+                    throw new InvalidOperationException($"Retroactive execution already on for {b.CommandId}");
+                    
+                return b;
+            });
             await stateHolder.UpdateState(b =>
             {
                 b.Counter++;
@@ -125,6 +140,14 @@ namespace ZES
             if (!_commandStateHolders.TryGetValue(commandId.Id, out var stateHolder))
                 return;
         
+            await _retroactiveIdHolder.UpdateState(b =>
+            {
+                if (b.CommandId == commandId.Id)
+                    b.Counter--;
+                    
+                return b;
+            });
+            
             await stateHolder.UpdateState(b =>
             {
                 b.Counter--;
@@ -140,20 +163,6 @@ namespace ZES
                 _messagesHolderDict.GetOrAdd(message.Timeline, s => new UncompletedMessagesSingleHolder());
             await messagesHolder.UpdateState(b =>
             {
-                if (message.GetType().IsClosedTypeOf(typeof(RetroactiveCommand<>)))
-                {
-                    if (b.RetroactiveId != message.MessageId)
-                    {
-                        _log.Error($"Retroactive command {message.GetType().GetFriendlyName()} completed before being executed");
-                        throw new InvalidOperationException("Retroactive command completed before being executed");
-                    }
-
-                    b.RetroactiveId = default;
-                    
-                    _log.Debug($"Completed retroactive command {message.Timeline}:{message.GetType().GetFriendlyName()} [{message.MessageId}] ({message.Timestamp.ToDateString()})");
-                    return b;
-                }
-
                 b.Count--;
                 if (b.Count < 0)
                     throw new InvalidOperationException($"Message {message.Timeline}:{message.GetType()} completed before being produced");
@@ -171,20 +180,6 @@ namespace ZES
                 _messagesHolderDict.GetOrAdd(message.Timeline, s => new UncompletedMessagesSingleHolder());
             await messagesHolder.UpdateState(b =>
             {
-                if (message.GetType().IsClosedTypeOf(typeof(RetroactiveCommand<>)))
-                {
-                    if (b.RetroactiveId != default)
-                    {
-                        _log.Error($"Retroactive command still executing : {message.Timeline}:{message.GetType().GetFriendlyName()} [{message.MessageId}] ({message.Timestamp.ToDateString()})");
-                        throw new InvalidOperationException("Retroactive command started before completing the previous one");
-                    }
-
-                    b.RetroactiveId = message.MessageId;
-                    
-                    _log.Debug($"Started retroactive execution {message.Timeline}:{message.GetType().GetFriendlyName()} [{message.MessageId}] ({message.Timestamp.ToDateString()})");
-                    return b;
-                }
-
                 b.Timeline = message.Timeline;
                 b.Count++;
                 _log.Debug($"Uncompleted messages : {b.Count}, added {message.Timeline}:{message.GetType().GetFriendlyName()}");

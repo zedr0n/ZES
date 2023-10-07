@@ -75,14 +75,17 @@ namespace ZES
         public async Task<Task> CommandAsync(ICommand command)
         {
             command.Timeline = _timeline.Id;
-            if (!command.Pure)
+            if (command is IRetroactiveCommand)
+                await _messageQueue.RetroactiveExecution.FirstAsync(b => b == false).Timeout(Configuration.Timeout);
+            
+            if (!command.Pure && command is not IRetroactiveCommand)
                 await _messageQueue.UncompleteMessage(command);
 
             var tracked = new Tracked<ICommand>(command);
             var dispatcher = _dispatchers.GetOrAdd(_timeline.Id, CreateDispatcher);
             await dispatcher.SendAsync(tracked);
 
-            if (command.Pure)
+            if (command.Pure || command is IRetroactiveCommand)
                 return tracked.Task;
             
             return tracked.Task.ContinueWith(_ => _messageQueue.CompleteMessage(command)).Unwrap();
@@ -147,12 +150,14 @@ namespace ZES
                 _handler = handler;
                 _options = options;
                 _broadcastBlock = new BroadcastBlock<Tracked<ICommand>>(null);
-                var uncompletionBlock = new ActionBlock<Tracked<ICommand>>(async c =>
+                var uncompletionBlock = new TransformBlock<Tracked<ICommand>,Tracked<ICommand>>(async c =>
                 {
                     await _handler(c.Value).Uncomplete(c.Value);
+                    return c;
                 });
                 _broadcastBlock.LinkTo(uncompletionBlock);
-                _broadcastBlock.LinkTo(DispatcherBlock);
+                uncompletionBlock.LinkTo(DispatcherBlock);
+                //_broadcastBlock.LinkTo(DispatcherBlock);
             }
             
             protected override Dataflow<Tracked<ICommand>> CreateChildFlow(string target)

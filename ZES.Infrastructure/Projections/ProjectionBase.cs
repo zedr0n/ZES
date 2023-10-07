@@ -328,7 +328,7 @@ namespace ZES.Infrastructure.Projections
                     projection.Cancel();
                     var status = projection.StatusSubject.AsObservable().Timeout(Configuration.Timeout)
                         .Catch<ProjectionStatus, TimeoutException>(x => Observable.Return(Failed));
-                    await status.FirstAsync(s => s == Sleeping || s == Failed);
+                    await status.FirstAsync(s => s is Sleeping or Failed);
 
                     // Task.Factory.StartNew(projection.Rebuild);
                     projection.Rebuild();

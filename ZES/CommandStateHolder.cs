@@ -29,27 +29,9 @@ namespace ZES
         }
 
         /// <summary>
-        /// Gets the retroactive status of the command
-        /// </summary>
-        /// <returns>Observable indicating the retroactive status</returns>
-        public IObservable<bool> Retroactive()
-        {
-            return Project(state => state.IsRetroactive);
-        }
-
-        /// <summary>
-        /// Gets the list of currently executing retroactive commands
-        /// </summary>
-        /// <returns></returns>
-        public IObservable<List<MessageId> > RetroactiveCommands()
-        {
-            throw new InvalidOperationException();
-        }
-        
-        /// <summary>
         /// Command state
         /// </summary>
-        public record struct State(int Counter = 0, bool IsRetroactive = false, bool HasFailed = false) {}
+        public record struct State(int Counter = 0, bool HasFailed = false) {}
 
         /// <inheritdoc />
         public struct Builder : IHeldStateBuilder<State, Builder>
@@ -60,11 +42,6 @@ namespace ZES
             public int Counter { get; set; }
                 
             /// <summary>
-            /// True if the command is retroactive
-            /// </summary>
-            public bool IsRetroactive { get; set; }
-                
-            /// <summary>
             /// True if the command has failed
             /// </summary>
             public bool HasFailed { get; set; }
@@ -73,12 +50,11 @@ namespace ZES
             public void InitializeFrom(State state)
             {
                 Counter = state.Counter;
-                IsRetroactive = state.IsRetroactive;
                 HasFailed = state.HasFailed;
             }
 
             /// <inheritdoc />
-            public State Build() => new(Counter, IsRetroactive, HasFailed);
+            public State Build() => new(Counter, HasFailed);
 
             /// <inheritdoc />
             public State DefaultState() => new();

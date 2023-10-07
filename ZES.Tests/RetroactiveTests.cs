@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Reactive.Linq;
 using System.Threading.Tasks;
 using NodaTime;
@@ -171,6 +172,36 @@ namespace ZES.Tests
             await graph.Serialise(nameof(CanInsertIntoStream));
             log.Info(log.StopWatch.Totals);
         }
+
+        [Fact]
+        public async void CanProcessTwoRetroactiveCommandsOnSeparateBranches()
+        {
+            var container = CreateContainer();
+            var bus = container.GetInstance<IBus>();
+            var timeline = container.GetInstance<ITimeline>();
+            var messageQueue = container.GetInstance<IMessageQueue>();
+            var manager = container.GetInstance<IBranchManager>();
+            var id = $"{nameof(CanProcessTwoRetroactiveCommandsOnSeparateBranches)}-Root";
+
+            await bus.CommandAsync(new CreateRoot(id));
+            var timestamp = timeline.Now;
+
+            var branch = await manager.Branch("test0");
+            var lastTime = timestamp + Duration.FromSeconds(60); 
+            await bus.CommandAsync(new RetroactiveCommand<UpdateRoot>(new UpdateRoot(id), lastTime));
+            // await bus.Equal(new RootInfoQuery(id), r => r.UpdatedAt, lastTime);
+
+            await messageQueue.RetroactiveExecution.FirstAsync(b => b == false).FirstAsync();
+            var branch2 = await manager.Branch("test1");
+            var midTime = timestamp + Duration.FromSeconds(30);
+            await bus.CommandAsync(new RetroactiveCommand<UpdateRoot>(new UpdateRoot(id), midTime));
+
+            await bus.Equal(new RootInfoQuery(id), r => r.UpdatedAt, midTime);
+            await manager.Branch("test0");
+            await bus.Equal(new RootInfoQuery(id), r => r.UpdatedAt, lastTime);
+
+            // await await bus.CommandAsync(new UpdateRoot(id));
+        }
         
         [Fact]
         public async void CanInsertIntoStreamMultipleBranch()
@@ -228,6 +259,7 @@ namespace ZES.Tests
             var bus = container.GetInstance<IBus>();
             var timeline = container.GetInstance<ITimeline>();
             var messageQueue = container.GetInstance<IMessageQueue>();
+            var log = container.GetInstance<ILog>();
             var id = $"{nameof(CanRetroactivelyApplySaga)}-Root";
             
             var timestamp = timeline.Now;
@@ -252,6 +284,8 @@ namespace ZES.Tests
             await await bus.CommandAsync(new RetroactiveCommand<CreateRoot>(new CreateRoot($"{id}Mid"), midTime));
             messageQueue.Alert(new InvalidateProjections());
             await bus.Equal(new RootInfoQuery($"{id}MidCopy"), r => r.CreatedAt, midTime);
+            
+            log.Info(log.StopWatch.Totals.ToImmutableSortedDictionary());
         }
     }
 }

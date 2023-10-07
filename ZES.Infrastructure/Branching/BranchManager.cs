@@ -120,8 +120,8 @@ namespace ZES.Infrastructure.Branching
             }
 
             _log.StopWatch.Start("Branch.Wait");
-            var sub = _messageQueue.UncompletedMessages.Subscribe(s => _log.Info($"Uncompleted messages: {s}"));
-            sub.Dispose();
+            // var sub = _messageQueue.UncompletedMessages.Subscribe(s => _log.Info($"Uncompleted messages: {s}"));
+            // sub.Dispose();
             await _messageQueue.UncompletedMessages.FirstAsync(s => s == 0).Timeout(Configuration.Timeout);
             _log.StopWatch.Stop("Branch.Wait");
             var newBranch = !_branches.ContainsKey(branchId); // && branchId != Master;

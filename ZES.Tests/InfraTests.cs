@@ -249,7 +249,6 @@ namespace ZES.Tests
         
         [Theory]
         [InlineData(50000, SerializationType.Metadata)]
-        [InlineData(50000, SerializationType.Metadata)]
         [InlineData(50000, SerializationType.FullMetadata)]
         [InlineData(50000, SerializationType.PayloadAndMetadata)]
         public async void CanDeserializeJustMetadataPerformance(int nLoops, SerializationType serializationType)

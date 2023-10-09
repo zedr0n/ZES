@@ -34,12 +34,12 @@ namespace ZES.Infrastructure.Domain
             var source = new CancellationTokenSource();
             _messageQueue.Messages
                 .Where(e => new TSaga().SagaId(e) != null)
-                .Do(e =>
+                /*.Do(e =>
                 {
                     _messageQueue.UncompleteCommand(e.AncestorId).Wait();
                     _messageQueue.UncompleteCommand(e.RetroactiveId).Wait();
                     _messageQueue.UncompleteMessage(e).Wait();
-                })
+                })*/
                 .Subscribe(_dispatcher.InputBlock.AsObserver(), source.Token);
             
             _dispatcher.CompletionTask.ContinueWith(t => source.Cancel());
@@ -70,9 +70,9 @@ namespace ZES.Infrastructure.Domain
                     await messageQueue.UncompleteCommand(e.RetroactiveId);
                     return e;
                 });
-                // _broadcastBlock.LinkTo(uncompletionBlock);
-                //uncompletionBlock.LinkTo(DispatcherBlock);
-                _broadcastBlock.LinkTo(DispatcherBlock);
+                _broadcastBlock.LinkTo(uncompletionBlock);
+                uncompletionBlock.LinkTo(DispatcherBlock);
+                //_broadcastBlock.LinkTo(DispatcherBlock);
             }
 
             /// <inheritdoc />

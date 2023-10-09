@@ -44,6 +44,7 @@ namespace ZES.Infrastructure.Projections
 
         private async Task Process(Tracked<IStream> trackedStream)
         {
+            _log.Debug($"Processing {trackedStream.Value.Key}@{trackedStream.Value.Version}");
             var s = trackedStream.Value;
                 
             if (s.Version == ExpectedVersion.NoStream)

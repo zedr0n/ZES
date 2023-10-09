@@ -239,6 +239,7 @@ namespace ZES.Infrastructure.Projections
             try
             {
                 await Task.WhenAll(buildStreams.Select(s => s.Task)); 
+                Log.Debug($"Finished rebuilding {typeof(TState).GetFriendlyName()}");
 
                 if (!CancellationToken.IsCancellationRequested)
                     StatusSubject.OnNext(Listening);

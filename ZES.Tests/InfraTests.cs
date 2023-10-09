@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Reactive.Linq;
 using System.Threading;
+using System.Threading.Tasks;
 using NLog.Fluent;
 using NodaTime;
 using NodaTime.Extensions;
@@ -376,7 +377,7 @@ namespace ZES.Tests
         }
 
         [Theory]
-        [InlineData(100)]
+        [InlineData(1000)]
         public async void CanProjectALotOfRoots(int numRoots)
         {
             var container = CreateContainer();
@@ -386,13 +387,16 @@ namespace ZES.Tests
             var id = $"{nameof(CanProjectALotOfRoots)}-Root";
             var rootId = numRoots; 
             var stopWatch = Stopwatch.StartNew();
+            var tasks = new List<Task>();
             while (rootId > 0)
             {
                 var command = new CreateRoot($"{id}{rootId}");
-                await bus.CommandAsync(command);
+                var task = await bus.CommandAsync(command);
+                tasks.Add(task);
                 rootId--;
             }
 
+            await Task.WhenAll(tasks);
             // await bus.IsTrue(new StatsQuery(), s => s?.NumberOfRoots == numRoots, TimeSpan.FromMilliseconds(numRoots));
             await bus.Equal(new StatsQuery(), s => s?.NumberOfRoots, numRoots);
             await bus.Equal(new RootInfoQuery($"{id}1"), r => r.RootId, $"{id}1");

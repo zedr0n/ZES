@@ -131,7 +131,7 @@ namespace ZES.Persistence.SQLStreamStore
         }
 
         /// <inheritdoc />
-        protected override string GetEventJson(NewStreamMessage message) => message.JsonData;
+        protected override string GetEventJson(NewStreamMessage message) => message.JsonData + message.JsonMetadata;
 
         /// <inheritdoc />
         protected override NewStreamMessage EventToStreamMessage(IEvent e)

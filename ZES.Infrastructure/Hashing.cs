@@ -1,5 +1,7 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Runtime.Serialization.Formatters.Binary;
 using System.Security.Cryptography;
 using System.Text;
@@ -14,6 +16,18 @@ namespace ZES.Infrastructure
     /// </summary>
     public static class Hashing
     {
+        private static List<string> _enumHash = new()
+        {
+            "3253407757",
+            "2768625435",
+            "1007455905",
+            "1259060791",
+            "3580832660",
+            "2724731650",
+            "996231864",
+            "1281784366"
+        };
+        
         /// <summary>
         /// Sha256 string hash
         /// </summary>
@@ -54,8 +68,17 @@ namespace ZES.Infrastructure
             if (value == null)
                 return string.Empty;
 
-            var bytes = Byte(value);
-            return Crc32CAlgorithm.Compute(bytes).ToString();
+            return Crc32Algorithm.Compute(Byte(value)).ToString();
+        }
+        
+        /// <summary>
+        /// Crc32 object hash
+        /// </summary>
+        /// <param name="bytes">Bytes to hash</param>
+        /// <returns>String hash</returns>
+        public static string Crc32(byte[] bytes)
+        {
+            return bytes == null ? string.Empty : Crc32Algorithm.Compute(bytes).ToString();
         }
 
         /// <summary>
@@ -82,7 +105,7 @@ namespace ZES.Infrastructure
             var bytes = BitConverter.GetBytes(value);
             return Crc32Algorithm.Compute(bytes).ToString();
         }
-        
+
         /// <summary>
         /// Sha256 object hash
         /// </summary>
@@ -96,17 +119,38 @@ namespace ZES.Infrastructure
             var bytes = Byte(value);
             return Sha256(bytes);
         }
+
+        private static byte[] Byte(IEnumerable<object> state)
+        {
+            return state.SelectMany(Byte).ToArray();
+        }
+
+        private static byte[] Byte(string str) => Encoding.UTF8.GetBytes(str);
+        private static byte[] Byte(double value) => BitConverter.GetBytes(value);
+        private static byte[] Byte(Enum @enum) => new[] { Convert.ToByte(@enum) };
         
         private static byte[] Byte(object value)
         {
             /*https://stackoverflow.com/questions/1446547/
               how-to-convert-an-object-to-a-byte-array-in-c-sharp*/
-            using (var ms = new MemoryStream())
+            
+            var bytes = value switch
             {
-                var bf = new BinaryFormatter();
-                bf.Serialize(ms, value ?? "null");
-                return ms.ToArray();
-            }
+                IEnumerable<object> enumerable => Byte(enumerable),
+                string str => Byte(str),
+                double val => Byte(val),
+                Enum @enum => Byte(@enum),
+                _ => null
+            };
+
+            if (bytes != null)
+                return bytes;
+
+            using var ms = new MemoryStream();
+            
+            var bf = new BinaryFormatter();
+            bf.Serialize(ms, value ?? "null");
+            return ms.ToArray();
         }
     }
 }

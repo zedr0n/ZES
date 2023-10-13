@@ -10,30 +10,15 @@ namespace ZES.Infrastructure.Domain
     /// <inheritdoc />
     public abstract class EventSourced : IEventSourced
     {
-        private readonly List<IEvent> _changes = new List<IEvent>();
-        private readonly List<IEvent> _invalidEvents = new List<IEvent>();
-        private readonly Dictionary<Type, Action<IEvent>> _handlers = new Dictionary<Type, Action<IEvent>>();
-
-        private string _hash;
-        private bool _computeHash;
+        private readonly List<IEvent> _changes = new();
+        private readonly List<IEvent> _invalidEvents = new();
+        private readonly Dictionary<Type, Action<IEvent>> _handlers = new();
+        private readonly List<object> _state = new();
 
         /// <summary>
         /// Gets or sets the log service
         /// </summary>
         public ILog Log { get; set; }
-        
-        /// <summary>
-        /// Gets or sets current change hash
-        /// </summary>
-        public string Hash
-        {
-            get => _hash;
-            set
-            {
-                _computeHash = true;
-                _hash = value;
-            }
-        }
         
         /// <inheritdoc />
         public bool IsValid => _invalidEvents.Count == 0;
@@ -123,9 +108,8 @@ namespace ZES.Infrastructure.Domain
         {
             lock (_changes)
             {
-                Hash = string.Empty;
                 ApplyEvent(e);
-                e.ContentHash = Hash;
+                e.ContentHash = Hashing.Crc32(_state);
                 
                 e.Version = Version;
                 if (!IgnoreCurrentEvent)
@@ -142,10 +126,8 @@ namespace ZES.Infrastructure.Domain
             var enumerable = pastEvents.ToList();
             foreach (var e in enumerable)
             {
-                if (computeHash)
-                    Hash = string.Empty;
                 ApplyEvent(e);
-                if (computeHash && e.ContentHash != _hash)
+                if (e.ContentHash != Hashing.Crc32(_state))
                     _invalidEvents.Add(e);
             }
 
@@ -177,24 +159,7 @@ namespace ZES.Infrastructure.Domain
         /// <param name="value">Object to hash</param>
         protected void AddHash(object value)
         {
-            if (!_computeHash)
-                return;
-
-            switch (value)
-            {
-                case Enum @enum:
-                    AddHash((int)(object)@enum);
-                    break;
-                case IEnumerable<double> doubles:
-                    AddHash(doubles);
-                    break;
-                default:
-                {
-                    var objectHash = Hashing.Crc32(value); // Hashing.Sha256(value);
-                    Hash = Hashing.Crc32(_hash + objectHash); // Hashing.Sha256(_hash + objectHash);
-                    break;
-                }
-            }
+            _state.Add(value);
         }
         
         /// <summary>
@@ -215,6 +180,7 @@ namespace ZES.Infrastructure.Domain
         /// <param name="e">Event</param>
         private void ApplyEvent(IEvent e)
         {
+            _state.Clear();
             if (e == null)
                 return;
 
@@ -230,23 +196,6 @@ namespace ZES.Infrastructure.Domain
         {
             lock (_changes)
                 _changes.Clear();
-        }
-        
-        private void AddHash(int value)
-        {
-            if (!_computeHash)
-                return;
-
-            Hash = Hashing.Crc32(_hash + value);
-        }
-
-        private void AddHash(IEnumerable<double> values)
-        {
-            if (!_computeHash)
-                return;
-
-            var s = values.Aggregate(string.Empty, (current, d) => current + d);
-            Hash = Hashing.Crc32(_hash + s);
         }
     }
 }

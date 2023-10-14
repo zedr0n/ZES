@@ -127,7 +127,7 @@ namespace ZES.Infrastructure.Domain
             foreach (var e in enumerable)
             {
                 ApplyEvent(e);
-                if (e.ContentHash != Hashing.Crc32(_state))
+                if (computeHash && e.ContentHash != Hashing.Crc32(_state))
                     _invalidEvents.Add(e);
             }
 

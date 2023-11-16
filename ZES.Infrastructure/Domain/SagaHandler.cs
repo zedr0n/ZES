@@ -18,9 +18,6 @@ namespace ZES.Infrastructure.Domain
     public class SagaHandler<TSaga> : ISagaHandler<TSaga>
         where TSaga : class, ISaga, new()
     {
-        private readonly IMessageQueue _messageQueue;
-        private readonly SagaDispatcher _dispatcher;
-
         /// <summary>
         /// Initializes a new instance of the <see cref="SagaHandler{TSaga}"/> class.
         /// </summary>
@@ -28,11 +25,9 @@ namespace ZES.Infrastructure.Domain
         /// <param name="dispatcher">Dispatcher factory</param>
         public SagaHandler(IMessageQueue messageQueue, SagaDispatcher dispatcher)
         {
-            _messageQueue = messageQueue;
-            _dispatcher = dispatcher;
 
             var source = new CancellationTokenSource();
-            _messageQueue.Messages
+            messageQueue.Messages
                 .Where(e => new TSaga().SagaId(e) != null)
                 /*.Do(e =>
                 {
@@ -40,17 +35,23 @@ namespace ZES.Infrastructure.Domain
                     _messageQueue.UncompleteCommand(e.RetroactiveId).Wait();
                     _messageQueue.UncompleteMessage(e).Wait();
                 })*/
-                .Subscribe(_dispatcher.InputBlock.AsObserver(), source.Token);
+                //.Subscribe(_dispatcher.InputBlock.AsObserver(), source.Token);
+                .TakeWhile(_ => !source.Token.IsCancellationRequested)
+                .Select(e => Observable.FromAsync(async _ => await dispatcher.SubmitAsync(e)))
+                .Concat()
+                .Subscribe();
             
-            _dispatcher.CompletionTask.ContinueWith(t => source.Cancel());
+            dispatcher.CompletionTask.ContinueWith(t => source.Cancel());
         }
         
         /// <inheritdoc />
         public class SagaDispatcher : ParallelDataDispatcher<string, IEvent>
         {
             private readonly IFactory<SagaFlow> _sagaFlow;
-            private readonly BroadcastBlock<IEvent> _broadcastBlock;
 
+            private readonly BufferBlock<IEvent> _bufferBlock;
+            private readonly TransformBlock<IEvent, IEvent> _uncompletionBlock;
+            
             /// <summary>
             /// Initializes a new instance of the <see cref="SagaDispatcher"/> class.
             /// </summary>
@@ -62,19 +63,33 @@ namespace ZES.Infrastructure.Domain
             {
                 Log = log;
                 _sagaFlow = sagaFlow;
-                _broadcastBlock = new BroadcastBlock<IEvent>(null);
-                var uncompletionBlock = new TransformBlock<IEvent,IEvent>(async e =>
+                var broadcastBlock = new BroadcastBlock<IEvent>(null);
+                
+                _bufferBlock = new BufferBlock<IEvent>();
+                _uncompletionBlock = new TransformBlock<IEvent,IEvent>(async e =>
                 {
                     await messageQueue.UncompleteMessage(e);
                     await messageQueue.UncompleteCommand(e.AncestorId);
                     await messageQueue.UncompleteCommand(e.RetroactiveId);
                     return e;
                 });
-                _broadcastBlock.LinkTo(uncompletionBlock);
-                uncompletionBlock.LinkTo(DispatcherBlock);
+                _uncompletionBlock.LinkTo(broadcastBlock);
+                broadcastBlock.LinkTo(_bufferBlock);
+                broadcastBlock.LinkTo(DispatcherBlock);
                 //_broadcastBlock.LinkTo(DispatcherBlock);
             }
-
+            
+            /// <summary>
+            /// Asynchronously submit the event to saga and wait for it to be recorded
+            /// </summary>
+            /// <param name="e">Event for the saga</param>
+            public async Task SubmitAsync(IEvent e)
+            {
+                await this.SendAsync(e);
+                await _bufferBlock.OutputAvailableAsync();
+                _bufferBlock.TryReceiveAll(out _);
+            }
+            
             /// <inheritdoc />
             protected override Dataflow<IEvent> CreateChildFlow(string sagaId)
                 => _sagaFlow.Create();
@@ -87,7 +102,7 @@ namespace ZES.Infrastructure.Domain
             }
 
             /// <inheritdoc />
-            public override ITargetBlock<IEvent> InputBlock => _broadcastBlock;
+            public override ITargetBlock<IEvent> InputBlock => _uncompletionBlock;
         }
         
         /// <inheritdoc />

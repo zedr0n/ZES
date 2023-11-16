@@ -78,17 +78,11 @@ namespace ZES
             if (command is IRetroactiveCommand)
                 await _messageQueue.RetroactiveExecution.FirstAsync(b => b == false).Timeout(Configuration.Timeout);
             
-            if (!command.Pure && command is not IRetroactiveCommand)
-                await _messageQueue.UncompleteMessage(command);
-
             var tracked = new Tracked<ICommand>(command);
             var dispatcher = _dispatchers.GetOrAdd(_timeline.Id, CreateDispatcher);
-            await dispatcher.SendAsync(tracked);
+            await dispatcher.SubmitAsync(tracked);
 
-            if (command.Pure || command is IRetroactiveCommand)
-                return tracked.Task;
-            
-            return tracked.Task.ContinueWith(_ => _messageQueue.CompleteMessage(command)).Unwrap();
+            return tracked.Task;
         }
         
         /// <inheritdoc />
@@ -136,30 +130,41 @@ namespace ZES
             var handler = (ICommandHandler)GetInstance(handlerType);
             return handler;
         }
-        
+
         private class CommandDispatcher : ParallelDataDispatcher<string, Tracked<ICommand>>
         {
             private readonly Func<ICommand, ICommandHandler> _handler;
             private readonly DataflowOptions _options;
 
-            private readonly BroadcastBlock<Tracked<ICommand>> _broadcastBlock;
-
+            private readonly BufferBlock<Tracked<ICommand>> _bufferBlock;
+            private readonly TransformBlock<Tracked<ICommand>, Tracked<ICommand>> _uncompletionBlock;
+            
             public CommandDispatcher(Func<ICommand, ICommandHandler> handler, string timeline, DataflowOptions options) 
                 : base(c => $"{timeline}:{c.Value.Target}", options, CancellationToken.None)
             {
                 _handler = handler;
                 _options = options;
-                _broadcastBlock = new BroadcastBlock<Tracked<ICommand>>(null);
-                var uncompletionBlock = new TransformBlock<Tracked<ICommand>,Tracked<ICommand>>(async c =>
+
+                var broadcastBlock = new BroadcastBlock<Tracked<ICommand>>(null);
+                _bufferBlock = new BufferBlock<Tracked<ICommand>>();
+                
+                _uncompletionBlock = new TransformBlock<Tracked<ICommand>,Tracked<ICommand>>(async c =>
                 {
                     await _handler(c.Value).Uncomplete(c.Value);
                     return c;
-                });
-                _broadcastBlock.LinkTo(uncompletionBlock);
-                uncompletionBlock.LinkTo(DispatcherBlock);
-                //_broadcastBlock.LinkTo(DispatcherBlock);
+                }, _options.ToDataflowBlockOptions());
+                _uncompletionBlock.LinkTo(broadcastBlock);
+                broadcastBlock.LinkTo(_bufferBlock);
+                broadcastBlock.LinkTo(DispatcherBlock);
             }
-            
+
+            public async Task SubmitAsync(Tracked<ICommand> command)
+            {
+                await this.SendAsync(command);
+                await _bufferBlock.OutputAvailableAsync();
+                _bufferBlock.TryReceiveAll(out _);
+            }
+           
             protected override Dataflow<Tracked<ICommand>> CreateChildFlow(string target)
             {
                 var block = new ActionBlock<Tracked<ICommand>>(
@@ -172,7 +177,7 @@ namespace ZES
                 return block.ToDataflow(_options);
             }
 
-            public override ITargetBlock<Tracked<ICommand>> InputBlock => _broadcastBlock;
+            public override ITargetBlock<Tracked<ICommand>> InputBlock => _uncompletionBlock;
         }
     }
 }

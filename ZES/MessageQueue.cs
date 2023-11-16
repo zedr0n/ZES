@@ -159,6 +159,9 @@ namespace ZES
         /// <inheritdoc />
         public async Task CompleteMessage(IMessage message)
         {
+            if (message?.Timeline == null)
+                return;
+            
             var messagesHolder =
                 _messagesHolderDict.GetOrAdd(message.Timeline, s => new UncompletedMessagesSingleHolder());
             await messagesHolder.UpdateState(b =>
@@ -176,6 +179,9 @@ namespace ZES
         /// <inheritdoc />
         public async Task UncompleteMessage(IMessage message)
         {
+            if (message?.Timeline == null)
+                return;
+            
             var messagesHolder =
                 _messagesHolderDict.GetOrAdd(message.Timeline, s => new UncompletedMessagesSingleHolder());
             await messagesHolder.UpdateState(b =>

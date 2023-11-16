@@ -60,6 +60,8 @@ namespace ZES.Infrastructure.Domain
                 return;
             
             _log.StopWatch.Start($"{nameof(Uncomplete)}Command");
+            if(command is not IRetroactiveCommand)
+                await _messageQueue.UncompleteMessage(command);
             await _messageQueue.UncompleteCommand(command.MessageId, command is IRetroactiveCommand);
             await _messageQueue.UncompleteCommand(command.AncestorId);
             await _messageQueue.UncompleteCommand(command.RetroactiveId, true);
@@ -74,6 +76,8 @@ namespace ZES.Infrastructure.Domain
                 return;
            
             _log.StopWatch.Start($"{nameof(Complete)}Command");
+            if(command is not IRetroactiveCommand)
+                await _messageQueue.CompleteMessage(command);
             await _messageQueue.CompleteCommand(command.MessageId);
             await _messageQueue.CompleteCommand(command.AncestorId);
             await _messageQueue.CompleteCommand(command.RetroactiveId);

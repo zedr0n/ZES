@@ -125,7 +125,7 @@ namespace ZES.Tests
             errorLog.Observable.Subscribe(e => error = e);
 
             var id = $"{nameof(CannotSaveTwice)}-Root";
-            var command = new CreateRoot(id);
+            var command = new CreateRoot(id) { StoreInLog = false };
             await await bus.CommandAsync(command);
             await bus.Command(command, 2);
             Assert.Equal(nameof(InvalidOperationException), error.ErrorType); 
@@ -134,6 +134,23 @@ namespace ZES.Tests
 
             var failedCommands = await commandLog.FailedCommands.FirstAsync();
             Assert.Single(failedCommands);
+        }
+
+        [Fact]
+        public async void CanDetectDuplicateCommands()
+        {
+            var container = CreateContainer();
+            var bus = container.GetInstance<IBus>();
+            var errorLog = container.GetInstance<IErrorLog>();
+ 
+            IError error = null;
+            errorLog.Observable.Subscribe(e => error = e);
+            var id = $"{nameof(CanDetectDuplicateCommands)}-Root";
+            var command = new CreateRoot(id);
+            await await bus.CommandAsync(command);
+
+            await await bus.CommandAsync(command);
+            Assert.NotNull(error); 
         }
 
         [Fact]

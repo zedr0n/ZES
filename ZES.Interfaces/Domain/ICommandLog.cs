@@ -73,5 +73,12 @@ namespace ZES.Interfaces.Domain
         /// <param name="branchId">Branch id</param>
         /// <returns>Associated stream</returns>
         IStream GetStream(ICommand c, string branchId = null);
+
+        /// <summary>
+        /// Gets the command from the command log if it exists
+        /// </summary>
+        /// <param name="c">Command instance</param>
+        /// <returns>Command instance or default if it doesn't exists</returns>
+        Task<ICommand> GetCommand(ICommand c);
     }
 }

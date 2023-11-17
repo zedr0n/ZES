@@ -82,6 +82,17 @@ namespace ZES.Infrastructure.Domain
         }
 
         /// <inheritdoc />
+        public async Task<ICommand> GetCommand(ICommand c)
+        {
+            var key = Key(c.MessageType);
+            var stream = new Stream(key, ExpectedVersion.Any);
+            var obs = ReadStream(stream, 0);
+
+            var command = await obs.Where(x => x.MessageId == c.MessageId).SingleOrDefaultAsync();
+            return command;
+        }
+
+        /// <inheritdoc />
         public async Task<IEnumerable<ICommand>> GetCommands(string branchId)
         {
             var streams = (await ListStreams(branchId)).ToList();

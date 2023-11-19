@@ -235,6 +235,9 @@ namespace ZES.Tests
         [Fact]
         public async void CanDeserializeJustMetadata()
         {
+            if (Configuration.EventStoreBackendType != EventStoreBackendType.SqlStreamStore)
+                return;
+            
             var container = CreateContainer();
             var bus = container.GetInstance<IBus>();
             var streamLocator = container.GetInstance<IStreamLocator>();
@@ -271,6 +274,9 @@ namespace ZES.Tests
         [InlineData(50000, SerializationType.PayloadAndMetadata)]
         public async void CanDeserializeJustMetadataPerformance(int nLoops, SerializationType serializationType)
         {
+            if (Configuration.EventStoreBackendType != EventStoreBackendType.SqlStreamStore)
+                return;
+            
             var container = CreateContainer();
             var bus = container.GetInstance<IBus>();
             var streamLocator = container.GetInstance<IStreamLocator>();

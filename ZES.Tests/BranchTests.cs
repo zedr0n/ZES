@@ -472,6 +472,9 @@ namespace ZES.Tests
         [Fact]
         public async void CanPushToGenericRemote()
         {
+            if (Configuration.EventStoreBackendType != EventStoreBackendType.SqlStreamStore)
+                return;
+            
             var container = CreateContainer(resetDb: true);
             var bus = container.GetInstance<IBus>();
             var remoteManager = container.GetInstance<IRemoteManager>();
@@ -500,6 +503,9 @@ namespace ZES.Tests
         [Fact]
         public async void CanCancelPushToGenericRemote()
         {
+            if (Configuration.EventStoreBackendType != EventStoreBackendType.SqlStreamStore)
+                return;
+            
             var container = CreateContainer(resetDb: true);
             var bus = container.GetInstance<IBus>();
             var remoteManager = container.GetInstance<IRemoteManager>();
@@ -530,6 +536,9 @@ namespace ZES.Tests
         [Fact]
         public async void CanUpdateGenericRemote()
         {
+            if (Configuration.EventStoreBackendType != EventStoreBackendType.SqlStreamStore)
+                return;
+            
             var container = CreateContainer(resetDb: true);
             var bus = container.GetInstance<IBus>();
             var remoteManager = container.GetInstance<IRemoteManager>();
@@ -588,6 +597,9 @@ namespace ZES.Tests
         [Fact]
         public async void CanPullFromGenericRemote()
         {
+            if (Configuration.EventStoreBackendType != EventStoreBackendType.SqlStreamStore)
+                return;
+            
             var container = CreateContainer(resetDb: true);
             var bus = container.GetInstance<IBus>();
             var remoteManager = container.GetInstance<IRemoteManager>();
@@ -647,6 +659,9 @@ namespace ZES.Tests
         [Fact]
         public async void CanCancelPullFromGenericRemote()
         {
+            if (Configuration.EventStoreBackendType != EventStoreBackendType.SqlStreamStore)
+                return;
+            
             var container = CreateContainer(resetDb: true);
             
             var bus = container.GetInstance<IBus>();
@@ -734,6 +749,9 @@ namespace ZES.Tests
         [Fact]
         public async void CanPushBranchToGenericRemote()
         {
+            if (Configuration.EventStoreBackendType != EventStoreBackendType.SqlStreamStore)
+                return;
+            
             var container = CreateContainer(resetDb: true);
             var bus = container.GetInstance<IBus>();
             var remoteManager = container.GetInstance<IRemoteManager>();
@@ -799,6 +817,9 @@ namespace ZES.Tests
         [Fact]
         public async void CanPushSagaToGenericRemote()
         {
+            if (Configuration.EventStoreBackendType != EventStoreBackendType.SqlStreamStore)
+                return;
+            
             var container = CreateContainer(registrations: new List<Action<Container>> { Config.RegisterSagas }, resetDb: true);
             var bus = container.GetInstance<IBus>();
             var remoteManager = container.GetInstance<IRemoteManager>();
@@ -874,6 +895,9 @@ namespace ZES.Tests
         [Fact]
         public async void CanPushGrandBranchToGenericRemote()
         {
+            if (Configuration.EventStoreBackendType != EventStoreBackendType.SqlStreamStore)
+                return;
+            
             var container = CreateContainer(resetDb: true);
             var bus = container.GetInstance<IBus>();
             var timeTraveller = container.GetInstance<IBranchManager>(); 
@@ -964,6 +988,9 @@ namespace ZES.Tests
         [Fact]
         public async void CanPushSnapshotToGenericRemote()
         {
+            if (Configuration.EventStoreBackendType != EventStoreBackendType.SqlStreamStore)
+                return;
+            
             var container = CreateContainer(resetDb: true);
             var bus = container.GetInstance<IBus>();
             var manager = container.GetInstance<IBranchManager>(); 

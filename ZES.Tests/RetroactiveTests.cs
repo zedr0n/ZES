@@ -138,6 +138,7 @@ namespace ZES.Tests
         {
             var container = CreateContainer();
             var bus = container.GetInstance<IBus>();
+            var messageQueue = container.GetInstance<IMessageQueue>();
             var timeline = container.GetInstance<ITimeline>();
             var manager = container.GetInstance<IBranchManager>();
             var streamLocator = container.GetInstance<IStreamLocator>();
@@ -165,6 +166,7 @@ namespace ZES.Tests
             stream = await streamLocator.Find<Root>(id, timeline.Id);
 
             await retroactive.TryInsertIntoStream(stream, 1, new[] { e });
+            messageQueue.Alert(new InvalidateProjections());
 
             await bus.Equal(new RootInfoQuery(id), r => r.UpdatedAt, lastTime);
             await bus.Equal(new HistoricalQuery<RootInfoQuery, RootInfo>(new RootInfoQuery(id), e.Timestamp), r => r.UpdatedAt, e.Timestamp);

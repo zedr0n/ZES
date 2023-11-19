@@ -776,7 +776,7 @@ namespace ZES.Infrastructure.Serialization
             
             writer.WritePropertyName("$type");
             writer.WriteValue(e.GetType().FullName + "," + e.GetType().Assembly.FullName.Split(',')[0]);
-            if (Configuration.StoreMetadataSeparately)
+            if (Configuration.StoreMetadataSeparately && Configuration.EventStoreBackendType != EventStoreBackendType.Redis)
             {
                metadataWriter.WriteStartObject();
                metadataWriter.WritePropertyName("$type");
@@ -784,25 +784,29 @@ namespace ZES.Infrastructure.Serialization
             }
             
             var currentWriter = Configuration.StoreMetadataSeparately ? metadataWriter : writer;
-            currentWriter.WritePropertyName(nameof(Event.Metadata));
-            currentWriter.WriteStartObject();
+            if (!(Configuration.StoreMetadataSeparately && Configuration.EventStoreBackendType == EventStoreBackendType.Redis))
             {
-                WriteEventMetadata(currentWriter, e.Metadata, properties);
+                currentWriter.WritePropertyName(nameof(Event.Metadata));
+                currentWriter.WriteStartObject();
+                {
+                    WriteEventMetadata(currentWriter, e.Metadata, properties);
+                }
+                currentWriter.WriteEndObject();
             }
-            currentWriter.WriteEndObject();
 
-            if (Configuration.StoreMetadataSeparately)
-            {
+            if (Configuration.StoreMetadataSeparately && Configuration.EventStoreBackendType != EventStoreBackendType.Redis)
                 metadataWriter.WriteEndObject();
-                metadataJson = metadataSb.ToString();
-            }
+            metadataJson = metadataSb.ToString();
 
-            writer.WritePropertyName(nameof(Event.StaticMetadata));
-            writer.WriteStartObject();
+            if (Configuration.EventStoreBackendType != EventStoreBackendType.Redis)
             {
-                WriteEventStaticMetadata(writer, e.StaticMetadata, properties);
+                writer.WritePropertyName(nameof(Event.StaticMetadata));
+                writer.WriteStartObject();
+                {
+                    WriteEventStaticMetadata(writer, e.StaticMetadata, properties);
+                }
+                writer.WriteEndObject();
             }
-            writer.WriteEndObject();
 
             if (!Configuration.StoreMetadataSeparately)
                 metadataJson = sb + Environment.NewLine + "}";

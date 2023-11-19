@@ -41,15 +41,21 @@ namespace ZES.Persistence.Redis
 
         private enum RedisMetadata 
         {
-            MessageId,
-            AncestorId,
-            Timestamp,
+            MessageType,
             LocalId,
             OriginId,
+            AncestorId,
+            CommandId,
+            CorrelationId,
+            RetroactiveId,
+            OriginatingStream,
+            MessageId,
+            Timestamp,
             Version,
             Timeline,
             StreamHash,
             ContentHash,
+            Stream
         }
 
         /// <inheritdoc />
@@ -65,7 +71,7 @@ namespace ZES.Persistence.Redis
             var server = _connection.GetServer();
             var db = _connection.GetDatabase();
             var keys = server.KeysAsync();
-            await foreach (var key in server.KeysAsync())
+            await foreach (var key in server.KeysAsync().WithCancellation(token))
             {
                 if (!predicate(key) || !key.ToString().StartsWith("$$"))
                     continue;
@@ -137,12 +143,16 @@ namespace ZES.Persistence.Redis
             var tran = db.CreateTransaction();
             tran.AddCondition(Condition.StreamLengthEqual(stream.Key, appendVersion + 1));
             var tasks = resolvedStreamMessages.Select(e => tran.StreamAddAsync(stream.Key, e.Values, e.Id)).Cast<Task>().ToList();
-            success = tran.Execute();
-            if (success)
-                await Task.WhenAll(tasks);
+            success = await tran.ExecuteAsync();
+            switch (success)
+            {
+                case true:
+                    await Task.WhenAll(tasks);
+                    break;
+                case false:
+                    throw new InvalidOperationException($"Append to stream {stream.Key} failed!");
+            }
 
-            if (!success)
-                throw new InvalidOperationException($"Append to stream {stream.Key} failed!");
             return appendVersion + streamMessages.Count;
         }
 
@@ -190,15 +200,21 @@ namespace ZES.Persistence.Redis
         {
             var ignoredProperties = new string[]
             {
-                nameof(IEventMetadata.MessageId),
-                nameof(IEventStaticMetadata.AncestorId),
-                nameof(IEventMetadata.Timestamp),
+                nameof(IEventStaticMetadata.MessageType),
                 nameof(IEventStaticMetadata.LocalId),
                 nameof(IEventStaticMetadata.OriginId),
+                nameof(IEventStaticMetadata.AncestorId),
+                nameof(IEventStaticMetadata.CommandId),
+                nameof(IEventStaticMetadata.CorrelationId),
+                nameof(IEventStaticMetadata.RetroactiveId),
+                nameof(IEventStaticMetadata.OriginatingStream),
+                nameof(IEventMetadata.MessageId),
+                nameof(IEventMetadata.Timestamp),
                 nameof(IEventMetadata.Version),
                 nameof(IEventMetadata.Timeline),
                 nameof(IEventMetadata.StreamHash),
                 nameof(IEventMetadata.ContentHash),
+                nameof(IEventMetadata.Stream)
             };
             var jsonData = e.Json;
             if (jsonData == null)
@@ -206,15 +222,21 @@ namespace ZES.Persistence.Redis
             
             var entries = new NameValueEntry[]
             {
-                new (nameof(IEventMetadata.MessageId), e.Metadata.MessageId.ToString()),
-                new (nameof(IEventStaticMetadata.AncestorId), e.StaticMetadata.AncestorId.ToString()),
-                new ( nameof(IEventMetadata.Timestamp), e.Metadata.Timestamp.Serialise()),
+                new ( nameof(IEventStaticMetadata.MessageType), e.StaticMetadata.MessageType),
                 new ( nameof(IEventStaticMetadata.LocalId), e.StaticMetadata.LocalId.ToString()),
                 new ( nameof(IEventStaticMetadata.OriginId), e.StaticMetadata.OriginId.ToString()),
+                new (nameof(IEventStaticMetadata.AncestorId), e.StaticMetadata.AncestorId?.ToString() ?? ""),
+                new (nameof(IEventStaticMetadata.CommandId), e.StaticMetadata.CommandId?.ToString() ?? ""),
+                new (nameof(IEventStaticMetadata.CorrelationId), e.StaticMetadata.CorrelationId ?? ""),
+                new (nameof(IEventStaticMetadata.RetroactiveId), e.StaticMetadata.RetroactiveId?.ToString() ?? ""),
+                new (nameof(IEventStaticMetadata.OriginatingStream), e.StaticMetadata.OriginatingStream ?? ""),
+                new (nameof(IEventMetadata.MessageId), e.Metadata.MessageId.ToString()),
+                new ( nameof(IEventMetadata.Timestamp), e.Metadata.Timestamp.Serialise()),
                 new ( nameof(IEventMetadata.Version), e.Metadata.Version), 
                 new ( nameof(IEventMetadata.Timeline), e.Metadata.Timeline),
                 new ( nameof(IEventMetadata.StreamHash), e.Metadata.StreamHash),
                 new ( nameof(IEventMetadata.ContentHash), e.Metadata.ContentHash),
+                new ( nameof(IEventMetadata.Stream), e.Metadata.Stream),
                 new ("jsonData", jsonData),
             };
             return new StreamEntry(e.Metadata.Version, entries);
@@ -236,20 +258,40 @@ namespace ZES.Persistence.Redis
                 var val = streamMessage.Values[i].Value; 
                 switch (i)
                 {
-                    case (int)RedisMetadata.MessageId: // MessageId
-                        e.Metadata.MessageId = MessageId.Parse(val);
-                        break;
-                    case (int)RedisMetadata.AncestorId:
-                        e.StaticMetadata.AncestorId = MessageId.Parse(val);
-                        break;
-                    case (int)RedisMetadata.Timestamp:
-                        e.Metadata.Timestamp = Time.Parse(val);
+                    case (int)RedisMetadata.MessageType:
+                        e.StaticMetadata.MessageType = val;
                         break;
                     case (int)RedisMetadata.LocalId:
                         e.StaticMetadata.LocalId = EventId.Parse(val);
                         break;
                     case (int)RedisMetadata.OriginId:
                         e.StaticMetadata.OriginId = EventId.Parse(val);
+                        break;
+                    case (int)RedisMetadata.AncestorId:
+                        if (val != string.Empty)
+                            e.StaticMetadata.AncestorId = MessageId.Parse(val);
+                        break;
+                    case (int)RedisMetadata.CommandId:
+                        if(val != string.Empty)
+                            e.StaticMetadata.CommandId = MessageId.Parse(val);
+                        break;
+                    case (int)RedisMetadata.CorrelationId:
+                        if (val != string.Empty)
+                            e.StaticMetadata.CorrelationId = val;
+                        break;
+                    case (int)RedisMetadata.RetroactiveId:
+                        if (val != string.Empty)
+                            e.StaticMetadata.RetroactiveId = MessageId.Parse(val);
+                        break;
+                    case (int)RedisMetadata.OriginatingStream:
+                        if (val != string.Empty)
+                            e.StaticMetadata.OriginatingStream = val;
+                        break;
+                    case (int)RedisMetadata.MessageId: // MessageId
+                        e.Metadata.MessageId = MessageId.Parse(val);
+                        break;
+                    case (int)RedisMetadata.Timestamp:
+                        e.Metadata.Timestamp = Time.Parse(val);
                         break;
                     case (int)RedisMetadata.Version:
                         e.Metadata.Version = (int)val;
@@ -262,6 +304,9 @@ namespace ZES.Persistence.Redis
                         break;
                     case (int)RedisMetadata.ContentHash:
                         e.Metadata.ContentHash = val;
+                        break;
+                    case (int)RedisMetadata.Stream:
+                        e.Metadata.Stream = val;
                         break;
                 }
             }

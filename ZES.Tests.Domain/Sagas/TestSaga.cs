@@ -14,7 +14,10 @@ namespace ZES.Tests.Domain.Sagas
         /// </summary>
         public TestSaga()
         {
-            RegisterWithParameters<RootCreated>(e => e.RootId, Trigger.Create);
+            // RegisterWithParameters<RootCreated>(e => e.RootId, Trigger.Create);
+            Register<RootCreated>(e => e.RootId);
+            RegisterEvent<RootCreated>(e => new NewRootSagaEvent { RootId = e.RootId });
+            RegisterWithParameters<NewRootSagaEvent>(e => e.RootId, Trigger.Create);
             RegisterWithParameters<RootUpdated>(e => e.AggregateRootId(), Trigger.Update);
             RegisterOnSnapshot<Root>();
             Register<TestSagaSnapshotEvent>(e => e.Id);
@@ -54,7 +57,7 @@ namespace ZES.Tests.Domain.Sagas
         {
             base.ConfigureStateMachine();
             
-            var eventTrigger = GetTrigger<RootCreated>();
+            var eventTrigger = GetTrigger<NewRootSagaEvent>();
             StateMachine.Configure(State.Open)
                 .Permit(Trigger.Create, State.Complete);
             StateMachine.Configure(State.Complete)
@@ -62,7 +65,7 @@ namespace ZES.Tests.Domain.Sagas
                 .OnEntryFrom(eventTrigger, Handle);
         }
 
-        private void Handle(RootCreated e)
+        private void Handle(NewRootSagaEvent e)
         {
             if (!e.RootId.Contains("Copy"))
                 SendCommand(new CreateRoot($"{e.RootId}Copy"));

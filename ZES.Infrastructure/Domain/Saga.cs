@@ -12,7 +12,7 @@ namespace ZES.Infrastructure.Domain
     {
         private readonly List<ICommand> _undispatchedCommands = new List<ICommand>();
         private readonly Dictionary<Type, Func<IEvent, string>> _sagaId = new Dictionary<Type, Func<IEvent, string>>();
-        private readonly HashSet<Type> _initializerEvents = new HashSet<Type>();
+        private readonly Dictionary<Type, Func<IEvent, IEvent>> _events = new Dictionary<Type, Func<IEvent, IEvent>>();
 
         /// <inheritdoc />
         public IEnumerable<ICommand> GetUncommittedCommands()
@@ -38,9 +38,18 @@ namespace ZES.Infrastructure.Domain
         }
 
         /// <inheritdoc />
-        public bool IsInitializer(IEvent e)
+        public IEvent ToSagaEvent(IEvent e)
         {
-            return e != null && _initializerEvents.Contains(e.GetType());
+            if (!_events.TryGetValue(e.GetType(), out var converter)) 
+                return e.Copy();
+            
+            var sagaEvent = converter(e);
+            sagaEvent.AncestorId = e.AncestorId ?? e.MessageId;
+            
+            sagaEvent.StaticMetadata.OriginatingStream = e.Stream;
+            sagaEvent.CommandId = e.CommandId;
+            sagaEvent.Timestamp = e.Timestamp;
+            return sagaEvent;
         }
 
         /// <inheritdoc />
@@ -84,15 +93,25 @@ namespace ZES.Infrastructure.Domain
         }
 
         /// <summary>
+        /// Register event converter
+        /// </summary>
+        /// <param name="converter">Saga event converter</param>
+        /// <typeparam name="TEvent">Event type</typeparam>
+        protected void RegisterEvent<TEvent>(Func<TEvent, IEvent> converter)
+            where TEvent : class, IEvent
+        {
+            _events[typeof(TEvent)] = e => converter(e as TEvent);
+        }
+        
+        /// <summary>
         /// Associate the event with the specified saga id resolver
         /// and handle using the provided action
         /// <para> - Actions normally deal with saga state and can be null </para>
         /// </summary>
         /// <param name="sagaId">Id of saga handling this event</param>
         /// <param name="action">Handler applying the event to saga</param>
-        /// <param name="isInitializer">Specifies whether the event can spawn a new saga</param>
         /// <typeparam name="TEvent">Event type</typeparam>
-        protected void Register<TEvent>(Func<TEvent, string> sagaId, Action<TEvent> action = null, bool isInitializer = true)
+        protected void Register<TEvent>(Func<TEvent, string> sagaId, Action<TEvent> action = null)
             where TEvent : class, IEvent
         {
             _sagaId[typeof(TEvent)] = e => sagaId(e as TEvent);
@@ -107,8 +126,6 @@ namespace ZES.Infrastructure.Domain
             }
 
             Register((Action<TEvent>)Handler);
-            if (isInitializer)
-                _initializerEvents.Add(typeof(TEvent));
         }
 
         private void ClearUncommittedCommands()

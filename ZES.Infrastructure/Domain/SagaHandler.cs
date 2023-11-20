@@ -148,16 +148,11 @@ namespace ZES.Infrastructure.Domain
                 {
                     var emptySaga = new TSaga();
                     var id = emptySaga.SagaId(e);
-                    var isInitializer = emptySaga.IsInitializer(e);
-                    TSaga saga;
-                    if (isInitializer)
-                        saga = await _repository.GetOrAdd<TSaga>(id);
-                    else
-                        saga = await _repository.Find<TSaga>(id);
+                    var saga = await _repository.GetOrAdd<TSaga>(id);
                     
                     if (saga == null)
                         return;
-                    var saveEvent = e.Copy(); 
+                    var saveEvent = saga.ToSagaEvent(e); 
                     
                     saga.When(saveEvent);
                     

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Data.SqlClient;
 using System.Linq;
 using System.Threading.Tasks;
@@ -73,6 +74,17 @@ namespace ZES.Persistence.Redis
             while (count > 0);
             
             observer.OnCompleted();
+        }
+
+        /// <inheritdoc />
+        protected override async Task<List<string>> ListStreamsStore()
+        {
+            var streams = new List<string>();
+            var server = _connection.GetServer();
+            await foreach (var key in server.KeysAsync(pattern: "*:Command:*"))
+                streams.Add(key);
+
+            return streams;
         }
 
         /// <inheritdoc />

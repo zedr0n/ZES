@@ -17,13 +17,14 @@ namespace ZES.Infrastructure.Domain
     /// <inheritdoc />
     public abstract class CommandLogBase<TNewStreamMessage, TStreamMessage> : ICommandLog
     {
-        private readonly ISerializer<ICommand> _serializer;
         private readonly ITimeline _timeline;
         private readonly ILog _log;
 
         private readonly ConcurrentDictionary<string, FailedCommandsSingleHolder> _failedCommandsSingleHolders;
         private readonly ConcurrentDictionary<string, IStream> _streams = new ();
+        private readonly ConcurrentDictionary<Guid, ICommand> _commands = new();
 
+        private Task _ready;
         /// <summary>
         /// Initializes a new instance of the <see cref="CommandLogBase{TStreamMessage, TNewStreamMessage}"/> class.
         /// </summary>
@@ -32,7 +33,7 @@ namespace ZES.Infrastructure.Domain
         /// <param name="log">Application log</param>
         public CommandLogBase(ISerializer<ICommand> serializer, ITimeline timeline, ILog log)
         {
-            _serializer = serializer;
+            Serializer = serializer;
             _timeline = timeline;
             _log = log;
             _failedCommandsSingleHolders = new ConcurrentDictionary<string, FailedCommandsSingleHolder>();
@@ -45,17 +46,26 @@ namespace ZES.Infrastructure.Domain
         /// <summary>
         /// Gets the serializer instance
         /// </summary>
-        protected ISerializer<ICommand> Serializer => _serializer;
+        protected ISerializer<ICommand> Serializer { get; }
 
         /// <summary>
         /// Gets the log instance
         /// </summary>
         protected ILog Log => _log;
 
+        /// <summary>
+        /// A task indicating whether the command log has been populated 
+        /// </summary>
+        protected Task Ready
+        {
+            get => _ready ??= Repopulate();
+            private set => _ready = value;
+        }
+        
         /// <inheritdoc />
         public async Task<IEnumerable<IStream>> ListStreams(string branchId)
         {
-            await Task.CompletedTask;
+            await Ready;
             return _streams.Where(s => s.Value.Timeline == branchId).Select(s => s.Value);
         }
 
@@ -84,12 +94,20 @@ namespace ZES.Infrastructure.Domain
         /// <inheritdoc />
         public async Task<ICommand> GetCommand(ICommand c)
         {
+            await Ready;
             var key = Key(c.MessageType);
             var stream = new Stream(key, ExpectedVersion.Any);
             var obs = ReadStream(stream, 0);
 
             var command = await obs.Where(x => x.MessageId == c.MessageId).SingleOrDefaultAsync();
             return command;
+        }
+
+        /// <inheritdoc />
+        public async Task<bool> HasCommand(ICommand c)
+        {
+            await Ready;
+            return _commands.ContainsKey(c.MessageId.Id);
         }
 
         /// <inheritdoc />
@@ -103,14 +121,16 @@ namespace ZES.Infrastructure.Domain
         }
 
         /// <inheritdoc />
-        public IStream GetStream(ICommand c, string branchId = null)
+        public async Task<IStream> GetStream(ICommand c, string branchId = null)
         {
+            await Ready;            
             return _streams.SingleOrDefault(x => x.Key == Key(c.MessageType, branchId)).Value;
         }
 
         /// <inheritdoc />
         public async Task AddFailedCommand(ICommand command)
         {
+            await Ready;
             var holder = _failedCommandsSingleHolders.GetOrAdd(command.Timeline, b => new FailedCommandsSingleHolder());
             await holder.UpdateState(b =>
             {
@@ -123,11 +143,13 @@ namespace ZES.Infrastructure.Domain
         /// <inheritdoc />
         public async Task AppendCommand(ICommand command)
         {
+            await Ready;
             var message = Encode(command);
 
             var key = Key(command.MessageType);
             _log.Debug($"Adding command to stream {key}: {command}");
             var version = await AppendToStream(key, message);
+            _commands.TryAdd(command.MessageId.Id, command);
             var stream = _streams.GetOrAdd(key, new Stream(key, version));
 
             // resolve the command if failed
@@ -147,6 +169,12 @@ namespace ZES.Infrastructure.Domain
         /// <inheritdoc />
         public abstract Task DeleteBranch(string branchId);
 
+        /// <summary>
+        /// Gets the list of command streams in store
+        /// </summary>
+        /// <returns>Task completes when list is returned</returns>
+        protected virtual Task<List<string>> ListStreamsStore() => Task.FromResult(new List<string>());
+        
         /// <summary>
         /// Store implementation of stream read as observable
         /// </summary>
@@ -178,6 +206,23 @@ namespace ZES.Infrastructure.Domain
                 throw new InvalidOperationException("Event type not known for command");
             branchId ??= _timeline.Id;
             return $"{branchId}:Command:{commandType.Split('.').Last()}";
+        }
+
+        private async Task Repopulate()
+        {
+            _streams.Clear();
+            _commands.Clear();
+            var streams = await ListStreamsStore();
+            foreach (var s in streams)
+            {
+                var stream = new Stream(s, ExpectedVersion.Any);
+                _streams.GetOrAdd(s, stream);
+                var commands = await streams.Select(s => ReadStream(stream, 0)).Aggregate((r, c) => r.Concat(c)).ToList();
+                foreach (var c in commands)
+                    _commands.TryAdd(c.MessageId.Id, c);
+            }
+
+            Ready = Task.CompletedTask;
         }
     }
 }

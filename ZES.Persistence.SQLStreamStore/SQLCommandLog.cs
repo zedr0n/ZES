@@ -1,9 +1,12 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using SqlStreamStore;
 using SqlStreamStore.Streams;
 using ZES.Infrastructure;
 using ZES.Infrastructure.Domain;
+using ZES.Infrastructure.Utils;
 using ZES.Interfaces;
 using ZES.Interfaces.Domain;
 using ZES.Interfaces.EventStore;
@@ -48,6 +51,20 @@ namespace ZES.Persistence.SQLStreamStore
                 
                 page = await page.Next();
             }
+        }
+
+        /// <inheritdoc />
+        protected override async Task<List<string>> ListStreamsStore()
+        {
+            var streams = new List<string>();
+            var page = await _streamStore.ListStreams(Pattern.Anything(), Configuration.BatchSize);
+            while (page.StreamIds.Length > 0)
+            {
+                streams.AddRange(page.StreamIds.Where(p => p.Contains(":Command:") && !p.StartsWith("$$")));
+                page = await page.Next();
+            }
+
+            return streams;
         }
 
         /// <inheritdoc />

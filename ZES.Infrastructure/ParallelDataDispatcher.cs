@@ -25,9 +25,7 @@ namespace ZES.Infrastructure
     public abstract class ParallelDataDispatcher<TKey, TIn> : Dataflow<TIn>
     {
         private readonly Func<TIn, TKey> _dispatchFunc;
-    
-        protected readonly ActionBlock<TIn> DispatcherBlock;
-    
+        
         private readonly ConcurrentDictionary<TKey, Lazy<Dataflow<TIn>>> _destinations;
         private readonly Func<TKey, Lazy<Dataflow<TIn>>> _initer;
     
@@ -36,6 +34,11 @@ namespace ZES.Infrastructure
     
         private int _parallelCount;
 
+        /// <summary>
+        /// Dispatcher block
+        /// </summary>
+        protected readonly ActionBlock<TIn> DispatcherBlock;
+        
         /// <summary>
         /// Initializes a new instance of the <see cref="ParallelDataDispatcher{TKey,TIn}"/> class.
         /// </summary>

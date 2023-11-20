@@ -104,8 +104,7 @@ namespace ZES.Infrastructure.Domain
             // check if command already processed
             if (command.StoreInLog)
             {
-                var c = await _commandLog.GetCommand(command);
-                if (c != default)
+                if (await _commandLog.HasCommand(command))
                 {
                     // _log.Warn($"Command {command.MessageType}:{command.MessageId} already exists in the command log");
                     _errorLog.Add(new InvalidOperationException($"Command {command.MessageType}:{command.MessageId} already exists in the command log"));

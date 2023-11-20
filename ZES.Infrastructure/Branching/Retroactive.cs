@@ -158,6 +158,7 @@ namespace ZES.Infrastructure.Branching
             var copy = command.Copy();
             copy.Recursive = true;
             copy.Timeline = branch;
+            copy.StoreInLog = false;
             
             var handler = _commandRegistry.GetHandler(copy);
             if (handler == null)

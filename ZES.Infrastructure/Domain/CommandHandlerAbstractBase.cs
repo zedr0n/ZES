@@ -27,9 +27,9 @@ public abstract class CommandHandlerAbstractBase<TCommand> : ICommandHandler<TCo
     public bool CanHandle(ICommand command) => command is TCommand;
     
     /// <inheritdoc />
-    public Task Complete(ICommand command) => Task.CompletedTask;
+    public Task Complete(ICommand command, bool trackCompletion = false) => Task.CompletedTask;
 
     /// <inheritdoc />
-    public Task Uncomplete(ICommand command) => Task.CompletedTask;
+    public Task Uncomplete(ICommand command, bool trackCompletion = false) => Task.CompletedTask;
     
 }

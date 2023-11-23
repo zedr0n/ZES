@@ -150,7 +150,7 @@ namespace ZES
                 
                 _uncompletionBlock = new TransformBlock<Tracked<ICommand>,Tracked<ICommand>>(async c =>
                 {
-                    await _handler(c.Value).Uncomplete(c.Value);
+                    await _handler(c.Value).Uncomplete(c.Value, true);
                     return c;
                 }, _options.ToDataflowBlockOptions());
                 _uncompletionBlock.LinkTo(broadcastBlock);

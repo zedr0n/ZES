@@ -54,13 +54,13 @@ namespace ZES.Infrastructure.Domain
         public bool CanHandle(ICommand command) => _handler.CanHandle(command);
 
         /// <inheritdoc />
-        public async Task Uncomplete(ICommand command)
+        public async Task Uncomplete(ICommand command, bool trackMessage = false)
         {
             if (command == null || command.Pure)
                 return;
             
             _log.StopWatch.Start($"{nameof(Uncomplete)}Command");
-            if(command is not IRetroactiveCommand)
+            if(command is not IRetroactiveCommand && trackMessage)
                 await _messageQueue.UncompleteMessage(command);
             await _messageQueue.UncompleteCommand(command.MessageId, command is IRetroactiveCommand);
             await _messageQueue.UncompleteCommand(command.AncestorId);
@@ -70,13 +70,13 @@ namespace ZES.Infrastructure.Domain
         }
 
         /// <inheritdoc />
-        public async Task Complete(ICommand command)
+        public async Task Complete(ICommand command, bool trackMessage = false)
         {
             if (command == null || command.Pure)
                 return;
            
             _log.StopWatch.Start($"{nameof(Complete)}Command");
-            if(command is not IRetroactiveCommand)
+            if(command is not IRetroactiveCommand && trackMessage)
                 await _messageQueue.CompleteMessage(command);
             await _messageQueue.CompleteCommand(command.MessageId);
             await _messageQueue.CompleteCommand(command.AncestorId);
@@ -137,7 +137,7 @@ namespace ZES.Infrastructure.Domain
                 await _commandLog.AddFailedCommand(command);
             }
 
-            await Complete(command);
+            await Complete(command, !trackCompletion);
             if (command.Recursive && !command.Pure)
                 await _messageQueue.CommandState(command.MessageId).FirstAsync(s => s is CommandState.Complete or CommandState.Failed);
         }

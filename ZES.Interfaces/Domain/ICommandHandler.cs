@@ -14,20 +14,22 @@ namespace ZES.Interfaces.Domain
         /// <param name="trackCompletion">Track the completion in handler</param>
         /// <returns>Task representing the asynchronous processing of the command</returns>
         Task Handle(ICommand command, bool trackCompletion = true);
-        
+
         /// <summary>
         /// Complete the command
         /// </summary>
         /// <param name="command">Command to complete</param>
+        /// <param name="trackMessage">Track message completion</param>
         /// <returns>Completes when completion counter is updated</returns>
-        Task Complete(ICommand command);
+        Task Complete(ICommand command, bool trackMessage);
 
         /// <summary>
         /// Uncompletes the command
         /// </summary>
         /// <param name="command">Command to uncomplete</param>
+        /// <param name="trackMessage">Track the message completion</param>
         /// <returns>Completes when completion counter is updated</returns>
-        Task Uncomplete(ICommand command);
+        Task Uncomplete(ICommand command, bool trackMessage);
         
         /// <summary>
         /// Test if the handler can process the command

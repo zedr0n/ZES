@@ -12,9 +12,10 @@ namespace ZES.Infrastructure.Alerts
         /// <param name="url">JSON endpoint url</param>
         public JsonRequestSubmitted(string requestorId, string url)
         {
+            RequestorId = requestorId;
             Url = url;
         }
-        
+
         /// <summary>
         /// Gets the correlation request id
         /// </summary>

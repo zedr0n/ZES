@@ -103,6 +103,20 @@ namespace ZES.Infrastructure
         }
         
         // Inform the ThreadPool that there's work to be executed for this scheduler.
+        /// Notifies the thread pool of pending work.
+        /// This method enqueues work items to be executed by the thread pool.
+        /// It processes all available items in the queue and executes them in parallel.
+        /// Note:
+        /// This method should be used to enable inlining of tasks into the current thread.
+        /// Implementation Details:
+        /// This method uses ThreadPool.UnsafeQueueUserWorkItem to enqueue the work items.
+        /// It gets the next item from the queue, executes it by calling TryExecuteTask,
+        /// and continues to process the next item until there are no more items in the queue.
+        /// The method sets a flag (_currentThreadIsProcessingItems) to indicate that the current thread is processing items.
+        /// Finally, it resets the flag to indicate that processing is complete.
+        /// @param None
+        /// @return None
+        /// /
         private void NotifyThreadPoolOfPendingWork()
         {
             ThreadPool.UnsafeQueueUserWorkItem(

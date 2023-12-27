@@ -105,7 +105,8 @@ namespace ZES
                     throw new InvalidOperationException($"Retroactive execution already on for {b.CommandId}");
                     
                 return b;
-            });
+            }).ConfigureScheduler(TaskScheduler.Default);
+            
             await stateHolder.UpdateState(b =>
             {
                 b.Counter++;
@@ -146,7 +147,7 @@ namespace ZES
                     b.Counter--;
                     
                 return b;
-            });
+            }).ConfigureScheduler(TaskScheduler.Default);
             
             await stateHolder.UpdateState(b =>
             {

@@ -86,8 +86,7 @@ namespace ZES.Infrastructure.Domain
             public async Task SubmitAsync(IEvent e)
             {
                 await this.SendAsync(e);
-                await _bufferBlock.OutputAvailableAsync();
-                _bufferBlock.TryReceiveAll(out _);
+                await _bufferBlock.ReceiveAsync(x => x.MessageId == e.MessageId);
             }
             
             /// <inheritdoc />

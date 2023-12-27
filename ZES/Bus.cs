@@ -161,8 +161,7 @@ namespace ZES
             public async Task SubmitAsync(Tracked<ICommand> command)
             {
                 await this.SendAsync(command);
-                await _bufferBlock.OutputAvailableAsync();
-                _bufferBlock.TryReceiveAll(out _);
+                await _bufferBlock.ReceiveAsync(c => c.Value.MessageId == command.Value.MessageId);
             }
            
             protected override Dataflow<Tracked<ICommand>> CreateChildFlow(string target)

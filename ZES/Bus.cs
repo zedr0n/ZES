@@ -77,12 +77,18 @@ namespace ZES
             command.Timeline = _timeline.Id;
             if (command is IRetroactiveCommand)
                 await _messageQueue.RetroactiveExecution.FirstAsync(b => b == false).Timeout(Configuration.Timeout);
+
+            if (!command.Pure && command is not IRetroactiveCommand)
+                await _messageQueue.UncompleteMessage(command);
             
             var tracked = new Tracked<ICommand>(command);
             var dispatcher = _dispatchers.GetOrAdd(_timeline.Id, CreateDispatcher);
             await dispatcher.SubmitAsync(tracked);
 
-            return tracked.Task;
+            if(command.Pure || command is IRetroactiveCommand)
+                return tracked.Task;
+
+            return tracked.Task.ContinueWith(_ => _messageQueue.CompleteMessage(command)).Unwrap();
         }
         
         /// <inheritdoc />
@@ -150,7 +156,7 @@ namespace ZES
                 
                 _uncompletionBlock = new TransformBlock<Tracked<ICommand>,Tracked<ICommand>>(async c =>
                 {
-                    await _handler(c.Value).Uncomplete(c.Value, true);
+                    await _handler(c.Value).Uncomplete(c.Value);
                     return c;
                 }, _options.ToDataflowBlockOptions());
                 _uncompletionBlock.LinkTo(broadcastBlock);

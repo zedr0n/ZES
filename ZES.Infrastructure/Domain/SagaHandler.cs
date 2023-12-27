@@ -37,7 +37,7 @@ namespace ZES.Infrastructure.Domain
                 })*/
                 //.Subscribe(_dispatcher.InputBlock.AsObserver(), source.Token);
                 .TakeWhile(_ => !source.Token.IsCancellationRequested)
-                .Select(e => Observable.FromAsync(async _ => await dispatcher.SubmitAsync(e)))
+                .Select(e => Observable.FromAsync(_ => dispatcher.SubmitAsync(e)))
                 .Concat()
                 .Subscribe();
             

@@ -19,17 +19,15 @@ namespace ZES.Interfaces.Domain
         /// Complete the command
         /// </summary>
         /// <param name="command">Command to complete</param>
-        /// <param name="trackMessage">Track message completion</param>
         /// <returns>Completes when completion counter is updated</returns>
-        Task Complete(ICommand command, bool trackMessage);
+        Task Complete(ICommand command);
 
         /// <summary>
         /// Uncompletes the command
         /// </summary>
         /// <param name="command">Command to uncomplete</param>
-        /// <param name="trackMessage">Track the message completion</param>
         /// <returns>Completes when completion counter is updated</returns>
-        Task Uncomplete(ICommand command, bool trackMessage);
+        Task Uncomplete(ICommand command);
         
         /// <summary>
         /// Test if the handler can process the command

@@ -102,7 +102,7 @@ namespace ZES
                 if (b.CommandId == commandId.Id)
                     b.Counter++;
                 else if (isRetroactive)
-                    throw new InvalidOperationException($"Retroactive execution already on for {b.CommandId} while trying to add {commandId.Id}");
+                    throw new InvalidOperationException($"Retroactive execution already on for {b.CommandId} while trying to add {commandId.MessageType}:{commandId.Id}");
                     
                 return b;
             }).ConfigureScheduler(TaskScheduler.Default);

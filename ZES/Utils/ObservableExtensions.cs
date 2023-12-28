@@ -15,6 +15,20 @@ namespace ZES.Utils
         private static readonly TimeSpan Delay = TimeSpan.FromMilliseconds(25);
 
         /// <summary>
+        /// Gets the current value of the observable if available
+        /// </summary>
+        /// <param name="observable">Rx observable</param>
+        /// <typeparam name="T">Observable type</typeparam>
+        /// <returns>Current value of the observable</returns>
+        public static T Current<T>(this IObservable<T> observable)
+        {
+            var state = default(T);
+            var sub = observable.Subscribe(s => state = s);
+            sub.Dispose();
+            return state;
+        }
+        
+        /// <summary>
         /// Repeated query until condition is satisfied or timeout is reached 
         /// </summary>
         /// <param name="bus">Message bus</param>

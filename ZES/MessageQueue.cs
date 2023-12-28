@@ -98,12 +98,19 @@ namespace ZES
             {
                 if (isRetroactive && b.Counter == 0)
                     b.CommandId = commandId.Id;
-                
+
                 if (b.CommandId == commandId.Id)
                     b.Counter++;
                 else if (isRetroactive)
-                    throw new InvalidOperationException($"Retroactive execution already on for {b.CommandId} while trying to add {commandId.MessageType}:{commandId.Id}");
-                    
+                {
+                    var state = default(CommandState);
+                    if (_commandStateHolders.TryGetValue(b.CommandId, out stateHolder))
+                        state = stateHolder.CommandState().Current();
+
+                    throw new InvalidOperationException(
+                        $"Retroactive execution already on for {b.CommandId} with state {state} while trying to add {commandId.MessageType}:{commandId.Id}");
+                }
+
                 return b;
             }).ConfigureScheduler(TaskScheduler.Default);
             

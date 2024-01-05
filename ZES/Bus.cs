@@ -80,6 +80,8 @@ namespace ZES
                 await _messageQueue.RetroactiveExecution.FirstAsync(b => b == false).Timeout(Configuration.Timeout);
                 await _messageQueue.UncompletedMessages.FirstAsync(b => b == 0).Timeout(Configuration.Timeout);
             }
+            else if (command.RetroactiveId == default && command.AncestorId == default) 
+                await _messageQueue.RetroactiveExecution.FirstAsync(b => b == false).Timeout(Configuration.Timeout);
 
             if (!command.Pure && command is not IRetroactiveCommand)
                 await _messageQueue.UncompleteMessage(command);

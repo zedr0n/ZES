@@ -34,7 +34,7 @@ namespace ZES.Infrastructure.Projections
             _token = projection.CancellationToken;
             _versions = projection.Versions;
                 
-            var block = new ActionBlock<Tracked<IStream>>(Process, dataflowOptions.ToDataflowBlockOptions(true));
+            var block = new ActionBlock<Tracked<IStream>>(Process, dataflowOptions.ToDataflowBlockOptions(false));
             RegisterChild(block);
             InputBlock = block;
         }

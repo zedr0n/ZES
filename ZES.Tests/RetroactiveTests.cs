@@ -96,6 +96,26 @@ namespace ZES.Tests
         }
 
         [Fact]
+        public async void CanHandleSeparateNonRetroactiveCommand()
+        {
+            var container = CreateContainer();
+            var bus = container.GetInstance<IBus>();
+            var timeline = container.GetInstance<ITimeline>();
+
+            var timestamp = timeline.Now;
+            var lastTime = timestamp + Duration.FromSeconds(-60);
+            var midTime = timestamp + ((lastTime - timestamp ) / 2);
+            var id = $"{nameof(CanHandleSeparateNonRetroactiveCommand)}-Root";
+
+            await await bus.CommandAsync(new RetroactiveCommand<CreateRoot>(new CreateRoot(id), lastTime));
+            await bus.CommandAsync(new RetroactiveCommand<UpdateRoot>(new UpdateRoot(id), midTime));
+            await bus.CommandAsync(new UpdateRoot(id));
+            
+            var rootInfo = await bus.QueryUntil(new RootInfoQuery(id), r => r.NumberOfUpdates == 2, TimeSpan.FromSeconds(10));
+            Assert.Equal(2, rootInfo.NumberOfUpdates);
+        }
+
+        [Fact]
         public async void CanDeleteFromStream()
         {
             var container = CreateContainer();

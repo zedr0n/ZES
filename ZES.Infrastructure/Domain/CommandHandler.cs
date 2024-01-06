@@ -131,6 +131,7 @@ namespace ZES.Infrastructure.Domain
 
                 await _messageQueue.FailCommand(command.MessageId);
                 await _commandLog.AddFailedCommand(command);
+                _log.Error($"Command {command} failed : {e}");
             }
 
             await Complete(command);

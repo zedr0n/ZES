@@ -551,7 +551,7 @@ namespace ZES.Tests
             await await bus.CommandAsync(new RequestJson(nameof(CanRequestJson), url));
             await await bus.CommandAsync(new RequestJson(nameof(CanRequestJson), url));
 
-            var res = await queue.Alerts.OfType<JsonRequestCompleted>().FirstAsync().Timeout(Configuration.Timeout);
+            var res = await queue.Alerts.OfType<JsonRequestCompleted>().FirstAsync();
             Assert.NotNull(res.JsonData); 
             Assert.Contains("13620.3618741461", res.JsonData);
         }

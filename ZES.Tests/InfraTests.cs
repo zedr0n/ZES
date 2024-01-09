@@ -576,6 +576,20 @@ namespace ZES.Tests
         }
 
         [Fact]
+        public async void CanFailRequestingJson()
+        {
+            var container = CreateContainer();
+            var bus = container.GetInstance<IBus>();
+            var queue = container.GetInstance<IMessageQueue>();
+
+            const string url = "http://localhost";
+            await bus.CommandAsync(new RequestJson<TestJson>(nameof(CanDeserializeRequestedJson), url));
+
+            var res = await queue.Alerts.OfType<JsonRequestCompleted<TestJson>>().FirstAsync();
+            Assert.Null(res.Data);
+        }
+
+        [Fact]
         public async void CanCreateSnapshot()
         {
             var container = CreateContainer();

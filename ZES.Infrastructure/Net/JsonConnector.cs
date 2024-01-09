@@ -18,8 +18,6 @@ namespace ZES.Infrastructure.Net
             new ConcurrentDictionary<string, AsyncLazy<string>>(); 
         private readonly ILog _log;
         
-        private ConnectorFlow _flow;
-
         /// <summary>
         /// Initializes a new instance of the <see cref="JsonConnector"/> class.
         /// </summary>
@@ -27,22 +25,22 @@ namespace ZES.Infrastructure.Net
         public JsonConnector(ILog log)
         {
             _log = log;
-            _flow = new ConnectorFlow(Configuration.DataflowOptions, this);
         }
         
         /// <inheritdoc />
         public async Task<Task<string>> SubmitRequest(string url, CancellationToken token = default)
         {
             var tracked = new TrackedResult<string, string>(url, token);
+            var flow = new ConnectorFlow(Configuration.DataflowOptions, this);
             try
             {
-                await _flow.SendAsync(tracked);
+                await flow.SendAsync(tracked);
+                await flow.CompletionTask;
             }
             catch (Exception e)
             {
                 _log.Errors.Add(e);
-                _flow = new ConnectorFlow(Configuration.DataflowOptions, this);
-                await _flow.SendAsync(tracked);
+                tracked.SetResult(null);
             }
             
             return tracked.Task;
@@ -68,7 +66,7 @@ namespace ZES.Infrastructure.Net
                 var task = _jsonData.GetOrAdd(url, s => new AsyncLazy<string>(() =>
                 {
                     _log.Info($"Initiating json connection to {url}");
-                    return w.SendAsync(request).ContinueWith(x => x.Result.Content.ReadAsStringAsync()).Unwrap();
+                    return w.SendAsync(request).Timeout(timeout: Configuration.NetworkTimeout, message: $"Connection to {url} timed out...").ContinueWith(x => x.Result.Content.ReadAsStringAsync()).Unwrap();
                     // return w.GetStringAsync(url);
                 }));
                 var json = await task;
@@ -96,10 +94,16 @@ namespace ZES.Infrastructure.Net
 
                         var r = await connector.GetAsync(uri, apiKey);
                         url.SetResult(r);
+                        Complete();
                     }, dataflowOptions.ToDataflowBlockOptions(true)); // .ToExecutionBlockOption(true));
                 
                 RegisterChild(block);
                 InputBlock = block;
+            }
+
+            public override void Fault(Exception exception)
+            {
+                base.Fault(exception);
             }
 
             public override ITargetBlock<TrackedResult<string, string>> InputBlock { get; }

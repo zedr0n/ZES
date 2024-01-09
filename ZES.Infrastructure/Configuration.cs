@@ -197,6 +197,14 @@ namespace ZES.Infrastructure
         public static TimeSpan Timeout => TimeSpan.FromSeconds(Debugger.IsAttached ? 600 : 2);
 
         /// <summary>
+        /// Gets default network timeout
+        /// </summary>
+        /// <value>
+        /// Default timeout
+        /// </value>
+        public static TimeSpan NetworkTimeout => TimeSpan.FromSeconds(10);
+        
+        /// <summary>
         /// Gets the batch size for stream store
         /// </summary>
         /// <value>

@@ -79,8 +79,13 @@ namespace ZES.Infrastructure.Net
                 .Where(r => r.Url == command.Url)
                 .Subscribe(r =>
                 {
-                    var o = _serializer.Deserialize(r.JsonData);
-                    o.RequestorId = r.RequestorId;
+                    T o = null;
+                    if (r.JsonData != null)
+                    {
+                        o = _serializer.Deserialize(r.JsonData);
+                        o.RequestorId = r.RequestorId;
+                    }
+
                     var alert = new JsonRequestCompleted<T>(r.RequestorId, r.Url, o) { Timeline = command.Timeline };
                     _messageQueue.Alert(alert);
                     PostEvents(o, command);

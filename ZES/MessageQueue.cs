@@ -126,6 +126,7 @@ namespace ZES
             
             await stateHolder.UpdateState(b =>
             {
+                b.Counter--;
                 b.HasFailed = true;
                 return b;
             }).ConfigureScheduler(TaskScheduler.Default);

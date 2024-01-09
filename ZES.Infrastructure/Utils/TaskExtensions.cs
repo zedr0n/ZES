@@ -80,16 +80,20 @@ namespace ZES.Infrastructure.Utils
         /// Timeout a task
         /// </summary>
         /// <param name="task">Task to execute</param>
+        /// <param name="timeout">Timeout duration</param>
+        /// <param name="message">Exception message</param>
         /// <typeparam name="T">Task result</typeparam>
         /// <returns>Completed task or timeout </returns>
-        public static async Task<T> Timeout<T>(this Task<T> task)
+        public static async Task<T> Timeout<T>(this Task<T> task, TimeSpan timeout = default, string message = null)
         {
-            var obs = Observable.Timer(Configuration.Timeout).Select(l => default(T)).Publish().RefCount();
+            if (timeout == default)
+                timeout = Configuration.Timeout;
+            var obs = Observable.Timer(timeout).Select(l => default(T)).Publish().RefCount();
             var timeoutTask = obs.ToTask();
             var result = await await Task.WhenAny(task, timeoutTask); 
             
             if (timeoutTask.IsCompleted)
-                throw new TimeoutException();
+                throw new TimeoutException(message);
 
             return result;
         }

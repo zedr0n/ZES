@@ -548,10 +548,14 @@ namespace ZES.Tests
             var queue = container.GetInstance<IMessageQueue>();
 
             const string url = "https://api.coingecko.com/api/v3/coins/bitcoin/history?date=30-12-2017&localization=false";
+            var obs = queue.Alerts.OfType<JsonRequestCompleted>().FirstAsync().Replay();
+            obs.Connect();
+            
             await await bus.CommandAsync(new RequestJson(nameof(CanRequestJson), url));
             await await bus.CommandAsync(new RequestJson(nameof(CanRequestJson), url));
 
-            var res = await queue.Alerts.OfType<JsonRequestCompleted>().FirstAsync();
+            //var res = await queue.Alerts.OfType<JsonRequestCompleted>().FirstAsync();
+            var res = await obs;
             Assert.NotNull(res.JsonData); 
             Assert.Contains("13620.3618741461", res.JsonData);
         }

@@ -1,0 +1,42 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net8.0</TargetFramework>
+        <CodeAnalysisRuleSet>..\Analysis.ruleset</CodeAnalysisRuleSet>
+        <IsPackable>true</IsPackable>
+        <PublishRepositoryUrl>true</PublishRepositoryUrl>
+        <AllowedOutputExtensionsInPackageBuildOutputFolder>$(AllowedOutputExtensionsInPackageBuildOutputFolder);.pdb</AllowedOutputExtensionsInPackageBuildOutputFolder>
+        <Version>1.0.0</Version>
+        <Configurations>Debug;Release;DebugLocal</Configurations>
+        <Platforms>AnyCPU</Platforms>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <PackageReference Include="EventStore.Client.Embedded" Version="20.6.0" />
+        <PackageReference Include="Microsoft.Bcl.AsyncInterfaces" Version="5.0.0"/>
+        <PackageReference Include="xunit" Version="2.3.1" />
+    </ItemGroup>
+
+    <Choose>
+        <When Condition="'$(Configuration)' == 'DebugLocal'">
+            <ItemGroup>
+                <Reference Include="SqlStreamStore">
+                    <HintPath>../../SQLStreamStore/src/SqlStreamStore/bin/Debug/netstandard2.0/SqlStreamStore.dll</HintPath>
+                </Reference>
+            </ItemGroup>
+        </When>
+    </Choose>
+
+    <ItemGroup>
+        <ProjectReference Include="..\ZES.GraphQL\ZES.GraphQL.csproj" />
+        <ProjectReference Include="..\ZES\ZES.csproj" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <Content Update="nlog.config" CopyToOutputDirectory="PreserveNewest" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.0.0" PrivateAssets="All" />
+    </ItemGroup>
+</Project>

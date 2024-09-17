@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -143,7 +144,14 @@ namespace ZES.Infrastructure
         /// <param name="value">The double value to convert.</param>
         /// <returns>The byte array representing the specified double value.</returns>
         private static byte[] Byte(double value) => BitConverter.GetBytes(value);
-
+        
+        /// <summary>
+        /// Returns the bytes representation of the specified integer value.
+        /// </summary>
+        /// <param name="value">The integer value to convert.</param>
+        /// <returns>The byte array representing the specified integer value.</returns>
+        private static byte[] Byte(int value) => BitConverter.GetBytes(value);
+        
         /// <summary>
         /// Converts an Enum value to a byte array representation.
         /// </summary>
@@ -163,7 +171,7 @@ namespace ZES.Infrastructure
             
             var bytes = value switch
             {
-                IEnumerable<object> enumerable => Byte(enumerable),
+                IEnumerable enumerable and not string => Byte(enumerable.Cast<object>()),
                 string str => Byte(str),
                 double val => Byte(val),
                 Enum @enum => Byte(@enum),
@@ -173,11 +181,14 @@ namespace ZES.Infrastructure
             if (bytes != null)
                 return bytes;
 
-            using var ms = new MemoryStream();
+            throw new InvalidOperationException("Serialization not supported for this type");
+            
+            // DEPRECATED
+            /*using var ms = new MemoryStream();
             
             var bf = new BinaryFormatter();
             bf.Serialize(ms, value ?? "null");
-            return ms.ToArray();
+            return ms.ToArray();*/
         }
     }
 }

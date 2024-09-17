@@ -2,6 +2,7 @@ using SqlStreamStore.Streams;
 using Xunit;
 using Xunit.Abstractions;
 using ZES.Infrastructure.EventStore;
+using ZES.TestBase;
 using ZES.Tests.Domain;
 using ExpectedVersion = SqlStreamStore.Streams.ExpectedVersion;
 

@@ -1,6 +1,6 @@
 using SimpleInjector;
 
-namespace ZES.Tests
+namespace ZES.TestBase
 {
     public static class ContainerExtensions
     {

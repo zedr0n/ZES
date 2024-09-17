@@ -3,9 +3,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using EventStore.ClientAPI;
-using EventStore.ClientAPI.Embedded;
 using EventStore.ClientAPI.SystemData;
-using HotChocolate.Execution.Instrumentation;
+using EventStore.ClientAPI.Embedded;
 using Microsoft.Extensions.DependencyInjection;
 using NLog;
 using NLog.Targets;
@@ -19,10 +18,10 @@ using ZES.Interfaces.Causality;
 using ZES.Interfaces.Domain;
 using ZES.Interfaces.EventStore;
 using ZES.Persistence.Redis;
-using ZES.Tests.Utils;
+using ZES.TestBase.Utils;
 using ILogger = NLog.ILogger;
 
-namespace ZES.Tests
+namespace ZES.TestBase
 {
     public abstract class Test : IDisposable
     {
@@ -108,6 +107,7 @@ namespace ZES.Tests
 
                 // container.Verify();
                 root.Verify(container);
+                container.GetInstance<IConfigurationOverride>().ApplyOverride();
                 if (resetDb)
                 {
                     var eventStore = container.GetInstance<IEventStore<IAggregate>>();

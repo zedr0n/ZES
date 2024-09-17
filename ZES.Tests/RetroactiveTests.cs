@@ -16,6 +16,7 @@ using ZES.Interfaces.Causality;
 using ZES.Interfaces.Domain;
 using ZES.Interfaces.EventStore;
 using ZES.Interfaces.Pipes;
+using ZES.TestBase;
 using ZES.Tests.Domain;
 using ZES.Tests.Domain.Commands;
 using ZES.Tests.Domain.Queries;

@@ -2,12 +2,11 @@
 
     <PropertyGroup>
         <OutputType>Exe</OutputType>
-        <TargetFramework>netcoreapp3.1</TargetFramework>
+        <TargetFramework>net8.0</TargetFramework>
         <CodeAnalysisRuleSet>..\Analysis.ruleset</CodeAnalysisRuleSet>
         <Version>1.0.0</Version>
         <IsPackable>False</IsPackable>
         <GenerateDocumentationFile>true</GenerateDocumentationFile>
-        <LangVersion>latest</LangVersion>
         <Configurations>Debug;Release;DebugLocal</Configurations>
         <Platforms>AnyCPU</Platforms>
     </PropertyGroup>

@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.Reflection;
 using SimpleInjector;
 using ZES.Infrastructure;
@@ -11,12 +12,27 @@ using ZES.Utils;
 
 namespace ZES.Tests.Domain
 {
+    /// <inheritdoc />
+    public class ConfigurationOverride : IConfigurationOverride
+    {
+        /// <inheritdoc />
+        public void ApplyOverride()
+        {
+            Configuration.UseCompactDeserializationForRetroactiveOperations = false;
+        }
+    }
+    
     public static class Config
     {
         [Registration]
         public static void RegisterAll(Container c)
         {
             c.RegisterAll(Assembly.GetExecutingAssembly());
+        }
+
+        public static void RegisterOverrides(Container c)
+        {
+            c.RegisterConfigurationOverrides([Assembly.GetExecutingAssembly()]);    
         }
         
         public static void RegisterAllButSagas(Container c)

@@ -21,6 +21,19 @@ namespace ZES.Utils
     public static class RegistrationExtensions
     {
         /// <summary>
+        /// Registers all configuration overrides with <see cref="SimpleInjector"/> container
+        /// </summary>
+        /// <param name="c"><see cref="SimpleInjector"/> constainer</param>
+        /// <param name="assemblies">Assemblies to scan</param>
+        public static void RegisterConfigurationOverrides(this Container c, Assembly[] assemblies)
+        {
+            var types = c.GetTypesToRegister(typeof(IConfigurationOverride), assemblies)
+                .Select(t => (IConfigurationOverride)Activator.CreateInstance(t)).ToArray();
+            var registration = Lifestyle.Singleton.CreateRegistration<IConfigurationOverride>(() => new CompositeConfigurationOverride(types), c);
+            c.AddRegistration<IConfigurationOverride>(registration);
+        }
+        
+        /// <summary>
         /// Registers commands, queries, projections and sagas with <see cref="SimpleInjector"/> container
         /// </summary>
         /// <param name="c"><see cref="SimpleInjector"/> container</param>

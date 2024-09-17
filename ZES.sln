@@ -25,6 +25,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ZES.Persistence.SQLStreamSt
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ZES.Persistence.Redis", "ZES.Persistence.Redis\ZES.Persistence.Redis.csproj", "{C7DCA228-BBCA-45A4-AF71-4385E7DECA47}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ZES.TestBase", "ZES.TestBase\ZES.TestBase.csproj", "{8F3E4A82-E357-4B51-AF5B-6F295A326C58}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -98,6 +100,12 @@ Global
 		{C7DCA228-BBCA-45A4-AF71-4385E7DECA47}.Release|Any CPU.Build.0 = Release|Any CPU
 		{C7DCA228-BBCA-45A4-AF71-4385E7DECA47}.DebugLocal|Any CPU.ActiveCfg = Debug|Any CPU
 		{C7DCA228-BBCA-45A4-AF71-4385E7DECA47}.DebugLocal|Any CPU.Build.0 = Debug|Any CPU
+		{8F3E4A82-E357-4B51-AF5B-6F295A326C58}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8F3E4A82-E357-4B51-AF5B-6F295A326C58}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8F3E4A82-E357-4B51-AF5B-6F295A326C58}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8F3E4A82-E357-4B51-AF5B-6F295A326C58}.Release|Any CPU.Build.0 = Release|Any CPU
+		{8F3E4A82-E357-4B51-AF5B-6F295A326C58}.DebugLocal|Any CPU.ActiveCfg = Debug|Any CPU
+		{8F3E4A82-E357-4B51-AF5B-6F295A326C58}.DebugLocal|Any CPU.Build.0 = Debug|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

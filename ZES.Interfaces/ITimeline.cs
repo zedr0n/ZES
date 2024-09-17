@@ -26,10 +26,10 @@ namespace ZES.Interfaces
         Time Now { get; }
 
         /// <summary>
-        /// Gets a value indicating whether whether it's a fixed timeline
+        /// Gets a value indicating whether it's a fixed timeline
         /// </summary>
         /// <value>
-        /// A value indicating whether whether it's a fixed timeline
+        /// A value indicating whether it's a fixed timeline
         /// </value>
         bool Live { get; }
 

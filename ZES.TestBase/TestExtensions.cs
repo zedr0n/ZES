@@ -5,7 +5,7 @@ using ZES.Interfaces.Domain;
 using ZES.Interfaces.Pipes;
 using ZES.Utils;
 
-namespace ZES.Tests
+namespace ZES.TestBase
 {
     public static class TestExtensions
     {

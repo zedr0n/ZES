@@ -2,7 +2,7 @@ using NLog.Config;
 using NLog.Layouts;
 using NLog.Targets;
 
-namespace ZES.Tests.Utils 
+namespace ZES.TestBase.Utils 
 {
     public abstract class TargetWithLayoutHeaderAndFooter : TargetWithLayout
     {

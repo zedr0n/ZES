@@ -3,7 +3,7 @@ using System.Threading;
 using NLog;
 using Xunit.Abstractions;
 
-namespace ZES.Tests.Utils 
+namespace ZES.TestBase.Utils 
 {
     public static class TestOutputHelpers
     {

@@ -31,6 +31,34 @@ namespace ZES.Infrastructure
     }
     
     /// <summary>
+    /// Configuration override interface
+    /// </summary>
+    public interface IConfigurationOverride
+    {
+        /// <summary>
+        /// Main method to apply all the configuration overrides
+        /// </summary>
+        void ApplyOverride();
+    }    
+    
+    /// <summary>
+    /// Composite configuration override class to combine multiple overrides
+    /// </summary>
+    public class CompositeConfigurationOverride(params IConfigurationOverride[] overrides) : IConfigurationOverride
+    {
+        private readonly IEnumerable<IConfigurationOverride> _overrides = overrides;
+
+        /// <inheritdoc />
+        public void ApplyOverride()
+        {
+            foreach (var configOverride in _overrides)
+            {
+                configOverride.ApplyOverride();
+            }
+        }
+    }    
+    
+    /// <summary>
     /// Static configuration instance
     /// </summary>
     public static class Configuration
@@ -68,7 +96,7 @@ namespace ZES.Infrastructure
         /// <summary>
         /// Gets a value indicating whether to use compact deserialization when doing retroactive actions
         /// </summary>
-        public static bool UseCompactDeserializationForRetroactiveOperations { get; } = true;
+        public static bool UseCompactDeserializationForRetroactiveOperations { get; set; } = true;
         
         /// <summary>
         /// Gets a value indicating whether to use the version cache

@@ -24,6 +24,7 @@ using ZES.Interfaces.EventStore;
 using ZES.Interfaces.Pipes;
 using ZES.Interfaces.Replicas;
 using ZES.Interfaces.Stochastic;
+using ZES.TestBase;
 using ZES.Tests.Domain;
 using ZES.Tests.Domain.Commands;
 using ZES.Tests.Domain.Queries;

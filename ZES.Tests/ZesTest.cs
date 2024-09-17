@@ -5,6 +5,7 @@ using Xunit.Abstractions;
 using ZES.Interfaces.Domain;
 using ZES.Interfaces.EventStore;
 using ZES.Persistence.Redis;
+using ZES.TestBase;
 using ZES.Tests.Domain;
 
 namespace ZES.Tests
@@ -23,6 +24,7 @@ namespace ZES.Tests
             var regs = new List<Action<Container>>
             {
                 Config.RegisterAllButSagas,
+                Config.RegisterOverrides
             };
             if (registrations != null)
                 regs.AddRange(registrations);

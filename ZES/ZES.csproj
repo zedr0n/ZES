@@ -14,37 +14,13 @@
 
     <ItemGroup>
       <PackageReference Include="Common.Logging.NLog45" Version="3.4.1" />
-      <PackageReference Include="EventStore.Client" Version="20.6.0" />
       <PackageReference Include="JetBrains.Annotations" Version="2019.1.1" />
       <PackageReference Include="Microsoft.Extensions.Options" Version="5.0.0" />
       <PackageReference Include="NeoSmart.AsyncLock" Version="3.2.1" />
       <PackageReference Include="NLog" Version="4.6.8" />
       <PackageReference Include="SimpleInjector" Version="4.4.2" />
-      <PackageReference Include="StackExchange.Redis" Version="2.6.86" />
       <PackageReference Include="System.Reflection.DispatchProxy" Version="4.7.1" />
     </ItemGroup>
-
-    <Choose>
-        <When Condition="'$(Configuration)' == 'DebugLocal'">
-            <ItemGroup>
-                <Reference Include="SqlStreamStore">
-                    <HintPath>../../SQLStreamStore/src/SqlStreamStore/bin/Debug/net8.0/SqlStreamStore.dll</HintPath>
-                </Reference>
-                <Reference Include="SqlStreamStore.MsSql">
-                    <HintPath>../../SQLStreamStore/src/SqlStreamStore.MsSql/bin/Debug/net8.0/SqlStreamStore.MsSql.dll</HintPath>
-                </Reference>
-                <Reference Include="SqlStreamStore.MySql">
-                    <HintPath>../../SQLStreamStore/src/SqlStreamStore.MySql/bin/Debug/net8.0/SqlStreamStore.MySql.dll</HintPath>
-                </Reference>
-            </ItemGroup>
-        </When>
-        <Otherwise>
-            <ItemGroup>
-                <PackageReference Include="SqlStreamStore.MsSql" Version="1.2.1-alpha.3.35" />
-                <PackageReference Include="SqlStreamStore.MySql" Version="1.2.1-alpha.3.35" />
-            </ItemGroup>
-        </Otherwise>
-    </Choose>
 
     <ItemGroup>
       <ProjectReference Include="..\ZES.Interfaces\ZES.Interfaces.csproj" />

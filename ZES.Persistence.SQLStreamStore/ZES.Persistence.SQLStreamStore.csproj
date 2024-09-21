@@ -19,6 +19,8 @@
 
     <ItemGroup>
         <PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.0.0" PrivateAssets="All" />
+        <PackageReference Include="SqlStreamStore.MsSql" Version="1.2.1-alpha.3.35" />
+        <PackageReference Include="SqlStreamStore.MySql" Version="1.2.1-alpha.3.35" />
     </ItemGroup>
 
     <Choose>

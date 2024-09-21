@@ -28,20 +28,20 @@
         <When Condition="'$(Configuration)' == 'DebugLocal'">
             <ItemGroup>
                 <Reference Include="SqlStreamStore">
-                    <HintPath>../../SQLStreamStore/src/SqlStreamStore/bin/Debug/netstandard2.0/SqlStreamStore.dll</HintPath>
+                    <HintPath>../../SQLStreamStore/src/SqlStreamStore/bin/Debug/net8.0/SqlStreamStore.dll</HintPath>
                 </Reference>
                 <Reference Include="SqlStreamStore.MsSql">
-                    <HintPath>../../SQLStreamStore/src/SqlStreamStore.MsSql/bin/Debug/netstandard2.0/SqlStreamStore.MsSql.dll</HintPath>
+                    <HintPath>../../SQLStreamStore/src/SqlStreamStore.MsSql/bin/Debug/net8.0/SqlStreamStore.MsSql.dll</HintPath>
                 </Reference>
                 <Reference Include="SqlStreamStore.MySql">
-                    <HintPath>../../SQLStreamStore/src/SqlStreamStore.MySql/bin/Debug/netstandard2.0/SqlStreamStore.MySql.dll</HintPath>
+                    <HintPath>../../SQLStreamStore/src/SqlStreamStore.MySql/bin/Debug/net8.0/SqlStreamStore.MySql.dll</HintPath>
                 </Reference>
             </ItemGroup>
         </When>
         <Otherwise>
             <ItemGroup>
-                <PackageReference Include="SqlStreamStore.MsSql" Version="1.2.1-alpha.3.33" />
-                <PackageReference Include="SqlStreamStore.MySql" Version="1.2.1-alpha.3.33" />
+                <PackageReference Include="SqlStreamStore.MsSql" Version="1.2.1-alpha.3.35" />
+                <PackageReference Include="SqlStreamStore.MySql" Version="1.2.1-alpha.3.35" />
             </ItemGroup>
         </Otherwise>
     </Choose>

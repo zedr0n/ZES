@@ -25,13 +25,13 @@
         <When Condition="'$(Configuration)' == 'DebugLocal'">
             <ItemGroup>
                 <Reference Include="SqlStreamStore">
-                    <HintPath>../../SQLStreamStore/src/SqlStreamStore/bin/Debug/netstandard2.0/SqlStreamStore.dll</HintPath>
+                    <HintPath>../../SQLStreamStore/src/SqlStreamStore/bin/Debug/net8.0/SqlStreamStore.dll</HintPath>
                 </Reference>
             </ItemGroup>
         </When>
         <Otherwise>
             <ItemGroup>
-                <PackageReference Include="SqlStreamStore" Version="1.2.1-alpha.3.33" />
+                <PackageReference Include="SqlStreamStore" Version="1.2.1-alpha.3.35" />
             </ItemGroup>
         </Otherwise>
     </Choose>

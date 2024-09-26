@@ -182,7 +182,8 @@ namespace ZES.Infrastructure.Branching
                 var serializationType = Configuration.UseCompactDeserializationForRetroactiveOperations
                     ? SerializationType.Metadata
                     : SerializationType.PayloadAndMetadata;
-                var e = await _eventStore.ReadStream<IEvent>(stream, stream.Version - c.Value + 1, c.Value, serializationType).ToList();
+                var eventStore = GetStore(stream);
+                var e = await eventStore.ReadStream<IEvent>(stream, stream.Version - c.Value + 1, c.Value, serializationType).ToList();
 
                 dict[c.Key] = e;
                 // _log.Debug($"Recording change in stream {stream.Key}: events ({stream.Version - c.Value + 1}..{stream.Version})");

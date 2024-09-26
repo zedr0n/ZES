@@ -15,13 +15,28 @@ namespace ZES.Infrastructure.Serialization
             Switch(reader, currentProperty, e as T);
 
         /// <inheritdoc />
-        public Event Create() => new T();
+        public virtual Event Create() => new T();
 
         /// <inheritdoc />
         public virtual bool SupportsPayload => true;
 
         /// <inheritdoc />
         public abstract void Switch(JsonTextReader reader, string currentProperty, T e);
+    }
+
+    /// <inheritdoc />
+    public abstract class EventDeserializerBase<T, TPayload> : EventDeserializerBase<T>
+        where T : Event<TPayload>, new()
+        where TPayload : class, new()
+    {
+        /// <inheritdoc />
+        public override Event Create()
+        {
+            return new T
+            {
+                Payload = new TPayload()
+            };
+        }
     }
 
     /// <summary>

@@ -1,6 +1,7 @@
 ﻿#define USE_CUSTOM_SQLSTREAMSTORE
 
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reactive.Linq;
@@ -29,6 +30,7 @@ namespace ZES.Persistence.SQLStreamStore
         where TEventSourced : IEventSourced
     {
         private readonly IStreamStore _streamStore;
+        private readonly ConcurrentDictionary<Guid, IEvent> _eventCache = new();
 
         /// <summary>
         /// Initializes a new instance of the <see cref="SqlEventStore{TEventSourced}"/> class.
@@ -141,17 +143,29 @@ namespace ZES.Persistence.SQLStreamStore
             if (jsonData == null)
                 Serializer.SerializeEventAndMetadata(e, out jsonData, out jsonMetadata);
             else if (jsonMetadata == null)
-                jsonMetadata = Serializer.EncodeMetadata(e); 
-            
-            return new (e.MessageId.Id, e.GetType().Name, jsonData, jsonMetadata);
+                jsonMetadata = Serializer.EncodeMetadata(e);
+            if (e.LocalId != null && e.LocalId.ReplicaName == Configuration.ReplicaName)
+            {
+                e.Json = jsonData;
+                e.MetadataJson = jsonMetadata;
+                _eventCache[e.MessageId.Id] = e;
+            }
+
+            return new NewStreamMessage(e.MessageId.Id, e.GetType().Name, jsonData, jsonMetadata);
         }
 
         /// <inheritdoc />
         protected override async Task<T> StreamMessageToEvent<T>(StreamMessage streamMessage, SerializationType serializationType = SerializationType.PayloadAndMetadata)
         {
+            var messageId = streamMessage.MessageId;
+            if (_eventCache.TryGetValue(messageId, out var e))
+                return e as T;
+
             var json = await streamMessage.GetJsonData();
             var jsonMetadata = streamMessage.JsonMetadata;
-            var e = Serializer.Deserialize(json, jsonMetadata, serializationType);
+            
+            e = Serializer.Deserialize(json, jsonMetadata, serializationType);
+            _eventCache[messageId] = e;
             return e as T;
         }
 

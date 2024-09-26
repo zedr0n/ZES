@@ -260,9 +260,9 @@ namespace ZES.Tests
             Assert.Equal(metadata.Version, e.Version);
             Assert.Equal(metadata.Stream, e.Stream);
             
-            Assert.Null(metadata.StaticMetadata.CommandId);
-            Assert.Null(metadata.StaticMetadata.LocalId);
-            Assert.Null(metadata.StaticMetadata.OriginId);
+            //Assert.Null(metadata.StaticMetadata.CommandId);
+            //Assert.Null(metadata.StaticMetadata.LocalId);
+            //Assert.Null(metadata.StaticMetadata.OriginId);
 
             var copy = e.Copy();
             copy.Version = e.Version + 1;

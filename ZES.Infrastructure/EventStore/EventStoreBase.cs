@@ -518,7 +518,7 @@ namespace ZES.Infrastructure.EventStore
                 : base(dataflowOptions)
             {
                 var block = new TransformBlock<IEvent, TNewStreamMessage>(
-                    e => eventStore.EventToStreamMessage(e), 
+                    eventStore.EventToStreamMessage, 
                     dataflowOptions.ToDataflowBlockOptions(true));  // dataflowOptions.ToExecutionBlockOption(true) );
 
                 RegisterChild(block);

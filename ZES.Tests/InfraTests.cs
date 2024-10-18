@@ -433,17 +433,19 @@ namespace ZES.Tests
         {
             var container = CreateContainer(new List<Action<Container>> { Config.RegisterSagas });
             var bus = container.GetInstance<IBus>();
+            var flowCompletionService = container.GetInstance<IFlowCompletionService>();
 
             var id = $"{nameof(CanUseSaga)}";
             var command = new CreateRoot(id);
             await bus.CommandAsync(command);
             await bus.CommandAsync(new UpdateRoot(id));
 
-            await bus.IsTrue(new RootInfoQuery($"{id}Copy"), r => r.UpdatedAt >= r.CreatedAt);
+            //await bus.IsTrue(new RootInfoQuery($"{id}Copy"), r => r.UpdatedAt >= r.CreatedAt);
             
             await bus.IsTrue(new RootInfoQuery($"{id}Copy"), r => r.CreatedAt != default);
             await bus.IsTrue(new RootInfoQuery($"{id}Copy"), r => r.UpdatedAt == r.CreatedAt);
 
+            await flowCompletionService.CompletionAsync();
             var graph = container.GetInstance<IGraph>();
             await graph.Serialise();
         }

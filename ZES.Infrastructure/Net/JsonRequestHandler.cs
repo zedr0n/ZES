@@ -36,10 +36,8 @@ namespace ZES.Infrastructure.Net
             var res = await _connector.SubmitRequest(command.Url);
             var alert = new JsonRequestSubmitted(command.Target, command.Url) { Timeline = command.Timeline };
             _messageQueue.Alert(alert);
-            _messageQueue.UncompleteMessage(alert);
             res.ContinueWith(r =>
             {
-                _messageQueue.CompleteMessage(alert);
                 _messageQueue.Alert(new JsonRequestCompleted(command.Target, command.Url, r.Result));
             });
         }

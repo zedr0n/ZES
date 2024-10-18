@@ -211,6 +211,7 @@ namespace ZES
 
             container.Register<ITimeline, Timeline>(Lifestyle.Singleton);
             container.Register<IMessageQueue, MessageQueue>(Lifestyle.Singleton);
+            container.Register<IFlowCompletionService, FlowCompletionService>(Lifestyle.Singleton);
             container.Register<ICommandRegistry, CommandRegistry>(Lifestyle.Singleton);
 
             container.Register<ILog, Logging.NLog>(Lifestyle.Singleton);

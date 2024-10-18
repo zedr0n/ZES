@@ -8,6 +8,7 @@ using SqlStreamStore.Streams;
 using ZES.Infrastructure;
 using ZES.Infrastructure.Alerts;
 using ZES.Infrastructure.Replicas;
+using ZES.Infrastructure.Utils;
 using ZES.Interfaces;
 using ZES.Interfaces.Pipes;
 using ZES.Interfaces.Replicas;
@@ -26,6 +27,7 @@ namespace ZES.Persistence.SQLStreamStore
         private readonly ILog _log;
         private readonly IMessageQueue _messageQueue;
         private readonly ISerializer<IEvent> _serializer;
+        private readonly IFlowCompletionService _flowCompletionService;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="Remote"/> class.
@@ -35,13 +37,15 @@ namespace ZES.Persistence.SQLStreamStore
         /// <param name="log">Log helper</param>
         /// <param name="messageQueue">Message queue</param>
         /// <param name="serializer">Serializer</param>
-        public Remote(IStreamStore localStore, [Remote] IStreamStore remoteStore, ILog log, IMessageQueue messageQueue, ISerializer<IEvent> serializer)
+        /// <param name="flowCompletionService">Flow completion service</param>
+        public Remote(IStreamStore localStore, [Remote] IStreamStore remoteStore, ILog log, IMessageQueue messageQueue, ISerializer<IEvent> serializer, IFlowCompletionService flowCompletionService)
         {
             _localStore = localStore;
             _remoteStore = remoteStore;
             _log = log;
             _messageQueue = messageQueue;
             _serializer = serializer;
+            _flowCompletionService = flowCompletionService;
         }
 
         /// <inheritdoc />
@@ -147,8 +151,7 @@ namespace ZES.Persistence.SQLStreamStore
             string branchId,
             bool failOnNoStream = false )
         {
-            await _messageQueue.UncompletedMessagesOnBranch(branchId).FirstAsync(s => s == 0)
-                .Timeout(Configuration.Timeout);
+            await _flowCompletionService.CompletionAsync(branchId).Timeout(Configuration.Timeout);
             
             var page = await from.ListStreams();
             while (page.StreamIds.Length > 0)

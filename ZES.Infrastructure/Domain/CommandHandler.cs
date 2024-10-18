@@ -45,50 +45,21 @@ namespace ZES.Infrastructure.Domain
         }
 
         /// <inheritdoc />
-        public async Task Handle(ICommand command, bool trackCompletion = true)
+        public async Task Handle(ICommand command)
         {
-            await Handle((T)command, trackCompletion);
+            await Handle((T)command);
         }
 
         /// <inheritdoc />
         public bool CanHandle(ICommand command) => _handler.CanHandle(command);
 
         /// <inheritdoc />
-        public async Task Uncomplete(ICommand command)
-        {
-            if (command == null || command.Pure)
-                return;
-            
-            _log.StopWatch.Start($"{nameof(Uncomplete)}Command");
-            await _messageQueue.UncompleteCommand(command.MessageId, command is IRetroactiveCommand);
-            await _messageQueue.UncompleteCommand(command.AncestorId);
-            await _messageQueue.UncompleteCommand(command.RetroactiveId, true);
-            _log.StopWatch.Stop($"{nameof(Uncomplete)}Command");
-
-        }
-
-        /// <inheritdoc />
-        public async Task Complete(ICommand command)
-        {
-            if (command == null || command.Pure)
-                return;
-           
-            _log.StopWatch.Start($"{nameof(Complete)}Command");
-            await _messageQueue.CompleteCommand(command.MessageId);
-            await _messageQueue.CompleteCommand(command.AncestorId);
-            await _messageQueue.CompleteCommand(command.RetroactiveId);
-            _log.StopWatch.Stop($"{nameof(Complete)}Command");
-        }
-        
-        /// <inheritdoc />
         /// <summary>
         /// Wrap the handler and redirect all exception to <see cref="IErrorLog"/>
         /// </summary>
-        public async Task Handle(T command, bool trackCompletion)
+        public async Task Handle(T command)
         {
             _log.Trace($"{command.GetType().Name}", this);
-            if(trackCompletion)
-                await Uncomplete(command);
 
             var timeline = _timeline.Id;
             if (command is not IRetroactiveCommand && command.Timestamp == default)
@@ -104,7 +75,6 @@ namespace ZES.Infrastructure.Domain
                 {
                     // _log.Warn($"Command {command.MessageType}:{command.MessageId} already exists in the command log");
                     _errorLog.Add(new InvalidOperationException($"Command {command.MessageType}:{command.MessageId} already exists in the command log"));
-                    await Complete(command);
                     return;
                 }
             }
@@ -129,14 +99,9 @@ namespace ZES.Infrastructure.Domain
                     await _branchManager.Branch(timeline);
                 }
 
-                await _messageQueue.FailCommand(command.MessageId);
                 await _commandLog.AddFailedCommand(command);
                 _log.Error($"Command {command} failed : {e}");
             }
-
-            await Complete(command);
-            if (command.Recursive && !command.Pure)
-                await _messageQueue.CommandState(command.MessageId).FirstAsync(s => s is CommandState.Complete or CommandState.Failed);
         }
     }
 }

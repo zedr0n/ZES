@@ -28,6 +28,7 @@ namespace ZES.Infrastructure.Branching
 
         private readonly IEsRepository<IAggregate> _repository;
         private readonly IEsRepository<ISaga> _sagaRepository;
+        private readonly IFlowCompletionService _flowCompletionService;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="Retroactive"/> class.
@@ -41,6 +42,7 @@ namespace ZES.Infrastructure.Branching
         /// <param name="sagaRepository">Saga repository</param>
         /// <param name="log">Log service</param>
         /// <param name="commandRegistry">Command registry</param>
+        /// <param name="flowCompletionService">Flow completion service</param>
         public Retroactive(
             IEventStore<IAggregate> eventStore,
             IEventStore<ISaga> sagaStore,
@@ -50,7 +52,8 @@ namespace ZES.Infrastructure.Branching
             IEsRepository<IAggregate> repository,
             IEsRepository<ISaga> sagaRepository,
             ILog log, 
-            ICommandRegistry commandRegistry)
+            ICommandRegistry commandRegistry, 
+            IFlowCompletionService flowCompletionService)
         {
             _eventStore = eventStore;
             _graph = graph;
@@ -61,6 +64,7 @@ namespace ZES.Infrastructure.Branching
             _sagaRepository = sagaRepository;
             _log = log;
             _commandRegistry = commandRegistry;
+            _flowCompletionService = flowCompletionService;
         }
         
         /// <inheritdoc />
@@ -157,14 +161,16 @@ namespace ZES.Infrastructure.Branching
             _log.StopWatch.Start($"{nameof(GetChanges)}.HandleCommand");
             var copy = command.Copy();
             copy.RetroactiveId = default;
-            copy.Recursive = true;
             copy.Timeline = branch;
             copy.StoreInLog = false;
             
             var handler = _commandRegistry.GetHandler(copy);
             if (handler == null)
                 throw new InvalidOperationException($"No handler found for command {command.GetType().Name}");
+            _flowCompletionService.TrackMessage(copy);
             await handler.Handle(copy);
+            _flowCompletionService.MarkComplete(copy);
+            await _flowCompletionService.NodeCompletionAsync(copy);
             _log.StopWatch.Stop($"{nameof(GetChanges)}.HandleCommand");
             
             _log.StopWatch.Start($"{nameof(GetChanges)}.Branch");
@@ -322,7 +328,6 @@ namespace ZES.Infrastructure.Branching
         private async Task<bool> RollbackCommand(ICommand c)
         {
             var time = c.Timestamp.JustBefore();
-            c.Recursive = true;
             var changes = await GetChanges(c, time);
             // var changes = await GetChanges(c);
             _log.Debug($"Rolling back command: {c}");

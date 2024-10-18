@@ -25,10 +25,11 @@ namespace ZES.Infrastructure.Projections
         /// <param name="activeTimeline">Timeline service</param>
         /// <param name="messageQueue">Message queue service</param>
         /// <param name="streamLocator">Stream locator</param>
-        public GlobalProjection(IEventStore<IAggregate> eventStore, ILog log, ITimeline activeTimeline, IMessageQueue messageQueue, IStreamLocator streamLocator)
+        /// <param name="flowCompletionService">Flow completion service</param>
+        public GlobalProjection(IEventStore<IAggregate> eventStore, ILog log, ITimeline activeTimeline, IMessageQueue messageQueue, IStreamLocator streamLocator, IFlowCompletionService flowCompletionService)
             : base(eventStore, log, activeTimeline, streamLocator)
         {
-            var gate = messageQueue.RetroactiveExecution.DistinctUntilChanged()
+            var gate = flowCompletionService.RetroactiveExecution.DistinctUntilChanged()
                 .Throttle(x => Observable.Timer(TimeSpan.FromMilliseconds(x ? 0 : 10)))
                 .StartWith(false)
                 .DistinctUntilChanged();

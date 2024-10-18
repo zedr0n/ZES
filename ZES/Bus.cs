@@ -26,12 +26,13 @@ namespace ZES
     {
         private readonly Container _container;
 
-        private readonly ConcurrentDictionary<string, CommandDispatcher> _dispatchers = new ConcurrentDictionary<string, CommandDispatcher>(); 
-        private readonly ConcurrentDictionary<Type, IQueryHandler> _queryHandlers = new ConcurrentDictionary<Type, IQueryHandler>();
+        private readonly ConcurrentDictionary<string, CommandDispatcher> _dispatchers = new(); 
+        private readonly ConcurrentDictionary<Type, IQueryHandler> _queryHandlers = new();
         private readonly ILog _log;
         private readonly ITimeline _timeline;
         private readonly IMessageQueue _messageQueue;
         private readonly ICommandLog _commandLog;
+        private readonly IFlowCompletionService _flowCompletionService;
         private readonly AsyncLock _lock = new();
 
         /// <summary>
@@ -42,15 +43,23 @@ namespace ZES
         /// <param name="timeline">Timeline</param>
         /// <param name="messageQueue">Message queue</param>
         /// <param name="commandLog">Command log</param>
-        public Bus(Container container, ILog log, ITimeline timeline, IMessageQueue messageQueue, ICommandLog commandLog)
+        /// <param name="flowCompletionService">Flow completion service</param>
+        public Bus(Container container, ILog log, ITimeline timeline, IMessageQueue messageQueue, ICommandLog commandLog, IFlowCompletionService flowCompletionService)
         {
             _container = container;
             _log = log;
             _timeline = timeline;
             _messageQueue = messageQueue;
             _commandLog = commandLog;
+            _flowCompletionService = flowCompletionService;
 
             messageQueue.Alerts.OfType<BranchDeleted>().Subscribe(e => DeleteDispatcher(e.BranchId));
+            
+            flowCompletionService.RetroactiveExecution.DistinctUntilChanged()
+                .Throttle(x => Observable.Timer(TimeSpan.FromMilliseconds(x ? 0 : 10)))
+                .StartWith(false)
+                .DistinctUntilChanged()
+                .Subscribe(x => _log.Info($"Retroactive execution : {x}"));
         }
 
         /// <inheritdoc />
@@ -76,24 +85,18 @@ namespace ZES
         {
             command.Timeline = _timeline.Id;
             if (command is IRetroactiveCommand)
-            {
-                await _messageQueue.RetroactiveExecution.FirstAsync(b => b == false).Timeout(Configuration.Timeout);
-                await _messageQueue.UncompletedMessages.FirstAsync(b => b == 0).Timeout(Configuration.Timeout);
-            }
-            else if (command.RetroactiveId == default && command.AncestorId == default) 
-                await _messageQueue.RetroactiveExecution.FirstAsync(b => b == false).Timeout(Configuration.Timeout);
+                await _flowCompletionService.CompletionAsync();//.Timeout(Configuration.Timeout);
+            else if (command.RetroactiveId == default && command.AncestorId == default)
+                await _flowCompletionService.RetroactiveExecution.FirstAsync(b => b == false);
 
-            if (!command.Pure && command is not IRetroactiveCommand)
-                await _messageQueue.UncompleteMessage(command);
+            _flowCompletionService.TrackMessage(command);
             
             var tracked = new Tracked<ICommand>(command);
             var dispatcher = _dispatchers.GetOrAdd(_timeline.Id, CreateDispatcher);
             await dispatcher.SubmitAsync(tracked);
 
-            if(command.Pure || command is IRetroactiveCommand)
-                return tracked.Task;
-
-            return tracked.Task.ContinueWith(_ => _messageQueue.CompleteMessage(command)).Unwrap();
+            var completionTask = _flowCompletionService.NodeCompletionAsync(command);
+            return completionTask;
         }
         
         /// <inheritdoc />
@@ -116,6 +119,7 @@ namespace ZES
 
         private CommandDispatcher CreateDispatcher(string timeline) => new CommandDispatcher(
                 GetHandler,
+                _flowCompletionService,
                 timeline,
             Configuration.DataflowOptions);
 
@@ -145,28 +149,24 @@ namespace ZES
         private class CommandDispatcher : ParallelDataDispatcher<string, Tracked<ICommand>>
         {
             private readonly Func<ICommand, ICommandHandler> _handler;
+            private readonly IFlowCompletionService _flowCompletionService;
             private readonly DataflowOptions _options;
 
             private readonly BufferBlock<Tracked<ICommand>> _bufferBlock;
-            private readonly TransformBlock<Tracked<ICommand>, Tracked<ICommand>> _uncompletionBlock;
+            private readonly BroadcastBlock<Tracked<ICommand>> _broadcastBlock;
             
-            public CommandDispatcher(Func<ICommand, ICommandHandler> handler, string timeline, DataflowOptions options) 
+            public CommandDispatcher(Func<ICommand, ICommandHandler> handler, IFlowCompletionService flowCompletionService, string timeline, DataflowOptions options) 
                 : base(c => $"{timeline}:{c.Value.Target}", options, CancellationToken.None)
             {
                 _handler = handler;
+                _flowCompletionService = flowCompletionService;
                 _options = options;
 
-                var broadcastBlock = new BroadcastBlock<Tracked<ICommand>>(null);
+                _broadcastBlock = new BroadcastBlock<Tracked<ICommand>>(null);
                 _bufferBlock = new BufferBlock<Tracked<ICommand>>();
                 
-                _uncompletionBlock = new TransformBlock<Tracked<ICommand>,Tracked<ICommand>>(async c =>
-                {
-                    await _handler(c.Value).Uncomplete(c.Value);
-                    return c;
-                }, _options.ToDataflowBlockOptions());
-                _uncompletionBlock.LinkTo(broadcastBlock);
-                broadcastBlock.LinkTo(_bufferBlock);
-                broadcastBlock.LinkTo(DispatcherBlock);
+                _broadcastBlock.LinkTo(_bufferBlock);
+                _broadcastBlock.LinkTo(DispatcherBlock);
             }
 
             public async Task SubmitAsync(Tracked<ICommand> command)
@@ -180,14 +180,16 @@ namespace ZES
                 var block = new ActionBlock<Tracked<ICommand>>(
                     async c =>
                     {
-                        await _handler(c.Value).Handle(c.Value, false);
+                        await _handler(c.Value).Handle(c.Value);
+                        _flowCompletionService.MarkComplete(c.Value);
                         c.Complete();
+                        
                     }, _options.ToDataflowBlockOptions());
                 
                 return block.ToDataflow(_options);
             }
 
-            public override ITargetBlock<Tracked<ICommand>> InputBlock => _uncompletionBlock;
+            public override ITargetBlock<Tracked<ICommand>> InputBlock => _broadcastBlock;
         }
     }
 }

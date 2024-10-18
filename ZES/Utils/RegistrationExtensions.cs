@@ -317,8 +317,8 @@ namespace ZES.Utils
 
                 if (command.ContainsGenericParameters)
                 {
-                    var type = command.GetGenericArguments().SingleOrDefault()?.GetInterfaces().SingleOrDefault();
-                    var allTypes = assembly.GetTypesFromInterface(type);
+                    var type = command.GetGenericArguments().SingleOrDefault()?.GetInterfaces().FirstOrDefault();
+                    var allTypes = assembly.GetTypesFromInterface(type).Where(t => !t.IsInterface);
                     foreach (var t in allTypes)
                     {
                         var closedCommand = command.MakeGenericType(t);

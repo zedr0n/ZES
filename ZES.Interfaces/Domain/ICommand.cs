@@ -20,11 +20,6 @@ namespace ZES.Interfaces.Domain
         /// Gets or sets a value indicating whether the command is pure
         /// </summary>
         bool Pure { get; set; }
-        
-        /// <summary>
-        /// Gets or sets a value indicating whether the command execution should include all the consequences ( sagas, etc... )
-        /// </summary>
-        bool Recursive { get; set; }
 
         /// <summary>
         /// Copy the command

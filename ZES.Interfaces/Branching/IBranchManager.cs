@@ -26,7 +26,7 @@ namespace ZES.Interfaces.Branching
         /// <summary>
         /// Gets observable which completes when there all activity has been completed
         /// </summary>
-        IObservable<int> Ready { get; }
+        Task Ready { get; }
 
         /// <summary>
         /// Branch the current timeline at a certain point in the past

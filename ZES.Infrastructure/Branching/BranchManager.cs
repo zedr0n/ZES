@@ -40,6 +40,7 @@ namespace ZES.Infrastructure.Branching
         private readonly ITimeline _activeTimeline;
         private readonly IClock _clock;
         private readonly IMessageQueue _messageQueue;
+        private readonly IFlowCompletionService _flowCompletionService;
         private readonly IEventStore<IAggregate> _eventStore;
         private readonly IEventStore<ISaga> _sagaStore;
         private readonly ICommandLog _commandLog;
@@ -52,6 +53,7 @@ namespace ZES.Infrastructure.Branching
         /// <param name="log">Application logger</param>
         /// <param name="activeTimeline">Root timeline</param>
         /// <param name="messageQueue">Message queue</param>
+        /// <param name="flowCompletionService"></param>
         /// <param name="eventStore">Event store</param>
         /// <param name="sagaStore">Saga store</param>
         /// <param name="streamLocator">Stream locator</param>
@@ -61,7 +63,8 @@ namespace ZES.Infrastructure.Branching
         public BranchManager(
             ILog log, 
             ITimeline activeTimeline,
-            IMessageQueue messageQueue, 
+            IMessageQueue messageQueue,
+            IFlowCompletionService flowCompletionService,
             IEventStore<IAggregate> eventStore,
             IEventStore<ISaga> sagaStore,
             IStreamLocator streamLocator,
@@ -72,6 +75,7 @@ namespace ZES.Infrastructure.Branching
             _log = log;
             _activeTimeline = activeTimeline as Timeline;
             _messageQueue = messageQueue;
+            _flowCompletionService = flowCompletionService;
             _eventStore = eventStore;
             _streamLocator = streamLocator;
             _graph = graph;
@@ -83,8 +87,9 @@ namespace ZES.Infrastructure.Branching
         }
 
         /// <inheritdoc />
-        public IObservable<int> Ready =>
-            _messageQueue.UncompletedMessages.Timeout(Configuration.Timeout).FirstAsync(s => s == 0);
+        public Task Ready =>
+            _flowCompletionService.CompletionAsync(includeRetroactive: true).Timeout(Configuration.Timeout);
+            //_messageQueue.UncompletedMessages.Timeout(Configuration.Timeout).FirstAsync(s => s == 0);
 
         /// <inheritdoc />
         public string ActiveBranch => _activeTimeline.Id;
@@ -95,8 +100,9 @@ namespace ZES.Infrastructure.Branching
             _log.StopWatch.Start("DeleteBranch");
             
             _log.StopWatch.Start($"{nameof(DeleteBranch)}.Wait");
-            await _messageQueue.UncompletedMessagesOnBranch(branchId).Timeout(Configuration.Timeout)
-                .FirstAsync(s => s == 0);
+            //await _messageQueue.UncompletedMessagesOnBranch(branchId).Timeout(Configuration.Timeout)
+            //    .FirstAsync(s => s == 0);            
+            await _flowCompletionService.CompletionAsync(branchId).Timeout(Configuration.Timeout);
             _log.StopWatch.Stop($"{nameof(DeleteBranch)}.Wait");
 
             await DeleteBranch<IAggregate>(branchId);
@@ -122,7 +128,8 @@ namespace ZES.Infrastructure.Branching
             _log.StopWatch.Start("Branch.Wait");
             // var sub = _messageQueue.UncompletedMessages.Subscribe(s => _log.Info($"Uncompleted messages: {s}"));
             // sub.Dispose();
-            await _messageQueue.UncompletedMessages.FirstAsync(s => s == 0).Timeout(Configuration.Timeout);
+            // await _messageQueue.UncompletedMessages.FirstAsync(s => s == 0).Timeout(Configuration.Timeout);
+            await _flowCompletionService.CompletionAsync().Timeout(Configuration.Timeout);
             _log.StopWatch.Stop("Branch.Wait");
             var newBranch = !_branches.ContainsKey(branchId); // && branchId != Master;
             if (!newBranch && deleteExisting)

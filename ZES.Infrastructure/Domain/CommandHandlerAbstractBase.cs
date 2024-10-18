@@ -7,9 +7,6 @@ namespace ZES.Infrastructure.Domain;
 public abstract class CommandHandlerAbstractBase<TCommand> : ICommandHandler<TCommand>
     where TCommand : ICommand
 {
-    /// <inheritdoc />
-    public virtual Task Handle(TCommand iCommand, bool trackCompletion) => Handle(iCommand);
-
     /// <summary>
     /// 
     /// </summary>
@@ -18,9 +15,9 @@ public abstract class CommandHandlerAbstractBase<TCommand> : ICommandHandler<TCo
     public abstract Task Handle(TCommand iCommand);
     
     /// <inheritdoc />
-    public async Task Handle(ICommand command, bool trackCompletion)
+    public async Task Handle(ICommand command)
     {
-        await Handle((TCommand)command, trackCompletion);
+        await Handle((TCommand)command);
     }
 
     /// <inheritdoc />

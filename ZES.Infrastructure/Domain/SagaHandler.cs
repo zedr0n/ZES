@@ -23,21 +23,23 @@ namespace ZES.Infrastructure.Domain
         /// </summary>
         /// <param name="messageQueue">Message queue</param>
         /// <param name="dispatcher">Dispatcher factory</param>
-        public SagaHandler(IMessageQueue messageQueue, SagaDispatcher dispatcher)
+        /// <param name="flowCompletionService">Flow completion service</param>
+        public SagaHandler(IMessageQueue messageQueue, SagaDispatcher dispatcher, IFlowCompletionService flowCompletionService)
         {
 
             var source = new CancellationTokenSource();
             messageQueue.Messages
                 .Where(e => new TSaga().SagaId(e) != null)
-                /*.Do(e =>
-                {
-                    _messageQueue.UncompleteCommand(e.AncestorId).Wait();
-                    _messageQueue.UncompleteCommand(e.RetroactiveId).Wait();
-                    _messageQueue.UncompleteMessage(e).Wait();
-                })*/
-                //.Subscribe(_dispatcher.InputBlock.AsObserver(), source.Token);
                 .TakeWhile(_ => !source.Token.IsCancellationRequested)
-                .Select(e => Observable.FromAsync(_ => dispatcher.SubmitAsync(e)))
+                .Select(e => 
+                {
+                    flowCompletionService.TrackMessage(e);
+                    return e;
+                })
+                .Select(e => Observable.FromAsync(async _ =>
+                {
+                    await dispatcher.SubmitAsync(e);
+                }))
                 .Concat()
                 .Subscribe();
             
@@ -48,29 +50,30 @@ namespace ZES.Infrastructure.Domain
         public class SagaDispatcher : ParallelDataDispatcher<string, IEvent>
         {
             private readonly IFactory<SagaFlow> _sagaFlow;
+            private readonly IFlowCompletionService _flowCompletionService;
 
             private readonly BufferBlock<IEvent> _bufferBlock;
             private readonly TransformBlock<IEvent, IEvent> _uncompletionBlock;
-            
+
             /// <summary>
             /// Initializes a new instance of the <see cref="SagaDispatcher"/> class.
             /// </summary>
             /// <param name="log">Log helper</param>
             /// <param name="sagaFlow">Fluent builder</param>
             /// <param name="messageQueue">Message queue</param>
-            public SagaDispatcher(ILog log, IFactory<SagaFlow> sagaFlow, IMessageQueue messageQueue)
+            /// <param name="flowCompletionService"></param>
+            public SagaDispatcher(ILog log, IFactory<SagaFlow> sagaFlow, IMessageQueue messageQueue, IFlowCompletionService flowCompletionService)
                 : base(e => new TSaga().SagaId(e), Configuration.DataflowOptions, CancellationToken.None, typeof(TSaga))
             {
                 Log = log;
                 _sagaFlow = sagaFlow;
+                _flowCompletionService = flowCompletionService;
                 var broadcastBlock = new BroadcastBlock<IEvent>(null);
                 
                 _bufferBlock = new BufferBlock<IEvent>();
-                _uncompletionBlock = new TransformBlock<IEvent,IEvent>(async e =>
+                _uncompletionBlock = new TransformBlock<IEvent,IEvent>(e =>
                 {
-                    await messageQueue.UncompleteMessage(e);
-                    await messageQueue.UncompleteCommand(e.AncestorId);
-                    await messageQueue.UncompleteCommand(e.RetroactiveId);
+                    //flowCompletionService.TrackMessage(e);
                     return e;
                 });
                 _uncompletionBlock.LinkTo(broadcastBlock);
@@ -109,6 +112,7 @@ namespace ZES.Infrastructure.Domain
         {
             private readonly IEsRepository<ISaga> _repository;
             private readonly ILog _log;
+            private readonly IFlowCompletionService _flowCompletionService;
 
             /// <summary>
             /// Initializes a new instance of the <see cref="SagaFlow"/> class.
@@ -116,19 +120,20 @@ namespace ZES.Infrastructure.Domain
             /// <param name="repository">Saga repository</param>
             /// <param name="log">Log service</param>
             /// <param name="messageQueue">Message queue service</param>
-            public SagaFlow(IEsRepository<ISaga> repository, ILog log, IMessageQueue messageQueue)
+            /// <param name="flowCompletionService">Flow completion service</param>
+            public SagaFlow(IEsRepository<ISaga> repository, ILog log, IMessageQueue messageQueue, IFlowCompletionService flowCompletionService)
                 : base(Configuration.DataflowOptions)
             {
                 _repository = repository; 
                 _log = log;
+                _flowCompletionService = flowCompletionService;
 
                 var block = new ActionBlock<IEvent>(
                     async e =>
                     {
                         await Handle(e);
-                        await messageQueue.CompleteMessage(e);
-                        await messageQueue.CompleteCommand(e.RetroactiveId);
-                        await messageQueue.CompleteCommand(e.AncestorId);
+                        flowCompletionService.MarkComplete(e);
+                        //await messageQueue.CompleteMessage(e);
                     }, DataflowOptions.ToDataflowBlockOptions(false)); // .ToExecutionBlockOption());
             
                 RegisterChild(block);

@@ -204,6 +204,7 @@ namespace ZES.Tests
             var timeline = container.GetInstance<ITimeline>();
             var messageQueue = container.GetInstance<IMessageQueue>();
             var manager = container.GetInstance<IBranchManager>();
+            var flowCompletionService = container.GetInstance<IFlowCompletionService>();
             var id = $"{nameof(CanProcessTwoRetroactiveCommandsOnSeparateBranches)}-Root";
 
             await bus.CommandAsync(new CreateRoot(id));
@@ -212,9 +213,8 @@ namespace ZES.Tests
             var branch = await manager.Branch("test0");
             var lastTime = timestamp + Duration.FromSeconds(60); 
             await bus.CommandAsync(new RetroactiveCommand<UpdateRoot>(new UpdateRoot(id), lastTime));
-            // await bus.Equal(new RootInfoQuery(id), r => r.UpdatedAt, lastTime);
-
-            await messageQueue.RetroactiveExecution.FirstAsync(b => b == false).FirstAsync();
+            
+            await flowCompletionService.RetroactiveExecution.FirstAsync(b => b == false);
             var branch2 = await manager.Branch("test1");
             var midTime = timestamp + Duration.FromSeconds(30);
             await bus.CommandAsync(new RetroactiveCommand<UpdateRoot>(new UpdateRoot(id), midTime));

@@ -48,10 +48,6 @@ namespace ZES.Infrastructure.Domain
         [JsonIgnore]
         public bool Pure { get; set; }
 
-        /// <inheritdoc />
-        [JsonIgnore]
-        public bool Recursive { get; set; } = false;
-        
 
         /// <inheritdoc />
         public ICommand Copy()

@@ -34,8 +34,8 @@ namespace ZES.Infrastructure.Utils
             if (maxMessagesPerTask > 0)
                 executionOptions.MaxMessagesPerTask = maxMessagesPerTask;
 
-            if (useScheduler || Configuration.UseLimitedScheduler)
-                executionOptions.TaskScheduler = Configuration.LimitedTaskScheduler;
+            if (useScheduler)
+                executionOptions.TaskScheduler = Configuration.UseLimitedScheduler ? Configuration.LimitedTaskScheduler : TaskScheduler.Default;
             return executionOptions;
         }
         

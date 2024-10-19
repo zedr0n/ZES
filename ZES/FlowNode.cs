@@ -14,10 +14,14 @@ namespace ZES;
 /// <summary>
 /// Command-event flow node
 /// </summary>
-public class FlowNode(IErrorLog log)
+public class FlowNode(ILog log)
 {
     private int _completionCounter;
-
+    /// <summary>
+    /// Gets the completion counter
+    /// </summary>
+    public int CompletionCounter => _completionCounter;
+    
     /// <summary>
     /// 
     /// </summary>
@@ -67,7 +71,7 @@ public class FlowNode(IErrorLog log)
     {
         if (IsCompleted)
         {
-            log.Add(new InvalidOperationException("Children added to a flow node after completion"));
+            log.Errors.Add(new InvalidOperationException("Children added to a flow node after completion"));
             return;
         }
 

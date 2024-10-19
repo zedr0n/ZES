@@ -440,8 +440,6 @@ namespace ZES.Tests
             await bus.CommandAsync(command);
             await bus.CommandAsync(new UpdateRoot(id));
 
-            //await bus.IsTrue(new RootInfoQuery($"{id}Copy"), r => r.UpdatedAt >= r.CreatedAt);
-            
             await bus.IsTrue(new RootInfoQuery($"{id}Copy"), r => r.CreatedAt != default);
             await bus.IsTrue(new RootInfoQuery($"{id}Copy"), r => r.UpdatedAt == r.CreatedAt);
 

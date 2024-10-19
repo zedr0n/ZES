@@ -15,7 +15,7 @@ namespace ZES;
 /// <inheritdoc />
 public class FlowCompletionService : IFlowCompletionService
 {
-    private readonly IErrorLog _errorLog;
+    private readonly ILog _log;
     private readonly ConcurrentDictionary<Guid, FlowNode> _flowNodes = new();
     private readonly ReplaySubject<bool> _retroactiveSubject = new(1);
 
@@ -25,10 +25,10 @@ public class FlowCompletionService : IFlowCompletionService
     /// <summary>
     /// 
     /// </summary>
-    /// <param name="errorLog">Error log</param>
-    public FlowCompletionService(IErrorLog errorLog)
+    /// <param name="log">Error log</param>
+    public FlowCompletionService(ILog log)
     {
-        _errorLog = errorLog;
+        _log = log;
         _retroactiveSubject.OnNext(false);
     }
     
@@ -36,12 +36,13 @@ public class FlowCompletionService : IFlowCompletionService
     public void TrackMessage(IMessage message)
     {
         var id = message.MessageId.Id;
-        var newFlowNode = new FlowNode(_errorLog) { Id = id, IsRetroactive = message is IRetroactiveCommand, Timeline = message.Timeline };
+        var newFlowNode = new FlowNode(_log) { Id = id, IsRetroactive = message is IRetroactiveCommand, Timeline = message.Timeline };
         var flowNode = _flowNodes.AddOrUpdate(id, newFlowNode, (key, existingNode) => 
             existingNode.IsCompleted ? newFlowNode : existingNode);
         
         flowNode.MarkUncompleted();
-
+        _log.Trace($"Tracking {message.MessageId}({flowNode.CompletionCounter})");
+        
         if (flowNode.IsRetroactive)
         {
             _retroactiveSubject.OnNext(true);
@@ -58,8 +59,11 @@ public class FlowCompletionService : IFlowCompletionService
     /// <inheritdoc />
     public void MarkComplete(IMessage message)
     {
-        if(_flowNodes.TryGetValue(message.MessageId.Id, out var flowNode))
-            flowNode.MarkCompleted();
+        if (!_flowNodes.TryGetValue(message.MessageId.Id, out var flowNode)) 
+            return;
+        
+        flowNode.MarkCompleted();
+        _log.Trace($"Completing {message.MessageId}({flowNode.CompletionCounter})");
     }
 
     /// <inheritdoc />

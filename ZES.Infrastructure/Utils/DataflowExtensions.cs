@@ -24,7 +24,7 @@ namespace ZES.Infrastructure.Utils
         public static ExecutionDataflowBlockOptions ToDataflowBlockOptions(
             this DataflowOptions options,
             bool isBlockMultiThreaded = false,
-            bool useScheduler = false,
+            bool useScheduler = true,
             int maxMessagesPerTask = -1)
         {
             var executionOptions = options.ToExecutionBlockOption(isBlockMultiThreaded);

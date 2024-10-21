@@ -42,6 +42,7 @@ public class FlowCompletionService : IFlowCompletionService
         
         flowNode.MarkUncompleted();
         _log.Trace($"Tracking {message.MessageId}({flowNode.CompletionCounter})");
+        flowNode.CompletionSubject.Subscribe(_ => _log.Trace($"Completed {message.MessageId}({flowNode.CompletionCounter})"));
         
         if (flowNode.IsRetroactive)
         {
@@ -53,6 +54,7 @@ public class FlowCompletionService : IFlowCompletionService
             return;
         
         parentNode.AddChild(flowNode);
+        _log.Trace($"Adding tracked child {message.MessageId} to {parentNode.Id}");
         parentNode.ChildrenCompletionObservable().Subscribe(_ => parentNode.CheckCompletion());
     }
 
@@ -62,8 +64,8 @@ public class FlowCompletionService : IFlowCompletionService
         if (!_flowNodes.TryGetValue(message.MessageId.Id, out var flowNode)) 
             return;
         
-        flowNode.MarkCompleted();
         _log.Trace($"Completing {message.MessageId}({flowNode.CompletionCounter})");
+        flowNode.MarkCompleted();
     }
 
     /// <inheritdoc />

@@ -50,36 +50,25 @@ namespace ZES.Infrastructure.Domain
         public class SagaDispatcher : ParallelDataDispatcher<string, IEvent>
         {
             private readonly IFactory<SagaFlow> _sagaFlow;
-            private readonly IFlowCompletionService _flowCompletionService;
 
+            private readonly BroadcastBlock<IEvent> _broadcastBlock;
             private readonly BufferBlock<IEvent> _bufferBlock;
-            private readonly TransformBlock<IEvent, IEvent> _uncompletionBlock;
 
             /// <summary>
             /// Initializes a new instance of the <see cref="SagaDispatcher"/> class.
             /// </summary>
             /// <param name="log">Log helper</param>
             /// <param name="sagaFlow">Fluent builder</param>
-            /// <param name="messageQueue">Message queue</param>
-            /// <param name="flowCompletionService"></param>
-            public SagaDispatcher(ILog log, IFactory<SagaFlow> sagaFlow, IMessageQueue messageQueue, IFlowCompletionService flowCompletionService)
+            public SagaDispatcher(ILog log, IFactory<SagaFlow> sagaFlow)
                 : base(e => new TSaga().SagaId(e), Configuration.DataflowOptions, CancellationToken.None, typeof(TSaga))
             {
                 Log = log;
                 _sagaFlow = sagaFlow;
-                _flowCompletionService = flowCompletionService;
-                var broadcastBlock = new BroadcastBlock<IEvent>(null);
+                _broadcastBlock = new BroadcastBlock<IEvent>(null);
                 
                 _bufferBlock = new BufferBlock<IEvent>();
-                _uncompletionBlock = new TransformBlock<IEvent,IEvent>(e =>
-                {
-                    //flowCompletionService.TrackMessage(e);
-                    return e;
-                });
-                _uncompletionBlock.LinkTo(broadcastBlock);
-                broadcastBlock.LinkTo(_bufferBlock);
-                broadcastBlock.LinkTo(DispatcherBlock);
-                //_broadcastBlock.LinkTo(DispatcherBlock);
+                _broadcastBlock.LinkTo(_bufferBlock);
+                _broadcastBlock.LinkTo(DispatcherBlock);
             }
             
             /// <summary>
@@ -104,7 +93,7 @@ namespace ZES.Infrastructure.Domain
             }
 
             /// <inheritdoc />
-            public override ITargetBlock<IEvent> InputBlock => _uncompletionBlock;
+            public override ITargetBlock<IEvent> InputBlock => _broadcastBlock;
         }
         
         /// <inheritdoc />
@@ -133,7 +122,6 @@ namespace ZES.Infrastructure.Domain
                     {
                         await Handle(e);
                         flowCompletionService.MarkComplete(e);
-                        //await messageQueue.CompleteMessage(e);
                     }, DataflowOptions.ToDataflowBlockOptions(false)); // .ToExecutionBlockOption());
             
                 RegisterChild(block);

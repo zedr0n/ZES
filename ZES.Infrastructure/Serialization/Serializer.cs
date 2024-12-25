@@ -823,7 +823,8 @@ namespace ZES.Infrastructure.Serialization
             
             var metadataSb = new StringBuilder();
             var swMetadata = new StringWriter(metadataSb);
-            var metadataWriter = new JsonTextWriter(swMetadata) { Formatting = Formatting.Indented };
+            // var metadataWriter = new JsonTextWriter(swMetadata) { Formatting = Formatting.Indented };
+            var metadataWriter = new JsonMetadataTextWriter(swMetadata) { Formatting = Formatting.Indented };
             
             var properties = ignoredProperties as string[] ?? ignoredProperties?.ToArray();
             

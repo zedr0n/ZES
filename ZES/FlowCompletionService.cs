@@ -55,7 +55,6 @@ public class FlowCompletionService : IFlowCompletionService
         
         parentNode.AddChild(flowNode);
         _log.Trace($"Adding tracked child {message.MessageId} to {parentNode.Id}");
-        parentNode.ChildrenCompletionObservable().Subscribe(_ => parentNode.CheckCompletion());
     }
 
     /// <inheritdoc />

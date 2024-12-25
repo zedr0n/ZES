@@ -14,9 +14,17 @@ namespace ZES;
 /// <summary>
 /// Command-event flow node
 /// </summary>
-public class FlowNode(ILog log)
+public class FlowNode
 {
-    private int _completionCounter;
+    private readonly ILog _log;
+    private IDisposable _childrenCompletionSubscription;
+    private volatile int _completionCounter;
+    private volatile int _isCompleted;
+    
+    private readonly ConcurrentDictionary<Guid, FlowNode> _children  = new();
+    private readonly ReplaySubject<IObservable<bool>> _allChildObservables = new();
+    private readonly ReplaySubject<bool> _counterObservable = new(1);
+    
     /// <summary>
     /// Gets the completion counter
     /// </summary>
@@ -30,7 +38,7 @@ public class FlowNode(ILog log)
     /// <summary>
     /// Gets the value indicating whether the node has completed
     /// </summary>
-    public bool IsCompleted { get; private set; }
+    public bool IsCompleted => _isCompleted == 1; 
 
     /// <summary>
     /// Gets or sets the message identifier
@@ -44,24 +52,40 @@ public class FlowNode(ILog log)
     public string Timeline { get; init; }
 
     /// <summary>
-    /// Gets the node children
-    /// </summary>
-    private ConcurrentDictionary<Guid, FlowNode> Children { get; } = new();
-
-    /// <summary>
     /// Gets the completion subject
     /// </summary>
     public ReplaySubject<bool> CompletionSubject { get; } = new(1);
 
     /// <summary>
-    /// Emits when all children complete
+    /// 
+    /// </summary>
+    /// <param name="log"></param>
+    public FlowNode(ILog log)
+    {
+        _log = log;
+        MonitorChildrenCompletion();
+    }
+    
+    /// <summary>
+    /// Emits when all children complete, dynamically updating when new children are added.
     /// </summary>
     /// <returns>Observable</returns>
-    public IObservable<bool> ChildrenCompletionObservable()
+    private IObservable<bool> ChildrenCompletionObservable()
     {
-        var childObservables = Children.Values.Select(c => c.CompletionSubject.AsObservable());
-        return childObservables.CombineLatest().Select(_ => true);
-    }
+        var childCompletionObservable = _allChildObservables
+            .Scan(new List<IObservable<bool>>(), (accumulated, current) =>
+            {
+                accumulated.Add(current);
+                return accumulated;
+            })
+            .Select(observables => observables.CombineLatest()) // Combine all observables in the list
+            .Switch() // Flatten the combined observables into a single stream
+            .Select(_ => true); // Emit `true` when all are complete        
+        
+        return childCompletionObservable
+            .CombineLatest(_counterObservable, (_, counterComplete) => counterComplete)
+            .DistinctUntilChanged();
+    }    
     
     /// <summary>
     /// Add child and recheck completion if necessary
@@ -69,17 +93,14 @@ public class FlowNode(ILog log)
     /// <param name="child">Child node</param>
     public void AddChild(FlowNode child)
     {
-        if (IsCompleted)
+        if (_isCompleted == 1)
         {
-            log.Errors.Add(new InvalidOperationException("Children added to a flow node after completion"));
+            _log.Errors.Add(new InvalidOperationException("Children added to a flow node after completion"));
             return;
         }
 
-        Children.TryAdd(child.Id, child);
-        
-        // Check completion immediately if completion was requested
-        if (_completionCounter <= 0)
-            CheckCompletion();
+        if (_children.TryAdd(child.Id, child))
+            _allChildObservables.OnNext(child.CompletionSubject.AsObservable());        
     }    
     
     /// <summary>
@@ -88,6 +109,7 @@ public class FlowNode(ILog log)
     public void MarkUncompleted()
     {
         Interlocked.Increment(ref _completionCounter);    
+        _counterObservable.OnNext(false);
     }
     
     /// <summary>
@@ -95,27 +117,35 @@ public class FlowNode(ILog log)
     /// </summary>
     public void MarkCompleted()
     {
-        Interlocked.Decrement(ref _completionCounter);
+        if (Interlocked.Decrement(ref _completionCounter) > 0)
+        {
+            _counterObservable.OnNext(false);
+            return;
+        }
         
-        if(_completionCounter <= 0 && Children.Values.All(c => c.IsCompleted))
-            CompleteNode();
+        _allChildObservables.OnNext(Observable.Return(true));
+        _counterObservable.OnNext(true);
     }
     
     /// <summary>
-    /// Check the node for completion
+    /// Starts monitoring when all children complete, but only if not already started.
     /// </summary>
-    public void CheckCompletion()
+    private void MonitorChildrenCompletion()
     {
-        if(_completionCounter <= 0 && Children.Values.All(c => c.IsCompleted))
-            CompleteNode();
-    }
+        // Ensure monitoring starts only once
+        _childrenCompletionSubscription ??= ChildrenCompletionObservable()
+            .Subscribe(allComplete =>
+            {
+                if (allComplete)
+                    CompleteNode();
+            });
+    }    
     
     private void CompleteNode()
     {
-        if (IsCompleted)
-            return;
-
-        IsCompleted = true;
+        if (Interlocked.CompareExchange(ref _isCompleted, 1, 0) == 1)
+            return;        
+        
         CompletionSubject.OnNext(true);
         CompletionSubject.OnCompleted();
     }

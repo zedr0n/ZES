@@ -36,7 +36,7 @@ public class FlowCompletionService : IFlowCompletionService
     public void TrackMessage(IMessage message)
     {
         var id = message.MessageId.Id;
-        var newFlowNode = new FlowNode(_log) { Id = id, IsRetroactive = message is IRetroactiveCommand, Timeline = message.Timeline };
+        var newFlowNode = new FlowNode(_log) { Id = id, MessageId = message.MessageId, IsRetroactive = message is IRetroactiveCommand, Timeline = message.Timeline };
         var flowNode = _flowNodes.AddOrUpdate(id, newFlowNode, (key, existingNode) => 
             existingNode.IsCompleted ? newFlowNode : existingNode);
         
@@ -53,8 +53,8 @@ public class FlowCompletionService : IFlowCompletionService
         if (message.AncestorId == null || !_flowNodes.TryGetValue(message.AncestorId.Id, out var parentNode)) 
             return;
         
-        parentNode.AddChild(flowNode);
-        _log.Trace($"Adding tracked child {message.MessageId} to {parentNode.Id}");
+        var counter = parentNode.AddChild(flowNode);
+        _log.Trace($"Adding tracked child {message.MessageId} to {parentNode.MessageId}({counter})");
     }
 
     /// <inheritdoc />
@@ -70,8 +70,6 @@ public class FlowCompletionService : IFlowCompletionService
     /// <inheritdoc />
     public async Task NodeCompletionAsync(IMessage message)
     {
-        //var flowNodes = _flowNodes.GetOrAdd(message.Timeline, _ => new ConcurrentDictionary<Guid, FlowNode>());
-
         if (_flowNodes.TryGetValue(message.MessageId.Id, out var flowNode))
             await flowNode.CompletionSubject.FirstAsync().ToTask();  // Await completion
         else

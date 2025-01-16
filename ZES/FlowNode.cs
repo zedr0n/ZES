@@ -47,6 +47,12 @@ public class FlowNode
     public Guid Id { get; init; }
     
     /// <summary>
+    /// Gets or sets the message identifier
+    /// <seealso cref="IMessageMetadata.MessageId"/>
+    /// </summary>
+    public MessageId MessageId { get; init; }
+    
+    /// <summary>
     /// Gets or sets the message timeline
     /// </summary>
     public string Timeline { get; init; }
@@ -64,6 +70,44 @@ public class FlowNode
     {
         _log = log;
         MonitorChildrenCompletion();
+    }
+    
+    /// <summary>
+    /// Add child and recheck completion if necessary
+    /// </summary>
+    /// <param name="child">Child node</param>
+    public int AddChild(FlowNode child)
+    {
+        if (_isCompleted == 1)
+        {
+            _log.Errors.Add(new InvalidOperationException("Children added to a flow node after completion"));
+            return 0;
+        }
+
+        if (_children.TryAdd(child.Id, child))
+            _allChildObservables.OnNext(child.CompletionSubject.AsObservable()); 
+        return _completionCounter;
+    }    
+    
+    /// <summary>
+    /// Request node uncompletion
+    /// </summary>
+    public void MarkUncompleted()
+    {
+        Interlocked.Increment(ref _completionCounter);    
+        _counterObservable.OnNext(false);
+    }
+    
+    /// <summary>
+    /// Request node completion
+    /// </summary>
+    public void MarkCompleted()
+    {
+        if (Interlocked.Decrement(ref _completionCounter) > 0)
+            return;
+        
+        _allChildObservables.OnNext(Observable.Return(true));
+        _counterObservable.OnNext(true);
     }
     
     /// <summary>
@@ -85,46 +129,6 @@ public class FlowNode
         return childCompletionObservable
             .CombineLatest(_counterObservable, (_, counterComplete) => counterComplete)
             .DistinctUntilChanged();
-    }    
-    
-    /// <summary>
-    /// Add child and recheck completion if necessary
-    /// </summary>
-    /// <param name="child">Child node</param>
-    public void AddChild(FlowNode child)
-    {
-        if (_isCompleted == 1)
-        {
-            _log.Errors.Add(new InvalidOperationException("Children added to a flow node after completion"));
-            return;
-        }
-
-        if (_children.TryAdd(child.Id, child))
-            _allChildObservables.OnNext(child.CompletionSubject.AsObservable());        
-    }    
-    
-    /// <summary>
-    /// Request node uncompletion
-    /// </summary>
-    public void MarkUncompleted()
-    {
-        Interlocked.Increment(ref _completionCounter);    
-        _counterObservable.OnNext(false);
-    }
-    
-    /// <summary>
-    /// Request node completion
-    /// </summary>
-    public void MarkCompleted()
-    {
-        if (Interlocked.Decrement(ref _completionCounter) > 0)
-        {
-            _counterObservable.OnNext(false);
-            return;
-        }
-        
-        _allChildObservables.OnNext(Observable.Return(true));
-        _counterObservable.OnNext(true);
     }
     
     /// <summary>

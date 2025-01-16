@@ -96,6 +96,7 @@ namespace ZES
             await dispatcher.SubmitAsync(tracked);
 
             var completionTask = _flowCompletionService.NodeCompletionAsync(command);
+            completionTask.ContinueWith(_ => tracked.Complete());
             return completionTask;
         }
         
@@ -182,7 +183,6 @@ namespace ZES
                     {
                         await _handler(c.Value).Handle(c.Value);
                         _flowCompletionService.MarkComplete(c.Value);
-                        c.Complete();
                         
                     }, _options.ToDataflowBlockOptions());
                 

@@ -219,15 +219,15 @@ namespace ZES.Tests
 
             var id = $"{nameof(CanUpdateRoot)}-Root";
             var command = new CreateRoot(id); 
-            await bus.CommandAsync(command);
+            await await bus.CommandAsync(command);
 
-            //var createdAt = (await bus.QueryUntil(new RootInfoQuery(id), r => r.CreatedAt != default)).CreatedAt;
+            var createdAt = (await bus.QueryUntil(new RootInfoQuery(id), r => r.CreatedAt != default)).CreatedAt;
             
             var updateCommand = new UpdateRoot(id);
-            await bus.CommandAsync(updateCommand);
+            await await bus.CommandAsync(updateCommand);
 
-            //await bus.IsTrue(new RootInfoQuery(id), r => r.UpdatedAt > createdAt);
-            await bus.QueryUntil(new RootInfoQuery(id), c => c?.UpdatedAt != default);
+            await bus.IsTrue(new RootInfoQuery(id), r => r.UpdatedAt > createdAt);
+
             var root = await repo.Find<Root>(id);
             
             var graph = container.GetInstance<IGraph>();

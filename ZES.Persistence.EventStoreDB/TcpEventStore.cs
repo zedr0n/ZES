@@ -146,8 +146,6 @@ namespace ZES.Persistence.EventStoreDB
         {
             var json = Encoding.UTF8.GetString(streamMessage.Data);
             return Serializer.Deserialize(json) as T;
-            
-            return null;
         }
 
         /// <inheritdoc />

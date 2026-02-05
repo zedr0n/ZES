@@ -89,6 +89,11 @@ namespace ZES.Infrastructure
         }
 
         /// <summary>
+        /// Gets a value indicating whether to use fast temporary branches by not persisting to stream store
+        /// </summary>
+        public static bool FastTemporaryBranches { get; } = true;
+
+        /// <summary>
         /// Gets a value indicating whether to exclude static metadata from the stream message metadata
         /// </summary>
         public static bool StoreMetadataSeparately { get; } = true;

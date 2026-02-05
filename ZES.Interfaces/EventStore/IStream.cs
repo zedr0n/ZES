@@ -10,6 +10,11 @@ namespace ZES.Interfaces.EventStore
     public interface IStream
     {
         /// <summary>
+        /// Gets a value indicating whether stream is temporary
+        /// </summary>
+        bool IsTemporary { get; }
+        
+        /// <summary>
         /// Gets a value indicating whether whether stream is a saga stream
         /// </summary>
         /// <value>

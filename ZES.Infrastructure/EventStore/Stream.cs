@@ -13,8 +13,11 @@ namespace ZES.Infrastructure.EventStore
     public class Stream : IStream
     {
         private readonly string _type;
-        private readonly List<IStream> _ancestors = new List<IStream>();
+        private readonly List<IStream> _ancestors = [];
         private int _version;
+        private string _cachedKey;
+        private string _timeline;
+        private bool? _isTemporary;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="Stream"/> class.
@@ -65,13 +68,34 @@ namespace ZES.Infrastructure.EventStore
         }
 
         /// <inheritdoc />
+        public bool IsTemporary
+        {
+            get
+            {
+                if (!Configuration.FastTemporaryBranches)
+                    return false;
+                _isTemporary ??= IsTemporaryBranch(Timeline);
+                return _isTemporary.Value;
+            }
+        }
+
+        /// <inheritdoc />
         public bool IsSaga => _type.ToUpper().Contains(nameof(Saga).ToUpper());
 
         /// <inheritdoc />
         public string Id { get; }
 
         /// <inheritdoc />
-        public string Key => $"{Timeline}:{_type}:{Id.Replace(' '.ToString(), "_")}";
+        public string Key
+        {
+            get
+            {
+                // Cache the key to avoid repeated string allocations and Replace operations (12M+ calls per test)
+                if (_cachedKey == null)
+                    _cachedKey = $"{_timeline}:{_type}:{Id.Replace(' '.ToString(), "_")}";
+                return _cachedKey;
+            }
+        }
 
         /// <inheritdoc />
         public int Version
@@ -115,7 +139,19 @@ namespace ZES.Infrastructure.EventStore
         public int DeletedCount { get; private set; }
 
         /// <inheritdoc />
-        public string Timeline { get; set; }
+        public string Timeline
+        {
+            get => _timeline;
+            set
+            {
+                if (_timeline == value) 
+                    return;
+                
+                _timeline = value;
+                _cachedKey = null; // Invalidate key cache when timeline changes
+                _isTemporary = null;
+            }
+        }
 
         /// <inheritdoc />
         public IStream Copy() => new Stream(Key, Version, Parent?.Copy())
@@ -211,6 +247,19 @@ namespace ZES.Infrastructure.EventStore
         public override string ToString()
         {
             return $"{Key}@{Version}";
+        }
+        
+        private static bool IsTemporaryBranch(string timeline)
+        {
+            if (string.IsNullOrEmpty(timeline) || timeline == "master")
+                return false;
+
+            var lastHyphen = timeline.LastIndexOf('-');
+            if (lastHyphen < 0 || lastHyphen >= timeline.Length - 1)
+                return false;
+
+            var suffix = timeline.Substring(lastHyphen + 1);
+            return long.TryParse(suffix, out _);
         }
 
         /// <inheritdoc />

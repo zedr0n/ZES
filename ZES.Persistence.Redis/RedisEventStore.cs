@@ -119,7 +119,7 @@ namespace ZES.Persistence.Redis
         }
 
         /// <inheritdoc />
-        protected override async Task<int> AppendToStreamStore(IStream stream, IList<StreamEntry> streamMessages)
+        protected override async Task<int> AppendToStreamStore(IStream stream, IList<StreamEntry> streamMessages, IList<IEvent> events = null)
         {
             var version = stream.Version;
             if (stream.Parent != null && stream.Parent.Version > ExpectedVersion.NoStream)

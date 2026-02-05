@@ -189,10 +189,11 @@ namespace ZES.Infrastructure.EventStore
                 }
             }
 
-            var streamMessages = await EncodeEvents(events);
-
-            var version = await AppendToStreamStore(stream, streamMessages);
-            LogEvents(streamMessages);
+            // Skip serialization for temporary branches - fast-path caches IEvent objects directly
+            var streamMessages = stream.IsTemporary ? new List<TNewStreamMessage>() : await EncodeEvents(events);
+            var version = await AppendToStreamStore(stream, streamMessages, events);
+            if (!stream.IsTemporary)
+                LogEvents(streamMessages);
             
             // var version = nextVersion - stream.DeletedCount;
             var snapshotVersion = stream.SnapshotVersion;
@@ -283,8 +284,9 @@ namespace ZES.Infrastructure.EventStore
         /// </summary>
         /// <param name="stream">Stream definition</param>
         /// <param name="streamMessages">Stream messages to append</param>
+        /// <param name="events">Original events (for optimization purposes)</param>
         /// <returns>Task representing the append operation</returns>
-        protected abstract Task<int> AppendToStreamStore(IStream stream, IList<TNewStreamMessage> streamMessages);
+        protected abstract Task<int> AppendToStreamStore(IStream stream, IList<TNewStreamMessage> streamMessages, IList<IEvent> events = null);
         
         /// <summary>
         /// Store implementation of updating the stream metadata
@@ -443,7 +445,7 @@ namespace ZES.Infrastructure.EventStore
         
         private void UpdateVersionCache(IStream stream, IList<IEvent> events)
         {
-            if (!_useVersionCache)
+            if (!_useVersionCache || stream.IsTemporary)
                 return;
             
             var dict = _versions.GetOrAdd(stream.Key, new ConcurrentDictionary<int, Time>());

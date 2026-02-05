@@ -26,11 +26,16 @@ namespace ZES.Persistence.SQLStreamStore
     /// SQLStreamStore event store facade
     /// </summary>
     /// <typeparam name="TEventSourced">Event sourced type</typeparam>
-    public class SqlEventStore<TEventSourced> : EventStoreBase<TEventSourced, NewStreamMessage, StreamMessage> 
+    public class SqlEventStore<TEventSourced> : EventStoreBase<TEventSourced, NewStreamMessage, StreamMessage>
         where TEventSourced : IEventSourced
     {
         private readonly IStreamStore _streamStore;
         private readonly ConcurrentDictionary<Guid, IEvent> _eventCache = new();
+
+        // Fast-path cache for temporary branches - bypasses InMemoryStreamStore writes
+        // Use ConcurrentQueue to preserve event order (critical for hash validation)
+        private readonly ConcurrentDictionary<string, ConcurrentQueue<IEvent>> _tempBranchCache = new();
+        private readonly ConcurrentDictionary<string, int> _tempBranchVersions = new();
 
         /// <summary>
         /// Initializes a new instance of the <see cref="SqlEventStore{TEventSourced}"/> class.
@@ -72,18 +77,35 @@ namespace ZES.Persistence.SQLStreamStore
         /// <inheritdoc />
         protected override async Task ReadSingleStreamStore<TEvent>(IObserver<TEvent> observer, IStream stream, int position, int count, SerializationType serializationType = SerializationType.PayloadAndMetadata)
         {
+            // Fast-path for temporary branches: read from memory cache
+            if (stream.IsTemporary && _tempBranchCache.TryGetValue(stream.Key, out var cachedEvents))
+            {
+                // Convert queue to array to get stable snapshot with proper indexing
+                var eventsArray = cachedEvents.ToArray();
+                var startIndex = position;
+                var takeCount = count > 0 ? count : eventsArray.Length - startIndex;
+
+                for (int i = startIndex; i < startIndex + takeCount && i < eventsArray.Length; i++)
+                {
+                    if (eventsArray[i] is TEvent typedEvent)
+                        observer.OnNext(typedEvent);
+                }
+                observer.OnCompleted();
+                return;
+            }
+
             var page = await _streamStore.ReadStreamForwards(stream.Key, position, Math.Min(Configuration.BatchSize, count));
             while (page.Messages.Length > 0 && count > 0)
             {
                 count = await DecodeEventsObservable(observer, page.Messages, count, serializationType);
                 page = await page.ReadNext();
             }
-            
+
             observer.OnCompleted();
         }
 
         /// <inheritdoc/>
-        protected override async Task<int> AppendToStreamStore(IStream stream, IList<NewStreamMessage> streamMessages)
+        protected override async Task<int> AppendToStreamStore(IStream stream, IList<NewStreamMessage> streamMessages, IList<IEvent> events = null)
         {
             var version = stream.Version;
             version += stream.DeletedCount;
@@ -95,7 +117,23 @@ namespace ZES.Persistence.SQLStreamStore
             }
 
             version = GetExpectedVersion(version);
-            
+
+            // Fast-path for temporary branches: skip InMemoryStreamStore writes, cache events in memory only
+            if (stream.IsTemporary && events != null)
+            {
+                var queue = _tempBranchCache.GetOrAdd(stream.Key, _ => new ConcurrentQueue<IEvent>());
+                foreach (var evt in events)
+                    queue.Enqueue(evt);
+
+                var newVersion = _tempBranchVersions.AddOrUpdate(
+                    stream.Key,
+                    events.Count - 1,
+                    (_, old) => old + events.Count);
+
+                return newVersion - stream.DeletedCount;
+            }
+
+            // Normal path: write to InMemoryStreamStore
             #if USE_CUSTOM_SQLSTREAMSTORE
             var result = await _streamStore.AppendToStream(stream.Key, version, streamMessages.ToArray(), default, false);
             #else
@@ -107,15 +145,19 @@ namespace ZES.Persistence.SQLStreamStore
         /// <inheritdoc />
         protected override async Task UpdateStreamMetadata(IStream stream)
         {
+            // Fast-path for temporary branches: skip metadata updates
+            if (stream.IsTemporary)
+                return;
+
             /*var metaVersion = (await _streamStore.GetStreamMetadata(stream.Key)).MetadataStreamVersion;
             if (metaVersion == ExpectedVersion.EmptyStream)
                 metaVersion = ExpectedVersion.NoStream;*/
             var metaVersion = ExpectedVersion.Any;
-                
+
             await _streamStore.SetStreamMetadata(
                 stream.Key,
-                metaVersion, 
-                metadataJson: Serializer.EncodeStreamMetadata(stream)); 
+                metaVersion,
+                metadataJson: Serializer.EncodeStreamMetadata(stream));
         }
 
         /// <inheritdoc />
@@ -129,6 +171,13 @@ namespace ZES.Persistence.SQLStreamStore
         /// <inheritdoc />
         protected override async Task DeleteStreamStore(IStream stream)
         {
+            // Clean up temp branch cache
+            if (stream.IsTemporary)
+            {
+                _tempBranchCache.TryRemove(stream.Key, out _);
+                _tempBranchVersions.TryRemove(stream.Key, out _);
+            }
+
             await _streamStore.DeleteStream(stream.Key);
         }
 

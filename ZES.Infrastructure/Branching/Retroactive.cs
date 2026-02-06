@@ -252,6 +252,7 @@ namespace ZES.Infrastructure.Branching
 
             if (Configuration.DeleteStreamsInsteadOfTrimming)
             {
+                _log.StopWatch.Start("TryInsert.Merge.DeleteStreams");
                 foreach (var k in allEvents.Keys)
                 {
                     var liveStream = await _streamLocator.FindBranched(k, currentBranch);
@@ -280,6 +281,7 @@ namespace ZES.Infrastructure.Branching
                     _log.Debug($"Inserting events ({k.Version + 1}..{k.Version + 1 + changes[k].Count()}) into {liveStream.Key}");
                     await store.AppendToStream(liveStream, events, false);
                 }    
+                _log.StopWatch.Stop("TryInsert.Merge.DeleteStreams");
             }
             else
             {

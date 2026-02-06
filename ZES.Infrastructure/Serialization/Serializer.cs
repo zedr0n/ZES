@@ -126,6 +126,10 @@ namespace ZES.Infrastructure.Serialization
         private readonly AutomaticJsonNameTable _jsonNameTable;
         private readonly IArrayPool<char> _jsonArrayPool;
         private readonly Dictionary<JsonNameTable, string> _propertyNameToJson = new();
+
+        // Cache for type strings to avoid repeated string allocation and concatenation
+        // Key: Type, Value: "FullName,AssemblyName" string
+        private readonly Dictionary<Type, string> _typeStringCache = new();
             
 #if USE_JSON        
         private readonly JsonSerializer _simpleSerializer;
@@ -511,8 +515,8 @@ namespace ZES.Infrastructure.Serialization
             writer.WriteStartObject();
 
             WritePropertyName(writer, "$type", null, _propertyNameToJson[JsonNameTable.Type]);
-            writer.WriteValue(e.GetType().FullName + "," + e.GetType().Assembly.FullName.Split(',')[0]);
-            
+            writer.WriteValue(GetTypeString(e.GetType()));
+
             WritePropertyName(writer, nameof(Event.Metadata), null, _propertyNameToJson[JsonNameTable.Metadata]);
             writer.WriteStartObject();
             {
@@ -730,12 +734,22 @@ namespace ZES.Infrastructure.Serialization
             return true;
         }
 
+        private string GetTypeString(Type type)
+        {
+            if (_typeStringCache.TryGetValue(type, out var cached))
+                return cached;
+
+            var typeString = type.FullName + "," + type.Assembly.FullName.Split(',')[0];
+            _typeStringCache[type] = typeString;
+            return typeString;
+        }
+
         private void WriteMessageMetadata(JsonWriter writer, IMessageMetadata e, IEnumerable<string> ignoredProperties = null)
         {
             var properties = ignoredProperties as string[] ?? ignoredProperties?.ToArray();
-            
+
             WritePropertyName(writer, "$type", null, _propertyNameToJson[JsonNameTable.Type]);
-            writer.WriteValue(e.GetType().FullName + "," + e.GetType().Assembly.FullName.Split(',')[0]);
+            writer.WriteValue(GetTypeString(e.GetType()));
             
             if (WritePropertyName(writer, nameof(IMessageMetadata.MessageId), properties, _propertyNameToJson[JsonNameTable.MessageId]))
                 writer.WriteValue(e.MessageId.ToString());
@@ -772,9 +786,9 @@ namespace ZES.Infrastructure.Serialization
         private void WriteMessageStaticMetadata(JsonWriter writer, IMessageStaticMetadata e, IEnumerable<string> ignoredProperties = null)
         {
             var properties = ignoredProperties as string[] ?? ignoredProperties?.ToArray();
-            
+
             writer.WritePropertyName("$type");
-            writer.WriteValue(e.GetType().FullName + "," + e.GetType().Assembly.FullName.Split(',')[0]);
+            writer.WriteValue(GetTypeString(e.GetType()));
             
             if (WritePropertyName(writer, nameof(IMessageStaticMetadata.MessageType), properties))
                 writer.WriteValue(e.MessageType);

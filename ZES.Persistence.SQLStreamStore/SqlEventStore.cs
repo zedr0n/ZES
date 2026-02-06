@@ -78,30 +78,42 @@ namespace ZES.Persistence.SQLStreamStore
         protected override async Task ReadSingleStreamStore<TEvent>(IObserver<TEvent> observer, IStream stream, int position, int count, SerializationType serializationType = SerializationType.PayloadAndMetadata)
         {
             // Fast-path for temporary branches: read from memory cache
+            Log.StopWatch.Start(nameof(ReadSingleStreamStore));
             if (stream.IsTemporary && _tempBranchCache.TryGetValue(stream.Key, out var cachedEvents))
             {
+                Log.StopWatch.Start(nameof(ReadSingleStreamStore)+".TemporaryBranch");
                 // Convert queue to array to get stable snapshot with proper indexing
                 var eventsArray = cachedEvents.ToArray();
-                var startIndex = position;
-                var takeCount = count > 0 ? count : eventsArray.Length - startIndex;
+                var takeCount = count > 0 ? count : eventsArray.Length - position;
 
-                for (int i = startIndex; i < startIndex + takeCount && i < eventsArray.Length; i++)
+                for (var i = position; i < position + takeCount && i < eventsArray.Length; i++)
                 {
                     if (eventsArray[i] is TEvent typedEvent)
                         observer.OnNext(typedEvent);
                 }
                 observer.OnCompleted();
+                
+                Log.StopWatch.Stop(nameof(ReadSingleStreamStore)+".TemporaryBranch");
+                Log.StopWatch.Stop(nameof(ReadSingleStreamStore));
                 return;
             }
 
+            Log.StopWatch.Start(nameof(ReadSingleStreamStore)+".ReadStreamForwards");
             var page = await _streamStore.ReadStreamForwards(stream.Key, position, Math.Min(Configuration.BatchSize, count));
+            Log.StopWatch.Stop(nameof(ReadSingleStreamStore)+".ReadStreamForwards");
+            
+            Log.StopWatch.Start(nameof(ReadSingleStreamStore)+".DecodeEvents");
             while (page.Messages.Length > 0 && count > 0)
             {
                 count = await DecodeEventsObservable(observer, page.Messages, count, serializationType);
                 page = await page.ReadNext();
             }
+            Log.StopWatch.Stop(nameof(ReadSingleStreamStore)+".DecodeEvents");
 
+            Log.StopWatch.Start(nameof(ReadSingleStreamStore)+".OnCompleted");
             observer.OnCompleted();
+            Log.StopWatch.Stop(nameof(ReadSingleStreamStore)+".OnCompleted");
+            Log.StopWatch.Stop(nameof(ReadSingleStreamStore));
         }
 
         /// <inheritdoc/>

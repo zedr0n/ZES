@@ -93,6 +93,9 @@ namespace ZES.Infrastructure.Domain
             get => Metadata.Timeline;
             set
             {
+                if (Metadata.Timeline == value)
+                    return;
+                
                 Metadata.Json = null;
                 Metadata.Timeline = value;
             }

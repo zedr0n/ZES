@@ -83,6 +83,8 @@ namespace ZES.Infrastructure.Domain
             get => Metadata.Stream;
             set
             {
+                if (Metadata.Stream == value) 
+                    return;
                 Metadata.Json = null;
                 Metadata.Stream = value;
             }
@@ -95,6 +97,9 @@ namespace ZES.Infrastructure.Domain
             get => Metadata.StreamHash;
             set
             {
+                if (Metadata.StreamHash == value)
+                    return;
+                
                 Metadata.Json = null;
                 Metadata.StreamHash = value;
             }

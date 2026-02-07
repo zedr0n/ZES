@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
-        <TargetFramework>net8.0</TargetFramework>
+        <TargetFramework>net10.0</TargetFramework>
         <CodeAnalysisRuleSet>..\Analysis.ruleset</CodeAnalysisRuleSet>
         <IsPackable>true</IsPackable>
         <PublishRepositoryUrl>true</PublishRepositoryUrl>
@@ -10,6 +10,11 @@
         <NoWarn>SA1623</NoWarn>
         <GenerateDocumentationFile>true</GenerateDocumentationFile>
         <Configurations>Debug;Release;DebugLocal</Configurations>
+        <TieredCompilation>false</TieredCompilation>
+        <PublishReadyToRun>true</PublishReadyToRun>
+        <TieredPGO>true</TieredPGO>
+        <ServerGarbageCollection>true</ServerGarbageCollection>
+        <ConcurrentGarbageCollection>true</ConcurrentGarbageCollection>
         <Platforms>AnyCPU</Platforms>
     </PropertyGroup>
 

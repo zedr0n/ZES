@@ -6,7 +6,6 @@ using System.Threading.Tasks;
 using NodaTime;
 using SimpleInjector;
 using Xunit;
-using Xunit.Abstractions;
 using ZES.Infrastructure;
 using ZES.Infrastructure.Alerts;
 using ZES.Infrastructure.Domain;
@@ -32,7 +31,7 @@ namespace ZES.Tests
         }
 
         [Fact]
-        public async void CanCreateGraph()
+        public async Task CanCreateGraph()
         {
             var container = CreateContainer();
             var bus = container.GetInstance<IBus>();
@@ -50,7 +49,7 @@ namespace ZES.Tests
         }
 
         [Fact]
-        public async void CanTrimStream()
+        public async Task CanTrimStream()
         {
             var container = CreateContainer();
             var bus = container.GetInstance<IBus>();
@@ -74,7 +73,7 @@ namespace ZES.Tests
         }
 
         [Fact]
-        public async void CanProcessRetroactiveCommand()
+        public async Task CanProcessRetroactiveCommand()
         {
             var container = CreateContainer();
             var bus = container.GetInstance<IBus>();
@@ -97,7 +96,7 @@ namespace ZES.Tests
         }
 
         [Fact]
-        public async void CanHandleSeparateNonRetroactiveCommand()
+        public async Task CanHandleSeparateNonRetroactiveCommand()
         {
             var container = CreateContainer();
             var bus = container.GetInstance<IBus>();
@@ -117,13 +116,14 @@ namespace ZES.Tests
         }
 
         [Fact]
-        public async void CanDeleteFromStream()
+        public async Task CanDeleteFromStream()
         {
             var container = CreateContainer();
             var bus = container.GetInstance<IBus>();
             var retroactive = container.GetInstance<IRetroactive>();
             var locator = container.GetInstance<IStreamLocator>();
             var messageQueue = container.GetInstance<IMessageQueue>();
+            var manager = container.GetInstance<IBranchManager>();
             var id = $"{nameof(CanDeleteFromStream)}-Root";
             
             await await bus.CommandAsync(new CreateRoot(id));
@@ -155,7 +155,7 @@ namespace ZES.Tests
         }
 
         [Fact]
-        public async void CanInsertIntoStream()
+        public async Task CanInsertIntoStream()
         {
             var container = CreateContainer();
             var bus = container.GetInstance<IBus>();
@@ -197,7 +197,7 @@ namespace ZES.Tests
         }
 
         [Fact]
-        public async void CanProcessTwoRetroactiveCommandsOnSeparateBranches()
+        public async Task CanProcessTwoRetroactiveCommandsOnSeparateBranches()
         {
             var container = CreateContainer();
             var bus = container.GetInstance<IBus>();
@@ -227,7 +227,7 @@ namespace ZES.Tests
         }
         
         [Fact]
-        public async void CanInsertIntoStreamMultipleBranch()
+        public async Task CanInsertIntoStreamMultipleBranch()
         {
             var container = CreateContainer();
             var bus = container.GetInstance<IBus>();
@@ -276,7 +276,7 @@ namespace ZES.Tests
         }
 
         [Fact]
-        public async void CanRetroactivelyApplySaga()
+        public async Task CanRetroactivelyApplySaga()
         {
             var container = CreateContainer(new List<Action<Container>> { Config.RegisterSagas });
             var bus = container.GetInstance<IBus>();

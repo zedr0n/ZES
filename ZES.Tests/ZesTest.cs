@@ -1,10 +1,7 @@
 using System;
 using System.Collections.Generic;
 using SimpleInjector;
-using Xunit.Abstractions;
-using ZES.Interfaces.Domain;
-using ZES.Interfaces.EventStore;
-using ZES.Persistence.Redis;
+using Xunit;
 using ZES.TestBase;
 using ZES.Tests.Domain;
 

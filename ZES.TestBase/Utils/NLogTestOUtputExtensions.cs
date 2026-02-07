@@ -1,5 +1,5 @@
 using NLog;
-using Xunit.Abstractions;
+using Xunit;
 
 namespace ZES.TestBase.Utils
 {

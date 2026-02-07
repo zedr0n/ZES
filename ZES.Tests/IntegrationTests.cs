@@ -1,5 +1,5 @@
+using System.Threading.Tasks;
 using Xunit;
-using Xunit.Abstractions;
 
 namespace ZES.Tests
 {
@@ -11,7 +11,7 @@ namespace ZES.Tests
         }
         
         [Fact]
-        public async void CanReplayLog()
+        public async Task CanReplayLog()
         {
             var result = await Replay("../../../Ad-hoc/CanReplayLog.json");
             Assert.True(result.Result);

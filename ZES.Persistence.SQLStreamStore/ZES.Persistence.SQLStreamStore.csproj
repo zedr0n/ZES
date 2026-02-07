@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
     <PropertyGroup>
-        <TargetFramework>net8.0</TargetFramework>
+        <TargetFramework>net10.0</TargetFramework>
         <CodeAnalysisRuleSet>..\Analysis.ruleset</CodeAnalysisRuleSet>
         <IsPackable>true</IsPackable>
         <PublishRepositoryUrl>true</PublishRepositoryUrl>
@@ -9,6 +9,11 @@
         <NoWarn>4014</NoWarn>
         <GenerateDocumentationFile>true</GenerateDocumentationFile>
         <Configurations>Debug;Release;DebugLocal</Configurations>
+        <TieredCompilation>false</TieredCompilation>
+        <PublishReadyToRun>true</PublishReadyToRun>
+        <TieredPGO>true</TieredPGO>
+        <ServerGarbageCollection>true</ServerGarbageCollection>
+        <ConcurrentGarbageCollection>true</ConcurrentGarbageCollection>
         <Platforms>AnyCPU</Platforms>
     </PropertyGroup>
 
@@ -19,21 +24,21 @@
 
     <ItemGroup>
         <PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.0.0" PrivateAssets="All" />
-        <PackageReference Include="SqlStreamStore.MsSql" Version="1.2.1-alpha.3.35" />
-        <PackageReference Include="SqlStreamStore.MySql" Version="1.2.1-alpha.3.35" />
+        <PackageReference Include="SqlStreamStore.MsSql" Version="1.2.1-alpha.3.38" />
+        <PackageReference Include="SqlStreamStore.MySql" Version="1.2.1-alpha.3.38" />
     </ItemGroup>
 
     <Choose>
         <When Condition="'$(Configuration)' == 'DebugLocal'">
             <ItemGroup>
                 <Reference Include="SqlStreamStore">
-                    <HintPath>../../SQLStreamStore/src/SqlStreamStore/bin/Debug/net8.0/SqlStreamStore.dll</HintPath>
+                    <HintPath>../../SQLStreamStore/src/SqlStreamStore/bin/Debug/net10.0/SqlStreamStore.dll</HintPath>
                 </Reference>
             </ItemGroup>
         </When>
         <Otherwise>
             <ItemGroup>
-                <PackageReference Include="SqlStreamStore" Version="1.2.1-alpha.3.35" />
+                <PackageReference Include="SqlStreamStore" Version="1.2.1-alpha.3.38" />
             </ItemGroup>
         </Otherwise>
     </Choose>

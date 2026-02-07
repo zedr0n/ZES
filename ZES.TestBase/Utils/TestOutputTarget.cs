@@ -2,7 +2,7 @@ using System;
 using System.Collections.Concurrent;
 using NLog;
 using NLog.Targets;
-using Xunit.Abstractions;
+using Xunit;
 
 namespace ZES.TestBase.Utils 
 {

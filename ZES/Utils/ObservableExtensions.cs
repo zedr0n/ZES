@@ -68,41 +68,22 @@ namespace ZES.Utils
             if (predicate == null)
                 predicate = x => !Equals(x, default(T));
 
-            var obs = Observable.Create(async (IObserver<T> o) =>
+            var startTime = DateTime.UtcNow;
+            var endTime = timeout == TimeSpan.FromMilliseconds(-1) 
+                ? DateTime.MaxValue 
+                : startTime.Add(timeout);
+
+            while (true)
             {
-                var r = await action();
-                if (predicate(r))
-                {
-                    o.OnNext(r);
-                    o.OnCompleted(); 
-                }
-                else
-                {
-                    o.OnError(new ArgumentNullException());
-                }
-            });
+                var result = await action();
+                if (predicate(result))
+                    return result;
 
-            obs = obs.RetryWithDelay(delay);
-            if (timeout != TimeSpan.FromMilliseconds(-1))
-                obs = obs.Timeout(timeout, Observable.Return(action().Result));
+                if (DateTime.UtcNow >= endTime)
+                    return result; // Timeout - return last result
 
-            return await obs;
-        }
-        
-        private static IObservable<T> RetryWithDelay<T>(this IObservable<T> source, TimeSpan timeSpan = default(TimeSpan))
-        {
-            if (timeSpan == default(TimeSpan))
-                timeSpan = Delay;
-            if (source == null)
-                throw new ArgumentNullException(nameof(source));
-            if (timeSpan < TimeSpan.Zero)
-                throw new ArgumentOutOfRangeException(nameof(timeSpan));
-            if (timeSpan == TimeSpan.Zero)
-                return source.RetryWhen(e => Observable.Return(0));
-
-            return source.Catch(Observable.Timer(timeSpan)
-                .SelectMany(_ => source)
-                .Retry());
+                await Task.Delay(delay);
+            }
         }
     }
 }

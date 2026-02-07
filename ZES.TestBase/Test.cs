@@ -9,7 +9,7 @@ using Microsoft.Extensions.DependencyInjection;
 using NLog;
 using NLog.Targets;
 using SimpleInjector;
-using Xunit.Abstractions;
+using Xunit;
 using ZES.GraphQL;
 using ZES.Infrastructure;
 using ZES.Infrastructure.Causality;

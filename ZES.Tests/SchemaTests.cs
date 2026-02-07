@@ -1,8 +1,8 @@
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using HotChocolate.Execution;
 using Xunit;
-using Xunit.Abstractions;
 using ZES.GraphQL;
 using ZES.Interfaces;
 using ZES.Interfaces.Clocks;
@@ -31,7 +31,7 @@ namespace ZES.Tests
         }
 
         /*[Fact]
-        public async void CanSubscribe()
+        public async Task CanSubscribe()
         {
             var container = CreateContainer();
             var log = container.GetInstance<ILog>();
@@ -62,7 +62,7 @@ namespace ZES.Tests
         }*/
 
         [Fact]
-        public async void CanExecuteQuery()
+        public async Task CanExecuteQuery()
         {
             var container = CreateContainer();
             var bus = container.GetInstance<IBus>();
@@ -167,7 +167,7 @@ namespace ZES.Tests
             }
         }
         [Fact]
-        public async void CanReplayLog()
+        public async Task CanReplayLog()
         {
             var container = CreateContainer();
             var schemaProvider = container.GetInstance<ISchemaProvider>();
@@ -196,7 +196,7 @@ namespace ZES.Tests
         }
 
         [Fact]
-        public async void CanBranch()
+        public async Task CanBranch()
         {
             var container = CreateContainer();
             var log = container.GetInstance<ILog>(); 
@@ -224,7 +224,7 @@ namespace ZES.Tests
         }
         
         [Fact]
-        public async void CanQueryError()
+        public async Task CanQueryError()
         {
             var container = CreateContainer();
             

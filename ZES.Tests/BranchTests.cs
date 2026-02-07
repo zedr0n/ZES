@@ -3,11 +3,11 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
 using System.Threading;
+using System.Threading.Tasks;
 using NodaTime;
 using NodaTime.Extensions;
 using SimpleInjector;
 using Xunit;
-using Xunit.Abstractions;
 using ZES.Infrastructure;
 using ZES.Infrastructure.Alerts;
 using ZES.Infrastructure.Branching;
@@ -45,7 +45,7 @@ namespace ZES.Tests
         }
 
         [Fact]
-        public async void CanBranchWithMultipleAncestors()
+        public async Task CanBranchWithMultipleAncestors()
         {
             var container = CreateContainer();
             var bus = container.GetInstance<IBus>();
@@ -70,7 +70,7 @@ namespace ZES.Tests
         }
 
         [Fact]
-        public async void CanCorrectlyGetBranchStreamHash()
+        public async Task CanCorrectlyGetBranchStreamHash()
         {
             var container = CreateContainer();
             var bus = container.GetInstance<IBus>();
@@ -107,7 +107,7 @@ namespace ZES.Tests
         }
 
         [Fact]
-        public async void CanGetEmptyStreamHash()
+        public async Task CanGetEmptyStreamHash()
         {
             var container = CreateContainer();
             var bus = container.GetInstance<IBus>();
@@ -123,7 +123,7 @@ namespace ZES.Tests
         }
         
         [Fact]
-        public async void CanMergeTimeline()
+        public async Task CanMergeTimeline()
         {
             var container = CreateContainer(new List<Action<Container>>() { Config.RegisterSagas });
             var bus = container.GetInstance<IBus>();
@@ -159,7 +159,7 @@ namespace ZES.Tests
         }
 
         [Fact]
-        public async void CanUpdateTimeline()
+        public async Task CanUpdateTimeline()
         {
             var container = CreateContainer(new List<Action<Container>>() { });
             var bus = container.GetInstance<IBus>();
@@ -180,7 +180,7 @@ namespace ZES.Tests
         }
 
         [Fact]
-        public async void CanMergeWithoutNewStreams()
+        public async Task CanMergeWithoutNewStreams()
         {
             var container = CreateContainer(new List<Action<Container>>() { Config.RegisterSagas });
             var bus = container.GetInstance<IBus>();
@@ -210,7 +210,7 @@ namespace ZES.Tests
         }
 
         [Fact]
-        public async void CanQueryTimeline()
+        public async Task CanQueryTimeline()
         {
             var container = CreateContainer();
             var bus = container.GetInstance<IBus>();
@@ -233,7 +233,7 @@ namespace ZES.Tests
         }
 
         [Fact]
-        public async void CanMergeHistory()
+        public async Task CanMergeHistory()
         {
             var container = CreateContainer();
             var bus = container.GetInstance<IBus>();
@@ -263,7 +263,7 @@ namespace ZES.Tests
         }
         
         [Fact]
-        public async void CanCreateClone()
+        public async Task CanCreateClone()
         {
             var container = CreateContainer(new List<Action<Container>>() { Config.RegisterSagas });
             var bus = container.GetInstance<IBus>();
@@ -314,7 +314,7 @@ namespace ZES.Tests
         }
 
         [Fact]
-        public async void CanMergeGrandTimeline()
+        public async Task CanMergeGrandTimeline()
         {
             var container = CreateContainer();
             var bus = container.GetInstance<IBus>();
@@ -356,7 +356,7 @@ namespace ZES.Tests
         }
 
         [Fact]
-        public async void CanMergeGrandTimelineSequentially()
+        public async Task CanMergeGrandTimelineSequentially()
         {
             var container = CreateContainer();
             var bus = container.GetInstance<IBus>();
@@ -397,7 +397,7 @@ namespace ZES.Tests
         }
         
         [Fact]
-        public async void CanCreateEmpty()
+        public async Task CanCreateEmpty()
         {
             var container = CreateContainer();
             var bus = container.GetInstance<IBus>();
@@ -426,7 +426,7 @@ namespace ZES.Tests
         }
         
         [Fact]
-        public async void CanUseNullRemote()
+        public async Task CanUseNullRemote()
         {
             var container = CreateContainer();
             var bus = container.GetInstance<IBus>();
@@ -443,7 +443,7 @@ namespace ZES.Tests
         }
 
         [Fact]
-        public async void CanPushToRemote()
+        public async Task CanPushToRemote()
         {
             if (Configuration.EventStoreBackendType != EventStoreBackendType.SqlStreamStore)
                 return;
@@ -471,7 +471,7 @@ namespace ZES.Tests
         }
         
         [Fact]
-        public async void CanPushToGenericRemote()
+        public async Task CanPushToGenericRemote()
         {
             if (Configuration.EventStoreBackendType != EventStoreBackendType.SqlStreamStore)
                 return;
@@ -502,7 +502,7 @@ namespace ZES.Tests
         }
 
         [Fact]
-        public async void CanCancelPushToGenericRemote()
+        public async Task CanCancelPushToGenericRemote()
         {
             if (Configuration.EventStoreBackendType != EventStoreBackendType.SqlStreamStore)
                 return;
@@ -535,7 +535,7 @@ namespace ZES.Tests
         }
 
         [Fact]
-        public async void CanUpdateGenericRemote()
+        public async Task CanUpdateGenericRemote()
         {
             if (Configuration.EventStoreBackendType != EventStoreBackendType.SqlStreamStore)
                 return;
@@ -575,7 +575,7 @@ namespace ZES.Tests
         }
 
         [Fact]
-        public async void CanPullFromRemote()
+        public async Task CanPullFromRemote()
         {
             if (Configuration.EventStoreBackendType != EventStoreBackendType.SqlStreamStore)
                 return;
@@ -596,7 +596,7 @@ namespace ZES.Tests
         }
         
         [Fact]
-        public async void CanPullFromGenericRemote()
+        public async Task CanPullFromGenericRemote()
         {
             if (Configuration.EventStoreBackendType != EventStoreBackendType.SqlStreamStore)
                 return;
@@ -629,7 +629,7 @@ namespace ZES.Tests
         }
 
         [Fact]
-        public async void CanCancelPull()
+        public async Task CanCancelPull()
         {
             if (Configuration.EventStoreBackendType != EventStoreBackendType.SqlStreamStore)
                 return;
@@ -658,7 +658,7 @@ namespace ZES.Tests
         }
         
         [Fact]
-        public async void CanCancelPullFromGenericRemote()
+        public async Task CanCancelPullFromGenericRemote()
         {
             if (Configuration.EventStoreBackendType != EventStoreBackendType.SqlStreamStore)
                 return;
@@ -693,7 +693,7 @@ namespace ZES.Tests
         }
 
         [Fact]
-        public async void CanCancelMerge()
+        public async Task CanCancelMerge()
         {
             var container = CreateContainer(new List<Action<Container>> { c => c.UseLocalStore() });
             var bus = container.GetInstance<IBus>();
@@ -720,7 +720,7 @@ namespace ZES.Tests
         }
 
         [Fact]
-        public async void CanPushBranch()
+        public async Task CanPushBranch()
         {
             if (Configuration.EventStoreBackendType != EventStoreBackendType.SqlStreamStore)
                 return;
@@ -748,7 +748,7 @@ namespace ZES.Tests
         }
         
         [Fact]
-        public async void CanPushBranchToGenericRemote()
+        public async Task CanPushBranchToGenericRemote()
         {
             if (Configuration.EventStoreBackendType != EventStoreBackendType.SqlStreamStore)
                 return;
@@ -793,7 +793,7 @@ namespace ZES.Tests
         }
 
         [Fact]
-        public async void CanPushSaga()
+        public async Task CanPushSaga()
         {
             if (Configuration.EventStoreBackendType != EventStoreBackendType.SqlStreamStore)
                 return;
@@ -816,7 +816,7 @@ namespace ZES.Tests
         }
         
         [Fact]
-        public async void CanPushSagaToGenericRemote()
+        public async Task CanPushSagaToGenericRemote()
         {
             if (Configuration.EventStoreBackendType != EventStoreBackendType.SqlStreamStore)
                 return;
@@ -851,7 +851,7 @@ namespace ZES.Tests
         }
 
         [Fact]
-        public async void CanPushGrandBranch()
+        public async Task CanPushGrandBranch()
         {
             if (Configuration.EventStoreBackendType != EventStoreBackendType.SqlStreamStore)
                 return;
@@ -894,7 +894,7 @@ namespace ZES.Tests
         }
         
         [Fact]
-        public async void CanPushGrandBranchToGenericRemote()
+        public async Task CanPushGrandBranchToGenericRemote()
         {
             if (Configuration.EventStoreBackendType != EventStoreBackendType.SqlStreamStore)
                 return;
@@ -954,7 +954,7 @@ namespace ZES.Tests
         }
 
         [Fact]
-        public async void CanPushSnapshot()
+        public async Task CanPushSnapshot()
         {
             if (Configuration.EventStoreBackendType != EventStoreBackendType.SqlStreamStore)
                 return;
@@ -987,7 +987,7 @@ namespace ZES.Tests
         }
         
         [Fact]
-        public async void CanPushSnapshotToGenericRemote()
+        public async Task CanPushSnapshotToGenericRemote()
         {
             if (Configuration.EventStoreBackendType != EventStoreBackendType.SqlStreamStore)
                 return;

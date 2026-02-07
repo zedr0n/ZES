@@ -10,7 +10,6 @@ using NodaTime;
 using NodaTime.Extensions;
 using SimpleInjector;
 using Xunit;
-using Xunit.Abstractions;
 using ZES.Infrastructure;
 using ZES.Infrastructure.Alerts;
 using ZES.Infrastructure.Domain;
@@ -41,7 +40,7 @@ namespace ZES.Tests
         }
         
         [Fact]
-        public async void CanSaveRoot()
+        public async Task CanSaveRoot()
         {
             var container = CreateContainer();
             var bus = container.GetInstance<IBus>();
@@ -56,7 +55,7 @@ namespace ZES.Tests
         }
 
         [Fact]
-        public async void CanCalculateStreamHash()
+        public async Task CanCalculateStreamHash()
         {
             var container = CreateContainer();
             var bus = container.GetInstance<IBus>();
@@ -82,7 +81,7 @@ namespace ZES.Tests
         }
 
         [Fact]
-        public async void CanCreateRecord()
+        public async Task CanCreateRecord()
         {
             var container = CreateContainer();
             var bus = container.GetInstance<IBus>();
@@ -100,7 +99,7 @@ namespace ZES.Tests
         }
 
         [Fact]
-        public async void CanCalculateTotalRecord()
+        public async Task CanCalculateTotalRecord()
         {
             var container = CreateContainer();
             var bus = container.GetInstance<IBus>();
@@ -116,7 +115,7 @@ namespace ZES.Tests
         }
 
         [Fact]
-        public async void CannotSaveTwice()
+        public async Task CannotSaveTwice()
         {
             var container = CreateContainer();
             var bus = container.GetInstance<IBus>();
@@ -139,7 +138,7 @@ namespace ZES.Tests
         }
 
         [Fact]
-        public async void CanDetectDuplicateCommands()
+        public async Task CanDetectDuplicateCommands()
         {
             var container = CreateContainer();
             var bus = container.GetInstance<IBus>();
@@ -156,7 +155,7 @@ namespace ZES.Tests
         }
 
         [Fact]
-        public async void CanSaveMultipleRoots()
+        public async Task CanSaveMultipleRoots()
         {
             var container = CreateContainer();
             var bus = container.GetInstance<IBus>();
@@ -176,7 +175,7 @@ namespace ZES.Tests
         }
 
         [Fact]
-        public async void CanProjectRoot()
+        public async Task CanProjectRoot()
         {
             var container = CreateContainer();
             var bus = container.GetInstance<IBus>();
@@ -211,7 +210,7 @@ namespace ZES.Tests
         }
         
         [Fact]
-        public async void CanUpdateRoot()
+        public async Task CanUpdateRoot()
         {
             var container = CreateContainer();
             var bus = container.GetInstance<IBus>();
@@ -235,7 +234,7 @@ namespace ZES.Tests
         }
         
         [Fact]
-        public async void CanDeserializeJustMetadata()
+        public async Task CanDeserializeJustMetadata()
         {
             if (Configuration.EventStoreBackendType != EventStoreBackendType.SqlStreamStore)
                 return;
@@ -274,7 +273,7 @@ namespace ZES.Tests
         [InlineData(50000, SerializationType.Metadata)]
         [InlineData(50000, SerializationType.FullMetadata)]
         [InlineData(50000, SerializationType.PayloadAndMetadata)]
-        public async void CanDeserializeJustMetadataPerformance(int nLoops, SerializationType serializationType)
+        public async Task CanDeserializeJustMetadataPerformance(int nLoops, SerializationType serializationType)
         {
             if (Configuration.EventStoreBackendType != EventStoreBackendType.SqlStreamStore)
                 return;
@@ -316,7 +315,7 @@ namespace ZES.Tests
 
         [Theory]
         [InlineData(1000)]
-        public async void CanCreateMultipleRoots(int numRoots)
+        public async Task CanCreateMultipleRoots(int numRoots)
         {
             var container = CreateContainer();
             var bus = container.GetInstance<IBus>();
@@ -348,7 +347,7 @@ namespace ZES.Tests
         }
 
         [Fact]
-        public async void CanRecordRoot()
+        public async Task CanRecordRoot()
         {
             var container = CreateContainer();
             var bus = container.GetInstance<IBus>();
@@ -366,7 +365,7 @@ namespace ZES.Tests
         }
         
         [Fact]
-        public async void CanHistoricalProjectRoot()
+        public async Task CanHistoricalProjectRoot()
         {
             var container = CreateContainer();
             var bus = container.GetInstance<IBus>();
@@ -403,7 +402,7 @@ namespace ZES.Tests
 
         [Theory]
         [InlineData(1000)]
-        public async void CanProjectALotOfRoots(int numRoots)
+        public async Task CanProjectALotOfRoots(int numRoots)
         {
             var container = CreateContainer();
             var bus = container.GetInstance<IBus>();
@@ -429,7 +428,7 @@ namespace ZES.Tests
         }
 
         [Fact]
-        public async void CanUseSaga()
+        public async Task CanUseSaga()
         {
             var container = CreateContainer(new List<Action<Container>> { Config.RegisterSagas });
             var bus = container.GetInstance<IBus>();
@@ -450,7 +449,7 @@ namespace ZES.Tests
 
         [Theory]
         [InlineData(10)]
-        public async void CanParallelizeSagas(int numRoots)
+        public async Task CanParallelizeSagas(int numRoots)
         {
             var container = CreateContainer(new List<Action<Container>> { Config.RegisterSagas });
             var bus = container.GetInstance<IBus>();
@@ -482,7 +481,7 @@ namespace ZES.Tests
         
         [Theory]
         [InlineData(10)]         
-        public async void CanRebuildProjection(int numberOfRoots)
+        public async Task CanRebuildProjection(int numberOfRoots)
         {
             var container = CreateContainer();
             var bus = container.GetInstance<IBus>();
@@ -511,7 +510,7 @@ namespace ZES.Tests
         
         [Theory]
         [InlineData(10)]         
-        public async void CanCancelProjection(int numberOfRoots)
+        public async Task CanCancelProjection(int numberOfRoots)
         {
             var container = CreateContainer();
             var bus = container.GetInstance<IBus>();
@@ -542,7 +541,7 @@ namespace ZES.Tests
         }
 
         [Fact]
-        public async void CanRequestJson()
+        public async Task CanRequestJson()
         {
             var container = CreateContainer();
             var bus = container.GetInstance<IBus>();
@@ -566,7 +565,7 @@ namespace ZES.Tests
         }
 
         [Fact]
-        public async void CanDeserializeRequestedJson()
+        public async Task CanDeserializeRequestedJson()
         {
             var container = CreateContainer();
             var bus = container.GetInstance<IBus>();
@@ -590,7 +589,7 @@ namespace ZES.Tests
         }
 
         [Fact]
-        public async void CanFailRequestingJson()
+        public async Task CanFailRequestingJson()
         {
             var container = CreateContainer();
             var bus = container.GetInstance<IBus>();
@@ -604,7 +603,7 @@ namespace ZES.Tests
         }
 
         [Fact]
-        public async void CanCreateSnapshot()
+        public async Task CanCreateSnapshot()
         {
             var container = CreateContainer();
             var bus = container.GetInstance<IBus>();
@@ -623,7 +622,7 @@ namespace ZES.Tests
         }
 
         [Fact]
-        public async void CanCreateSagaSnapshot()
+        public async Task CanCreateSagaSnapshot()
         {
             var container = CreateContainer(new List<Action<Container>> { Config.RegisterSagas });
             var bus = container.GetInstance<IBus>();
@@ -649,7 +648,7 @@ namespace ZES.Tests
         }
 
         [Fact]
-        public async void CanHaveListsInEvents()
+        public async Task CanHaveListsInEvents()
         {
             var container = CreateContainer();
             var bus = container.GetInstance<IBus>();

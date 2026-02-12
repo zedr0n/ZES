@@ -274,6 +274,7 @@ namespace ZES.Infrastructure.Branching
 
                     foreach (var e in events)
                     {
+                        e.InTemporaryStream = true;
                         e.Stream = liveStream.Key;
                         e.Timeline = liveStream.Timeline;
                     }
@@ -307,6 +308,7 @@ namespace ZES.Infrastructure.Branching
                         var store = GetStore(liveStream);
                         foreach (var e in events)
                         {
+                            e.InTemporaryStream = false;
                             e.Stream = liveStream.Key;
                             e.Timeline = liveStream.Timeline;
                         }
@@ -413,6 +415,7 @@ namespace ZES.Infrastructure.Branching
 
             foreach (var e in enumerable)
             {
+                e.InTemporaryStream = stream.IsTemporary;
                 e.Version = version;
                 e.Timeline = stream.Timeline;
                 e.Stream = stream.Key;

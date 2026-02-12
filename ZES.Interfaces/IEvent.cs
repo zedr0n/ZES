@@ -24,7 +24,7 @@ namespace ZES.Interfaces
         
         /// <inheritdoc cref="IEventMetadata.ContentHash"/>
         string ContentHash { get; set; }
-
+        
         /// <summary>
         /// Create a copy of the event with new guid
         /// </summary>

@@ -71,7 +71,7 @@ public class FlowCompletionService : IFlowCompletionService
     public async Task NodeCompletionAsync(IMessage message)
     {
         if (_flowNodes.TryGetValue(message.MessageId.Id, out var flowNode))
-            await flowNode.CompletionSubject.FirstAsync().ToTask();  // Await completion
+            await flowNode.CompletionTask;  // Use cached task
         else
             throw new KeyNotFoundException($"FlowNode with ID {message} not found.");
     }
@@ -81,9 +81,9 @@ public class FlowCompletionService : IFlowCompletionService
     {
         var flowNodes = timeline != null ? _flowNodes.Values.Where(node => node.Timeline == timeline) : _flowNodes.Values;
 
-        var allNodeObservables = flowNodes.Where(node => includeRetroactive || node.IsRetroactive == false).Select(node => node.CompletionSubject.FirstAsync()).ToList();
-        if (allNodeObservables.Count == 0)
+        var allNodeTasks = flowNodes.Where(node => includeRetroactive || node.IsRetroactive == false).Select(node => node.CompletionTask).ToList();
+        if (allNodeTasks.Count == 0)
             return;
-        await allNodeObservables.Merge().LastAsync().ToTask();  
+        await Task.WhenAll(allNodeTasks);
     }
 }

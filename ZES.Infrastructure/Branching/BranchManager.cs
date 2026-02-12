@@ -490,6 +490,7 @@ namespace ZES.Infrastructure.Branching
                             var events = await eventStore.ReadStream<IEvent>(s, minVersion + 1, s.Version - minVersion).ToList();
                             foreach (var e in events.OfType<Event>())
                             {
+                                e.InTemporaryStream = false;
                                 e.Stream = baseStream.Key;
                                 e.Timeline = currentBranch?.Id;
                             }
@@ -566,7 +567,10 @@ namespace ZES.Infrastructure.Branching
 
                         var events = await eventStore.ReadStream<IEvent>(s, version + 1, s.Version - version).ToList();
                         foreach (var e in events.OfType<Event>())
+                        {
+                            e.InTemporaryStream = false;
                             e.Stream = parentStream.Key;
+                        }
 
                         await eventStore.AppendToStream(parentStream, events, false);
                         Streams.TryAdd(parentStream, events.Count());

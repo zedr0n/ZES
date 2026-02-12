@@ -6,6 +6,7 @@ using System.Linq;
 using System.Threading.Tasks.Dataflow;
 using Gridsum.DataflowEx;
 using ZES.Interfaces.Clocks;
+using Newtonsoft.Json;
 
 namespace ZES.Infrastructure
 {
@@ -98,6 +99,16 @@ namespace ZES.Infrastructure
         /// </summary>
         public static bool StoreMetadataSeparately { get; } = true;
 
+        /// <summary>
+        /// Gets a value indicating whether to replace metadata in the stream message metadata
+        /// </summary>
+        public static bool ReplaceInMetadata { get; } = true;
+        
+        /// <summary>
+        /// Gets a value indicating which formatting to use
+        /// </summary>
+        public static Formatting JsonFormatting { get; } = Formatting.None;
+        
         /// <summary>
         /// Gets a value indicating whether to use compact deserialization when doing retroactive actions
         /// </summary>

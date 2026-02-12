@@ -111,7 +111,11 @@ namespace ZES.Infrastructure.Serialization
         /// <summary>
         /// Metadata
         /// </summary>
-        Metadata
+        Metadata,
+        /// <summary>
+        /// <see cref="IEvent.StaticMetadata"/>
+        /// </summary>
+        StaticMetadata
     }
     
     /// <inheritdoc />
@@ -180,6 +184,7 @@ namespace ZES.Infrastructure.Serialization
             _propertyNameToJson[JsonNameTable.StreamHash] = PropertyNameToJson(nameof(IEventMetadata.StreamHash));
             _propertyNameToJson[JsonNameTable.ContentHash] = PropertyNameToJson(nameof(IEventMetadata.ContentHash));
             _propertyNameToJson[JsonNameTable.Metadata] = PropertyNameToJson(nameof(IEvent.Metadata));
+            _propertyNameToJson[JsonNameTable.StaticMetadata] = PropertyNameToJson(nameof(IEvent.StaticMetadata));
 
 #if USE_JSON
             _simpleSerializer = JsonSerializer.Create(new JsonSerializerSettings
@@ -209,7 +214,7 @@ namespace ZES.Infrastructure.Serialization
             string payload = null;
             using (var writer = new StringWriter())
             {
-                var jsonWriter = new JsonTextWriter(writer) { Formatting = Formatting.Indented };
+                var jsonWriter = new JsonTextWriter(writer) { Formatting = Configuration.JsonFormatting };
 #if USE_EXPLICIT
                 payload = SerializeEvent(e as IEvent);
 
@@ -311,7 +316,7 @@ namespace ZES.Infrastructure.Serialization
 #if USE_EXPLICIT
             using (var writer = new StringWriter())
             {
-                var jsonWriter = new JsonTextWriter(writer) { Formatting = Formatting.Indented};
+                var jsonWriter = new JsonTextWriter(writer) { Formatting = Configuration.JsonFormatting };
                 if(_jsonArrayPool != null)
                     jsonWriter.ArrayPool = _jsonArrayPool;
 
@@ -510,14 +515,16 @@ namespace ZES.Infrastructure.Serialization
             
             var sw = new StringWriter();
             // var writer = new JsonTextWriter(sw);
-            var writer = new JsonMetadataTextWriter(sw);
+            var writer = new JsonMetadataTextWriter(sw) { Formatting = Configuration.JsonFormatting };
 
             writer.WriteStartObject();
 
-            WritePropertyName(writer, "$type", null, _propertyNameToJson[JsonNameTable.Type]);
+            writer.WritePropertyName(_propertyNameToJson[JsonNameTable.Type]);
+            //WritePropertyName(writer, "$type", null, _propertyNameToJson[JsonNameTable.Type]);
             writer.WriteValue(GetTypeString(e.GetType()));
 
-            WritePropertyName(writer, nameof(Event.Metadata), null, _propertyNameToJson[JsonNameTable.Metadata]);
+            writer.WritePropertyName(_propertyNameToJson[JsonNameTable.Metadata]);
+            //WritePropertyName(writer, nameof(Event.Metadata), null, _propertyNameToJson[JsonNameTable.Metadata]);
             writer.WriteStartObject();
             {
                 WriteEventMetadata(writer, e.Metadata);
@@ -526,7 +533,7 @@ namespace ZES.Infrastructure.Serialization
 
             if (!Configuration.StoreMetadataSeparately)
             {
-                writer.WritePropertyName(nameof(Event.StaticMetadata));
+                writer.WritePropertyName(_propertyNameToJson[JsonNameTable.StaticMetadata]);
                 writer.WriteStartObject();
                 {
                     WriteEventStaticMetadata(writer, e.StaticMetadata);
@@ -727,8 +734,8 @@ namespace ZES.Infrastructure.Serialization
             if (ignoredProperties != null && ignoredProperties.Contains(name))
                 return false;
 
-            if (propertyNameJson != null && writer is JsonMetadataTextWriter)
-                writer.WritePropertyName(propertyNameJson, false);
+            if (propertyNameJson != null && writer is JsonMetadataTextWriter metadataWriter)
+                metadataWriter.WritePropertyName(propertyNameJson); // Direct call - no virtual dispatch
             else
                 writer.WritePropertyName(name);
             return true;
@@ -743,8 +750,28 @@ namespace ZES.Infrastructure.Serialization
             _typeStringCache[type] = typeString;
             return typeString;
         }
+        
+        private void WriteMessageMetadata(JsonMetadataTextWriter writer, IMessageMetadata e)
+        {
+            //WritePropertyName(writer, "$type", null, _propertyNameToJson[JsonNameTable.Type]);
+            writer.WritePropertyName(_propertyNameToJson[JsonNameTable.Type]);
+            writer.WriteValue(GetTypeString(e.GetType()));
+            
+            //if (WritePropertyName(writer, nameof(IMessageMetadata.MessageId), properties, _propertyNameToJson[JsonNameTable.MessageId]))
+            writer.WritePropertyName(_propertyNameToJson[JsonNameTable.MessageId]);
+            writer.WriteValue(e.MessageId.ToString());
 
-        private void WriteMessageMetadata(JsonWriter writer, IMessageMetadata e, IEnumerable<string> ignoredProperties = null)
+            //if (WritePropertyName(writer, nameof(IMessageMetadata.Timestamp), properties, _propertyNameToJson[JsonNameTable.Timestamp]))
+            writer.WritePropertyName(_propertyNameToJson[JsonNameTable.Timestamp]);           
+            writer.WriteValue(e.Timestamp.Serialise());
+            
+            //if (WritePropertyName(writer, nameof(IMessageMetadata.Timeline), properties, _propertyNameToJson[JsonNameTable.Timeline]))
+            writer.WritePropertyName(_propertyNameToJson[JsonNameTable.Timeline]);           
+            writer.WriteValue(e.Timeline);
+        }
+
+
+        private void WriteMessageMetadata(JsonWriter writer, IMessageMetadata e, IEnumerable<string> ignoredProperties)
         {
             var properties = ignoredProperties as string[] ?? ignoredProperties?.ToArray();
 
@@ -761,7 +788,32 @@ namespace ZES.Infrastructure.Serialization
                 writer.WriteValue(e.Timeline);
         }
         
-        private void WriteEventMetadata(JsonWriter writer, IEventMetadata e, IEnumerable<string> ignoredProperties = null)
+        private void WriteEventMetadata(JsonMetadataTextWriter writer, IEventMetadata e)
+        {
+            WriteMessageMetadata(writer, e);
+            
+            writer.WritePropertyName(_propertyNameToJson[JsonNameTable.Version]);
+            //if (WritePropertyName(writer, nameof(IEventMetadata.Version), properties, _propertyNameToJson[JsonNameTable.Version]))
+            writer.WriteValue(e.Version);
+            
+            writer.WritePropertyName(_propertyNameToJson[JsonNameTable.Stream]);
+            //if (WritePropertyName(writer,nameof(IEventMetadata.Stream), properties, _propertyNameToJson[JsonNameTable.Stream]))
+            writer.WriteValue(e.Stream);
+            
+            if (e.ContentHash != string.Empty)
+            {
+                writer.WritePropertyName(_propertyNameToJson[JsonNameTable.ContentHash]);
+                //if (WritePropertyName(writer, nameof(IEventMetadata.ContentHash), properties, _propertyNameToJson[JsonNameTable.ContentHash]))
+                writer.WriteValue(e.ContentHash);
+            }
+            
+            //if (WritePropertyName(writer, nameof(IEventMetadata.StreamHash), properties, _propertyNameToJson[JsonNameTable.StreamHash]))
+            writer.WritePropertyName(_propertyNameToJson[JsonNameTable.StreamHash]);
+            writer.WriteValue(e.StreamHash);
+        }
+        
+        
+        private void WriteEventMetadata(JsonWriter writer, IEventMetadata e, IEnumerable<string> ignoredProperties)
         {
             var properties = ignoredProperties as string[] ?? ignoredProperties?.ToArray();
 
@@ -833,39 +885,43 @@ namespace ZES.Infrastructure.Serialization
 
             var sb = new StringBuilder();
             var sw = new StringWriter(sb);
-            var writer = new JsonTextWriter(sw) { Formatting = Formatting.Indented };
+            var writer = new JsonTextWriter(sw) { Formatting = Configuration.JsonFormatting };
             
             var metadataSb = new StringBuilder();
             var swMetadata = new StringWriter(metadataSb);
             // var metadataWriter = new JsonTextWriter(swMetadata) { Formatting = Formatting.Indented };
-            var metadataWriter = new JsonMetadataTextWriter(swMetadata) { Formatting = Formatting.Indented };
+            var metadataWriter = new JsonMetadataTextWriter(swMetadata) { Formatting = Configuration.JsonFormatting };
             
             var properties = ignoredProperties as string[] ?? ignoredProperties?.ToArray();
             
             writer.WriteStartObject();
             
             writer.WritePropertyName("$type");
-            writer.WriteValue(e.GetType().FullName + "," + e.GetType().Assembly.FullName.Split(',')[0]);
+            writer.WriteValue(GetTypeString(e.GetType()));
             if (Configuration.StoreMetadataSeparately && Configuration.EventStoreBackendType != EventStoreBackendType.Redis)
             {
                metadataWriter.WriteStartObject();
-               metadataWriter.WritePropertyName("$type");
-               metadataWriter.WriteValue(e.GetType().FullName + "," + e.GetType().Assembly.FullName.Split(',')[0]);
+               metadataWriter.WritePropertyName(_propertyNameToJson[JsonNameTable.Type]);
+               metadataWriter.WriteValue(GetTypeString(e.GetType()));
+               metadataWriter.WritePropertyName(_propertyNameToJson[JsonNameTable.Metadata]);
+               metadataWriter.WriteStartObject();
+               {
+                   WriteEventMetadata(metadataWriter, e.Metadata, properties);
+               }
+               metadataWriter.WriteEndObject();
+               metadataWriter.WriteEndObject();
             }
             
-            var currentWriter = Configuration.StoreMetadataSeparately ? metadataWriter : writer;
-            if (!(Configuration.StoreMetadataSeparately && Configuration.EventStoreBackendType == EventStoreBackendType.Redis))
+            if (!Configuration.StoreMetadataSeparately && Configuration.EventStoreBackendType != EventStoreBackendType.Redis)
             {
-                currentWriter.WritePropertyName(nameof(Event.Metadata));
-                currentWriter.WriteStartObject();
+                writer.WritePropertyName(nameof(Event.Metadata));
+                writer.WriteStartObject();
                 {
-                    WriteEventMetadata(currentWriter, e.Metadata, properties);
+                    WriteEventMetadata(writer, e.Metadata, properties);
                 }
-                currentWriter.WriteEndObject();
+                writer.WriteEndObject();
             }
 
-            if (Configuration.StoreMetadataSeparately && Configuration.EventStoreBackendType != EventStoreBackendType.Redis)
-                metadataWriter.WriteEndObject();
             metadataJson = metadataSb.ToString();
 
             if (Configuration.EventStoreBackendType != EventStoreBackendType.Redis)
@@ -887,7 +943,7 @@ namespace ZES.Infrastructure.Serialization
             {
                 var payloadSb = new StringBuilder();
                 using var payloadWriter = new StringWriter(payloadSb);
-                var jsonWriter = new JsonTextWriter(payloadWriter) { Formatting = Formatting.Indented };
+                var jsonWriter = new JsonTextWriter(payloadWriter) { Formatting = Configuration.JsonFormatting };
 
                 var copy = e.CopyPayload();
                 _serializer.Serialize(jsonWriter, copy);
@@ -910,7 +966,7 @@ namespace ZES.Infrastructure.Serialization
                 return null;
             
             var sw = new StringWriter();
-            var writer = new JsonTextWriter(sw) { Formatting = Formatting.Indented };
+            var writer = new JsonTextWriter(sw) { Formatting = Configuration.JsonFormatting };
             
             var serializer = _serializationRegistry.GetSerializer(e);
             if (serializer == null)
@@ -921,7 +977,7 @@ namespace ZES.Infrastructure.Serialization
             writer.WriteValue(e.GetType().FullName);
             
             if(!Configuration.StoreMetadataSeparately)
-                WriteEventMetadata(writer, e.Metadata);
+                WriteEventMetadata(writer, e.Metadata, null);
             WriteEventStaticMetadata(writer, e.StaticMetadata);
             
             serializer.Write(writer, e);
@@ -1058,14 +1114,12 @@ namespace ZES.Infrastructure.Serialization
         {
             var sw = new StringWriter();
             var writer = new JsonTextWriter(sw);
-            writer.Formatting = Formatting.Indented;
+            writer.Formatting = Configuration.JsonFormatting;
 
             writer.WritePropertyName(propertyName);
             return sw.ToString(); //.Replace(":","");
         }
 
-        private static JsonWriter CreateWriter(TextWriter writer) => new JsonMetadataTextWriter(writer);
-        
         private Event DeserializeEvent(string payload, string metadata, out string jsonMetadata, out string jsonStaticMetadata, SerializationType serializationType = SerializationType.PayloadAndMetadata )
         {
             jsonMetadata = jsonStaticMetadata = null;

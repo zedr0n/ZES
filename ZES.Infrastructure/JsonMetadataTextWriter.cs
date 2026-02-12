@@ -1,4 +1,6 @@
+using System;
 using System.IO;
+using System.Reflection;
 using Newtonsoft.Json;
 
 namespace ZES.Infrastructure;
@@ -6,9 +8,12 @@ namespace ZES.Infrastructure;
 /// <inheritdoc />
 public class JsonMetadataTextWriter: JsonTextWriter
 {
+    private readonly TextWriter _textWriter;
+    
     /// <inheritdoc />
     public JsonMetadataTextWriter(TextWriter textWriter) : base(textWriter)
     {
+        _textWriter = textWriter;
     }
 
     /// <inheritdoc />
@@ -18,8 +23,14 @@ public class JsonMetadataTextWriter: JsonTextWriter
             base.WritePropertyName(name);
         else
         {
-            SetWriteState(JsonToken.PropertyName, name); 
-            WriteRaw(name);
+            WritePropertyName(name);
         }
+    }
+
+    /// <inheritdoc />
+    public override void WritePropertyName(string name)
+    {
+        SetWriteState(JsonToken.PropertyName, name);
+        _textWriter.Write(name);
     }
 }

@@ -141,6 +141,7 @@ namespace ZES.Infrastructure.Replicas
                 
                 foreach (var e in eventsToSync)
                 {
+                    e.InTemporaryStream = false;
                     e.Stream = remoteStream.Key;
                     e.LocalId = new EventId(ReplicaName, receivedTime);
                 }

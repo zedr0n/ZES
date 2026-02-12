@@ -5,6 +5,7 @@ using System.Linq;
 using System.Reactive.Disposables;
 using System.Reactive.Linq;
 using System.Reactive.Subjects;
+using System.Reactive.Threading.Tasks;
 using System.Threading;
 using System.Threading.Tasks;
 using ZES.Interfaces;
@@ -62,8 +63,15 @@ public class FlowNode
     /// </summary>
     public ReplaySubject<bool> CompletionSubject { get; } = new(1);
 
+    private Task _completionTask;
+
     /// <summary>
-    /// 
+    /// Gets the completion task (cached to avoid creating multiple subscriptions)
+    /// </summary>
+    public Task CompletionTask => _completionTask ??= CompletionSubject.FirstAsync().ToTask();
+
+    /// <summary>
+    ///
     /// </summary>
     /// <param name="log"></param>
     public FlowNode(ILog log)

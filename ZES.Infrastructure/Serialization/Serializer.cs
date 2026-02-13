@@ -1088,7 +1088,7 @@ namespace ZES.Infrastructure.Serialization
         {
             jsonMetadata = jsonStaticMetadata = eventPayload = null;
             var split = Configuration.StoreMetadataSeparately ? nameof(Event.StaticMetadata) : nameof(Event.Metadata);
-            var tokens = payload.Split(new[] { $"{split}\": ", "}," }, StringSplitOptions.None);
+            var tokens = payload.Split(new[] { $"{split}\":" + (Configuration.JsonFormatting == Formatting.Indented ? ' ' : string.Empty), "}," }, StringSplitOptions.None);
             if (Configuration.StoreMetadataSeparately)
             {
                 if (tokens.Length < 3)

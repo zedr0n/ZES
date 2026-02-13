@@ -102,14 +102,15 @@ namespace ZES.Infrastructure.Domain
             get => Metadata.Timeline;
             set
             {
-                if (Metadata.Timeline == value)
+                var timeline = Metadata.Timeline;
+                if (timeline == value)
                     return;
 
                 // Try in-place update of cached JSON
-                if (Metadata.Json != null && Metadata.Timeline != null)
+                var json = Metadata.Json;
+                if (json != null && timeline != null)
                 {
-                    var json = Metadata.Json;
-                    if (TryReplaceStringInJson(ref json, "\"Timeline\":", Metadata.Timeline, value, InTemporaryStream))
+                    if (TryReplaceStringInJson(ref json, "\"Timeline\":", timeline, value, InTemporaryStream))
                     {
                         Metadata.Json = json;
                         Metadata.Timeline = value;

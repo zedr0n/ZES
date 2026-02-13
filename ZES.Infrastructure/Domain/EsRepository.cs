@@ -68,7 +68,6 @@ namespace ZES.Infrastructure.Domain
 
             foreach (var e in events.Cast<Event>())
             {
-                e.InTemporaryStream = false;
                 e.Timestamp ??= _timeline.Now;
                 e.LocalId ??= new EventId(Configuration.ReplicaName, e.Timestamp);
                 e.OriginId ??= e.LocalId;

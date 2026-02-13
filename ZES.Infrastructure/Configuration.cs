@@ -100,11 +100,6 @@ namespace ZES.Infrastructure
         public static bool StoreMetadataSeparately { get; } = true;
 
         /// <summary>
-        /// Gets a value indicating whether to replace metadata in the stream message metadata
-        /// </summary>
-        public static bool ReplaceInMetadata { get; } = true;
-        
-        /// <summary>
         /// Gets a value indicating which formatting to use
         /// </summary>
         public static Formatting JsonFormatting { get; } = Formatting.None;

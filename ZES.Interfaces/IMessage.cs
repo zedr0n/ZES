@@ -51,11 +51,6 @@ namespace ZES.Interfaces
         string StaticMetadataJson { get; set; }
 
         /// <summary>
-        /// Set to true if the event is in a temporary stream
-        /// </summary>
-        bool InTemporaryStream { get; set; }
-        
-        /// <summary>
         /// Copies the metadata from other message
         /// </summary>
         /// <param name="other">Other message</param>

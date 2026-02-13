@@ -88,12 +88,6 @@ namespace ZES.Infrastructure.Domain
                 Metadata.Timestamp = value;
             }
         }
-        
-        /// <summary>
-        /// Gets or sets a value indicating whether the message is in a temporary stream.
-        /// </summary>
-        [JsonIgnore]
-        public bool InTemporaryStream { get; set; }
 
         /// <inheritdoc />
         [JsonIgnore]
@@ -106,51 +100,9 @@ namespace ZES.Infrastructure.Domain
                 if (timeline == value)
                     return;
 
-                // Try in-place update of cached JSON
-                var json = Metadata.Json;
-                if (json != null && timeline != null)
-                {
-                    if (TryReplaceStringInJson(ref json, "\"Timeline\":", timeline, value, InTemporaryStream))
-                    {
-                        Metadata.Json = json;
-                        Metadata.Timeline = value;
-                        return;
-                    }
-                }
-
                 Metadata.Json = null;
                 Metadata.Timeline = value;
             }
-        }
-
-        /// <summary>
-        /// Attempts to replace a string value in a JSON-formatted string for a given property name.
-        /// </summary>
-        /// <param name="json">The JSON string, passed by reference, in which the replacement will be attempted.</param>
-        /// <param name="prefix">String prefix</param>
-        /// <param name="oldValue">The existing value of the property to be replaced.</param>
-        /// <param name="newValue">The new value to replace the old value for the property.</param>
-        /// <param name="isTemporaryStream"></param>
-        /// <returns>
-        /// True if the replacement was successful; otherwise, false.
-        /// </returns>
-        protected static bool TryReplaceStringInJson(ref string json, string prefix, string oldValue, string newValue, bool isTemporaryStream)
-        {
-            if (!Configuration.ReplaceInMetadata)
-                return false;
-
-            if (isTemporaryStream)
-                return true;
-
-            // Pattern: "PropertyName": oldValue, or "PropertyName":oldValue, depending on formatting
-            // Use string.Concat to reduce allocations
-            var oldPattern = string.Concat(prefix, oldValue);
-            //var oldPattern = string.Concat("\"", name, "\":", space, oldValue);
-
-            //var newPattern = string.Concat("\"", name, "\":", space, newValue);
-            var newPattern = string.Concat(prefix, newValue);
-            json = json.Replace(oldPattern, newPattern);
-            return true;
         }
 
         /// <inheritdoc />

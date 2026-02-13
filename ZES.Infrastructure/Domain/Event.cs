@@ -75,19 +75,6 @@ namespace ZES.Infrastructure.Domain
                 if (version == value)
                     return;
 
-                var json = Metadata.Json;
-                // If we have cached JSON, try to update it in-place instead of re-encoding
-                if (json != null && Configuration.ReplaceInMetadata)
-                {
-                    // we always replace the version in metadata
-                    if (TryReplaceStringInJson(ref json, "\"Version\":", version.ToString(), value.ToString(), false))
-                    {
-                        Metadata.Json = json;
-                        Metadata.Version = value;
-                        return;
-                    }
-                }
-
                 // Fallback: null the cache and let it re-encode
                 Metadata.Json = null;
                 Metadata.Version = value;
@@ -105,18 +92,6 @@ namespace ZES.Infrastructure.Domain
                 if (stream == value)
                     return;
 
-                var json = Metadata.Json;
-                // If we have cached JSON, try to update it in-place instead of re-encoding
-                if (json != null && stream != null)
-                {
-                    if (TryReplaceStringInJson(ref json, "\"Stream\":",  stream, value, InTemporaryStream))
-                    {
-                        Metadata.Json = json;
-                        Metadata.Stream = value;
-                        return;
-                    }
-                }
-
                 // Fallback: null the cache and let it re-encode
                 Metadata.Json = null;
                 Metadata.Stream = value;
@@ -133,18 +108,6 @@ namespace ZES.Infrastructure.Domain
                 var streamHash =  Metadata.StreamHash;
                 if (streamHash == value)
                     return;
-
-                // If we have cached JSON, try to update it in-place instead of re-encoding
-                var json = Metadata.Json;
-                if (json != null && streamHash != null)
-                {
-                    if (TryReplaceStringInJson(ref json, "\"StreamHash\":", streamHash, value, InTemporaryStream))
-                    {
-                        Metadata.Json = json;
-                        Metadata.StreamHash = value;
-                        return;
-                    }
-                }
 
                 // Fallback: null the cache and let it re-encode
                 Metadata.Json = null;

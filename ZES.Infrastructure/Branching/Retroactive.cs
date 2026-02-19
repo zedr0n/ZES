@@ -8,10 +8,10 @@ using ZES.Infrastructure.Domain;
 using ZES.Infrastructure.EventStore;
 using ZES.Interfaces;
 using ZES.Interfaces.Branching;
-using ZES.Interfaces.Causality;
 using ZES.Interfaces.Clocks;
 using ZES.Interfaces.Domain;
 using ZES.Interfaces.EventStore;
+using ZES.Interfaces.Infrastructure;
 
 namespace ZES.Infrastructure.Branching
 {

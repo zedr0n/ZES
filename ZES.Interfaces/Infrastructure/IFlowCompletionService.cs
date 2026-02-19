@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
-namespace ZES.Interfaces;
+namespace ZES.Interfaces.Infrastructure;
 
 /// <summary>
 /// Service to track flow completion

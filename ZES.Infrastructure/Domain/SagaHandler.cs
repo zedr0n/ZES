@@ -10,7 +10,8 @@ using Gridsum.DataflowEx;
 using ZES.Infrastructure.Utils;
 using ZES.Interfaces;
 using ZES.Interfaces.Domain;
-using ZES.Interfaces.Pipes;
+using ZES.Interfaces.EventStore;
+using ZES.Interfaces.Infrastructure;
 
 namespace ZES.Infrastructure.Domain
 {

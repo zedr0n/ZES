@@ -7,9 +7,10 @@ using System.Reactive.Subjects;
 using SimpleInjector;
 using ZES.Infrastructure.Domain;
 using ZES.Interfaces;
+using ZES.Interfaces.Branching;
 using ZES.Interfaces.Domain;
 using ZES.Interfaces.EventStore;
-using ZES.Interfaces.Pipes;
+using ZES.Interfaces.Infrastructure;
 using ZES.Utils;
 
 namespace ZES

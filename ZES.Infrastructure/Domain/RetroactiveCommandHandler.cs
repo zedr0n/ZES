@@ -9,7 +9,7 @@ using ZES.Interfaces;
 using ZES.Interfaces.Branching;
 using ZES.Interfaces.Clocks;
 using ZES.Interfaces.Domain;
-using ZES.Interfaces.Pipes;
+using ZES.Interfaces.Infrastructure;
 
 namespace ZES.Infrastructure.Domain
 {

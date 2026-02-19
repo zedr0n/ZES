@@ -2,7 +2,7 @@ using System;
 using NodaTime;
 using NodaTime.Extensions;
 using ZES.Interfaces;
-using ZES.Interfaces.Causality;
+using ZES.Interfaces.Branching;
 using ZES.Interfaces.Clocks;
 using IClock = ZES.Interfaces.Clocks.IClock;
 

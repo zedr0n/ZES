@@ -5,6 +5,7 @@ using NodaTime;
 using ZES.Infrastructure.Domain;
 using ZES.Interfaces;
 using ZES.Interfaces.Clocks;
+using ZES.Interfaces.Domain;
 using ZES.Interfaces.EventStore;
 
 namespace ZES.Infrastructure.EventStore

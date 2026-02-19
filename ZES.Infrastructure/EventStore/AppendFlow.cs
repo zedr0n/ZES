@@ -2,6 +2,7 @@
 using System.Threading.Tasks.Dataflow;
 using Gridsum.DataflowEx;
 using ZES.Interfaces;
+using ZES.Interfaces.Domain;
 using ZES.Interfaces.EventStore;
 
 namespace ZES.Infrastructure.EventStore

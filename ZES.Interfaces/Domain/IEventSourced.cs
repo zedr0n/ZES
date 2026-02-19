@@ -1,8 +1,7 @@
 using System.Collections.Generic;
-using NodaTime;
 using ZES.Interfaces.Clocks;
 
-namespace ZES.Interfaces
+namespace ZES.Interfaces.Domain
 {
     /// <summary>
     /// Event sourced instance

@@ -1,6 +1,6 @@
 using System;
 
-namespace ZES.Interfaces
+namespace ZES.Interfaces.Infrastructure
 {
     /// <summary>
     /// Error log

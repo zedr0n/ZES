@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using System.Reactive.Linq;
 using System.Threading.Tasks;
 using ZES.Interfaces;
-using ZES.Interfaces.Pipes;
+using ZES.Interfaces.Infrastructure;
 
 namespace ZES.Infrastructure.Alerts
 {

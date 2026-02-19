@@ -11,6 +11,7 @@ using ZES.Infrastructure.Serialization;
 using ZES.Interfaces;
 using ZES.Interfaces.Domain;
 using ZES.Interfaces.GraphQL;
+using ZES.Interfaces.Infrastructure;
 using ZES.Interfaces.Net;
 
 namespace ZES.Utils

@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using ZES.Interfaces;
+using ZES.Interfaces.Infrastructure;
 
 namespace ZES.Infrastructure
 {

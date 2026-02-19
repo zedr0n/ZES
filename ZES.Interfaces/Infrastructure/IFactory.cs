@@ -1,4 +1,4 @@
-﻿namespace ZES.Interfaces
+﻿namespace ZES.Interfaces.Infrastructure
 {
     /// <summary>
     /// Service factory interface

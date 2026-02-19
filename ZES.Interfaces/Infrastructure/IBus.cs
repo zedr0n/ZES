@@ -1,7 +1,7 @@
 using System.Threading.Tasks;
 using ZES.Interfaces.Domain;
 
-namespace ZES.Interfaces.Pipes
+namespace ZES.Interfaces.Infrastructure
 {
     /// <summary>
     /// Application command and query bus

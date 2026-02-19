@@ -2,7 +2,7 @@ using System;
 using System.Threading.Tasks;
 using Xunit;
 using ZES.Interfaces.Domain;
-using ZES.Interfaces.Pipes;
+using ZES.Interfaces.Infrastructure;
 using ZES.Utils;
 
 namespace ZES.TestBase

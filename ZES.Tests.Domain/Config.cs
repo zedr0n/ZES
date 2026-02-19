@@ -5,7 +5,7 @@ using ZES.Infrastructure;
 using ZES.Infrastructure.GraphQl;
 using ZES.Interfaces;
 using ZES.Interfaces.Branching;
-using ZES.Interfaces.Pipes;
+using ZES.Interfaces.Infrastructure;
 using ZES.Tests.Domain.Commands;
 using ZES.Tests.Domain.Queries;
 using ZES.Utils;

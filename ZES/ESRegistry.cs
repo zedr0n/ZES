@@ -4,6 +4,7 @@ using System.Linq;
 using SimpleInjector;
 using ZES.Interfaces;
 using ZES.Interfaces.Domain;
+using ZES.Interfaces.EventStore;
 
 namespace ZES
 {

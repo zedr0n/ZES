@@ -5,6 +5,7 @@ using HotChocolate.Execution;
 using HotChocolate.Language;
 using ZES.Interfaces;
 using ZES.Interfaces.Clocks;
+using ZES.Interfaces.Recording;
 
 namespace ZES.GraphQL
 {

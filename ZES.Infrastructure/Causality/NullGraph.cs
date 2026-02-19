@@ -1,5 +1,5 @@
 using System.Threading.Tasks;
-using ZES.Interfaces.Causality;
+using ZES.Interfaces.Branching;
 
 namespace ZES.Infrastructure.Causality
 {

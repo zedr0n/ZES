@@ -10,10 +10,10 @@ using ZES.Infrastructure.Alerts;
 using ZES.Infrastructure.Replicas;
 using ZES.Infrastructure.Utils;
 using ZES.Interfaces;
-using ZES.Interfaces.Pipes;
-using ZES.Interfaces.Replicas;
-using ZES.Interfaces.Serialization;
-using static ZES.Interfaces.FastForwardResult;
+using ZES.Interfaces.Branching;
+using ZES.Interfaces.EventStore;
+using ZES.Interfaces.Infrastructure;
+using static ZES.Interfaces.Branching.FastForwardResult;
 
 namespace ZES.Persistence.SQLStreamStore
 {

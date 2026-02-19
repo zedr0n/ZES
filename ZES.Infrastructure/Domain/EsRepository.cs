@@ -9,9 +9,10 @@ using System.Reflection;
 using System.Threading.Tasks;
 using ZES.Infrastructure.EventStore;
 using ZES.Interfaces;
+using ZES.Interfaces.Branching;
 using ZES.Interfaces.Domain;
 using ZES.Interfaces.EventStore;
-using ZES.Interfaces.Pipes;
+using ZES.Interfaces.Infrastructure;
 
 #pragma warning disable CS4014
 

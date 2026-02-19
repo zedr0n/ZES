@@ -14,9 +14,11 @@ using NodaTime;
 using ZES.Infrastructure.Alerts;
 using ZES.Infrastructure.Utils;
 using ZES.Interfaces;
+using ZES.Interfaces.Branching;
 using ZES.Interfaces.Clocks;
 using ZES.Interfaces.Domain;
 using ZES.Interfaces.EventStore;
+using ZES.Interfaces.Infrastructure;
 using static ZES.Interfaces.Domain.ProjectionStatus;
 
 #pragma warning disable CS4014

@@ -1,4 +1,5 @@
 using ZES.Interfaces.Domain;
+using ZES.Interfaces.EventStore;
 
 namespace ZES.Infrastructure.Domain
 {

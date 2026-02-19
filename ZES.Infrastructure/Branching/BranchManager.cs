@@ -14,11 +14,10 @@ using ZES.Infrastructure.EventStore;
 using ZES.Infrastructure.Utils;
 using ZES.Interfaces;
 using ZES.Interfaces.Branching;
-using ZES.Interfaces.Causality;
 using ZES.Interfaces.Clocks;
 using ZES.Interfaces.Domain;
 using ZES.Interfaces.EventStore;
-using ZES.Interfaces.Pipes;
+using ZES.Interfaces.Infrastructure;
 using ExpectedVersion = ZES.Infrastructure.EventStore.ExpectedVersion;
 using IClock = ZES.Interfaces.Clocks.IClock;
 

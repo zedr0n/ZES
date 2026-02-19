@@ -9,7 +9,7 @@ using ZES.Infrastructure.Alerts;
 using ZES.Interfaces;
 using ZES.Interfaces.Domain;
 using ZES.Interfaces.EventStore;
-using ZES.Interfaces.Pipes;
+using ZES.Interfaces.Infrastructure;
 
 namespace ZES.Infrastructure.EventStore
 {

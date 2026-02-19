@@ -4,9 +4,10 @@ using System.Linq;
 using System.Reflection;
 using ZES.Infrastructure.Utils;
 using ZES.Interfaces;
+using ZES.Interfaces.Branching;
 using ZES.Interfaces.Domain;
 using ZES.Interfaces.EventStore;
-using ZES.Interfaces.Pipes;
+using ZES.Interfaces.Infrastructure;
 
 namespace ZES.Infrastructure.Projections
 {

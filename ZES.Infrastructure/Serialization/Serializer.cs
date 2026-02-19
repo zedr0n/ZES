@@ -15,7 +15,7 @@ using ZES.Interfaces;
 using ZES.Interfaces.Clocks;
 using ZES.Interfaces.Domain;
 using ZES.Interfaces.EventStore;
-using ZES.Interfaces.Serialization;
+using ZES.Interfaces.Infrastructure;
 using Stream = ZES.Infrastructure.EventStore.Stream;
 
 namespace ZES.Infrastructure.Serialization

@@ -6,6 +6,7 @@ using SimpleInjector;
 using SqlStreamStore.Streams;
 using ZES.Infrastructure;
 using ZES.Interfaces;
+using ZES.Interfaces.Branching;
 using ZES.Interfaces.Domain;
 
 namespace ZES

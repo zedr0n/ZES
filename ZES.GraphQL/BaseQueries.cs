@@ -4,7 +4,7 @@ using HotChocolate.Types;
 using ZES.Infrastructure.GraphQl;
 using ZES.Interfaces;
 using ZES.Interfaces.Branching;
-using ZES.Interfaces.Pipes;
+using ZES.Interfaces.Infrastructure;
 using static ZES.Infrastructure.ErrorLog;
 
 namespace ZES.GraphQL

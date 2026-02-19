@@ -3,8 +3,8 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using NodaTime;
-using ZES.Interfaces.Causality;
 using ZES.Interfaces.Clocks;
+using ZES.Interfaces.Domain;
 
 namespace ZES.Interfaces.EventStore
 {

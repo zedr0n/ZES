@@ -4,6 +4,7 @@ using System.Collections.Immutable;
 using System.Linq;
 using System.Threading.Tasks;
 using ZES.Interfaces;
+using ZES.Interfaces.Infrastructure;
 using ZES.Interfaces.Stochastic;
 
 namespace ZES.Infrastructure.Stochastics

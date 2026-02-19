@@ -1,6 +1,6 @@
 ﻿using System;
 using ZES.Interfaces.Domain;
-using ZES.Interfaces.Pipes;
+using ZES.Interfaces.Infrastructure;
 
 namespace ZES.Infrastructure.Stochastics
 {

@@ -1,8 +1,6 @@
-using NodaTime;
-using ZES.Interfaces.Causality;
 using ZES.Interfaces.Clocks;
 
-namespace ZES.Interfaces
+namespace ZES.Interfaces.Branching
 {
     /// <summary>
     /// Timeline tracker 

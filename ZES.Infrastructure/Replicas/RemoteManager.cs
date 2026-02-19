@@ -6,7 +6,7 @@ using ZES.Interfaces.Branching;
 using ZES.Interfaces.Clocks;
 using ZES.Interfaces.Domain;
 using ZES.Interfaces.EventStore;
-using ZES.Interfaces.Replicas;
+using ZES.Interfaces.Infrastructure;
 
 namespace ZES.Infrastructure.Replicas
 {

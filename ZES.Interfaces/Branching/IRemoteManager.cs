@@ -1,7 +1,7 @@
 ﻿using ZES.Interfaces.Domain;
 using ZES.Interfaces.EventStore;
 
-namespace ZES.Interfaces.Replicas
+namespace ZES.Interfaces.Branching
 {
     /// <summary>
     /// Remote replica manager

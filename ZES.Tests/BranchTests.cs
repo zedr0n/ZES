@@ -17,12 +17,10 @@ using ZES.Infrastructure.Stochastics;
 using ZES.Infrastructure.Utils;
 using ZES.Interfaces;
 using ZES.Interfaces.Branching;
-using ZES.Interfaces.Causality;
 using ZES.Interfaces.Clocks;
 using ZES.Interfaces.Domain;
 using ZES.Interfaces.EventStore;
-using ZES.Interfaces.Pipes;
-using ZES.Interfaces.Replicas;
+using ZES.Interfaces.Infrastructure;
 using ZES.Interfaces.Stochastic;
 using ZES.TestBase;
 using ZES.Tests.Domain;
@@ -30,7 +28,7 @@ using ZES.Tests.Domain.Commands;
 using ZES.Tests.Domain.Queries;
 using ZES.Tests.Domain.Sagas;
 using ZES.Tests.Domain.Stochastics;
-using static ZES.Interfaces.FastForwardResult;
+using static ZES.Interfaces.Branching.FastForwardResult;
 using static ZES.Utils.ObservableExtensions;
 
 #pragma warning disable SA1600

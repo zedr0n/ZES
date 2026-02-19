@@ -1,6 +1,6 @@
 using System.Collections.Generic;
 
-namespace ZES.Interfaces
+namespace ZES.Interfaces.Infrastructure
 {
     /// <summary>
     /// Performance logger

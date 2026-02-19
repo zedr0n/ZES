@@ -6,6 +6,7 @@ using Microsoft.Extensions.DiagnosticAdapter;
 using NodaTime;
 using NodaTime.Text;
 using ZES.Interfaces;
+using ZES.Interfaces.Recording;
 
 #pragma warning disable 1591
 

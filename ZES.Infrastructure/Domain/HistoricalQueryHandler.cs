@@ -2,6 +2,7 @@ using System.Reactive.Linq;
 using System.Threading.Tasks;
 using ZES.Infrastructure.Projections;
 using ZES.Interfaces;
+using ZES.Interfaces.Branching;
 using ZES.Interfaces.Domain;
 
 namespace ZES.Infrastructure.Domain

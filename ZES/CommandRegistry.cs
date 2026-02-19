@@ -2,6 +2,7 @@ using System;
 using SimpleInjector;
 using ZES.Interfaces;
 using ZES.Interfaces.Domain;
+using ZES.Interfaces.Infrastructure;
 
 namespace ZES
 {

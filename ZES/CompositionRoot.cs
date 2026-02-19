@@ -23,21 +23,19 @@ using ZES.Infrastructure.Replicas;
 using ZES.Infrastructure.Serialization;
 using ZES.Interfaces;
 using ZES.Interfaces.Branching;
-using ZES.Interfaces.Causality;
 using ZES.Interfaces.Clocks;
 using ZES.Interfaces.Domain;
 using ZES.Interfaces.EventStore;
 using ZES.Interfaces.GraphQL;
+using ZES.Interfaces.Infrastructure;
 using ZES.Interfaces.Net;
-using ZES.Interfaces.Pipes;
-using ZES.Interfaces.Replicas;
-using ZES.Interfaces.Serialization;
+using ZES.Interfaces.Recording;
 using ZES.Persistence.EventStoreDB;
 using ZES.Persistence.Redis;
 using ZES.Persistence.SQLStreamStore;
 using ZES.Utils;
 using BranchManager = ZES.Infrastructure.Branching.BranchManager;
-using ILog = ZES.Interfaces.ILog;
+using ILog = ZES.Interfaces.Infrastructure.ILog;
 using ILogger = NLog.ILogger;
 
 #pragma warning disable CS1998
@@ -45,7 +43,7 @@ using ILogger = NLog.ILogger;
 namespace ZES
 {
     /// <inheritdoc />
-    public sealed class CompositionRoot : ICompositionRoot
+    public sealed class CompositionRoot 
     {
         /// <summary>
         /// Verify the container 

@@ -1,9 +1,6 @@
 using System;
-using System.Collections.Generic;
-using System.Threading.Tasks;
-using ZES.Interfaces.Domain;
 
-namespace ZES.Interfaces.Pipes
+namespace ZES.Interfaces.Infrastructure
 {
     /// <summary>
     /// Message queue

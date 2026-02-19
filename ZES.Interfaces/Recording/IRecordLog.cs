@@ -1,8 +1,7 @@
 using System.Threading.Tasks;
-using NodaTime;
 using ZES.Interfaces.Clocks;
 
-namespace ZES.Interfaces
+namespace ZES.Interfaces.Recording
 {
     /// <summary>
     /// Record log

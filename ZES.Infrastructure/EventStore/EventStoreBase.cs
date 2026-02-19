@@ -13,12 +13,10 @@ using NodaTime;
 using ZES.Infrastructure.Domain;
 using ZES.Infrastructure.Utils;
 using ZES.Interfaces;
-using ZES.Interfaces.Causality;
 using ZES.Interfaces.Clocks;
 using ZES.Interfaces.Domain;
 using ZES.Interfaces.EventStore;
-using ZES.Interfaces.Pipes;
-using ZES.Interfaces.Serialization;
+using ZES.Interfaces.Infrastructure;
 
 namespace ZES.Infrastructure.EventStore
 {

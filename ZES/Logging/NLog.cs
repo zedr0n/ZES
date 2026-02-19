@@ -9,6 +9,7 @@ using NLog.Config;
 using NLog.Targets;
 using ZES.Infrastructure;
 using ZES.Interfaces;
+using ZES.Interfaces.Infrastructure;
 using ZES.Utils;
 
 namespace ZES.Logging

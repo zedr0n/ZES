@@ -6,7 +6,8 @@ using Xunit;
 using ZES.GraphQL;
 using ZES.Interfaces;
 using ZES.Interfaces.Clocks;
-using ZES.Interfaces.Pipes;
+using ZES.Interfaces.Infrastructure;
+using ZES.Interfaces.Recording;
 using ZES.Tests.Domain.Commands;
 using ZES.Tests.Domain.Queries;
 
@@ -77,7 +78,7 @@ namespace ZES.Tests
             
             var executor = schemaProvider.Build();
             var query = generator.Query(new RootInfoQuery(id));
-            var rootInfoResult = await executor.ExecuteAsync(query) as IReadOnlyQueryResult;
+            var rootInfoResult = await executor.ExecuteAsync(query, cancellationToken: TestContext.Current.CancellationToken) as IReadOnlyQueryResult;
             var rootInfoDict = rootInfoResult?.Data.SingleOrDefault().Value as IReadOnlyDictionary<string, object>;
             log.Info(rootInfoDict);
             Assert.NotNull(rootInfoDict);
@@ -87,7 +88,7 @@ namespace ZES.Tests
             Assert.NotEqual(default, time.ToInstant());
 
             query = generator.Query(new StatsQuery());  
-            var statsResult = await executor.ExecuteAsync(query) as IReadOnlyQueryResult;
+            var statsResult = await executor.ExecuteAsync(query, cancellationToken: TestContext.Current.CancellationToken) as IReadOnlyQueryResult;
             var statsDict = statsResult?.Data.SingleOrDefault().Value as IReadOnlyDictionary<string, object>;
             log.Info(statsDict);
             Assert.NotNull(statsDict);
@@ -177,10 +178,10 @@ namespace ZES.Tests
             var id = $"{nameof(CanReplayLog)}-Root";
 
             var command = generator.Mutation(new CreateRoot(id));
-            await executor.ExecuteAsync(command);
+            await executor.ExecuteAsync(command, cancellationToken: TestContext.Current.CancellationToken);
             
             var query = generator.Query(new StatsQuery());
-            await executor.ExecuteAsync(query); 
+            await executor.ExecuteAsync(query, cancellationToken: TestContext.Current.CancellationToken); 
  
             var recordLog = container.GetInstance<IRecordLog>();
             var logFile = $"{nameof(CanReplayLog)}.json";
@@ -215,9 +216,9 @@ namespace ZES.Tests
                     log.Error(e.Message, this);
             }
  
-            await executor.ExecuteAsync(@"mutation { branch( branch : ""test"") } ");
+            await executor.ExecuteAsync(@"mutation { branch( branch : ""test"") } ", cancellationToken: TestContext.Current.CancellationToken);
 
-            var result = await executor.ExecuteAsync(@"query { activeBranch }") as IReadOnlyQueryResult;
+            var result = await executor.ExecuteAsync(@"query { activeBranch }", cancellationToken: TestContext.Current.CancellationToken) as IReadOnlyQueryResult;
             Assert.Null(result?.Errors);
             var branchId = result?.Data["activeBranch"];
             Assert.Equal("test", branchId);
@@ -237,21 +238,21 @@ namespace ZES.Tests
             
             var executor = schemaProvider.Build();
 
-            var commandResult = await executor.ExecuteAsync(command);
+            var commandResult = await executor.ExecuteAsync(command, cancellationToken: TestContext.Current.CancellationToken);
             if (commandResult.Errors != null)
             {
                 foreach (var e in commandResult.Errors)
                     log.Error(e.Message, this);
             }
 
-            commandResult = await executor.ExecuteAsync(command);
+            commandResult = await executor.ExecuteAsync(command, cancellationToken: TestContext.Current.CancellationToken);
             if (commandResult.Errors != null)
             {
                 foreach (var e in commandResult.Errors)
                     log.Error(e.Message, this);
             }
 
-            var errorResult = await executor.ExecuteAsync(@"query{ error { message } }") as IReadOnlyQueryResult;
+            var errorResult = await executor.ExecuteAsync(@"query{ error { message } }", cancellationToken: TestContext.Current.CancellationToken) as IReadOnlyQueryResult;
             var messageDict = errorResult?.Data["error"] as IReadOnlyDictionary<string, object>;
             Assert.NotNull(messageDict);
             Assert.Contains("ahead", messageDict["message"] as string);

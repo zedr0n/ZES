@@ -1,4 +1,4 @@
-namespace ZES.Interfaces
+namespace ZES.Interfaces.Branching
 {
     /// <summary>
     /// Push result

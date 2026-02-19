@@ -5,9 +5,9 @@ using System.Threading.Tasks;
 using ZES.Infrastructure.Alerts;
 using ZES.Infrastructure.Domain;
 using ZES.Interfaces.Domain;
+using ZES.Interfaces.EventStore;
+using ZES.Interfaces.Infrastructure;
 using ZES.Interfaces.Net;
-using ZES.Interfaces.Pipes;
-using ZES.Interfaces.Serialization;
 
 namespace ZES.Infrastructure.Net
 {

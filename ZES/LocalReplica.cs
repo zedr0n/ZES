@@ -2,10 +2,10 @@
 using ZES.Infrastructure.Domain;
 using ZES.Infrastructure.EventStore;
 using ZES.Interfaces;
+using ZES.Interfaces.Branching;
 using ZES.Interfaces.Domain;
 using ZES.Interfaces.EventStore;
-using ZES.Interfaces.Pipes;
-using ZES.Interfaces.Serialization;
+using ZES.Interfaces.Infrastructure;
 using ZES.Persistence.SQLStreamStore;
 
 namespace ZES

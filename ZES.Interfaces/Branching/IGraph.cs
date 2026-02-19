@@ -1,6 +1,6 @@
 using System.Threading.Tasks;
 
-namespace ZES.Interfaces.Causality
+namespace ZES.Interfaces.Branching
 {
     /// <summary>
     /// Graph representation of the stream store

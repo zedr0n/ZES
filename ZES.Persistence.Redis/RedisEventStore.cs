@@ -9,9 +9,9 @@ using ZES.Infrastructure.Domain;
 using ZES.Infrastructure.EventStore;
 using ZES.Interfaces;
 using ZES.Interfaces.Clocks;
+using ZES.Interfaces.Domain;
 using ZES.Interfaces.EventStore;
-using ZES.Interfaces.Pipes;
-using ZES.Interfaces.Serialization;
+using ZES.Interfaces.Infrastructure;
 
 #pragma warning disable CS1998
 

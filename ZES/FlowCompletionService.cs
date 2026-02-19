@@ -9,6 +9,7 @@ using System.Threading.Tasks;
 using ZES.Infrastructure.Domain;
 using ZES.Interfaces;
 using ZES.Interfaces.Domain;
+using ZES.Interfaces.Infrastructure;
 
 namespace ZES;
 

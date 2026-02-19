@@ -14,8 +14,8 @@ using SqlStreamStore;
 using SqlStreamStore.Streams;
 using ZES.Infrastructure;
 using ZES.Interfaces;
-using ZES.Interfaces.Causality;
-using ZES.Interfaces.Serialization;
+using ZES.Interfaces.Branching;
+using ZES.Interfaces.EventStore;
 
 #pragma warning disable SA1600
 

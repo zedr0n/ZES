@@ -8,9 +8,10 @@ using System.Reactive.Subjects;
 using System.Threading.Tasks;
 using ZES.Infrastructure.EventStore;
 using ZES.Interfaces;
+using ZES.Interfaces.Branching;
 using ZES.Interfaces.Domain;
 using ZES.Interfaces.EventStore;
-using ZES.Interfaces.Serialization;
+using ZES.Interfaces.Infrastructure;
 
 namespace ZES.Infrastructure.Domain
 {

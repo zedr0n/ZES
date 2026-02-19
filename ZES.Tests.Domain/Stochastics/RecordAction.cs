@@ -2,7 +2,7 @@
 using ZES.Infrastructure.Stochastics;
 using ZES.Interfaces.Branching;
 using ZES.Interfaces.Domain;
-using ZES.Interfaces.Pipes;
+using ZES.Interfaces.Infrastructure;
 using ZES.Tests.Domain.Commands;
 
 namespace ZES.Tests.Domain.Stochastics

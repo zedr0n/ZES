@@ -4,7 +4,7 @@ using System.Threading.Tasks;
 using ZES.Interfaces;
 using ZES.Interfaces.Branching;
 using ZES.Interfaces.Domain;
-using ZES.Interfaces.Pipes;
+using ZES.Interfaces.Infrastructure;
 
 namespace ZES.Infrastructure.Domain
 {

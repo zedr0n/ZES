@@ -13,8 +13,7 @@ using ZES.Infrastructure.Utils;
 using ZES.Interfaces;
 using ZES.Interfaces.Domain;
 using ZES.Interfaces.EventStore;
-using ZES.Interfaces.Pipes;
-using ZES.Interfaces.Serialization;
+using ZES.Interfaces.Infrastructure;
 using ExpectedVersion = ZES.Infrastructure.EventStore.ExpectedVersion;
 
 #pragma warning disable CS1998

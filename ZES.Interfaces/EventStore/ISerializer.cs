@@ -1,8 +1,7 @@
 using System.Collections.Generic;
 using ZES.Interfaces.Domain;
-using ZES.Interfaces.EventStore;
 
-namespace ZES.Interfaces.Serialization
+namespace ZES.Interfaces.EventStore
 {
     /// <summary>
     /// JSON serializer for event/command storage

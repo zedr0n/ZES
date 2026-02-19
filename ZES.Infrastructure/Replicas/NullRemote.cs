@@ -1,7 +1,7 @@
 using System.Threading.Tasks;
 using ZES.Interfaces;
-using ZES.Interfaces.Replicas;
-using static ZES.Interfaces.FastForwardResult;
+using ZES.Interfaces.Branching;
+using static ZES.Interfaces.Branching.FastForwardResult;
 
 namespace ZES.Infrastructure.Replicas
 {

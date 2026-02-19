@@ -2,6 +2,7 @@ using System;
 using System.Linq;
 using System.Threading.Tasks;
 using ZES.Interfaces.Domain;
+using ZES.Interfaces.EventStore;
 
 namespace ZES.Infrastructure.Domain
 {

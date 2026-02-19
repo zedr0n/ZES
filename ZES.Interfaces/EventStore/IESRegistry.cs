@@ -1,6 +1,6 @@
 using System;
 
-namespace ZES.Interfaces.Domain
+namespace ZES.Interfaces.EventStore
 {
     /// <summary>
     /// Registry of all event sourced instances

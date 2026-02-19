@@ -3,7 +3,8 @@ using System.Reactive.Linq;
 using System.Threading.Tasks;
 using ZES.Infrastructure;
 using ZES.Interfaces.Domain;
-using ZES.Interfaces.Pipes;
+using ZES.Interfaces.EventStore;
+using ZES.Interfaces.Infrastructure;
 
 namespace ZES.Utils
 {

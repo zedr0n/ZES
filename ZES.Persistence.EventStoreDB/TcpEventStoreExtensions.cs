@@ -5,7 +5,6 @@ using ZES.Infrastructure;
 using ZES.Infrastructure.EventStore;
 using ZES.Interfaces;
 using ZES.Interfaces.EventStore;
-using ZES.Interfaces.Serialization;
 using ExpectedVersion = ZES.Infrastructure.EventStore.ExpectedVersion;
 
 namespace ZES.Persistence.EventStoreDB

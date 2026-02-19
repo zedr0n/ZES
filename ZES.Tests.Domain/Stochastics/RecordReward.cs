@@ -1,7 +1,7 @@
 ﻿using System;
 using ZES.Infrastructure.Stochastics;
 using ZES.Interfaces.Domain;
-using ZES.Interfaces.Pipes;
+using ZES.Interfaces.Infrastructure;
 using ZES.Tests.Domain.Queries;
 
 namespace ZES.Tests.Domain.Stochastics

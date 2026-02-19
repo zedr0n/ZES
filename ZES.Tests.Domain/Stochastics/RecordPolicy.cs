@@ -1,7 +1,7 @@
 ﻿using System.Collections.Generic;
 using ZES.Infrastructure.Stochastics;
 using ZES.Interfaces.Branching;
-using ZES.Interfaces.Pipes;
+using ZES.Interfaces.Infrastructure;
 using ZES.Interfaces.Stochastic;
 using ZES.Tests.Domain.Queries;
 

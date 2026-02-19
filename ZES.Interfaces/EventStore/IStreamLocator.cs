@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using ZES.Interfaces.Domain;
 
 namespace ZES.Interfaces.EventStore
 {

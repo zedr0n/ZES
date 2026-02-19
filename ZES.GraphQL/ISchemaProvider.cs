@@ -1,6 +1,7 @@
 using System.Threading.Tasks;
 using HotChocolate.Execution;
 using ZES.Interfaces;
+using ZES.Interfaces.Recording;
 
 namespace ZES.GraphQL
 {

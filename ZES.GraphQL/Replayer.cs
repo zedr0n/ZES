@@ -5,6 +5,7 @@ using Microsoft.Extensions.DependencyInjection;
 using NLog;
 using SimpleInjector;
 using ZES.Interfaces;
+using ZES.Interfaces.Recording;
 
 namespace ZES.GraphQL
 {

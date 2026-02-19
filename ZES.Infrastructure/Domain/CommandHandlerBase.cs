@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using Gridsum.DataflowEx;
 using ZES.Infrastructure.Utils;
 using ZES.Interfaces.Domain;
+using ZES.Interfaces.EventStore;
 
 namespace ZES.Infrastructure.Domain
 {

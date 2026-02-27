@@ -27,6 +27,8 @@ namespace ZES.GraphQL
             var props = command.GetType().GetProperties(BindingFlags.DeclaredOnly | BindingFlags.Public | BindingFlags.Instance).Where(p => !p.GetGetMethod().IsVirtual);
 
             var allParams = string.Join(",", props.Select(p => $"{p.Name.ToLowerFirst()} : {BackQuote(p)}{p.GetValue(command)}{BackQuote(p)}"));
+            if(command.Guid != null)
+                allParams += $", guid : \"{command.Guid}\"";
             
             st.Add(MultiCommand.ParamsField, allParams);
             return st.Render();

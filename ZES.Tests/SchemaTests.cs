@@ -1,10 +1,14 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using HotChocolate.Execution;
+using Microsoft.AspNetCore.Authorization.Infrastructure;
 using Xunit;
 using ZES.GraphQL;
+using ZES.Infrastructure.Branching;
 using ZES.Interfaces;
+using ZES.Interfaces.Branching;
 using ZES.Interfaces.Clocks;
 using ZES.Interfaces.Infrastructure;
 using ZES.Interfaces.Recording;
@@ -95,6 +99,26 @@ namespace ZES.Tests
             Assert.Equal(1, statsDict["numberOfRoots"]);
         }
 
+        [Fact]
+        public void CanSpecifyCommandId()
+        {
+            var container = CreateContainer();
+            var commandLog = container.GetInstance<ICommandLog>();
+            
+            var schemaProvider = container.GetInstance<ISchemaProvider>();
+            var generator = container.GetInstance<IGraphQlGenerator>();
+            
+            var executor = schemaProvider.Build();
+
+            var id = $"{nameof(CanSpecifyCommandId)}-Root";
+            var guid = "4cbba5a9-762f-4e6a-a434-b03d619577c0";
+            var command = generator.Mutation(new CreateRoot(id) { Guid = guid });
+            executor.Execute(command);
+            
+            var commandOut = commandLog.GetCommands(BranchManager.Master).Result.SingleOrDefault();
+            Assert.Equal(commandOut?.MessageId.Id.ToString(), guid);
+        }
+        
         [Fact]
         public void CanExecuteMutation()
         {

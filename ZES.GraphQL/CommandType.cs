@@ -25,6 +25,7 @@ namespace ZES.GraphQL
             descriptor.Field(t => t.Target).Ignore();
             descriptor.Field(t => t.MessageType).Ignore();
             descriptor.Field(t => t.MessageId).Ignore();
+            descriptor.Field(t => t.Guid).Type<StringType>().DefaultValue(null);
             descriptor.Field(t => t.AncestorId).Ignore();
             descriptor.Field(t => t.CorrelationId).Ignore();
             descriptor.Field(t => t.LocalId).Ignore();

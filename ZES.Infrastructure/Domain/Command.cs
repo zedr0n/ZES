@@ -38,6 +38,20 @@ namespace ZES.Infrastructure.Domain
 
         /// <inheritdoc />
         [JsonIgnore]
+        public string Guid
+        {
+            get;
+            set
+            {
+                if (value == null)
+                    return;
+                field = value;
+                Metadata.MessageId = new MessageId(MessageId.MessageType, System.Guid.Parse(value));
+            }
+        } = null;
+
+        /// <inheritdoc />
+        [JsonIgnore]
         public bool StoreInLog
         {
             get => StaticMetadata.StoreInLog;

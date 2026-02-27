@@ -6,6 +6,11 @@ namespace ZES.Interfaces.Domain
     public interface ICommand : IMessage<ICommandStaticMetadata, ICommandMetadata>
     {
         /// <summary>
+        /// Gets or sets command id
+        /// </summary>
+        string Guid { get; set; }
+        
+        /// <summary>
         /// Gets aggregate target id
         /// </summary>
         string Target { get; }

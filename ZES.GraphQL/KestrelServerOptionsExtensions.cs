@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Net;
 using System.Security.Cryptography.X509Certificates;
 using Microsoft.AspNetCore.Hosting;
@@ -95,7 +96,7 @@ namespace ZES.GraphQL
                         throw new InvalidOperationException($"Certificate not found for {config.Host}.");
                     }
 
-                    return certificate[0];
+                    return certificate.Last();
                 }
             }
 

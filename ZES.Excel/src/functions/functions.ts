@@ -1,4 +1,5 @@
 ﻿import {Mutation, Query, SingleQuery} from './queries';
+import { v4 as uuidv4 } from 'uuid';
 
 class RootInfo {
   rootId : string;
@@ -16,6 +17,15 @@ class RootInfo {
 
 /**
  * @customfunction
+ */
+export async function guid() : Promise<any> {
+
+  let guid = uuidv4();
+  return guid;
+}
+
+/**
+ * @customfunction
  * @param invocation Custom function handler
  */
 export function activeBranch(invocation : CustomFunctions.StreamingInvocation<string>) : void {
@@ -23,6 +33,33 @@ export function activeBranch(invocation : CustomFunctions.StreamingInvocation<st
 
   Query(query, data => data.activeBranch.toString(), invocation);
 }
+
+/**
+ * @customfunction
+ * @param {string} id root id
+ * @param {string} guid command guid
+ */
+export async function createRoot(id : string, guid: string) : Promise<any> {
+  const query = `mutation { createRoot(name: \"${id}\", guid: \"${guid}\") }`
+
+  let result = await SingleQuery(query, data => data.createRoot.toString())
+  window.console.log(result)
+  return result
+}
+
+/**
+ * @customfunction
+ * @param {string} id root id
+ * @param {string} guid command guid
+ */
+export async function updateRoot(id : string, guid: string) : Promise<any> {
+  const query = `mutation { updateRoot(name: \"${id}\", guid: \"${guid}\") }`
+
+  let result = await SingleQuery(query, data => data.updateRoot.toString())
+  window.console.log(result)
+  return result
+}
+
 
 /**
  * @customfunction

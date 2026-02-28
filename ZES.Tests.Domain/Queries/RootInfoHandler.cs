@@ -25,6 +25,7 @@ namespace ZES.Tests.Domain.Queries
                 CreatedAt = state.CreatedAt,
                 UpdatedAt = e.Timestamp,
                 NumberOfUpdates = state.NumberOfUpdates + 1,
+                RootId = state.RootId
             };
         }
     }

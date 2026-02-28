@@ -12,6 +12,7 @@ using SimpleInjector;
 using Xunit;
 using ZES.Infrastructure;
 using ZES.Infrastructure.Alerts;
+using ZES.Infrastructure.Branching;
 using ZES.Infrastructure.Domain;
 using ZES.Infrastructure.Net;
 using ZES.Infrastructure.Utils;
@@ -51,6 +52,24 @@ namespace ZES.Tests
 
             var root = await repository.Find<Root>(id);
             Assert.Equal(id, root.Id);
+        }
+
+        [Fact]
+        public async Task CanIgnoreCommand()
+        {
+            var container = CreateContainer();
+            var bus = container.GetInstance<IBus>();
+            var commandLog = container.GetInstance<ICommandLog>();
+            var id = $"{nameof(CanIgnoreCommand)}-Root";
+            
+            var command = new CreateRoot(id);
+            await await bus.CommandAsync(command);
+
+            var commandOther = new CreateRoot(id) { Guid = command.MessageId.Id.ToString() };
+            await await bus.CommandAsync(commandOther);
+
+            var commands = await commandLog.GetCommands(BranchManager.Master);
+            Assert.Single(commands);
         }
 
         [Fact]

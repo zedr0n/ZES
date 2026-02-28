@@ -1,5 +1,6 @@
-﻿import {Mutation, Query, SingleQuery} from './queries';
-import { v4 as uuidv4 } from 'uuid';
+﻿import {Query, SingleQuery} from './queries';
+import {v4 as uuidv4} from 'uuid';
+import {getId} from "@fluentui/react";
 
 class RootInfo {
   rootId : string;
@@ -9,10 +10,20 @@ class RootInfo {
   
   constructor(rootId, createdAt, updatedAt, numberOfUpdates) {
     this.rootId = rootId;
-    this.createdAt = createdAt;
-    this.updatedAt = updatedAt;
+    this.createdAt = new Date(createdAt).toISOString();
+    this.updatedAt = new Date(updatedAt).toISOString()
     this.numberOfUpdates = Number.parseInt(numberOfUpdates)
   }
+}
+
+function getIdOrError(id : string, parseFn: ( data : any ) => string ) : (data : any) => string {
+  return data => {
+    let res = parseFn(data);
+    if (res == "true" || res == "false")
+      return id;
+    else
+      return res;
+  };
 }
 
 /**
@@ -42,7 +53,7 @@ export function activeBranch(invocation : CustomFunctions.StreamingInvocation<st
 export async function createRoot(id : string, guid: string) : Promise<any> {
   const query = `mutation { createRoot(name: \"${id}\", guid: \"${guid}\") }`
 
-  let result = await SingleQuery(query, data => data.createRoot.toString())
+  let result = await SingleQuery(query, getIdOrError(id, data => data.createRoot.toString()))
   window.console.log(result)
   return result
 }
@@ -55,7 +66,7 @@ export async function createRoot(id : string, guid: string) : Promise<any> {
 export async function updateRoot(id : string, guid: string) : Promise<any> {
   const query = `mutation { updateRoot(name: \"${id}\", guid: \"${guid}\") }`
 
-  let result = await SingleQuery(query, data => data.updateRoot.toString())
+  let result = await SingleQuery(query, getIdOrError(id, data => data.updateRoot.toString()))
   window.console.log(result)
   return result
 }
@@ -72,7 +83,7 @@ export async function getOrAddRoot(id : string) : Promise<any> {
     
   const query = `mutation { createRoot(name: \"${id}\") }`
   
-  let result = await SingleQuery(query, data => data.createRoot.toString())
+  let result = await SingleQuery(query, getIdOrError(id,data => data.createRoot.toString()))
   window.console.log(result)
   return result
 }
@@ -99,13 +110,17 @@ export async function rootInfo(id : string) : Promise<any> {
     type: Excel.CellValueType.entity,
     text: id,
     properties : {
+      "rootId" : {
+        type: Excel.CellValueType.string,
+        basicValue : result.rootId || ""
+      },
       "createdAt" : {
         type : Excel.CellValueType.string,
-        basicValue : result.createdAt || ""
+        basicValue : new Date(Number.parseInt(result.createdAt)/10000).toISOString() || ""
       },
       "updatedAt" : {
         type: Excel.CellValueType.string,
-        basicValue : result.updatedAt || ""
+        basicValue : new Date(Number.parseInt(result.updatedAt)/10000).toISOString() || ""
       },
       numberOfUpdates : {
         type: Excel.CellValueType.double,

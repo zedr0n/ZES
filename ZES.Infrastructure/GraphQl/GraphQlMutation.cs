@@ -52,7 +52,7 @@ namespace ZES.Infrastructure.GraphQl
 
             var error = _log.Errors.Observable.FirstOrDefaultAsync().GetAwaiter().GetResult();
             var isError = error != null && error != lastError;
-            if (isError)
+            if (isError && !error.Message.Contains("already exists in the command log"))
                 throw new InvalidOperationException(error.Message);
             return !isError;
         }

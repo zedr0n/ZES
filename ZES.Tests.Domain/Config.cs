@@ -97,6 +97,7 @@ namespace ZES.Tests.Domain
 
             public bool CreateRoot(string name, string guid) => Resolve(new CreateRoot(name) { Guid = guid });
             public bool CreateRootEx(CreateRoot command) => Resolve(command);
+            public bool CreateRootBatchEx(List<CreateRoot> commands) => Resolve(commands);
             public bool UpdateRoot(string name, string guid) => Resolve(new UpdateRoot(name) { Guid = guid });
             public bool CreateRecord(string target) => Resolve(new CreateRecord(target));
             public bool CreateRecordEx(CreateRecord command) => Resolve(command);

@@ -1,6 +1,5 @@
 ﻿import {Query, SingleQuery} from './queries';
 import {v4 as uuidv4} from 'uuid';
-import {getId} from "@fluentui/react";
 
 class RootInfo {
   rootId : string;

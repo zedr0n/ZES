@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.Linq;
 using System.Reactive.Concurrency;
 using System.Reactive.Linq;
@@ -82,11 +83,11 @@ namespace ZES
         }
        
         /// <inheritdoc />
-        public async Task<Task> CommandAsync(ICommand command)
+        public async Task<Task> CommandAsync(ICommand command, bool waitForRetroactive = false)
         {
             command.Timeline = _timeline.Id;
             if (command is IRetroactiveCommand)
-                await _flowCompletionService.CompletionAsync();//.Timeout(Configuration.Timeout);
+                await _flowCompletionService.CompletionAsync(includeRetroactive: waitForRetroactive);//.Timeout(Configuration.Timeout);
             else if (command.RetroactiveId == default && command.AncestorId == default)
                 await _flowCompletionService.RetroactiveExecution.FirstAsync(b => b == false);
 
@@ -98,6 +99,18 @@ namespace ZES
 
             var completionTask = _flowCompletionService.NodeCompletionAsync(command);
             return completionTask;
+        }
+
+        /// <inheritdoc />
+        public async Task<Task> CommandBatchAsync(IEnumerable<ICommand> commands)
+        {
+            var tasks = new List<Task>();
+            foreach (var command in commands)
+            {
+                var task = await CommandAsync(command, true);
+                tasks.Add(task);
+            }
+            return Task.WhenAll(tasks);
         }
         
         /// <inheritdoc />

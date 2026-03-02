@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Collections;
+using System.Collections.Generic;
 using System.Linq;
 using HotChocolate;
 using HotChocolate.Execution;
@@ -53,8 +55,10 @@ namespace ZES.GraphQL
                 case OperationType.Mutation:
                 {
                     var arguments = request.SelectionSet.Selections.OfType<FieldNode>().SelectMany(s => s.Arguments);
-                    var timestampStr = (string)arguments.SingleOrDefault(x => x.Name.Value == "timestamp" || x.Name.Value == "date")?.Value?.Value;
-                    var timestamp = Time.Parse(timestampStr);
+                    var timestampObject = arguments.SingleOrDefault(x => x.Name.Value == "timestamp" || x.Name.Value == "date")?.Value?.Value;
+                    Time timestamp = null;
+                    if(timestampObject is not IEnumerable)
+                        timestamp = Time.Parse((string) timestampObject);
                     _recordLog.AddMutation(query, timestamp);
                     break;
                 }

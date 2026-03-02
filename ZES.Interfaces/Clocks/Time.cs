@@ -48,6 +48,14 @@ namespace ZES.Interfaces.Clocks
         /// <param name="duration">Duration to add</param>
         /// <returns>Time such that duration between the two is equal to input duration</returns>
         public static Time operator +(Time a, Duration duration) => a.AddDuration(duration);
+
+        /// <summary>
+        /// Plus operator for time
+        /// </summary>
+        /// <param name="a">Time instance</param>
+        /// <param name="duration">Duration to add</param>
+        /// <returns>Time such that duration between the two is equal to input duration</returns>
+        public static Time operator -(Time a, Duration duration) => a.AddDuration(-duration);
         
         /// <summary>
         /// Less operator overload for time 

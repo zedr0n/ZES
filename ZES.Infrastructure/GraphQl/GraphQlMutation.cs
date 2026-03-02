@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Reactive.Linq;
 using ZES.Interfaces;
 using ZES.Interfaces.Branching;
@@ -50,6 +51,31 @@ namespace ZES.Infrastructure.GraphQl
             task.Wait();
             _manager.Ready.Wait();
 
+            var error = _log.Errors.Observable.FirstOrDefaultAsync().GetAwaiter().GetResult();
+            var isError = error != null && error != lastError;
+            if (isError && !error.Message.Contains("already exists in the command log"))
+                throw new InvalidOperationException(error.Message);
+            return !isError;
+        }
+
+        /// <summary>
+        /// Processes a batch of commands and determines whether the operation was successful.
+        /// </summary>
+        /// <param name="commands">The list of commands to be executed as a batch.</param>
+        /// <returns>
+        /// A boolean value indicating whether the operation completed without critical errors.
+        /// </returns>
+        /// <exception cref="InvalidOperationException">
+        /// Thrown when a critical error occurs during command execution that is not related to duplicate commands in the log.
+        /// </exception>
+        protected bool Resolve(IEnumerable<ICommand> commands)
+        {
+            var lastError = _log.Errors.Observable.FirstOrDefaultAsync().GetAwaiter().GetResult();
+
+            var task = _bus.CommandBatchAsync(commands).Result;
+            task.Wait();
+            _manager.Ready.Wait();
+            
             var error = _log.Errors.Observable.FirstOrDefaultAsync().GetAwaiter().GetResult();
             var isError = error != null && error != lastError;
             if (isError && !error.Message.Contains("already exists in the command log"))

@@ -363,6 +363,33 @@ namespace ZES.Tests
             await repository.FindUntil<Root>($"{id}Thread{numRoots - 1}");
             log.Info($"Threading : {stopWatch.ElapsedMilliseconds}ms per {numRoots}");
         }
+        
+        [Theory]
+        [InlineData(1000)]
+        public async Task CanCreateMultipleRootsBatched(int numRoots)
+        {
+            var container = CreateContainer();
+            var bus = container.GetInstance<IBus>();
+            var log = container.GetInstance<ILog>();
+            var repository = container.GetInstance<IEsRepository<IAggregate>>();
+
+            var id = $"{nameof(CanCreateMultipleRootsBatched)}-Root";
+            var i = 0;
+            
+            var stopWatch = Stopwatch.StartNew();
+            
+            var commands = new List<ICommand>();
+            while ( i < numRoots )
+            {
+                commands.Add(new CreateRoot($"{id}Thread{i}"));
+                i++;
+            }
+           
+            await bus.CommandBatchAsync(commands); 
+            await repository.FindUntil<Root>($"{id}Thread{numRoots - 1}");
+            log.Info($"Threading : {stopWatch.ElapsedMilliseconds}ms per {numRoots}");
+        }
+        
 
         [Fact]
         public async Task CanRecordRoot()

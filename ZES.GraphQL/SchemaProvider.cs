@@ -150,8 +150,17 @@ namespace ZES.GraphQL
                                                      BindingFlags.DeclaredOnly))
                 {
                     var arg = p.GetParameters().FirstOrDefault()?.ParameterType;
-                    if (arg != null && arg.GetInterfaces().Contains(typeof(ICommand)))
-                        builder.AddType(typeof(CommandType<>).MakeGenericType(arg));
+                    var isList = arg?.IsGenericType == true &&
+                                 arg.GetGenericTypeDefinition() == typeof(List<>) &&
+                                 arg.GetGenericArguments()[0].GetInterfaces().Contains(typeof(ICommand));
+
+                    var commandArg = isList ? arg.GetGenericArguments()[0] : arg;
+
+                    if (commandArg != null && commandArg.GetInterfaces().Contains(typeof(ICommand)))
+                    {
+                        var commandType = typeof(CommandType<>).MakeGenericType(commandArg);
+                        builder.AddType(commandType);
+                    }
                 }
 
                 // builder.AddMutationType(mutationType);

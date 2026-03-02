@@ -120,6 +120,27 @@ namespace ZES.Tests
         }
         
         [Fact]
+        public void CanExecuteCommandList()
+        {
+            var container = CreateContainer();
+            var schemaProvider = container.GetInstance<ISchemaProvider>();
+            var generator = container.GetInstance<IGraphQlGenerator>();
+
+            var executor = schemaProvider.Build();
+
+            var mutation = @"mutation { createRootBatchEx( commands : [{ target : ""root"" }, {target : ""root2""}] ) }";
+
+            executor.Execute(mutation);
+           
+            var query = generator.Query(new StatsQuery());
+            var statsResult = executor.Execute(query) as IReadOnlyQueryResult;
+            
+            var statsDict = statsResult?.Data["statsQuery"] as IReadOnlyDictionary<string, object>;
+            Assert.NotNull(statsDict);
+            Assert.Equal(2, statsDict["numberOfRoots"]);
+        }
+        
+        [Fact]
         public void CanExecuteMutation()
         {
             var container = CreateContainer();

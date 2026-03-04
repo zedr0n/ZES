@@ -34,10 +34,7 @@ namespace ZES.GraphQL
         public void Dispose()
         {
             var query = _context.Request.Query.ToString();
-            var request = _context.Document.Definitions.OfType<OperationDefinitionNode>()
-                .SingleOrDefault();
-            if (request == default)
-                return;
+            var request = _context.Operation.Definition;
 
             switch (request.Operation)
             {

@@ -70,13 +70,8 @@ namespace ZES.Tests.Domain
             c.RegisterEvents(Assembly.GetExecutingAssembly());   
         }
         
-        public class Query : GraphQlQuery 
+        public class Query(IBus bus, ILog log) : GraphQlQuery(bus, log)
         {
-            public Query(IBus bus)
-                : base(bus)
-            {
-            }
-            
             /// <summary>
             /// Gets the root info
             /// </summary>

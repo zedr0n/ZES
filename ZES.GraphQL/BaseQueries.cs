@@ -24,7 +24,7 @@ namespace ZES.GraphQL
         /// <param name="bus">Bus service</param>
         /// <param name="manager">Branch manager service</param>
         public BaseQueries(ILog log, IBus bus, IBranchManager manager) 
-            : base(bus)
+            : base(bus, log)
         {
             _log = log;
             _manager = manager;

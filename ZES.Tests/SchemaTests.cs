@@ -100,7 +100,7 @@ namespace ZES.Tests
         }
 
         [Fact]
-        public void CanSpecifyCommandId()
+        public async Task CanSpecifyCommandId()
         {
             var container = CreateContainer();
             var commandLog = container.GetInstance<ICommandLog>();
@@ -113,9 +113,9 @@ namespace ZES.Tests
             var id = $"{nameof(CanSpecifyCommandId)}-Root";
             var guid = "4cbba5a9-762f-4e6a-a434-b03d619577c0";
             var command = generator.Mutation(new CreateRoot(id) { Guid = guid });
-            executor.Execute(command);
+            await executor.ExecuteAsync(command, cancellationToken: TestContext.Current.CancellationToken);
             
-            var commandOut = commandLog.GetCommands(BranchManager.Master).Result.SingleOrDefault();
+            var commandOut = (await commandLog.GetCommands(BranchManager.Master)).SingleOrDefault();
             Assert.Equal(commandOut?.MessageId.Id.ToString(), guid);
         }
         

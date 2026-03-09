@@ -1,6 +1,8 @@
 ﻿using Microsoft.AspNetCore;
 using Microsoft.AspNetCore.Hosting;
 
+#pragma warning disable ASPDEPR008
+
 namespace ZES.GraphQL.AspNetCore
 {
     /// <summary>

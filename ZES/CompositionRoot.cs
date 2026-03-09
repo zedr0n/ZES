@@ -60,6 +60,8 @@ namespace ZES
                 container.Collection.Register<IGraphQlMutation>(new Type[] { });
             if (registrations.All(r => r.ServiceType != typeof(IGraphQlQuery)))
                 container.Collection.Register<IGraphQlQuery>(new Type[] { });
+            if (registrations.All(r => r.ServiceType != typeof(ICatalog<IGraphQlInputType>)))
+                container.Collection.Register<ICatalog<IGraphQlInputType>>(new TypeCatalog<IGraphQlInputType>([]));
             container.Verify();
         }
 

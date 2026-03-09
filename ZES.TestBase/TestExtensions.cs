@@ -35,7 +35,7 @@ namespace ZES.TestBase
         /// <returns>see cref="Task"/> representing the asynchronous operation.</returns>
         public static async Task Equal<TResult, TProperty>(this IBus bus, IQuery<TResult> query, Func<TResult, TProperty> prop, TProperty expected, TimeSpan timeout = default(TimeSpan))
         {
-            var r = await bus.QueryUntil(query, x => prop(x).Equals(expected), timeout);
+            var r = await bus.QueryUntil(query, x => x != null && prop(x) != null && prop(x).Equals(expected), timeout);
             Assert.Equal(expected, prop(r));
         }
     }

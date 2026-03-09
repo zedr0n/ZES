@@ -845,7 +845,7 @@ namespace ZES.Tests
             var otherRemote = otherRemoteManager.GetGenericRemote("Server");
             await otherRemote.Pull(BranchManager.Master);
             
-            await otherBus.IsTrue(new StatsQuery(), s => s.NumberOfRoots == 2);
+            await otherBus.IsTrue(new StatsQuery(), s => s?.NumberOfRoots == 2);
         }
 
         [Fact]

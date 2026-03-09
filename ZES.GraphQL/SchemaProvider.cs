@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics;
@@ -6,9 +7,12 @@ using System.Reactive.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
 using HotChocolate;
+using HotChocolate.Configuration;
 using HotChocolate.Execution;
+using HotChocolate.Execution.Configuration;
 using HotChocolate.Types;
 using HotChocolate.Types.Descriptors;
+using HotChocolate.Types.Descriptors.Definitions;
 using JetBrains.Annotations;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
@@ -35,6 +39,7 @@ namespace ZES.GraphQL
         private readonly IBranchManager _manager;
         private readonly IEnumerable<IGraphQlMutation> _mutations;
         private readonly IEnumerable<IGraphQlQuery> _queries;
+        private readonly IEnumerable<ICatalog<IGraphQlInputType>> _inputTypes;
         private readonly IServiceCollection _services;
         private readonly IMessageQueue _messageQueue;
         private readonly IRecordLog _recordLog;
@@ -49,19 +54,21 @@ namespace ZES.GraphQL
         /// <param name="manager">Branch manager service</param>
         /// <param name="mutations">GraphQL mutations</param>
         /// <param name="queries">GraphQL queries</param>
+        /// <param name="inputTypes">GraphQL input types</param>
         /// <param name="services">Asp.Net services collection</param>
         /// <param name="graph">QGraph</param>
         /// <param name="messageQueue">Message queue</param>
         /// <param name="recordLog">Record log</param>
         /// <param name="remote">Remote service</param>
         /// <param name="timeline">Timeline</param>
-        public SchemaProvider(IBus bus, ILog log, IBranchManager manager, IEnumerable<IGraphQlMutation> mutations, IEnumerable<IGraphQlQuery> queries, IServiceCollection services, IGraph graph, IMessageQueue messageQueue, IRecordLog recordLog, IRemote remote, ITimeline timeline)
+        public SchemaProvider(IBus bus, ILog log, IBranchManager manager, IEnumerable<IGraphQlMutation> mutations, IEnumerable<IGraphQlQuery> queries, IEnumerable<ICatalog<IGraphQlInputType>> inputTypes, IServiceCollection services, IGraph graph, IMessageQueue messageQueue, IRecordLog recordLog, IRemote remote, ITimeline timeline)
         {
             _bus = bus;
             _log = log;
             _manager = manager;
             _mutations = mutations;
             _queries = queries;
+            _inputTypes = inputTypes;
             _services = services;
             _graph = graph;
             _messageQueue = messageQueue;
@@ -131,13 +138,45 @@ namespace ZES.GraphQL
                 .AddTypeExtension<MutationTypeExtensions>()
                 .AddDiagnosticEventListener<DiagnosticListener>();
 
+            foreach (var type in _inputTypes.Aggregate(new HashSet<Type>(), (types, catalog) => types.Union(catalog.Types).ToHashSet()))
+            {
+                // Get the primary constructor (the one with most parameters, or you can use other logic)
+                var constructor = type.GetConstructors()
+                    .OrderByDescending(c => c.GetParameters().Length)
+                    .FirstOrDefault();
+
+                if (constructor == null) 
+                    continue;
+                
+                // Get constructor parameter names
+                var constructorParamNames = constructor.GetParameters()
+                    .Select(p => p.Name)
+                    .ToHashSet(StringComparer.OrdinalIgnoreCase);
+        
+                // Get all properties
+                var properties = type.GetProperties(BindingFlags.Public | BindingFlags.Instance);
+
+                var propsToIgnore = properties
+                    .Where(p => !constructorParamNames.Contains(p.Name))
+                    .Select(p => p.Name.FirstCharacterToLower())
+                    .ToHashSet();
+                
+                var dynamicInputType = (INamedType)Activator.CreateInstance(
+                    typeof(IgnoreInputObjectType<>).MakeGenericType(type),
+                    propsToIgnore,
+                    $"{type.Name}Input");
+
+                if (dynamicInputType != null) 
+                    builder.AddType(dynamicInputType);
+            }
+
             foreach (var queryType in rootQuery)
             {
                 foreach (var p in queryType.GetMethods(BindingFlags.Public | BindingFlags.Instance |
                                                      BindingFlags.DeclaredOnly))
                 {
                     var arg = p.GetParameters().FirstOrDefault()?.ParameterType;
-                    if (arg != null && arg.GetInterfaces().Contains(typeof(IQuery)))
+                    if (arg != null && Enumerable.Contains(arg.GetInterfaces(), typeof(IQuery)))
                         builder.AddType(typeof(QueryType<>).MakeGenericType(arg));
                 }
 
@@ -152,18 +191,16 @@ namespace ZES.GraphQL
                     var arg = p.GetParameters().FirstOrDefault()?.ParameterType;
                     var isList = arg?.IsGenericType == true &&
                                  arg.GetGenericTypeDefinition() == typeof(List<>) &&
-                                 arg.GetGenericArguments()[0].GetInterfaces().Contains(typeof(ICommand));
+                                 Enumerable.Contains(arg.GetGenericArguments()[0].GetInterfaces(), typeof(ICommand));
 
                     var commandArg = isList ? arg.GetGenericArguments()[0] : arg;
 
-                    if (commandArg != null && commandArg.GetInterfaces().Contains(typeof(ICommand)))
+                    if (commandArg != null && Enumerable.Contains(commandArg.GetInterfaces(), typeof(ICommand)))
                     {
                         var commandType = typeof(CommandType<>).MakeGenericType(commandArg);
                         builder.AddType(commandType);
                     }
                 }
-
-                // builder.AddMutationType(mutationType);
             }
         }
 
@@ -198,6 +235,14 @@ namespace ZES.GraphQL
                                 .Argument(arg.Name.FirstCharacterToLower(), argDescriptor => 
                                     argDescriptor.Type(arg.ParameterType));
                         }
+                    }
+
+                    foreach (var pi in queryType.GetProperties(BindingFlags.Public | BindingFlags.Instance |
+                                                               BindingFlags.DeclaredOnly))
+                    {
+                        descriptor.Field(pi.Name.FirstCharacterToLower())
+                            .Type(pi.PropertyType)
+                            .ResolveWith(pi);
                     }
                 }
                 
@@ -263,5 +308,24 @@ namespace ZES.GraphQL
                 return error;
             }
         }
+        
+        private class IgnoreInputObjectType<T>(HashSet<string> fieldsToIgnore, string typeName) : InputObjectType<T>
+        {
+            protected override void Configure(IInputObjectTypeDescriptor<T> descriptor)
+            {
+                descriptor.Name(typeName);
+                base.Configure(descriptor);
+            }
+
+            protected override FieldCollection<InputField> OnCompleteFields(
+                ITypeCompletionContext context,
+                InputObjectTypeDefinition definition)
+            {
+                foreach (var field in definition.Fields.Where(f => fieldsToIgnore.Contains(f.Name)))
+                    field.Ignore = true;
+
+                return base.OnCompleteFields(context, definition);
+            }
+        }        
     }
 }

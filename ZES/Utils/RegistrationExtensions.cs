@@ -49,10 +49,27 @@ namespace ZES.Utils
             c.RegisterQueries(assembly);
             c.RegisterProjections(assembly);
             c.RegisterAggregates(assembly);
+            c.RegisterGraphQl(assembly);
             if (useSagas)
                 c.RegisterSagas(assembly);
         }
 
+        /// <summary>
+        /// Registers all GraphQL-related types with the <see cref="SimpleInjector"/> container.
+        /// </summary>
+        /// <param name="c">The <see cref="SimpleInjector"/> container.</param>
+        /// <param name="assembly">The assembly to scan for GraphQL-related types.</param>
+        public static void RegisterGraphQl(this Container c, Assembly assembly)
+        {
+            foreach (var mutation in assembly.GetTypesFromInterface(typeof(IGraphQlMutation)))
+                c.Collection.Append(typeof(IGraphQlMutation), mutation ); 
+
+            foreach (var q in assembly.GetTypesFromInterface(typeof(IGraphQlQuery)))
+                c.Collection.Append(typeof(IGraphQlQuery), q);
+ 
+            c.Collection.Append(typeof(ICatalog<IGraphQlInputType>), Lifestyle.Singleton.CreateRegistration(() => new TypeCatalog<IGraphQlInputType>(assembly.GetTypesFromInterface(typeof(IGraphQlInputType))), c));
+        }
+        
         /// <summary>
         /// Registers aggregates with <see cref="SimpleInjector"/> container
         /// </summary>
@@ -189,9 +206,6 @@ namespace ZES.Utils
                 c.RegisterConditional(iQueryHandler, handler, lifestyle, x => !x.Handled);
                 c.RegisterConditional(iHistoricalQueryHandler, historicalHandler, Lifestyle.Transient, x => !x.Handled);
             }
-
-            foreach (var q in assembly.GetTypesFromInterface(typeof(IGraphQlQuery)))
-                c.Collection.Append(typeof(IGraphQlQuery), q);
         }
         
         /// <summary>
@@ -351,10 +365,6 @@ namespace ZES.Utils
                 var handler = typeof(JsonRequestHandler<>).MakeGenericType(t);
                 c.RegisterConditional(iHandler, handler, Lifestyle.Singleton, x => !x.Handled);
             }
-
-            var mutations = assembly.GetTypesFromInterface(typeof(IGraphQlMutation));
-            foreach (var mutation in mutations)
-               c.Collection.Append(typeof(IGraphQlMutation), mutation ); 
         }
 
         private static IEnumerable<Type> GetTypesFromInterface(this Assembly assembly, Type t)

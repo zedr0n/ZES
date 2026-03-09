@@ -113,7 +113,7 @@ namespace ZES.Infrastructure.Serialization
         /// </summary>
         Metadata,
         /// <summary>
-        /// <see cref="IEvent.StaticMetadata"/>
+        /// Enum member representing static metadata in a JSON entry.
         /// </summary>
         StaticMetadata
     }

@@ -8,6 +8,7 @@ using Microsoft.AspNetCore.Server.Kestrel.Core;
 using Microsoft.Extensions.DependencyInjection;
 
 #pragma warning disable CS0618
+#pragma warning disable SYSLIB0057
 
 namespace ZES.GraphQL
 {

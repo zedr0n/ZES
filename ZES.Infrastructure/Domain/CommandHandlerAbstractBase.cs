@@ -7,11 +7,7 @@ namespace ZES.Infrastructure.Domain;
 public abstract class CommandHandlerAbstractBase<TCommand> : ICommandHandler<TCommand>
     where TCommand : ICommand
 {
-    /// <summary>
-    /// 
-    /// </summary>
-    /// <param name="iCommand"></param>
-    /// <returns></returns>
+    /// <inheritdoc />
     public abstract Task Handle(TCommand iCommand);
     
     /// <inheritdoc />
@@ -22,11 +18,4 @@ public abstract class CommandHandlerAbstractBase<TCommand> : ICommandHandler<TCo
 
     /// <inheritdoc />
     public bool CanHandle(ICommand command) => command is TCommand;
-    
-    /// <inheritdoc />
-    public Task Complete(ICommand command) => Task.CompletedTask;
-
-    /// <inheritdoc />
-    public Task Uncomplete(ICommand command) => Task.CompletedTask;
-    
 }

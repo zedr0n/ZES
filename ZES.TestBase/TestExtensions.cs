@@ -7,6 +7,9 @@ using ZES.Utils;
 
 namespace ZES.TestBase
 {
+    /// <summary>
+    /// Provides extension methods for testing CQRS queries on an asynchronous message bus interface.
+    /// </summary>
     public static class TestExtensions
     {
         /// <summary>Verifies that an expression is true.</summary>

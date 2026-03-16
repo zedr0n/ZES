@@ -3,11 +3,11 @@ using ZES.Interfaces.Domain;
 
 namespace ZES.GraphQL
 {
-    /// <inheritdoc />
+    /// <inheritdoc cref="InputObjectType" />
     public class QueryType<T> : InputObjectType<T>
         where T : IQuery
     {
-        /// <inheritdoc />
+        /// <inheritdoc cref="InputObjectType.Configure" />
         protected override void Configure(IInputObjectTypeDescriptor<T> descriptor)
         {
             descriptor.Field(t => t.Timestamp).Ignore();

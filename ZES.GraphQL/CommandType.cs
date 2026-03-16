@@ -6,12 +6,19 @@ using ZES.Interfaces.Domain;
 
 namespace ZES.GraphQL
 {
-    /// <inheritdoc />
+    /// <inheritdoc cref="InputObjectType" />
     public class CommandType<T> : InputObjectType<T>
         where T : ICommand 
     {
-        /// <inheritdoc />
-        protected override FieldCollection<InputField> OnCompleteFields(ITypeCompletionContext context, InputObjectTypeDefinition definition)
+        /// <summary>
+        /// Finalizes the fields of the input object type. This method applies any additional
+        /// processing or modifications to the fields, such as ignoring fields with specific names.
+        /// </summary>
+        /// <param name="context">The type completion context used to complete the input type definition.</param>
+        /// <param name="definition">The input object type definition containing the fields to process.</param>
+        /// <returns>The completed collection of input fields after applying modifications.</returns>
+        protected override FieldCollection<InputField> OnCompleteFields(ITypeCompletionContext context,
+            InputObjectTypeDefinition definition)
         {
             definition.Fields.SingleOrDefault(f => f.Name == "metadata")!.Ignore = true;
             definition.Fields.SingleOrDefault(f => f.Name == "staticMetadata")!.Ignore = true;
@@ -19,7 +26,7 @@ namespace ZES.GraphQL
             return base.OnCompleteFields(context, definition);
         }
 
-        /// <inheritdoc />
+        /// <inheritdoc cref="InputObjectType.Configure(IInputObjectTypeDescriptor)"/>
         protected override void Configure(IInputObjectTypeDescriptor<T> descriptor)
         {
             descriptor.Field(t => t.Target).Ignore();

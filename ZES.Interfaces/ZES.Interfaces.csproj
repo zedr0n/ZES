@@ -9,6 +9,7 @@
         <Version>1.0.0</Version>
         <NoWarn>SA1623</NoWarn>
         <GenerateDocumentationFile>true</GenerateDocumentationFile>
+        <InheritDocEnabled>true</InheritDocEnabled>        
         <Configurations>Debug;Release;DebugLocal</Configurations>
         <TieredCompilation>false</TieredCompilation>
         <PublishReadyToRun>true</PublishReadyToRun>
@@ -20,6 +21,10 @@
 
     <ItemGroup>
       <PackageReference Include="NodaTime" Version="3.0.3" />
+      <PackageReference Include="SauceControl.InheritDoc" Version="2.0.2">
+        <PrivateAssets>all</PrivateAssets>
+        <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      </PackageReference>
       <PackageReference Include="StyleCop.Analyzers" Version="1.2.0-beta.507">
         <PrivateAssets>all</PrivateAssets>
         <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>

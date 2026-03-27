@@ -2,6 +2,7 @@
 
 using System;
 using System.Buffers;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -133,7 +134,7 @@ namespace ZES.Infrastructure.Serialization
 
         // Cache for type strings to avoid repeated string allocation and concatenation
         // Key: Type, Value: "FullName,AssemblyName" string
-        private readonly Dictionary<Type, string> _typeStringCache = new();
+        private readonly ConcurrentDictionary<Type, string> _typeStringCache = new();
             
 #if USE_JSON        
         private readonly JsonSerializer _simpleSerializer;
@@ -743,12 +744,12 @@ namespace ZES.Infrastructure.Serialization
 
         private string GetTypeString(Type type)
         {
-            if (_typeStringCache.TryGetValue(type, out var cached))
-                return cached;
-
-            var typeString = type.FullName + "," + type.Assembly.FullName.Split(',')[0];
-            _typeStringCache[type] = typeString;
-            return typeString;
+            return _typeStringCache.GetOrAdd(type, t =>
+            {
+                // existing type-string construction logic here
+                var typeString = t.FullName + "," + t?.Assembly?.FullName?.Split(',')[0];
+                return typeString;
+            });
         }
         
         private void WriteMessageMetadata(JsonMetadataTextWriter writer, IMessageMetadata e)

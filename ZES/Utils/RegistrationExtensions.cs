@@ -379,59 +379,16 @@ namespace ZES.Utils
                     if (!t.IsGenericType || !t.ContainsGenericParameters) 
                         return true;
                     
-                    // Get the matching interface from the type
                     var matchingInterface = type.GetInterfaces()
                         .FirstOrDefault(i => i.IsGenericType && 
                                              i.GetGenericTypeDefinition() == t.GetGenericTypeDefinition());
                 
-                    if (matchingInterface == null)
-                        return false;
-                
-                    // Check that generic arguments match exactly (including open generics)
-                    var searchArgs = t.GetGenericArguments();
-                    var matchArgs = matchingInterface.GetGenericArguments();
-                
-                    if (searchArgs.Length != matchArgs.Length)
-                        return false;
-                
-                    for (var i = 0; i < searchArgs.Length; i++)
-                    {
-                        var searchArg = searchArgs[i];
-                        var matchArg = matchArgs[i];
-                    
-                        // Compare by checking if both have the same structure
-                        // Both must be generic types with same definition, or both must be generic parameters
-                        if (searchArg.IsGenericType && matchArg.IsGenericType)
-                        {
-                            if (searchArg.GetGenericTypeDefinition() != matchArg.GetGenericTypeDefinition())
-                                return false;
-                        
-                            // Both must have same open/closed generic state
-                            if (searchArg.ContainsGenericParameters != matchArg.ContainsGenericParameters)
-                                return false;
-                        }
-                        else if (searchArg.IsGenericParameter && matchArg.IsGenericParameter)
-                        {
-                            // Both are generic parameters - this is a match
-                            continue;
-                        }
-                        else if (!searchArg.IsGenericType && !matchArg.IsGenericType && 
-                                 !searchArg.IsGenericParameter && !matchArg.IsGenericParameter)
-                        {
-                            // Both are concrete types - compare directly
-                            if (searchArg != matchArg)
-                                return false;
-                        }
-                        else
-                        {
-                            // Mismatch in type structure
-                            return false;
-                        }
-                    }
-                    return true;
+                    return matchingInterface != null && // Only match if the interface is also open generic
+                           matchingInterface.ContainsGenericParameters;
                 });
             return types;
         }
+        
         private static Type GetAsClosedTypeOf(this Type t, Type genericTypeDefinition)
         {
             while (t != null && (!t.IsGenericType || t.GetGenericTypeDefinition() != genericTypeDefinition))

@@ -296,7 +296,7 @@ namespace ZES.Utils
         /// <param name="assembly">Assembly containing the domain to register</param>
         public static void RegisterJsonHandlers(this Container c, Assembly assembly)
         {
-            var results = assembly.GetTypesFromInterface(typeof(IJsonResult));
+            var results = assembly.GetTypesFromInterface(typeof(IJsonResult)).Where(t => !t.IsInterface);
 
             foreach (var r in results)
             {
@@ -322,7 +322,7 @@ namespace ZES.Utils
                 var iHandler = typeof(ICommandHandler<>).MakeGenericType(command);
                 var handler = assembly.GetTypesFromInterface(iHandler).FirstOrDefault(t => !t.IsAbstract);
                 if (handler == null)
-                    return;
+                    continue;
 
                 var iRetroactiveCommand = typeof(RetroactiveCommand<>).MakeGenericType(command);
                 var iRetroactiveCommandHandler = typeof(ICommandHandler<>).MakeGenericType(iRetroactiveCommand);
@@ -358,7 +358,7 @@ namespace ZES.Utils
                 }
             }
 
-            var jsonResults = assembly.GetTypesFromInterface(typeof(IJsonResult));
+            var jsonResults = assembly.GetTypesFromInterface(typeof(IJsonResult)).Where(t => !t.IsInterface);
             foreach (var t in jsonResults)
             {
                 var iHandler = typeof(ICommandHandler<>).MakeGenericType(typeof(RequestJson<>).MakeGenericType(t));

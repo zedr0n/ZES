@@ -50,11 +50,23 @@ namespace ZES.Infrastructure.Net
         /// <inheritdoc />
         public async Task<bool> SetAsync(string url, string value)
         {
-            var res = await _jsonData.GetOrAdd(url, new AsyncLazy<string>(() => value));
+            var tokens = url.Split(';');
+            var uri = tokens[0];
+
+            var res = await _jsonData.GetOrAdd(uri, new AsyncLazy<string>(() => value));
             return res == value;
         }
 
-        private async Task<string> GetAsync(string url, string apiKey = "") 
+        private AsyncLazy<string> GetAsyncImpl(HttpClient w, HttpRequestMessage request, string url) =>
+            new(() =>
+            {
+                _log.Info($"Initiating json connection to {url}");
+                return w.SendAsync(request)
+                    .Timeout(timeout: Configuration.NetworkTimeout, message: $"Connection to {url} timed out...")
+                    .ContinueWith(x => x.Result.Content.ReadAsStringAsync()).Unwrap();
+            });
+        
+        private async Task<string> GetAsync(string url, string apiKey = "", bool cache = true) 
         {
             using (var w = new HttpClient())
             {
@@ -64,14 +76,8 @@ namespace ZES.Infrastructure.Net
                     Method = HttpMethod.Get,
                 };
                 request.Headers.Add("apikey", apiKey);
-                var task = _jsonData.GetOrAdd(url, s => new AsyncLazy<string>(() =>
-                {
-                    _log.Info($"Initiating json connection to {url}");
-                    return w.SendAsync(request).Timeout(timeout: Configuration.NetworkTimeout, message: $"Connection to {url} timed out...").ContinueWith(x => x.Result.Content.ReadAsStringAsync()).Unwrap();
-                    // return w.GetStringAsync(url);
-                }));
+                var task = cache ? _jsonData.GetOrAdd(url, s => GetAsyncImpl(w, request, s)) : GetAsyncImpl(w, request, url); 
                 var json = await task;
-                //_log.Info(json);
                 return string.IsNullOrEmpty(json) ? null : json;
             }
         }
@@ -84,16 +90,20 @@ namespace ZES.Infrastructure.Net
                 var block = new ActionBlock<TrackedResult<string, string>>(
                     async url =>
                     {
-                        var uri = url.Value;
                         var tokens = url.Value.Split(';');
+                        var uri = tokens[0];
                         var apiKey = string.Empty;
-                        if (tokens.Length > 1)
-                        {
-                            uri = tokens[0];
-                            apiKey = tokens[1];
-                        }
+                        var cache = true;
 
-                        var r = await connector.GetAsync(uri, apiKey);
+                        for (var i = 1; i < tokens.Length; i++)
+                        {
+                            if (tokens[i] == "nocache")
+                                cache = false;
+                            else if (!string.IsNullOrEmpty(tokens[i]))
+                                apiKey = tokens[i];
+                        }
+                        
+                        var r = await connector.GetAsync(uri, apiKey, cache);
                         url.SetResult(r);
                         Complete();
                     }, dataflowOptions.ToDataflowBlockOptions(true)); // .ToExecutionBlockOption(true));

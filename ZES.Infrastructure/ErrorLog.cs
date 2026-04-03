@@ -1,10 +1,13 @@
 using System;
+using System.Collections.Generic;
 using System.Reactive.Linq;
 using System.Reactive.Subjects;
 using System.Threading.Tasks;
+using Newtonsoft.Json;
 using NodaTime;
 using NodaTime.Extensions;
 using ZES.Interfaces;
+using ZES.Interfaces.Domain;
 using ZES.Interfaces.Infrastructure;
 
 namespace ZES.Infrastructure
@@ -13,7 +16,8 @@ namespace ZES.Infrastructure
     public class ErrorLog : IErrorLog
     {
         private readonly ILog _log;
-        private readonly BehaviorSubject<IError> _errors = new BehaviorSubject<IError>(null);
+        private readonly BehaviorSubject<IError> _errors = new(null);
+        private readonly List<IError> _pastErrors = new();
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ErrorLog"/> class.
@@ -26,10 +30,13 @@ namespace ZES.Infrastructure
         }
 
         /// <inheritdoc />
+        public IEnumerable<IError> PastErrors => _pastErrors;
+
+        /// <inheritdoc />
         public IObservable<IError> Observable => _errors.AsObservable();
 
         /// <inheritdoc />
-        public void Add(Exception error)
+        public void Add(Exception error, IMessage originatingMessage = null)
         {
             switch (error)
             {
@@ -50,7 +57,8 @@ namespace ZES.Infrastructure
             }
 
             // _log.Error(error.Message, error.StackTrace?.Split(new[] { "in", "at", "(", ")", "[", "]" }, StringSplitOptions.RemoveEmptyEntries)[1] + ' ');
-            _errors.OnNext(new Error(error));
+            _pastErrors.Add(new Error(error) { OriginatingMessage = originatingMessage });
+            _errors.OnNext(new Error(error) { OriginatingMessage = originatingMessage });
         }
 
         private void Log(Exception error)
@@ -80,6 +88,10 @@ namespace ZES.Infrastructure
 
             /// <inheritdoc />
             public Instant Timestamp { get; set; }
+
+            /// <inheritdoc />
+            [JsonIgnore]
+            public IMessage OriginatingMessage { get; set; }
         }
     }
 }

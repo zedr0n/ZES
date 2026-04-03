@@ -34,10 +34,10 @@ namespace ZES.GraphQL
         /// GraphQL error query type
         /// </summary>
         /// <returns><see cref="IError"/></returns>
-        public Error Error()
+        public IError Error()
         {
             var error = _log.Errors.Observable.FirstAsync().Wait();
-            return (Error)error;
+            return error;
         }
 
         /// <summary>

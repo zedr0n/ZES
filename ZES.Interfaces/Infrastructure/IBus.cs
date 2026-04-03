@@ -35,11 +35,12 @@ namespace ZES.Interfaces.Infrastructure
         Task<TResult> QueryAsync<TResult>(IQuery<TResult> query);
 
         /// <summary>
-        /// Run command via bus with <paramref name="nRetries"/> number of attempts
+        /// Executes a command using the bus with specified retry attempts and an optional wait for retroactive commands.
         /// </summary>
-        /// <param name="command">Command to run</param>
-        /// <param name="nRetries">Number of retries</param>
-        /// <returns>True if command succeeded</returns>
-        Task<bool> Command(ICommand command, int nRetries = 0);
+        /// <param name="command">The command to be executed.</param>
+        /// <param name="nRetries">The number of retry attempts in case of failure.</param>
+        /// <param name="waitForRetroactive">Specifies whether to wait for retroactive commands to complete before execution.</param>
+        /// <returns>A task representing the result of the command execution, returning true if the command succeeded.</returns>
+        Task<bool> Command(ICommand command, int nRetries = 0, bool waitForRetroactive = false);
     }
 }

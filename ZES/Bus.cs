@@ -65,7 +65,7 @@ namespace ZES
         }
 
         /// <inheritdoc />
-        public async Task<bool> Command(ICommand command, int nRetries = 0)
+        public async Task<bool> Command(ICommand command, int nRetries = 0, bool waitForReatroactive = false)
         {
             await await CommandAsync(command);
             var failedCommands = await _commandLog.FailedCommands.FirstAsync();

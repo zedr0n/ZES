@@ -30,5 +30,15 @@ namespace ZES.Interfaces
         /// Error timestamp
         /// </value>
         Instant Timestamp { get; }
+        
+        /// <summary>
+        /// Gets or sets the message that originated the error.
+        /// </summary>
+        /// <remarks>
+        /// This property captures the context of the error by associating it with the corresponding
+        /// message that caused the error. It can be useful for tracing, debugging, and logging purposes,
+        /// especially in systems where messages are used to drive workflows or events.
+        /// </remarks>
+        public IMessage OriginatingMessage { get; set; }
     }
 }

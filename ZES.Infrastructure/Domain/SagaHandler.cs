@@ -161,7 +161,7 @@ namespace ZES.Infrastructure.Domain
                 }
                 catch (Exception exception)
                 {
-                    _log.Errors.Add(exception);
+                    _log.Errors.Add(exception, e);
                 }
             }
         }

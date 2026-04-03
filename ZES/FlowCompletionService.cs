@@ -82,7 +82,7 @@ public class FlowCompletionService : IFlowCompletionService
     {
         var flowNodes = timeline != null ? _flowNodes.Values.Where(node => node.Timeline == timeline) : _flowNodes.Values;
 
-        var allNodeTasks = flowNodes.Where(node => includeRetroactive || node.IsRetroactive == false).Select(node => node.CompletionTask).ToList();
+        var allNodeTasks = flowNodes.Where(node => includeRetroactive || !node.IsRetroactive).Select(node => node.CompletionTask).ToList();
         if (allNodeTasks.Count == 0)
             return;
         await Task.WhenAll(allNodeTasks);

@@ -76,9 +76,9 @@ namespace ZES.Infrastructure.Domain
                     // _log.Warn($"Command {command.MessageType}:{command.MessageId} already exists in the command log");
                     var existingCommand = await _commandLog.GetCommand(command);
                     if(existingCommand.Target == command.Target && existingCommand.Timeline == command.Timeline)
-                        _errorLog.Add(new InvalidOperationException($"Command {command.MessageId} already exists in the command log"));
+                        _errorLog.Add(new InvalidOperationException($"Command {command.MessageId} already exists in the command log"), command);
                     else
-                        _errorLog.Add(new InvalidOperationException($"Command {command.MessageId} is not matching the command in command log"));
+                        _errorLog.Add(new InvalidOperationException($"Command {command.MessageId} is not matching the command in command log"), command);
                     return;
                 }
             }
@@ -91,13 +91,13 @@ namespace ZES.Infrastructure.Domain
             }
             catch (Exception e)
             {
-                _errorLog.Add(e);
+                _errorLog.Add(e, command);
                 
                 // check that we didn't end up on wrong timeline
                 if (_timeline.Id != timeline)
                 {
                     var tException = new InvalidOperationException($"Execution started on {timeline} but ended on {_timeline.Id}");
-                    _errorLog.Add(tException);
+                    _errorLog.Add(tException, command);
                     
                     // throw tException;
                     await _branchManager.Branch(timeline);

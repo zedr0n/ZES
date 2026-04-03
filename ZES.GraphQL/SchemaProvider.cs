@@ -132,6 +132,7 @@ namespace ZES.GraphQL
                 .BindRuntimeType<Time, TimeType>()
                 .AddType<CommandMetadataType>()
                 .AddType<CommandStaticMetadataType>()
+                .AddType<ErrorType>()
                 .AddQueryType<BaseQueries>(c => c.Name("Query"))
                 .AddMutationType<BaseMutations>(c => c.Name("Mutation"))
                 .AddTypeExtension<QueryTypeExtensions>()

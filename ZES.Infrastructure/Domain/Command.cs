@@ -1,6 +1,4 @@
-using System;
-using System.Collections.Generic;
-using Gridsum.DataflowEx;
+using System.Linq;
 using Newtonsoft.Json;
 using ZES.Interfaces;
 using ZES.Interfaces.Domain;
@@ -79,7 +77,7 @@ namespace ZES.Infrastructure.Domain
         {
             var s = $@"
             {{
-                Id: {MessageId}
+                Id: {string.Concat(MessageId.ToString().Where(x => !char.IsWhiteSpace(x)))},
                 AncestorId: {AncestorId}
                 Timeline: {Timeline}
             }}";

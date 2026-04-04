@@ -332,22 +332,34 @@ namespace ZES.Utils
 
                 if (command.ContainsGenericParameters)
                 {
-                    var type = command.GetGenericArguments().SingleOrDefault()?.GetInterfaces().FirstOrDefault();
-                    var allTypes = assembly.GetTypesFromInterface(type).Where(t => !t.IsInterface);
-                    foreach (var t in allTypes)
+                    var genericArgs = command.GetGenericArguments();
+                    var typeCollections = new List<Type[]>();
+
+                    // Collect all possible types for each generic parameter
+                    foreach (var arg in genericArgs)
                     {
-                        var closedCommand = command.MakeGenericType(t);
+                        var constraintType = GetMostDerivedInterface(arg.GetInterfaces());
+                        var allTypes = assembly.GetTypesFromInterface(constraintType).Where(t => !t.IsInterface).ToArray();
+                        typeCollections.Add(allTypes);
+                    }
+
+                    // Generate all combinations of types
+                    var combinations = GetCombinations(typeCollections);
+
+                    foreach (var typeArgs in combinations)
+                    {
+                        var closedCommand = command.MakeGenericType(typeArgs);
                         var iClosedHandler = typeof(ICommandHandler<>).MakeGenericType(closedCommand);
-                        var closedHandler = handler.MakeGenericType(t);
+                        var closedHandler = handler.MakeGenericType(typeArgs);
                         var baseType = closedCommand.BaseType;
-                            
+
                         c.RegisterConditional(iClosedHandler, closedHandler, Lifestyle.Singleton, x => !x.Handled);
                         if (baseType != null && !baseType.ContainsGenericParameters)
                             c.Collection.Append(typeof(ICommandHandler<>).MakeGenericType(baseType), closedHandler);
 
-                        var closedRetroactiveCommand = typeof(RetroactiveCommand<>).MakeGenericType(closedCommand); 
+                        var closedRetroactiveCommand = typeof(RetroactiveCommand<>).MakeGenericType(closedCommand);
                         var iClosedRetroactiveCommandHandler = typeof(ICommandHandler<>).MakeGenericType(closedRetroactiveCommand);
-                        var closedRetroactiveCommandHandler = typeof(RetroactiveCommandHandler<>).MakeGenericType(closedCommand); 
+                        var closedRetroactiveCommandHandler = typeof(RetroactiveCommandHandler<>).MakeGenericType(closedCommand);
                         c.RegisterConditional(iClosedRetroactiveCommandHandler, closedRetroactiveCommandHandler, Lifestyle.Singleton, x => !x.Handled);
                     }
                 }
@@ -367,22 +379,77 @@ namespace ZES.Utils
             }
         }
 
+        private static Type GetMostDerivedInterface(Type[] interfaces)
+        {
+            if (interfaces == null || interfaces.Length == 0)
+                return null;
+
+            if (interfaces.Length == 1)
+                return interfaces[0];
+
+            // Find the interface that is not a base of any other interface
+            foreach (var candidate in interfaces)
+            {
+                var isBase = false;
+                foreach (var other in interfaces)
+                {
+                    if (candidate != other && candidate.IsAssignableFrom(other))
+                    {
+                        isBase = true;
+                        break;
+                    }
+                }
+
+                if (!isBase)
+                    return candidate;
+            }
+
+            return interfaces[0];
+        }
+
+        private static IEnumerable<Type[]> GetCombinations(List<Type[]> typeCollections)
+        {
+            if (typeCollections.Count == 0)
+                return Enumerable.Empty<Type[]>();
+
+            if (typeCollections.Count == 1)
+                return typeCollections[0].Select(t => new[] { t });
+
+            var result = new List<Type[]>();
+            var firstCollection = typeCollections[0];
+            var remainingCollections = typeCollections.Skip(1).ToList();
+            var remainingCombinations = GetCombinations(remainingCollections);
+
+            foreach (var first in firstCollection)
+            {
+                foreach (var remaining in remainingCombinations)
+                {
+                    var combination = new Type[typeCollections.Count];
+                    combination[0] = first;
+                    Array.Copy(remaining, 0, combination, 1, remaining.Length);
+                    result.Add(combination);
+                }
+            }
+
+            return result;
+        }
+
         private static IEnumerable<Type> GetTypesFromInterface(this Assembly assembly, Type t)
         {
             var types = assembly.GetTypes()
-                .Where(type => 
+                .Where(type =>
                 {
                     if (!t.IsAssignableFrom(type))
                         return false;
-            
+
                     // If searching for an open generic interface (contains unresolved generic parameters)
-                    if (!t.IsGenericType || !t.ContainsGenericParameters) 
+                    if (!t.IsGenericType || !t.ContainsGenericParameters)
                         return true;
-                    
+
                     var matchingInterface = type.GetInterfaces()
-                        .FirstOrDefault(i => i.IsGenericType && 
+                        .FirstOrDefault(i => i.IsGenericType &&
                                              i.GetGenericTypeDefinition() == t.GetGenericTypeDefinition());
-                
+
                     return matchingInterface != null && // Only match if the interface is also open generic
                            matchingInterface.ContainsGenericParameters;
                 });

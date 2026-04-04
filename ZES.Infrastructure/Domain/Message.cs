@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 using Gridsum.DataflowEx;
 using Newtonsoft.Json;
@@ -19,7 +20,7 @@ namespace ZES.Infrastructure.Domain
         /// </summary>
         public Message()
         {
-            StaticMetadata.MessageType = GetType().GetFriendlyName();
+            StaticMetadata.MessageType = string.Concat(GetType().GetFriendlyName().Where(x => !char.IsWhiteSpace(x)));
             Metadata.MessageId = new MessageId(MessageType, Guid.NewGuid());
         }
         

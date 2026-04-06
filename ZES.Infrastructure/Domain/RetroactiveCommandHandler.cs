@@ -43,9 +43,12 @@ namespace ZES.Infrastructure.Domain
         /// <inheritdoc />
         public override async Task Handle(RetroactiveCommand<TCommand> iCommand)
         {
-            if (iCommand.Timestamp == Time.Default)
+            if (iCommand.Timestamp == Time.Default || iCommand.Ephemeral)
             {
                 iCommand.StoreInLog = false;
+                if (iCommand.Ephemeral)
+                    iCommand.Command.Timestamp = iCommand.Timestamp;
+
                 await _handler.Handle(iCommand.Command);
                 return;
             }

@@ -75,17 +75,41 @@ namespace ZES.Infrastructure.Projections
                 version = ExpectedVersion.EmptyStream;
             }
 
-            if (version < s.Version)
+            // Check if we have ephemeral events for this stream
+            var hasEphemeral = _eventStore.HasEphemepheralEvents(s);
+            var ephemeralCount = 0;
+            
+            if (version < s.Version || hasEphemeral)
             {
-                var t = await _eventStore.ReadStream<IEvent>(s, version + 1)
-                    .TakeWhile(_ => !_token.IsCancellationRequested)
-                    .Select(e => _projection.When(e))
-                    .ToList()
-                    .Timeout(Configuration.Timeout)
-                    .LastOrDefaultAsync();
+                IList<Task> t;
+
+                if (hasEphemeral)
+                {
+                    // Buffer and sort events when ephemeral events exist
+                    var events = await _eventStore.ReadStream<IEvent>(s, version + 1)
+                        .TakeWhile(_ => !_token.IsCancellationRequested)
+                        .ToList()
+                        .Timeout(Configuration.Timeout);
+
+                    // Sort by timestamp to handle out-of-order ephemeral events
+                    var sortedEvents = events.OrderBy(e => e.Timestamp).ToList();
+                    ephemeralCount = sortedEvents.Count(e => e!.Ephemeral);
+
+                    t = sortedEvents.Select(e => _projection.When(e)).ToList();
+                }
+                else
+                {
+                    // Stream normally without buffering when no ephemeral events
+                    t = await _eventStore.ReadStream<IEvent>(s, version + 1)
+                        .TakeWhile(_ => !_token.IsCancellationRequested)
+                        .Select(e => _projection.When(e))
+                        .ToList()
+                        .Timeout(Configuration.Timeout)
+                        .LastOrDefaultAsync();
+                }
 
                 _log?.Debug($"{s.Key}@{s.Version} <- {version}", $"{Parents.Select(p => p.Name).Aggregate((a, n) => a + n)}->{Name}");
-                version += t.Count;
+                version += t.Count - ephemeralCount;
                 await Task.WhenAll(t);
 
                 if (!_versions.TryUpdate(s.Key, version, origVersion))

@@ -390,15 +390,7 @@ namespace ZES.Utils
             // Find the interface that is not a base of any other interface
             foreach (var candidate in interfaces)
             {
-                var isBase = false;
-                foreach (var other in interfaces)
-                {
-                    if (candidate != other && candidate.IsAssignableFrom(other))
-                    {
-                        isBase = true;
-                        break;
-                    }
-                }
+                var isBase = interfaces.Any(other => candidate != other && candidate.IsAssignableFrom(other));
 
                 if (!isBase)
                     return candidate;
@@ -410,7 +402,7 @@ namespace ZES.Utils
         private static IEnumerable<Type[]> GetCombinations(List<Type[]> typeCollections)
         {
             if (typeCollections.Count == 0)
-                return Enumerable.Empty<Type[]>();
+                return [];
 
             if (typeCollections.Count == 1)
                 return typeCollections[0].Select(t => new[] { t });

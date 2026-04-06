@@ -22,7 +22,11 @@ namespace ZES.Infrastructure.Domain
         {
             get => base.StaticMetadata;
             set => base.StaticMetadata = value as EventStaticMetadata;
-        } 
+        }
+
+        /// <inheritdoc />
+        [JsonIgnore]
+        public bool Ephemeral { get; set; }
 
         /// <inheritdoc />
         public virtual IEvent Copy()

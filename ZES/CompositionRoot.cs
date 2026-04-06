@@ -208,6 +208,8 @@ namespace ZES
                                                          .Contains(typeof(IRemote)) &&
                                                      c.Consumer.Target.Parameter?.GetCustomAttribute(typeof(RemoteAttribute)) == null))));
             }
+            
+            container.RegisterDecorator(typeof(IEventStore<>), typeof(EphemeralEventStore<>), predicate: p => p.ServiceType.GetGenericArguments().Contains(typeof(IAggregate)));
 
             container.Register<ITimeline, Timeline>(Lifestyle.Singleton);
             container.Register<IMessageQueue, MessageQueue>(Lifestyle.Singleton);

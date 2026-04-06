@@ -8,6 +8,8 @@ namespace ZES.Infrastructure.Domain
     /// <inheritdoc cref="ICommand" />
     public class Command : Message<CommandStaticMetadata, CommandMetadata>, ICommand
     {
+        private bool _ephemeral;
+        
         /// <inheritdoc />
         [JsonIgnore]
         public virtual string Target { get; set; }
@@ -60,6 +62,18 @@ namespace ZES.Infrastructure.Domain
         [JsonIgnore]
         public bool Pure { get; set; }
 
+        /// <inheritdoc />
+        [JsonIgnore]
+        public bool Ephemeral
+        {
+            get { return _ephemeral; }
+            set
+            {
+                _ephemeral = value;
+                if(_ephemeral)
+                    StoreInLog = false;
+            }
+        }
 
         /// <inheritdoc />
         public ICommand Copy()

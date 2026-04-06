@@ -96,6 +96,9 @@ namespace ZES.Infrastructure.EventStore
         }
 
         /// <inheritdoc />
+        public virtual bool HasEphemepheralEvents(IStream stream) => false;
+
+        /// <inheritdoc />
         public IObservable<T> ReadStream<T>(IStream stream, int start, int count = -1, SerializationType serializationType = SerializationType.PayloadAndMetadata) 
             where T : class, IEvent
         { 

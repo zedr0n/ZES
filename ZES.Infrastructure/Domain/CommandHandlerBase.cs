@@ -39,7 +39,7 @@ namespace ZES.Infrastructure.Domain
             
             if (root == null)
                 throw new ArgumentNullException(typeof(TRoot).GetFriendlyName());
-            if (command.Timestamp < root.Timestamp)
+            if (command.Timestamp < root.Timestamp && !command.Ephemeral)
             {
                 throw new InvalidOperationException(
                     $"{typeof(TCommand).Name} command ({command.Timestamp}) updating the past of the aggregate {typeof(TRoot).Name}:{command.Target} ({root.Timestamp}) ");
@@ -47,7 +47,7 @@ namespace ZES.Infrastructure.Domain
             
             Act(root, command);
             
-            if (command.UseTimestamp)
+            if (command.UseTimestamp || command.Ephemeral)
                 root.TimestampEvents(command.Timestamp);
 
             var events = root.GetUncommittedEvents().OfType<Event>().ToList(); 
@@ -60,6 +60,7 @@ namespace ZES.Infrastructure.Domain
                 e.AncestorId = command.AncestorId ?? command.MessageId;
                 e.RetroactiveId = command.RetroactiveId;
                 e.CorrelationId = command.CorrelationId;
+                e.Ephemeral = command.Ephemeral;
             }
 
             await _repository.Save(root);

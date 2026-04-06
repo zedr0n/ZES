@@ -27,6 +27,11 @@ namespace ZES.Interfaces.Domain
         bool Pure { get; set; }
 
         /// <summary>
+        /// Gets or sets the value indicating whether the command is ephemeral
+        /// </summary>
+        bool Ephemeral { get; set; }
+        
+        /// <summary>
         /// Copy the command
         /// </summary>
         /// <returns>Command copy</returns>

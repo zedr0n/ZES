@@ -95,6 +95,13 @@ namespace ZES.Interfaces.EventStore
         /// <param name="token">Cancellation token</param>
         /// <returns>Stream observable</returns>
         IObservable<IStream> ListStreams(string branch = null, Func<string, bool> predicate = null, CancellationToken token = default);
+
+        /// <summary>
+        /// Determines if the provided stream contains ephemeral events.
+        /// </summary>
+        /// <param name="stream">The target stream to evaluate.</param>
+        /// <returns>True if the stream contains ephemeral events; otherwise, false.</returns>
+        bool HasEphemepheralEvents(IStream stream);
     }
     
     /// <summary>

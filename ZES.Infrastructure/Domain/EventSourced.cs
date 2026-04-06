@@ -111,9 +111,11 @@ namespace ZES.Infrastructure.Domain
             lock (_changes)
             {
                 ApplyEvent(e);
-                e.ContentHash = Hashing.Crc32(_state);
-                
-                e.Version = Version;
+                if (!e.Ephemeral)
+                {
+                    e.ContentHash = Hashing.Crc32(_state);
+                    e.Version = Version;
+                }
                 if (!IgnoreCurrentEvent)
                     _changes.Add(e);
             }
@@ -129,7 +131,7 @@ namespace ZES.Infrastructure.Domain
             foreach (var e in enumerable)
             {
                 ApplyEvent(e);
-                if (computeHash && e.ContentHash != Hashing.Crc32(_state))
+                if (!e.Ephemeral && computeHash && e.ContentHash != Hashing.Crc32(_state))
                     _invalidEvents.Add(e);
             }
 
@@ -187,7 +189,8 @@ namespace ZES.Infrastructure.Domain
                 return;
 
             IgnoreCurrentEvent = false;
-            Version++;
+            if(!e.Ephemeral)
+                Version++;
             
             // if (_handlers.TryGetValue(e.GetType(), out var handler))
             var handler = _handlers.SingleOrDefault(h => h.Key.IsInstanceOfType(e)).Value;

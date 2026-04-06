@@ -26,6 +26,11 @@ namespace ZES.Interfaces
         string ContentHash { get; set; }
         
         /// <summary>
+        /// Gets or sets a value indicating whether the event is ephemeral
+        /// </summary>
+        bool Ephemeral { get; set; }
+        
+        /// <summary>
         /// Create a copy of the event with new guid
         /// </summary>
         /// <returns>Event copy</returns>

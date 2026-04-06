@@ -22,6 +22,7 @@ namespace ZES.Infrastructure.Domain
             Target = command.Target;
             Command = command;
             Timestamp = timestamp;
+            Ephemeral = command.Ephemeral;
         }
 
         /// <summary>

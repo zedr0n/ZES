@@ -36,6 +36,11 @@ public class FlowNode
     /// 
     /// </summary>
     public bool IsRetroactive { get; init; }
+
+    /// <summary>
+    /// Gets or sets a value indicating whether the flow node is ignored during processing.
+    /// </summary>
+    public bool IsIgnored { get; set; }
     
     /// <summary>
     /// Gets the value indicating whether the node has completed

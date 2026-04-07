@@ -27,6 +27,13 @@ public interface IFlowCompletionService
     void MarkComplete(IMessage message);
 
     /// <summary>
+    /// Sets whether a specific message should be ignored during flow tracking
+    /// </summary>
+    /// <param name="message">The message to update</param>
+    /// <param name="ignore">A boolean value indicating whether to ignore the message</param>
+    void SetIgnore(IMessage message, bool ignore);
+
+    /// <summary>
     /// Await the completion of a specific node by its ID asynchronously
     /// </summary>
     /// <param name="message">Message to track completion</param>

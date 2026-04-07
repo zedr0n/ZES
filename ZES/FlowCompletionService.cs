@@ -69,6 +69,15 @@ public class FlowCompletionService : IFlowCompletionService
     }
 
     /// <inheritdoc />
+    public void SetIgnore(IMessage message, bool ignore)
+    {
+        if (!_flowNodes.TryGetValue(message.MessageId.Id, out var flowNode)) 
+            return;
+        
+        flowNode.IsIgnored = ignore;
+    }
+
+    /// <inheritdoc />
     public async Task NodeCompletionAsync(IMessage message)
     {
         if (_flowNodes.TryGetValue(message.MessageId.Id, out var flowNode))
@@ -82,7 +91,7 @@ public class FlowCompletionService : IFlowCompletionService
     {
         var flowNodes = timeline != null ? _flowNodes.Values.Where(node => node.Timeline == timeline) : _flowNodes.Values;
 
-        var allNodeTasks = flowNodes.Where(node => includeRetroactive || !node.IsRetroactive).Select(node => node.CompletionTask).ToList();
+        var allNodeTasks = flowNodes.Where(node => (includeRetroactive || !node.IsRetroactive) && !node.IsIgnored).Select(node => node.CompletionTask).ToList();
         if (allNodeTasks.Count == 0)
             return;
         await Task.WhenAll(allNodeTasks);

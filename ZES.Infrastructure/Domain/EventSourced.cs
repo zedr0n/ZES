@@ -171,7 +171,7 @@ namespace ZES.Infrastructure.Domain
         /// </summary>
         /// <param name="handler">Event handler</param>
         /// <typeparam name="TEvent">Event type</typeparam>
-        protected virtual void Register<TEvent>(Action<TEvent> handler)
+        protected virtual void Register<TEvent>(Action<TEvent> handler = null)
             where TEvent : class, IEvent
         {
             if (handler != null)

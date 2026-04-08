@@ -10,7 +10,7 @@ namespace ZES.Infrastructure.Domain
     public class AggregateRoot : EventSourced, IAggregate
     {
         /// <inheritdoc />
-        protected override void Register<TEvent>(Action<TEvent> action)
+        protected override void Register<TEvent>(Action<TEvent> action = null)
         {
             var handler = action;
             if (typeof(ISnapshotEvent).IsAssignableFrom(typeof(TEvent)))

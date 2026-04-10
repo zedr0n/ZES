@@ -75,7 +75,7 @@ namespace ZES.Infrastructure.Domain
                 {
                     // _log.Warn($"Command {command.MessageType}:{command.MessageId} already exists in the command log");
                     var existingCommand = await _commandLog.GetCommand(command);
-                    if(existingCommand.Target == command.Target && existingCommand.Timeline == command.Timeline)
+                    if((existingCommand.Target == null || existingCommand.Target == command.Target) && existingCommand.Timeline == command.Timeline)
                         _errorLog.Add(new InvalidOperationException($"Command {command.MessageId} already exists in the command log"), command);
                     else
                         _errorLog.Add(new InvalidOperationException($"Command {command.MessageId} is not matching the command in command log"), command);

@@ -135,7 +135,7 @@ namespace ZES.Infrastructure.Domain
                     _invalidEvents.Add(e);
             }
 
-            Timestamp = enumerable.Max(e => e.Timestamp);
+            Timestamp = enumerable.Where(e => !e.Ephemeral).Max(e => e.Timestamp);
 
             ClearUncommittedEvents();
         }

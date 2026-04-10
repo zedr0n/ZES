@@ -41,5 +41,26 @@ namespace ZES.TestBase
             var r = await bus.QueryUntil(query, x => x != null && prop(x) != null && prop(x).Equals(expected), timeout);
             Assert.Equal(expected, prop(r));
         }
+
+        /// <summary>
+        /// Validates that a specified property of a CQRS query result matches the expected value with an optional precision comparison for double values.
+        /// </summary>
+        /// <param name="bus">The asynchronous message bus that executes the query.</param>
+        /// <param name="query">The CQRS query to execute.</param>
+        /// <param name="prop">A function to extract the property from the query result to be compared.</param>
+        /// <param name="expected">The expected value of the specified property.</param>
+        /// <param name="timeout">The maximum time allotted for query execution and validation.</param>
+        /// <param name="precision">
+        /// The number of decimal places to consider when comparing double values.
+        /// Negative values indicate that precision is ignored.
+        /// </param>
+        /// <typeparam name="TResult">The data type of the query result.</typeparam>
+        /// <exception cref="T:Xunit.Sdk.EqualException">Thrown if the property does not match the expected value.</exception>
+        /// <returns>A task representing the asynchronous operation.</returns>
+        public static async Task EqualDouble<TResult>(this IBus bus, IQuery<TResult> query, Func<TResult, double> prop, double expected, TimeSpan timeout = default(TimeSpan), int precision = -1)
+        {
+            var r = await bus.QueryUntil(query, x => x != null && double.Abs(prop(x) - expected) < double.Pow(10, -precision), timeout);
+            Assert.Equal(expected, prop(r), precision);
+        }
     }
 }

@@ -30,5 +30,10 @@ namespace ZES.Interfaces.Infrastructure
         /// </summary>
         /// <param name="descriptor">Performance descriptor</param>
         void Stop(string descriptor);
+
+        /// <summary>
+        /// Clears all recorded performance metrics, resetting the internal state including timers, counters, and elapsed times.
+        /// </summary>
+        void Clear();
     }
 }

@@ -19,6 +19,14 @@ namespace ZES.Infrastructure
         public Dictionary<string, long> Totals => _times.ToDictionary(pair => pair.Key, pair => pair.Value);
 
         /// <inheritdoc />
+        public void Clear()
+        {
+            _times.Clear();
+            _watches.Clear();
+            _counters.Clear();
+        }
+        
+        /// <inheritdoc />
         public long Total(string descriptor)
         {
             return _times.TryGetValue(descriptor, out var total) ? total : 0;
@@ -61,5 +69,8 @@ namespace ZES.Infrastructure
 
         /// <inheritdoc />
         public void Stop(string descriptor) { }
+
+        /// <inheritdoc />
+        public void Clear() { }
     }
 }

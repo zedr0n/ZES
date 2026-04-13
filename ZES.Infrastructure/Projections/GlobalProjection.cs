@@ -31,7 +31,7 @@ namespace ZES.Infrastructure.Projections
             : base(eventStore, log, activeTimeline, streamLocator)
         {
             var gate = flowCompletionService.RetroactiveExecution.DistinctUntilChanged()
-                .Throttle(x => Observable.Timer(TimeSpan.FromMilliseconds(x ? 0 : 10)))
+                .Throttle(x => Observable.Timer(TimeSpan.FromMilliseconds(x ? 0 : Configuration.ThrottleMilliseconds)))
                 .StartWith(false)
                 .DistinctUntilChanged();
 

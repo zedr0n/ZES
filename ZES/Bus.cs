@@ -58,7 +58,7 @@ namespace ZES
             messageQueue.Alerts.OfType<BranchDeleted>().Subscribe(e => DeleteDispatcher(e.BranchId));
             
             flowCompletionService.RetroactiveExecution.DistinctUntilChanged()
-                .Throttle(x => Observable.Timer(TimeSpan.FromMilliseconds(x ? 0 : 10)))
+                .Throttle(x => Observable.Timer(TimeSpan.FromMilliseconds(x ? 0 : Configuration.ThrottleMilliseconds)))
                 .StartWith(false)
                 .DistinctUntilChanged()
                 .Subscribe(x => _log.Info($"Retroactive execution : {x}"));

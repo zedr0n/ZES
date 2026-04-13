@@ -233,7 +233,7 @@ namespace ZES.Infrastructure
         /// <value>
         /// Default timeout
         /// </value>
-        public static TimeSpan Timeout => TimeSpan.FromSeconds(Debugger.IsAttached ? 600 : 10);
+        public static TimeSpan Timeout => TimeSpan.FromSeconds(Debugger.IsAttached ? 600 : 2);
 
         /// <summary>
         /// Gets default network timeout
@@ -246,7 +246,7 @@ namespace ZES.Infrastructure
         /// <summary>
         /// Gets the timespan used for throttling operations within the system.
         /// </summary>
-        public static long ThrottleMilliseconds => 25;
+        public static long ThrottleMilliseconds => 10;
         
         /// <summary>
         /// Gets the batch size for stream store

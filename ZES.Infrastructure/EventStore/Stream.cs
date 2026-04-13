@@ -58,6 +58,15 @@ namespace ZES.Infrastructure.EventStore
             Parent = parent;
         }
 
+        public Stream(int version, IStream parent, string timeline, string type, string id)
+        {
+            Timeline = timeline;
+            _type = type;
+            Id = id;
+            Version = version;
+            Parent = parent;
+        }
+
         /// <summary>
         /// Initializes a new instance of the <see cref="Stream"/> class.
         /// </summary>
@@ -106,7 +115,7 @@ namespace ZES.Infrastructure.EventStore
         }
 
         /// <inheritdoc />
-        public Time SnapshotTimestamp { get; set; } = Time.Default;
+        public Time SnapshotTimestamp { get; set; } //Time.Default;
 
         /// <inheritdoc />
         public int SnapshotVersion { get; set; }
@@ -155,7 +164,7 @@ namespace ZES.Infrastructure.EventStore
         }
 
         /// <inheritdoc />
-        public IStream Copy() => new Stream(Key, Version, Parent?.Copy())
+        public IStream Copy() => new Stream(Version, Parent?.Copy(), Timeline, _type, Id)
         {
             SnapshotTimestamp = SnapshotTimestamp,
             SnapshotVersion = SnapshotVersion,

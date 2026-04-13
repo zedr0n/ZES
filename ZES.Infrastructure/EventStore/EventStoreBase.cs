@@ -58,7 +58,7 @@ namespace ZES.Infrastructure.EventStore
         }
 
         /// <inheritdoc />
-        public IObservable<IStream> Streams => _streams.AsObservable().Select(s => s.Copy());
+        public IObservable<IStream> Streams => _streams.AsObservable();//.Select(s => s.Copy());
         
         /// <summary>
         /// Gets the event serializer

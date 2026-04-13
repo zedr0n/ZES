@@ -64,9 +64,12 @@ namespace ZES.Infrastructure.Projections
             var snapshotVersion = s.SnapshotVersion;
             if (version < snapshotVersion && _projection.Latest > s.SnapshotTimestamp)
                 version = snapshotVersion - 1;
-            
+
             if (s.Version <= ExpectedVersion.EmptyStream)
+            {
+                s = s.Copy();
                 s.Version = 0;
+            }
 
             if (version > s.Version)
             {

@@ -37,7 +37,7 @@ namespace ZES.Interfaces.Domain
     /// <summary>
     /// CQRS projections generated from a set of streams
     /// </summary>
-    public interface IProjection 
+    public interface IProjection
     {
         /// <summary>
         /// Gets completion of this observable means the projection's rebuild has been completed successfully
@@ -66,6 +66,18 @@ namespace ZES.Interfaces.Domain
         /// Gets or sets the projection timeline
         /// </summary>
         string Timeline { get; set; }
+
+        /// <summary>
+        /// Releases all resources used by the <see cref="IProjection"/> implementation.
+        /// </summary>
+        /// <remarks>
+        /// This method is called to explicitly clean up resources such as connections,
+        /// subscriptions, and other unmanaged resources associated with the projection.
+        /// It is used to ensure appropriate cleanup and should be invoked when the projection
+        /// is no longer needed, especially in scenarios like handling historical timelines
+        /// or disposing projections created dynamically during query execution.
+        /// </remarks>
+        public void Dispose();
 
         /*
         /// <summary>

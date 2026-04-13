@@ -34,6 +34,8 @@ namespace ZES.Infrastructure.Projections
         private int _parallel;
         private string _timeline;
         private ActionBlock<Tracked<IEvent>> _updateStateBlock;
+        private IDisposable _liveStreamsConnection;
+        private IDisposable _allStreamsSubscription;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ProjectionBase{TState}"/> class.
@@ -183,6 +185,14 @@ namespace ZES.Infrastructure.Projections
             StatusSubject.OnNext(Cancelling);
             CancellationSource.Cancel();
         }
+
+        /// <inheritdoc />
+        public void Dispose()
+        {
+            _liveStreamsConnection?.Dispose();
+            _allStreamsSubscription?.Dispose();
+            Cancel();
+        }        
         
         /// <summary>
         /// Rebuild the projection 
@@ -220,14 +230,16 @@ namespace ZES.Infrastructure.Projections
                 
                 StatusSubject.OnNext(Sleeping);
             });
+            
+            _liveStreamsConnection?.Dispose();
 
             var liveStreams = EventStore.Streams
                 .TakeWhile(_ => !CancellationSource.IsCancellationRequested)
                 .Where(s => s.Timeline == Timeline)
                 .Where(Predicate)
                 .Select(s => new Tracked<IStream>(s, CancellationToken));
-            
-            liveStreams.Replay().Connect();
+
+            _liveStreamsConnection = liveStreams.Replay().Connect();
 
             var streams = await _streamLocator.ListStreams(Timeline);
             var buildStreams = streams.Where(s => !s.IsSaga && StreamIdPredicate(s.Key))
@@ -236,7 +248,7 @@ namespace ZES.Infrastructure.Projections
                 .ToList();
 
             var allStreams = buildStreams.ToObservable().Concat(liveStreams);
-            allStreams.TakeWhile(_ => !CancellationSource.IsCancellationRequested).Subscribe(dispatcher.InputBlock.AsObserver());
+            _allStreamsSubscription = allStreams.TakeWhile(_ => !CancellationSource.IsCancellationRequested).Subscribe(dispatcher.InputBlock.AsObserver());
             
             try
             {

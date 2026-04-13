@@ -63,7 +63,7 @@ namespace ZES.Infrastructure.Domain
                 projection = Manager.GetProjection<TState>(timeline: query.Timeline);
                 projection.Predicate = Predicate;
             }
-            else if (query.Timestamp != default)
+            else if (query.Timestamp != null)
             {
                 var historicalProjection = Manager.GetHistoricalProjection<TState>();
                 historicalProjection.Timestamp = query.Timestamp;
@@ -74,7 +74,12 @@ namespace ZES.Infrastructure.Domain
                 projection = Manager.GetProjection<TState>(timeline: _activeTimeline.Id);
 
             await projection.Ready;
-            return await Handle(projection, query);
+            var result = await Handle(projection, query);
+            // historical projections are disposed of ( especially the subscriptions to streams ) immediately
+            // this is fine because they are only accessed from the query handler
+            if (query.Timestamp != null)
+                projection.Dispose();
+            return result;
         }
 
         /// <summary>

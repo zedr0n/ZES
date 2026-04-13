@@ -235,14 +235,14 @@ namespace ZES.Infrastructure.Projections
 
             var liveStreams = EventStore.Streams
                 .TakeWhile(_ => !CancellationSource.IsCancellationRequested)
-                .Where(s => s.Timeline == Timeline)
+                .Where(s => s.Timeline == Timeline && !s.IsTemporary)
                 .Where(Predicate)
                 .Select(s => new Tracked<IStream>(s, CancellationToken));
 
             _liveStreamsConnection = liveStreams.Replay().Connect();
 
             var streams = await _streamLocator.ListStreams(Timeline);
-            var buildStreams = streams.Where(s => !s.IsSaga && StreamIdPredicate(s.Key))
+            var buildStreams = streams.Where(s => !s.IsSaga && StreamIdPredicate(s.Key) && !s.IsTemporary)
                 .Where(Predicate)
                 .Select(s => new Tracked<IStream>(s, CancellationToken))
                 .ToList();

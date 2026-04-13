@@ -17,7 +17,7 @@ namespace ZES.GraphQL
         private readonly IMessageQueue _messageQueue;
         private readonly IRecordLog _recordLog;
         private readonly IRemote _remote;
-        
+
         /// <summary>
         /// Initializes a new instance of the <see cref="BaseMutations"/> class.
         /// </summary>
@@ -28,7 +28,9 @@ namespace ZES.GraphQL
         /// <param name="messageQueue">Message queue</param>
         /// <param name="recordLog">GraphQl record log</param>
         /// <param name="remote">Remote service</param>
-        public BaseMutations(IBus bus, ILog log, IBranchManager manager, IGraph graph, IMessageQueue messageQueue, IRecordLog recordLog, IRemote remote, GraphQlResolver resolver) 
+        /// <param name="resolver">GraphQl resolver</param>
+        public BaseMutations(IBus bus, ILog log, IBranchManager manager, IGraph graph, IMessageQueue messageQueue,
+            IRecordLog recordLog, IRemote remote, GraphQlResolver resolver)
             : base(bus, log, manager, resolver)
         {
             _manager = manager;

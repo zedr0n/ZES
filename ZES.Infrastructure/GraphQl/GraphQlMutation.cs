@@ -26,6 +26,7 @@ namespace ZES.Infrastructure.GraphQl
         /// <param name="bus">Bus service</param>
         /// <param name="log">Log service</param>
         /// <param name="manager">Branch manager</param>
+        /// <param name="resolver">GraphQL resolver</param>
         protected GraphQlMutation(IBus bus, ILog log, IBranchManager manager, GraphQlResolver resolver)
         {
             _bus = bus;

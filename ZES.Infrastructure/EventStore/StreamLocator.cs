@@ -117,7 +117,7 @@ namespace ZES.Infrastructure.EventStore
             _streams.Clear();
             _subscription?.Dispose();
             Ready = null;
-            _subscription = _eventStore.Streams.Merge(_sagaStore.Streams).Subscribe(s => GetOrAdd(s)); 
+            _subscription = _eventStore.Streams.Merge(_sagaStore.Streams).Subscribe(s => GetOrAdd(s.Copy())); 
             await Ready;
         }
     }

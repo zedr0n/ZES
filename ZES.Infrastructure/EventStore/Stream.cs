@@ -58,6 +58,14 @@ namespace ZES.Infrastructure.EventStore
             Parent = parent;
         }
 
+        /// <summary>
+        /// Represents a stream of events with associated metadata, supporting operations such as branching, copying, and version management.
+        /// </summary>
+        /// <param name="id">Identifier of the event stream.</param>
+        /// <param name="type">Type of the event stream.</param>
+        /// <param name="version">Version of the event stream.</param>
+        /// <param name="timeline">Associated timeline of the event stream.</param>
+        /// <param name="parent">Parent stream of the current stream.</param>
         public Stream(int version, IStream parent, string timeline, string type, string id)
         {
             Timeline = timeline;

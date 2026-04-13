@@ -72,16 +72,11 @@ namespace ZES.Infrastructure.GraphQl
             var tracked = new Tracked<ICommand>(command);
             _resolver.Post(tracked);
             tracked.Task.Wait();
-            //var task = _bus.Command(command, 0, true);
-            //task.Wait();
-            //_manager.Ready.Wait();
             
             //var error = _log.Errors.Observable.FirstOrDefaultAsync(x => x?.OriginatingMessage?.MessageId == command.MessageId || x?.OriginatingMessage?.RetroactiveId == command.MessageId).Timeout(TimeSpan.FromMilliseconds(10),Observable.Return<IError>(null)).GetAwaiter().GetResult();
             var error = _log.Errors.PastErrors.LastOrDefault(x => x?.OriginatingMessage?.MessageId == command.MessageId || x?.OriginatingMessage?.RetroactiveId == command.MessageId);
             var isError = error != null;
-            if (isError && !error.Message.Contains("already exists in the command log"))
-                throw new InvalidOperationException(error.Message);
-            return !isError;
+            return isError ? throw new InvalidOperationException(error.Message) : true;
         }
 
         /// <summary>
@@ -104,9 +99,7 @@ namespace ZES.Infrastructure.GraphQl
             
             var error = _log.Errors.Observable.FirstOrDefaultAsync().GetAwaiter().GetResult();
             var isError = error != null && error != lastError;
-            if (isError && !error.Message.Contains("already exists in the command log"))
-                throw new InvalidOperationException(error.Message);
-            return !isError;
+            return isError ? throw new InvalidOperationException(error.Message) : true;
         }
 
     }

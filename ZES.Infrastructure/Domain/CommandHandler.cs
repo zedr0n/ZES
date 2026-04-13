@@ -67,24 +67,26 @@ namespace ZES.Infrastructure.Domain
             command.LocalId ??= new EventId(Configuration.ReplicaName, command.Timestamp);
             command.OriginId ??= new EventId(Configuration.ReplicaName, command.Timestamp);
             command.Timeline = timeline;
-
-            // check if command already processed
-            if (command.StoreInLog)
-            {
-                if (await _commandLog.HasCommand(command))
-                {
-                    // _log.Warn($"Command {command.MessageType}:{command.MessageId} already exists in the command log");
-                    var existingCommand = await _commandLog.GetCommand(command);
-                    if((existingCommand.Target == null || existingCommand.Target == command.Target) && existingCommand.Timeline == command.Timeline)
-                        _errorLog.Add(new InvalidOperationException($"Command {command.MessageId} already exists in the command log"), command);
-                    else
-                        _errorLog.Add(new InvalidOperationException($"Command {command.MessageId} is not matching the command in command log"), command);
-                    return;
-                }
-            }
             
             try
             {
+                // check if command already processed
+                if (command.StoreInLog)
+                {
+                    if (await _commandLog.HasCommand(command))
+                    {
+                        var existingCommand = await _commandLog.GetCommand(command);
+                        if(existingCommand == null)
+                            throw new InvalidOperationException($"Command {command.MessageId} not found in command log");
+                        
+                        if((existingCommand.Target == null || existingCommand.Target == command.Target) && existingCommand.Timeline == command.Timeline)
+                            _errorLog.Add(new InvalidOperationException($"Command {command.MessageId} already exists in the command log"), command);
+                        else
+                            throw new InvalidOperationException($"Command {command.MessageId} is not matching the command in command log");
+                        return;
+                    }
+                }
+                
                 await _handler.Handle(command);
                 if (command.StoreInLog && !command.Pure)
                     await _commandLog.AppendCommand(command);

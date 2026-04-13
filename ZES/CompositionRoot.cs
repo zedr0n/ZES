@@ -18,6 +18,7 @@ using ZES.Infrastructure.Causality;
 using ZES.Infrastructure.Clocks;
 using ZES.Infrastructure.Domain;
 using ZES.Infrastructure.EventStore;
+using ZES.Infrastructure.GraphQl;
 using ZES.Infrastructure.Net;
 using ZES.Infrastructure.Replicas;
 using ZES.Infrastructure.Serialization;
@@ -88,6 +89,7 @@ namespace ZES
             
             container.Register<IJSonConnector, JsonConnector>(Lifestyle.Singleton);
             container.Register<ICommandHandler<RequestJson>, JsonRequestHandler>(Lifestyle.Singleton);
+            container.RegisterSingleton<GraphQlResolver>();
             
             var store = GetStore(container);
             if (Configuration.EventStoreBackendType == EventStoreBackendType.EventStore)

@@ -85,8 +85,8 @@ namespace ZES.Tests.Domain
         
         public class Mutation : GraphQlMutation
         {
-            public Mutation(IBus bus, ILog log, IBranchManager manager)
-                : base(bus, log, manager)
+            public Mutation(IBus bus, ILog log, IBranchManager manager, GraphQlResolver resolver)
+                : base(bus, log, manager, resolver)
             {
             }
 

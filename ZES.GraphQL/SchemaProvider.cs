@@ -17,6 +17,7 @@ using JetBrains.Annotations;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using NodaTime;
+using ZES.Infrastructure.GraphQl;
 using ZES.Interfaces;
 using ZES.Interfaces.Branching;
 using ZES.Interfaces.Clocks;
@@ -45,23 +46,28 @@ namespace ZES.GraphQL
         private readonly IRecordLog _recordLog;
         private readonly IRemote _remote;
         private readonly ITimeline _timeline;
+        private readonly GraphQlResolver _graphQlResolver;
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="SchemaProvider"/> class.
+        /// Provides the implementation for the GraphQL schema provider.
         /// </summary>
         /// <param name="bus">Message bus</param>
         /// <param name="log">Application error log</param>
         /// <param name="manager">Branch manager service</param>
-        /// <param name="mutations">GraphQL mutations</param>
-        /// <param name="queries">GraphQL queries</param>
-        /// <param name="inputTypes">GraphQL input types</param>
-        /// <param name="services">Asp.Net services collection</param>
-        /// <param name="graph">QGraph</param>
+        /// <param name="mutations">Collection of GraphQL mutations</param>
+        /// <param name="queries">Collection of GraphQL queries</param>
+        /// <param name="inputTypes">Collection of GraphQL input types</param>
+        /// <param name="services">ASP.NET Core service collection</param>
+        /// <param name="graph">Graph service</param>
         /// <param name="messageQueue">Message queue</param>
-        /// <param name="recordLog">Record log</param>
+        /// <param name="recordLog">Record log service</param>
         /// <param name="remote">Remote service</param>
-        /// <param name="timeline">Timeline</param>
-        public SchemaProvider(IBus bus, ILog log, IBranchManager manager, IEnumerable<IGraphQlMutation> mutations, IEnumerable<IGraphQlQuery> queries, IEnumerable<ICatalog<IGraphQlInputType>> inputTypes, IServiceCollection services, IGraph graph, IMessageQueue messageQueue, IRecordLog recordLog, IRemote remote, ITimeline timeline)
+        /// <param name="timeline">Timeline service</param>
+        /// <param name="graphQlResolver">GraphQL Resolver</param>
+        public SchemaProvider(IBus bus, ILog log, IBranchManager manager, IEnumerable<IGraphQlMutation> mutations,
+            IEnumerable<IGraphQlQuery> queries, IEnumerable<ICatalog<IGraphQlInputType>> inputTypes,
+            IServiceCollection services, IGraph graph, IMessageQueue messageQueue, IRecordLog recordLog, IRemote remote,
+            ITimeline timeline, GraphQlResolver graphQlResolver)
         {
             _bus = bus;
             _log = log;
@@ -75,6 +81,7 @@ namespace ZES.GraphQL
             _recordLog = recordLog;
             _remote = remote;
             _timeline = timeline;
+            _graphQlResolver = graphQlResolver;
 
             InitialiseServices();
         }
@@ -124,6 +131,7 @@ namespace ZES.GraphQL
             _services.AddSingleton(typeof(IRecordLog), _recordLog);
             _services.AddSingleton(typeof(IRemote), _remote);
             _services.AddSingleton(typeof(ITimeline), _timeline);
+            _services.AddSingleton(typeof(GraphQlResolver), _graphQlResolver);
             _services.TryAddEnumerable(_queries.Select(ServiceDescriptor.Singleton));
             _services.TryAddEnumerable(_mutations.Select(ServiceDescriptor.Singleton));
 

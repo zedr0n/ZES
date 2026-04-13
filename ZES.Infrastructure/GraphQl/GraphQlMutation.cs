@@ -2,11 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reactive.Linq;
-using System.Threading.Tasks;
-using System.Threading.Tasks.Dataflow;
 using Gridsum.DataflowEx;
-using ZES.Infrastructure.Utils;
-using ZES.Interfaces;
 using ZES.Interfaces.Branching;
 using ZES.Interfaces.Domain;
 using ZES.Interfaces.GraphQL;
@@ -22,7 +18,7 @@ namespace ZES.Infrastructure.GraphQl
         private readonly IBus _bus;
         private readonly ILog _log;
         private readonly IBranchManager _manager;
-        private readonly Resolver _resolver;
+        private readonly GraphQlResolver _resolver;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="GraphQlMutation"/> class.
@@ -30,12 +26,12 @@ namespace ZES.Infrastructure.GraphQl
         /// <param name="bus">Bus service</param>
         /// <param name="log">Log service</param>
         /// <param name="manager">Branch manager</param>
-        protected GraphQlMutation(IBus bus, ILog log, IBranchManager manager)
+        protected GraphQlMutation(IBus bus, ILog log, IBranchManager manager, GraphQlResolver resolver)
         {
             _bus = bus;
             _log = log;
             _manager = manager;
-            _resolver = new Resolver(bus);
+            _resolver = resolver;
         }
 
         /// <summary>
@@ -72,19 +68,13 @@ namespace ZES.Infrastructure.GraphQl
         /// <returns>True if command succeeded</returns>
         protected bool Resolve(ICommand command)
         {
-            //var lastError = _log.Errors.Observable.FirstOrDefaultAsync().GetAwaiter().GetResult();
-            /*_log.Errors.Observable.Subscribe(e =>
-            {
-                if (e != null && e != lastError)
-                    isError = true;
-            });*/
+            var tracked = new Tracked<ICommand>(command);
+            _resolver.Post(tracked);
+            tracked.Task.Wait();
+            //var task = _bus.Command(command, 0, true);
+            //task.Wait();
+            //_manager.Ready.Wait();
             
-            //var task = _bus.CommandAsync(command).Result;
-            _resolver.Post(command);
-            var task = _resolver.OutputBlock.ReceiveAsync().Result;
-            task.Wait();
-            _manager.Ready.Wait();
-
             //var error = _log.Errors.Observable.FirstOrDefaultAsync(x => x?.OriginatingMessage?.MessageId == command.MessageId || x?.OriginatingMessage?.RetroactiveId == command.MessageId).Timeout(TimeSpan.FromMilliseconds(10),Observable.Return<IError>(null)).GetAwaiter().GetResult();
             var error = _log.Errors.PastErrors.LastOrDefault(x => x?.OriginatingMessage?.MessageId == command.MessageId || x?.OriginatingMessage?.RetroactiveId == command.MessageId);
             var isError = error != null;
@@ -118,19 +108,5 @@ namespace ZES.Infrastructure.GraphQl
             return !isError;
         }
 
-        private class Resolver : Dataflow<ICommand, Task>
-        {
-            private readonly TransformBlock<ICommand, Task> _block;
-            
-            public Resolver(IBus bus) 
-                : base(Configuration.DataflowOptions)
-            {
-                _block = new TransformBlock<ICommand, Task>(c => bus.CommandAsync(c), Configuration.DataflowOptions.ToExecutionBlockOption());
-                RegisterChild(_block);
-            }
-
-            public override ITargetBlock<ICommand> InputBlock => _block;
-            public override ISourceBlock<Task> OutputBlock => _block;
-        }
     }
 }

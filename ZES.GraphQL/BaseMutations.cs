@@ -5,6 +5,7 @@ using ZES.Interfaces;
 using ZES.Interfaces.Branching;
 using ZES.Interfaces.Infrastructure;
 using ZES.Interfaces.Recording;
+using ZES.Persistence.SQLStreamStore;
 
 namespace ZES.GraphQL
 {
@@ -27,8 +28,8 @@ namespace ZES.GraphQL
         /// <param name="messageQueue">Message queue</param>
         /// <param name="recordLog">GraphQl record log</param>
         /// <param name="remote">Remote service</param>
-        public BaseMutations(IBus bus, ILog log, IBranchManager manager, IGraph graph, IMessageQueue messageQueue, IRecordLog recordLog, IRemote remote) 
-            : base(bus, log, manager)
+        public BaseMutations(IBus bus, ILog log, IBranchManager manager, IGraph graph, IMessageQueue messageQueue, IRecordLog recordLog, IRemote remote, GraphQlResolver resolver) 
+            : base(bus, log, manager, resolver)
         {
             _manager = manager;
             _graph = graph;

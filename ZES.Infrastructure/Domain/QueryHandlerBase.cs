@@ -55,23 +55,36 @@ namespace ZES.Infrastructure.Domain
         }
 
         /// <inheritdoc />
-        protected override async Task<TResult> Handle(TQuery query)
+        protected override async Task<TResult> Handle(TQuery query) => await Handle(query, "");
+
+        /// <summary>
+        /// Handles a query on a specific projection and returns the result.
+        /// </summary>
+        /// <param name="query">The query to handle.</param>
+        /// <param name="id">The identifier used to locate the appropriate projection, default is an empty string.</param>
+        /// <returns>The result of the query.</returns>
+        protected async Task<TResult> Handle(TQuery query, string id)
         {
             var projection = Projection;
             if (query.Timeline != string.Empty)
             {
-                projection = Manager.GetProjection<TState>(timeline: query.Timeline);
+                projection = Manager.GetProjection<TState>(id, query.Timeline);
                 projection.Predicate = Predicate;
             }
             else if (query.Timestamp != null)
             {
-                var historicalProjection = Manager.GetHistoricalProjection<TState>();
+                var historicalProjection = Manager.GetHistoricalProjection<TState>(id);
                 historicalProjection.Timestamp = query.Timestamp;
                 historicalProjection.Predicate = Predicate;
                 projection = historicalProjection;
             }
             else if (projection.Timeline != _activeTimeline.Id)
-                projection = Manager.GetProjection<TState>(timeline: _activeTimeline.Id);
+                projection = Manager.GetProjection<TState>(id, _activeTimeline.Id);
+            else if (id != string.Empty)
+            {
+                projection = Manager.GetProjection<TState>(id);
+                projection.Predicate = Predicate;
+            }
 
             await projection.Ready;
             var result = await Handle(projection, query);

@@ -127,5 +127,13 @@ namespace ZES.Interfaces.EventStore
         /// </summary>
         /// <param name="count">Number of deleted events</param>
         void AddDeleted(int count);
+
+        /// <summary>
+        /// Determines whether the specified id matches the Id of the stream.
+        /// </summary>
+        /// <param name="id">The id to compare with the stream's Id.</param>
+        /// <returns>True if the specified id matches the stream's Id, otherwise false.</returns>
+        /// <remarks>The comparison is case-insensitive and replaces spaces with underscores.</remarks>
+        bool SameId(string id);
     }
 }

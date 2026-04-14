@@ -227,6 +227,9 @@ namespace ZES.Infrastructure.EventStore
         }
 
         /// <inheritdoc />
+        public bool SameId(string id) => Id == id.Replace(' ', '_');
+
+        /// <inheritdoc />
         public IStream Branch(string timeline, int version)
         {
             version = Math.Min(version, Version);

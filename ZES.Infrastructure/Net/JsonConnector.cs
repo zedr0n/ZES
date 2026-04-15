@@ -15,8 +15,8 @@ namespace ZES.Infrastructure.Net
     /// <inheritdoc />
     public class JsonConnector : IJSonConnector
     {
-        private readonly ConcurrentDictionary<string, AsyncLazy<string>> _jsonData =
-            new ConcurrentDictionary<string, AsyncLazy<string>>(); 
+        private readonly ConcurrentDictionary<string, HttpClient> _httpClients = new();
+        private readonly ConcurrentDictionary<string, AsyncLazy<string>> _jsonData = new();
         private readonly ILog _log;
         
         /// <summary>
@@ -68,18 +68,21 @@ namespace ZES.Infrastructure.Net
         
         private async Task<string> GetAsync(string url, string apiKey = "", bool cache = true) 
         {
-            using (var w = new HttpClient())
+            var uri = new Uri(url);
+            var request = new HttpRequestMessage()
             {
-                var request = new HttpRequestMessage()
-                {
-                    RequestUri = new Uri(url),
-                    Method = HttpMethod.Get,
-                };
-                request.Headers.Add("apikey", apiKey);
-                var task = cache ? _jsonData.GetOrAdd(url, s => GetAsyncImpl(w, request, s)) : GetAsyncImpl(w, request, url); 
-                var json = await task;
-                return string.IsNullOrEmpty(json) ? null : json;
-            }
+                RequestUri = uri,
+                Method = HttpMethod.Get,
+            };
+            var httpClient = _httpClients.GetOrAdd(uri.Host, s => new HttpClient(new SocketsHttpHandler
+            {
+                PooledConnectionLifetime = TimeSpan.FromMinutes(2),
+                EnableMultipleHttp2Connections = true
+            }));
+            request.Headers.Add("apikey", apiKey);
+            var task = cache ? _jsonData.GetOrAdd(url, s => GetAsyncImpl(httpClient, request, s)) : GetAsyncImpl(httpClient, request, url); 
+            var json = await task;
+            return string.IsNullOrEmpty(json) ? null : json;
         }
 
         private class ConnectorFlow : Dataflow<TrackedResult<string, string>>

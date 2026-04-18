@@ -103,6 +103,9 @@ namespace ZES.Infrastructure.Utils
         /// <returns>True if the given instant is less than the specified number of working days from the other instant; otherwise, false.</returns>
         public static bool LessWorkingDays(this Instant instant, Instant otherInstant, int days = 1)
         {
+            if(instant > otherInstant)
+                return false;
+            
             var uk = new UKBankHoliday();
             var date = instant.InZone(DateTimeZoneProviders.Tzdb["Europe/London"]).Date;
             var otherDate = otherInstant.InZone(DateTimeZoneProviders.Tzdb["Europe/London"]).Date;

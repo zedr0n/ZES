@@ -101,7 +101,7 @@ namespace ZES.Infrastructure.Utils
         /// <param name="otherInstant">The instant to calculate the working days difference from.</param>
         /// <param name="days">The number of working days to compare against. Defaults to 1.</param>
         /// <returns>True if the given instant is less than the specified number of working days from the other instant; otherwise, false.</returns>
-        public static bool LessWorkingDays(this Instant instant, Instant otherInstant, int days = 1)
+        public static bool LessWorkingDays(this Instant instant, Instant otherInstant, int days = 0)
         {
             if(instant > otherInstant)
                 return false;
@@ -110,7 +110,7 @@ namespace ZES.Infrastructure.Utils
             var date = instant.InZone(DateTimeZoneProviders.Tzdb["Europe/London"]).Date;
             var otherDate = otherInstant.InZone(DateTimeZoneProviders.Tzdb["Europe/London"]).Date;
             var minDate = otherDate;
-            while (days > 0)
+            while (days >= 0)
             {
                 if(uk.IsWorkingDay(minDate.ToDateTimeUnspecified()))
                     days--;

@@ -109,9 +109,9 @@ namespace ZES.Infrastructure.Utils
             var minDate = otherDate;
             while (days > 0)
             {
-                minDate = minDate.PlusDays(-1);
                 if(uk.IsWorkingDay(minDate.ToDateTimeUnspecified()))
                     days--;
+                minDate = minDate.PlusDays(-1);
             }
             return date >= minDate;
         }

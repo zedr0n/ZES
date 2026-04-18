@@ -30,6 +30,14 @@ namespace ZES.Interfaces
         /// Error timestamp
         /// </value>
         Instant Timestamp { get; }
+
+        /// <summary>
+        /// Gets or sets a value indicating whether the operation should ignore this property.
+        /// </summary>
+        /// <value>
+        /// true if the property should be ignored; otherwise, false.
+        /// </value>
+        bool Ignore { get; set; }
         
         /// <summary>
         /// Gets or sets the message that originated the error.

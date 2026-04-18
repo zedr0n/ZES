@@ -38,7 +38,7 @@ namespace ZES.Infrastructure.GraphQl
             var result = _bus.QueryAsync(query).Result;
             
             var error = _log.Errors.Observable.FirstOrDefaultAsync().GetAwaiter().GetResult();
-            var isError = error != null && error != lastError;
+            var isError = error is { Ignore: false } && error != lastError;
             if (isError)
                 throw new InvalidOperationException(error.Message);
             return result;

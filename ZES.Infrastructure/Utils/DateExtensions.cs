@@ -2,6 +2,7 @@ using System;
 using System.Globalization;
 using NodaTime;
 using NodaTime.Text;
+using PublicHoliday;
 using ZES.Interfaces.Clocks;
 
 namespace ZES.Infrastructure.Utils
@@ -91,6 +92,28 @@ namespace ZES.Infrastructure.Utils
                 return new InstantTime(instant);
             else
                 return new LogicalTime(instant.ToUnixTimeTicks(), 0);
+        }
+
+        /// <summary>
+        /// Determines if the given instant is less than the specified number of working days from another instant.
+        /// </summary>
+        /// <param name="instant">The base instant to compare.</param>
+        /// <param name="otherInstant">The instant to calculate the working days difference from.</param>
+        /// <param name="days">The number of working days to compare against. Defaults to 1.</param>
+        /// <returns>True if the given instant is less than the specified number of working days from the other instant; otherwise, false.</returns>
+        public static bool LessWorkingDays(this Instant instant, Instant otherInstant, int days = 1)
+        {
+            var uk = new UKBankHoliday();
+            var date = instant.InZone(DateTimeZoneProviders.Tzdb["Europe/London"]).Date;
+            var otherDate = otherInstant.InZone(DateTimeZoneProviders.Tzdb["Europe/London"]).Date;
+            var minDate = otherDate;
+            while (days > 0)
+            {
+                minDate = minDate.PlusDays(-1);
+                if(uk.IsWorkingDay(minDate.ToDateTimeUnspecified()))
+                    days--;
+            }
+            return date >= minDate;
         }
     }
 }

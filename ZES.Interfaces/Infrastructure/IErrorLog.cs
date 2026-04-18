@@ -28,10 +28,12 @@ namespace ZES.Interfaces.Infrastructure
         IEnumerable<IError> PastErrors { get; }
 
         /// <summary>
-        /// Adds an exception to the error log, optionally associating it with the originating message.
+        /// Adds an exception to the error log, optionally associating it with the originating message
+        /// and specifying whether to ignore the exception.
         /// </summary>
         /// <param name="error">The exception that occurred during operation.</param>
         /// <param name="originatingMessage">The message that initiated the operation, if available.</param>
-        void Add(Exception error, IMessage originatingMessage = null);
+        /// <param name="ignore">A boolean value indicating whether to ignore the error</param>
+        void Add(Exception error, IMessage originatingMessage = null, bool ignore = false);
     }
 }

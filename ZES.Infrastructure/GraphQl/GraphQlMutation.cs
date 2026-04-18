@@ -56,7 +56,7 @@ namespace ZES.Infrastructure.GraphQl
             }
             
             var error = _log.Errors.Observable.FirstOrDefaultAsync().GetAwaiter().GetResult();
-            var isError = error != null && error != lastError;
+            var isError = error is { Ignore: false } && error != lastError;
             if (isError)
                 throw new InvalidOperationException(error.Message);
             return result;
@@ -76,7 +76,7 @@ namespace ZES.Infrastructure.GraphQl
             //var error = _log.Errors.Observable.FirstOrDefaultAsync(x => x?.OriginatingMessage?.MessageId == command.MessageId || x?.OriginatingMessage?.RetroactiveId == command.MessageId).Timeout(TimeSpan.FromMilliseconds(10),Observable.Return<IError>(null)).GetAwaiter().GetResult();
             var error = _log.Errors.PastErrors.LastOrDefault(x => x?.OriginatingMessage?.MessageId == command.MessageId || x?.OriginatingMessage?.RetroactiveId == command.MessageId);
             var isError = error != null;
-            if (isError && !error.Message.Contains("already exists in the command log"))
+            if (isError && !error.Ignore)
                 throw new InvalidOperationException(error.Message);
             return !isError;
         }
@@ -101,7 +101,7 @@ namespace ZES.Infrastructure.GraphQl
             
             var error = _log.Errors.Observable.FirstOrDefaultAsync().GetAwaiter().GetResult();
             var isError = error != null && error != lastError;
-            if (isError && !error.Message.Contains("already exists in the command log"))
+            if (isError && !error.Ignore) 
                 throw new InvalidOperationException(error.Message);
             return !isError;
         }

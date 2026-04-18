@@ -36,7 +36,7 @@ namespace ZES.Infrastructure
         public IObservable<IError> Observable => _errors.AsObservable();
 
         /// <inheritdoc />
-        public void Add(Exception error, IMessage originatingMessage = null)
+        public void Add(Exception error, IMessage originatingMessage = null, bool ignore = false)
         {
             switch (error)
             {
@@ -57,8 +57,8 @@ namespace ZES.Infrastructure
             }
 
             // _log.Error(error.Message, error.StackTrace?.Split(new[] { "in", "at", "(", ")", "[", "]" }, StringSplitOptions.RemoveEmptyEntries)[1] + ' ');
-            _pastErrors.Add(new Error(error) { OriginatingMessage = originatingMessage });
-            _errors.OnNext(new Error(error) { OriginatingMessage = originatingMessage });
+            _pastErrors.Add(new Error(error) { OriginatingMessage = originatingMessage, Ignore = ignore});
+            _errors.OnNext(new Error(error) { OriginatingMessage = originatingMessage, Ignore = ignore });
         }
 
         private void Log(Exception error)
@@ -88,6 +88,9 @@ namespace ZES.Infrastructure
 
             /// <inheritdoc />
             public Instant Timestamp { get; set; }
+
+            /// <inheritdoc />
+            public bool Ignore { get; set; }
 
             /// <inheritdoc />
             [JsonIgnore]

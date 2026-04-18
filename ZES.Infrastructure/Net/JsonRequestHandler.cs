@@ -48,28 +48,43 @@ namespace ZES.Infrastructure.Net
     /// </summary>
     /// <typeparam name="T">Deserialized type</typeparam>
     public class JsonRequestHandler<T> : CommandHandlerAbstractBase<RequestJson<T>>
-        where T : class, IJsonResult
+        where T : class, IJsonResult, new()
     {
         private readonly IMessageQueue _messageQueue;
         private readonly ISerializer<T> _serializer;
         private readonly ICommandHandler<RequestJson> _handler;
         private readonly IJsonHandler<T> _jsonHandler;
+        private readonly ILog _log;
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="JsonRequestHandler{T}"/> class.
+        /// Handles JSON deserialized request commands by incorporating serialization, message queueing,
+        /// logging, and command handling functionalities for a specific JSON result type.
         /// </summary>
-        /// <param name="messageQueue">Message queue</param>
-        /// <param name="serializer">JSON deserializer</param>
-        /// <param name="handler">JSON request connection handler</param>
-        /// <param name="jsonHandler">JSON result handler</param>
-        public JsonRequestHandler(IMessageQueue messageQueue, ISerializer<T> serializer, ICommandHandler<RequestJson> handler, IJsonHandler<T> jsonHandler) 
+        /// <param name="messageQueue">
+        /// The message queue used for publishing and handling events or alerts.
+        /// </param>
+        /// <param name="serializer">
+        /// The serializer used to serialize the deserialized type.
+        /// </param>
+        /// <param name="handler">
+        /// The underlying command handler for processing <see cref="RequestJson"/> commands.
+        /// </param>
+        /// <param name="jsonHandler">
+        /// The handler for managing the specific JSON result type.
+        /// </param>
+        /// <param name="log">
+        /// The logging mechanism.
+        /// </param>
+        public JsonRequestHandler(IMessageQueue messageQueue, ISerializer<T> serializer,
+            ICommandHandler<RequestJson> handler, IJsonHandler<T> jsonHandler, ILog log)
         {
             _messageQueue = messageQueue;
             _serializer = serializer;
             _handler = handler;
             _jsonHandler = jsonHandler;
+            _log = log;
         }
-        
+
         /// <inheritdoc />
         public override async Task Handle(RequestJson<T> command)
         {
@@ -80,7 +95,15 @@ namespace ZES.Infrastructure.Net
                     T o = null;
                     if (r.JsonData != null)
                     {
-                        o = _serializer.Deserialize(r.JsonData);
+                        try
+                        {
+                            o = _serializer.Deserialize(r.JsonData);
+                        }
+                        catch (Exception e)
+                        {
+                            _log.Errors.Add(e, command, true);
+                            o = new T();
+                        }
                         o.RequestorId = r.RequestorId;
                     }
 

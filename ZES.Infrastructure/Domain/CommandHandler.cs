@@ -80,7 +80,7 @@ namespace ZES.Infrastructure.Domain
                             throw new InvalidOperationException($"Command {command.MessageId} not found in command log");
                         
                         if((existingCommand.Target == null || existingCommand.Target == command.Target) && existingCommand.Timeline == command.Timeline)
-                            _errorLog.Add(new InvalidOperationException($"Command {command.MessageId} already exists in the command log"), command);
+                            _errorLog.Add(new InvalidOperationException($"Command {command.MessageId} already exists in the command log"), command, true);
                         else
                             throw new InvalidOperationException($"Command {command.MessageId} is not matching the command in command log");
                         return;
@@ -93,7 +93,8 @@ namespace ZES.Infrastructure.Domain
             }
             catch (Exception e)
             {
-                _errorLog.Add(e, command);
+                var ignore = e is ZesException { Ignore: true };
+                _errorLog.Add(e, command, ignore);
                 
                 // check that we didn't end up on wrong timeline
                 if (_timeline.Id != timeline)
@@ -105,8 +106,11 @@ namespace ZES.Infrastructure.Domain
                     await _branchManager.Branch(timeline);
                 }
 
-                await _commandLog.AddFailedCommand(command);
-                _log.Error($"Command {command} failed : {e}");
+                if (!ignore)
+                {
+                    await _commandLog.AddFailedCommand(command);
+                    _log.Error($"Command {command} failed : {e}");
+                }
             }
         }
     }

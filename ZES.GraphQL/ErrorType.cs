@@ -14,6 +14,7 @@ namespace ZES.GraphQL
             descriptor.Field(t => t.ErrorType);
             descriptor.Field(t => t.Message);
             descriptor.Field(t => t.Timestamp);
+            descriptor.Field(t => t.Ignore).Ignore();
             descriptor.Field(t => t.OriginatingMessage).Ignore();
             base.Configure(descriptor);
         }

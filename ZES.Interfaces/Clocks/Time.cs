@@ -136,7 +136,21 @@ namespace ZES.Interfaces.Clocks
         /// </summary>
         /// <returns>Corresponding instant</returns>
         public abstract Instant ToInstant();
-        
+
+        /// <summary>
+        /// Converts the current time instance to its UTC <see cref="DateTime"/> representation.
+        /// </summary>
+        /// <returns>A <see cref="DateTime"/> object representing the time in UTC.</returns>
+        public DateTime ToDateTimeUtc() => ToInstant().InUtc().ToDateTimeUtc();
+
+        /// <summary>
+        /// Converts the current object to a DateTime representation.
+        /// </summary>
+        /// <param name="zoneId">The time zone identifier to use for conversion.</param>
+        /// <returns>The DateTime representation of the current object.</returns>
+        public DateTime ToDateTime(string zoneId = "Europe/London") =>
+            ToInstant().InZone(DateTimeZoneProviders.Tzdb[zoneId]).ToDateTimeUnspecified();
+
         /// <summary>
         /// Get the time point just before the input time
         /// </summary>

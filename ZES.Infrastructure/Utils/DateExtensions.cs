@@ -12,6 +12,8 @@ namespace ZES.Infrastructure.Utils
     /// </summary>
     public static class DateExtensions
     {
+        private static readonly UKBankHoliday Uk = new();
+        
         /// <summary>
         /// Convert string to instant
         /// </summary>
@@ -95,28 +97,51 @@ namespace ZES.Infrastructure.Utils
         }
 
         /// <summary>
-        /// Determines if the given instant is less than the specified number of working days from another instant.
+        /// Determines whether the number of working days between the specified instants is within the given limit.
         /// </summary>
-        /// <param name="instant">The base instant to compare.</param>
-        /// <param name="otherInstant">The instant to calculate the working days difference from.</param>
-        /// <param name="days">The number of working days to compare against. Defaults to 1.</param>
-        /// <returns>True if the given instant is less than the specified number of working days from the other instant; otherwise, false.</returns>
-        public static bool LessWorkingDays(this Instant instant, Instant otherInstant, int days = 0)
+        /// <param name="instant">The starting instant.</param>
+        /// <param name="otherInstant">The comparison instant.</param>
+        /// <param name="days">The maximum number of working days allowed between the two instants. Defaults to 0.</param>
+        /// <returns>True if the number of working days is less than or equal to the specified limit; otherwise, false.</returns>
+        /// <remarks>This method uses the UK bank holiday calendar to determine working days</remarks>
+        public static bool IsWithinPriorWorkingDays(this Instant instant, Instant otherInstant, int days = 0)
         {
-            if(instant > otherInstant)
+            var date = instant.InZone(DateTimeZoneProviders.Tzdb["Europe/London"]).Date.ToDateTimeUnspecified();
+            var otherDate = otherInstant.InZone(DateTimeZoneProviders.Tzdb["Europe/London"]).Date
+                .ToDateTimeUnspecified();
+            if(date > otherDate)
                 return false;
             
-            var uk = new UKBankHoliday();
-            var date = instant.InZone(DateTimeZoneProviders.Tzdb["Europe/London"]).Date;
-            var otherDate = otherInstant.InZone(DateTimeZoneProviders.Tzdb["Europe/London"]).Date;
-            var minDate = otherDate;
-            while (days >= 0)
-            {
-                if(uk.IsWorkingDay(minDate.ToDateTimeUnspecified()))
-                    days--;
-                minDate = minDate.PlusDays(-1);
-            }
-            return date >= minDate;
+            var workingDays = Uk.BusinessDaysBetween(date, otherDate);
+            return workingDays <= days;
+        }
+
+        /// <summary>
+        /// Gets the end of the day for the specified instant in the specified timezone.
+        /// </summary>
+        /// <param name="instant">The input instant.</param>
+        /// <param name="zoneId">The timezone ID. Defaults to "Europe/London".</param>
+        /// <returns>The instant representing the end of the day in the specified timezone.</returns>
+        public static Instant EndOfDay(this Instant instant, string zoneId = "Europe/London")
+        {
+            var localZone = DateTimeZoneProviders.Tzdb[zoneId];
+            var localDate = instant.InZone(localZone);
+            var endOfDay = localDate.Date.At(LocalTime.MaxValue).InZoneLeniently(localZone);
+            return endOfDay.ToInstant();
+        }
+
+        /// <summary>
+        /// Calculates the close of day for a given instant in a specified time zone.
+        /// </summary>
+        /// <param name="instant">The input instant.</param>
+        /// <param name="zoneId">The time zone identifier. Defaults to "Europe/London".</param>
+        /// <returns>The instant representing the close of day at 16:30 in the specified time zone.</returns>
+        public static Instant CloseOfDay(this Instant instant, string zoneId = "Europe/London")
+        {
+            var localZone = DateTimeZoneProviders.Tzdb[zoneId];
+            var localDate = instant.InZone(localZone);
+            var closeOfDay = localDate.Date.At(new LocalTime(16, 30)).InZoneLeniently(localZone);
+            return closeOfDay.ToInstant();
         }
     }
 }

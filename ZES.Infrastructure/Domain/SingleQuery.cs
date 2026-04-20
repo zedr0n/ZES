@@ -7,7 +7,6 @@ namespace ZES.Infrastructure.Domain
     /// </summary>
     /// <typeparam name="T">Result type</typeparam>
     public class SingleQuery<T> : Query<T>, ISingleQuery<T>
-        where T : ISingleState
     {
         /// <summary>
         /// Initializes a new instance of the <see cref="SingleQuery{T}"/> class.

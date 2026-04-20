@@ -115,8 +115,12 @@ namespace ZES.Infrastructure.Branching
         }
 
         /// <inheritdoc />
-        public async Task<ITimeline> Branch(string branchId, Time time = default, IEnumerable<string> keys = null, bool deleteExisting = false)
+        public async Task<ITimeline> Branch(string branchId, Time time = default, IEnumerable<string> keys = null, bool deleteExisting = false, bool? useLazy = null)
         {
+            var lazy = Configuration.UseLazyBranching;
+            if (useLazy.HasValue)
+                lazy = useLazy.Value;
+            
             _log.StopWatch.Start("Branch");
             if (_activeTimeline.Id == branchId)
             {
@@ -151,8 +155,8 @@ namespace ZES.Infrastructure.Branching
             // copy the events
             if (newBranch)
             {
-                await Clone<IAggregate>(branchId, time ?? _clock.GetCurrentInstant()); 
-                await Clone<ISaga>(branchId, time ?? _clock.GetCurrentInstant(), keys);
+                await Clone<IAggregate>(branchId, time ?? _clock.GetCurrentInstant(), null, lazy); 
+                await Clone<ISaga>(branchId, time ?? _clock.GetCurrentInstant(), keys, lazy);
             }
 
             _log.StopWatch.Stop("Branch.Clone");
@@ -381,11 +385,11 @@ namespace ZES.Infrastructure.Branching
         // full clone of event store
         // can become really expensive
         // TODO: use links to event ids?
-        private async Task Clone<T>(string timeline, Time time, IEnumerable<string> keys = null)
+        private async Task Clone<T>(string timeline, Time time, IEnumerable<string> keys = null, bool lazy = false)
             where T : IEventSourced
         {
             var store = GetStore<T>();
-            var cloneFlow = new CloneFlow<T>(timeline, time, store);
+            var cloneFlow = new CloneFlow<T>(timeline, time, lazy, store, _streamLocator);
             
             // store.ListStreams(_activeTimeline.Id)
             var streams = await _streamLocator.ListStreams<T>(_activeTimeline.Id);
@@ -587,7 +591,7 @@ namespace ZES.Infrastructure.Branching
             private readonly ActionBlock<IStream> _inputBlock;
             private int _numberOfStreams;
             
-            public CloneFlow(string timeline, Time time, IEventStore<T> eventStore) 
+            public CloneFlow(string timeline, Time time, bool lazy, IEventStore<T> eventStore, IStreamLocator streamLocator) 
                 : base(Configuration.DataflowOptions)
             {
                 _inputBlock = new ActionBlock<IStream>(
@@ -598,7 +602,10 @@ namespace ZES.Infrastructure.Branching
                             return;
 
                         var clone = s.Branch(timeline, version);
-                        await eventStore.AppendToStream(clone);
+                        if (lazy)
+                            streamLocator.Register(clone);
+                        else
+                            await eventStore.AppendToStream(clone);
                         Interlocked.Increment(ref _numberOfStreams);
                     }, Configuration.DataflowOptions.ToDataflowBlockOptions(true)); // .ToExecutionBlockOption(true)); 
 

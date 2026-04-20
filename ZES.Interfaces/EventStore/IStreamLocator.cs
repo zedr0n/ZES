@@ -15,6 +15,12 @@ namespace ZES.Interfaces.EventStore
         Task Ready { get; }
 
         /// <summary>
+        /// Registers a stream into the stream locator.
+        /// </summary>
+        /// <param name="stream">The stream to be registered.</param>
+        void Register(IStream stream);
+        
+        /// <summary>
         /// Get the stream with the given id
         /// </summary>
         /// <typeparam name="T">Underlying stream type</typeparam>

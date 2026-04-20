@@ -41,6 +41,12 @@ namespace ZES.Infrastructure.EventStore
         }
 
         /// <inheritdoc />
+        public void Register(IStream stream)
+        {
+            GetOrAdd(stream.Copy());
+        }
+
+        /// <inheritdoc />
         public Task Ready
         {
             get

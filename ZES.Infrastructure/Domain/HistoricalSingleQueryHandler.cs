@@ -8,7 +8,7 @@ namespace ZES.Infrastructure.Domain
     /// <inheritdoc />
     public class HistoricalSingleQueryHandler<TQuery, TResult, TState> : HistoricalQueryHandler<TQuery, TResult, TState>
         where TQuery : class, ISingleQuery<TResult>
-        where TResult : class, ISingleState, new()
+        where TResult : class, new()
         where TState : IState, new()
     {
         /// <summary>
@@ -25,7 +25,7 @@ namespace ZES.Infrastructure.Domain
         /// <inheritdoc />
         protected override Task<TResult> Handle(HistoricalQuery<TQuery, TResult> query)
         {
-            Projection = Manager.GetHistoricalProjection<TResult>(query.Query.Id);
+            Projection = Manager.GetHistoricalProjection<TState>(query.Query.Id);
             return base.Handle(query);
         }
     }

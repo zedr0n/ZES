@@ -28,14 +28,15 @@ namespace ZES.Interfaces.Branching
         Task Ready { get; }
 
         /// <summary>
-        /// Branch the current timeline at a certain point in the past
+        /// Branches the current timeline at a specified point in the past.
         /// </summary>
-        /// <param name="branchId">Branch unique identifier</param>
-        /// <param name="time">Timestamp to branch at</param>
-        /// <param name="keys">Specific streams to branch</param>
-        /// <param name="deleteExisting">Delete branch if exists</param>
-        /// <returns>Task representing the newly branched timeline</returns>
-        Task<ITimeline> Branch(string branchId, Time time = default, IEnumerable<string> keys = null, bool deleteExisting = false);
+        /// <param name="branchId">The unique identifier of the branch to create.</param>
+        /// <param name="time">The timestamp to branch at; defaults to the current timeline's current time if not provided.</param>
+        /// <param name="keys">The streams to include in the branch; null will include all streams.</param>
+        /// <param name="deleteExisting">Indicates whether to delete an existing branch with the same identifier.</param>
+        /// <param name="useLazy">Specifies whether the branch creation should be deferred (lazy) or immediate.</param>
+        /// <returns>A task that represents the asynchronous operation, containing the newly created timeline.</returns>
+        Task<ITimeline> Branch(string branchId, Time time = default, IEnumerable<string> keys = null, bool deleteExisting = false, bool? useLazy = null);
 
         /// <summary>
         /// Merges the timeline into active timeline

@@ -730,7 +730,7 @@ namespace ZES.Tests
             await await bus.CommandAsync(new CreateRoot(id)); 
             
             var timeTraveller = container.GetInstance<IBranchManager>();
-            await timeTraveller.Branch("test");
+            await timeTraveller.Branch("test", useLazy: false);
 
             await await bus.CommandAsync(new CreateRoot($"{id}2"));
 
@@ -869,11 +869,11 @@ namespace ZES.Tests
             var timeline = container.GetInstance<ITimeline>();
             Assert.Equal("master", timeline.Id);
 
-            await timeTraveller.Branch("test");
+            await timeTraveller.Branch("test", useLazy: false);
 
             await await bus.CommandAsync(new CreateRoot($"{id}Test"));
 
-            await timeTraveller.Branch("grandTest");
+            await timeTraveller.Branch("grandTest", useLazy: false);
 
             await await bus.CommandAsync(new CreateRoot($"{id}Test2"));
             await bus.IsTrue(new StatsQuery(), s => s.NumberOfRoots == 3);

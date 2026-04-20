@@ -90,6 +90,12 @@ namespace ZES.Infrastructure
         }
 
         /// <summary>
+        /// Gets a value indicating whether to enable lazy branching,
+        /// which defers branching operations to optimize resource usage and improve performance.
+        /// </summary>
+        public static bool UseLazyBranching { get; } = true;
+        
+        /// <summary>
         /// Gets a value indicating whether to use fast temporary branches by not persisting to stream store
         /// </summary>
         public static bool FastTemporaryBranches { get; } = true;

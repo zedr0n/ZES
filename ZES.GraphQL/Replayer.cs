@@ -15,6 +15,17 @@ namespace ZES.GraphQL
     public class Replayer
     {
         private ServiceCollection _serviceCollection;
+
+        /// <summary>
+        /// Gets the dependency injection container that provides access to the configured services
+        /// and instances. This property leverages the SimpleInjector <see cref="Container"/> to
+        /// resolve and manage dependencies within the application.
+        /// </summary>
+        /// <remarks>
+        /// The container is built using the registered services in the <see cref="ServiceCollection"/>
+        /// and provides a mechanism to resolve instances of the configured types.
+        /// </remarks>
+        public Container Container => _serviceCollection.BuildServiceProvider().GetService<Container>();
         
         /// <summary>
         /// Wire graphQl configuration

@@ -111,6 +111,19 @@ namespace ZES.TestBase
         }
 
         /// <summary>
+        /// Creates and configures a new instance of the <see cref="Replayer"/> class.
+        /// </summary>
+        /// <returns>A configured instance of <see cref="Replayer"/> with GraphQL support initialized.</returns>
+        public Replayer GetReplayer()
+        {
+            var player = new Replayer();
+            lock (_lock)
+                player.UseGraphQl(Configs, _logger);
+
+            return player;
+        }
+
+        /// <summary>
         /// Replays a given log file using the configured GraphQL settings and logger.
         /// </summary>
         /// <param name="logFile">The path to the log file to be replayed.</param>

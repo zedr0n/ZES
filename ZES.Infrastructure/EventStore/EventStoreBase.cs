@@ -396,9 +396,9 @@ namespace ZES.Infrastructure.EventStore
                 return new List<TNewStreamMessage>();
 
             Log.StopWatch.Start("AppendToStream.Encode");
-            var streamMessages = events.Count > 1
+            var streamMessages = events.Count > Configuration.MinEventsBatchSize
                 ? events.AsParallel().AsOrdered().Select(EventToStreamMessage).ToList()
-                : new List<TNewStreamMessage> { EventToStreamMessage(events.Single()) };
+                : events.Select(EventToStreamMessage).ToList();
             Log.StopWatch.Stop("AppendToStream.Encode");
             return streamMessages;
         }

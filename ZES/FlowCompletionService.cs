@@ -18,6 +18,7 @@ public class FlowCompletionService : IFlowCompletionService
 {
     private readonly ILog _log;
     private readonly ConcurrentDictionary<Guid, FlowNode> _flowNodes = new();
+    private readonly ConcurrentDictionary<Guid, FlowNode> _uncompletedNodes = new();
     private readonly ReplaySubject<bool> _retroactiveSubject = new(1);
 
     /// <inheritdoc />
@@ -42,8 +43,13 @@ public class FlowCompletionService : IFlowCompletionService
             existingNode.IsCompleted ? newFlowNode : existingNode);
         
         flowNode.MarkUncompleted();
+        _uncompletedNodes[id] = flowNode;
         _log.Trace($"Tracking {message.MessageId}({flowNode.CompletionCounter})");
-        flowNode.CompletionSubject.Subscribe(_ => _log.Trace($"Completed {message.MessageId}({flowNode.CompletionCounter})"));
+        flowNode.CompletionSubject.Subscribe(_ =>
+        {
+            _uncompletedNodes.TryRemove(id, out var node);
+            _log.Trace($"Completed {message.MessageId}({flowNode.CompletionCounter})");
+        });
         
         if (flowNode.IsRetroactive)
         {
@@ -89,9 +95,14 @@ public class FlowCompletionService : IFlowCompletionService
     /// <inheritdoc />
     public async Task CompletionAsync(string timeline = null, bool includeRetroactive = false)
     {
-        var flowNodes = timeline != null ? _flowNodes.Values.Where(node => node.Timeline == timeline) : _flowNodes.Values;
+        var flowNodes = timeline != null
+            ? _uncompletedNodes.Values.Where(node => node.Timeline == timeline)
+            : _uncompletedNodes.Values;
 
-        var allNodeTasks = flowNodes.Where(node => (includeRetroactive || !node.IsRetroactive) && !node.IsIgnored).Select(node => node.CompletionTask).ToList();
+        var allNodeTasks = flowNodes
+            .Where(node => (includeRetroactive || !node.IsRetroactive) && !node.IsIgnored)
+            .Select(node => node.CompletionTask)
+            .ToList();
         if (allNodeTasks.Count == 0)
             return;
         await Task.WhenAll(allNodeTasks);

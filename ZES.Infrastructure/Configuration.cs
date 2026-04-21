@@ -271,6 +271,12 @@ namespace ZES.Infrastructure
         public static int ThreadsPerInstance => Debugger.IsAttached ? 1 : Math.Max(Environment.ProcessorCount / 2, 1);
 
         /// <summary>
+        /// Gets the minimum number of events required to process a batch operation,
+        /// serving as a threshold to determine when certain optimizations, such as parallel encoding, are applied.
+        /// </summary>
+        public static int MinEventsBatchSize => 50;
+
+        /// <summary>
         /// Check if Common.Logging logging is allowed
         /// </summary>
         /// <returns>True if enabled</returns>

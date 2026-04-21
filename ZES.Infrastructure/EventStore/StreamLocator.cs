@@ -72,7 +72,7 @@ namespace ZES.Infrastructure.EventStore
         {
             await Ready;
             var isSaga = typeof(T).Name == nameof(ISaga);
-            return _streams.Where(s => s.Key.StartsWith(branchId + ":") && s.Value.IsSaga == isSaga).Select(s => s.Value);
+            return _streams.Where(s => s.Value.Timeline == branchId && s.Value.IsSaga == isSaga).Select(s => s.Value);
         }
 
         /// <inheritdoc />

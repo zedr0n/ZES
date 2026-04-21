@@ -32,13 +32,11 @@ namespace ZES.Infrastructure.EventStore
         private readonly ISerializer<IEvent> _serializer;
         private readonly IMessageQueue _messageQueue;
 
-        private readonly Subject<IStream> _streams = new Subject<IStream>();
+        private readonly Subject<IStream> _streams = new();
 
         private readonly bool _isDomainStore;
         private readonly bool _useVersionCache;
-        private readonly ConcurrentDictionary<string, ConcurrentDictionary<int, Time>> _versions = new ConcurrentDictionary<string, ConcurrentDictionary<int, Time>>();
-        private readonly ConcurrentBag<EncodeFlow> _encodeBag = new ConcurrentBag<EncodeFlow>();
-        private readonly ConcurrentEventFlowBag<TStreamMessage> _deserializeBag = new ConcurrentEventFlowBag<TStreamMessage>();
+        private readonly ConcurrentDictionary<string, ConcurrentDictionary<int, Time>> _versions = new();
 
         /// <summary>
         /// Initializes a new instance of the <see cref="EventStoreBase{TEventSourced, TNewStreamMessage, TStreamMessage}"/> class.
@@ -150,10 +148,21 @@ namespace ZES.Infrastructure.EventStore
         {
             if (_useVersionCache && _versions.TryGetValue(stream.Key, out var versions))
             {
-                if (!versions.Any(v => v.Value <= timestamp))
-                    return ExpectedVersion.NoStream;
-
-                return versions.Last(v => v.Value <= timestamp).Key;
+                // Keys 0..stream.Version are sequential with monotonically increasing timestamps
+                var lo = 0;
+                var hi = stream.Version;
+                var result = ExpectedVersion.NoStream;
+                while (lo <= hi)
+                {
+                    var mid = (lo + hi) / 2;
+                    if (versions.TryGetValue(mid, out var t))
+                    {
+                        if (t <= timestamp) { result = mid; lo = mid + 1; }
+                        else hi = mid - 1;
+                    }
+                    else lo = mid + 1;
+                }
+                return result;
             }
             
             var metadata = await ReadStream<IEvent>(stream, 0, -1, SerializationType.Metadata)
@@ -191,7 +200,7 @@ namespace ZES.Infrastructure.EventStore
             }
 
             // Skip serialization for temporary branches - fast-path caches IEvent objects directly
-            var streamMessages = stream.IsTemporary ? new List<TNewStreamMessage>() : await EncodeEvents(events);
+            var streamMessages = stream.IsTemporary ? new List<TNewStreamMessage>() : EncodeEvents(events);
             var version = await AppendToStreamStore(stream, streamMessages, events);
             if (!stream.IsTemporary)
                 LogEvents(streamMessages);
@@ -336,35 +345,17 @@ namespace ZES.Infrastructure.EventStore
         {
             Log.StopWatch.Start("ReadSingleStream.Deserialize");
 
-            var events = new List<T>();
-            if (count > 1)
-            {
-                var aCount = Math.Min(count, Configuration.BatchSize);
+            var aCount = Math.Min(count, Configuration.BatchSize);
+            var events = await Task.WhenAll(
+                streamMessages.Take(aCount).Select(m => StreamMessageToEvent<T>(m, serializationType)));
 
-                if (!_deserializeBag.TryTake<T>(serializationType, out var dataflow))
-                    dataflow = new DeserializeFlow<T>(Configuration.DataflowOptions, this, serializationType);
-
-                if (!await (dataflow as DeserializeFlow<T>).ProcessAsync(streamMessages, events, aCount))
-                    throw new InvalidOperationException("Not all events have been processed");
-                        
-                Log.StopWatch.Stop("ReadSingleStream.Deserialize");
-                _deserializeBag.Add(serializationType, dataflow);
-            }
-            else
-            {
-                var e = await StreamMessageToEvent<T>(streamMessages.SingleOrDefault(), serializationType);
-                Log.StopWatch.Stop("ReadSingleStream.Deserialize");
-                events.Add(e);
-            }
+            Log.StopWatch.Stop("ReadSingleStream.Deserialize");
 
             foreach (var e in events.OrderBy(e => e.Version))
             {
-                observer.OnNext((T)e);
-                count--;
-                if (count == 0)
-                    break;
+                observer.OnNext(e);
+                if (--count == 0) break;
             }
-
             return count;
         }
         
@@ -399,28 +390,15 @@ namespace ZES.Infrastructure.EventStore
         /// <returns>Store version</returns>
         protected abstract int GetExpectedVersion(int version);
 
-        private async Task<IList<TNewStreamMessage>> EncodeEvents(ICollection<IEvent> events)
+        private List<TNewStreamMessage> EncodeEvents(ICollection<IEvent> events)
         {
-            var streamMessages = new List<TNewStreamMessage>();
             if (events == null)
-                return streamMessages;
-            
-            Log.StopWatch.Start("AppendToStream.Encode");
-            if (events.Count > 1)
-            {
-                if (!_encodeBag.TryTake(out var encodeFlow))
-                    encodeFlow = new EncodeFlow(Configuration.DataflowOptions, this);
+                return new List<TNewStreamMessage>();
 
-                if (!await encodeFlow.ProcessAsync(events, streamMessages, events.Count)) 
-                    throw new InvalidOperationException($"Encoded {streamMessages.Count} of {events.Count} events");
- 
-                _encodeBag.Add(encodeFlow);
-            }
-            else
-            {
-                streamMessages = new List<TNewStreamMessage> { EventToStreamMessage(events.Single()) };
-            }
-                
+            Log.StopWatch.Start("AppendToStream.Encode");
+            var streamMessages = events.Count > 1
+                ? events.AsParallel().AsOrdered().Select(EventToStreamMessage).ToList()
+                : new List<TNewStreamMessage> { EventToStreamMessage(events.Single()) };
             Log.StopWatch.Stop("AppendToStream.Encode");
             return streamMessages;
         }

@@ -17,12 +17,12 @@ namespace ZES.Interfaces.Clocks
         /// <summary>
         /// Gets the largest possible time instance
         /// </summary>
-        public new static LogicalTime MaxValue => new(Instant.MaxValue.ToUnixTimeTicks(), 0);
+        public new static LogicalTime MaxValue { get; } = new(Instant.MaxValue.ToUnixTimeTicks(), 0);
 
         /// <summary>
         /// Gets the smallest possible time instance
         /// </summary>
-        public new static LogicalTime MinValue => new(Instant.MinValue.ToUnixTimeTicks(), 0);
+        public new static LogicalTime MinValue { get; } = new(Instant.MinValue.ToUnixTimeTicks(), 0);
 
         /// <summary>
         /// Lexicographic comparison for logical time

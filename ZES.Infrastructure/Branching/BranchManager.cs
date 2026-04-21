@@ -104,9 +104,11 @@ namespace ZES.Infrastructure.Branching
             await _flowCompletionService.CompletionAsync(branchId).Timeout(Configuration.Timeout);
             _log.StopWatch.Stop($"{nameof(DeleteBranch)}.Wait");
 
-            await DeleteBranch<IAggregate>(branchId);
-            await DeleteBranch<ISaga>(branchId);
-            await DeleteCommands(branchId);
+            
+            var deleteAggregate = DeleteBranch<IAggregate>(branchId);
+            var deleteSaga = DeleteBranch<ISaga>(branchId);
+            var deleteCommands = DeleteCommands(branchId);
+            await Task.WhenAll(deleteAggregate, deleteSaga, deleteCommands);
             
             _branches.TryRemove(branchId, out var branch);
             _messageQueue.Alert(new BranchDeleted(branchId));
@@ -155,8 +157,10 @@ namespace ZES.Infrastructure.Branching
             // copy the events
             if (newBranch)
             {
-                await Clone<IAggregate>(branchId, time ?? _clock.GetCurrentInstant(), null, lazy); 
-                await Clone<ISaga>(branchId, time ?? _clock.GetCurrentInstant(), keys, lazy);
+                var t = time ?? _clock.GetCurrentInstant();
+                await Task.WhenAll(
+                    Clone<IAggregate>(branchId, t, null, lazy),
+                    Clone<ISaga>(branchId, t, keys, lazy));
             }
 
             _log.StopWatch.Stop("Branch.Clone");
@@ -271,36 +275,39 @@ namespace ZES.Infrastructure.Branching
 
         private async Task StoreChanges(string branchId, ConcurrentDictionary<IStream, int> changes)
         {
-            var flow = new ChangesFlow(_activeTimeline, changes);
             var streams = await _streamLocator.ListStreams(branchId);
-            streams.Subscribe(flow.InputBlock.AsObserver());
-
-            try
-            {
-                await flow.CompletionTask;
-            }
-            catch (Exception e)
-            {
-                _log.Errors.Add(e);
-            }
+            foreach (var s in streams)
+                ProcessChange(s, _activeTimeline, changes);
         }
 
         private async Task StoreChanges<T>(string branchId, ConcurrentDictionary<IStream, int> changes)
             where T : IEventSourced
         {
             var store = GetStore<T>();
-            var flow = new ChangesFlow(_activeTimeline, changes);
+            var streams = await store.ListStreams(branchId).ToList();
+            foreach (var s in streams)
+                ProcessChange(s, _activeTimeline, changes);
+        }
 
-            store.ListStreams(branchId).Subscribe(flow.InputBlock.AsObserver());
+        private static void ProcessChange(IStream s, ITimeline currentBranch, ConcurrentDictionary<IStream, int> changes)
+        {
+            var version = ExpectedVersion.EmptyStream;
+            var parent = s.Parent;
+            while (parent != null && parent.Version > ExpectedVersion.EmptyStream)
+            {
+                version = parent.Version;
 
-            try
-            {
-                await flow.CompletionTask;
+                if (s.Version == version)
+                    return;
+
+                if (parent.Timeline == currentBranch?.Id)
+                    break;
+
+                parent = parent.Parent;
             }
-            catch (Exception e)
-            {
-                _log.Errors.Add(e);
-            }
+
+            var stream = parent ?? s.Branch(s.Timeline, version);
+            changes.TryAdd(stream, s.Version - version);
         }
         
         private async Task<Dictionary<IStream, int>> MergeStore<T>(string branchId, bool includeNewStreams)
@@ -389,58 +396,30 @@ namespace ZES.Infrastructure.Branching
             where T : IEventSourced
         {
             var store = GetStore<T>();
-            var cloneFlow = new CloneFlow<T>(timeline, time, lazy, store, _streamLocator);
+            var streams = (await _streamLocator.ListStreams<T>(_activeTimeline.Id))
+                .Where(s => keys == null || keys.Contains(s.Key)).ToList();
             
-            // store.ListStreams(_activeTimeline.Id)
-            var streams = await _streamLocator.ListStreams<T>(_activeTimeline.Id);
-            streams.Where(s => keys == null || keys.Contains(s.Key))
-                .Subscribe(cloneFlow.InputBlock.AsObserver());
-
-            try
-            {
-                await cloneFlow.CompletionTask;
-                if (cloneFlow.NumberOfStreams > 0)
-                    _log.Debug($"{cloneFlow.NumberOfStreams} {typeof(T).Name} streams cloned to {timeline}");
-            }
-            catch (Exception e)
-            {
-                _log.Errors.Add(e);
-            }
-        }
-        
-        private class ChangesFlow : Dataflow<IStream>
-        {
-            private readonly ActionBlock<IStream> _inputBlock;
+            if (streams.Count == 0)
+                return;
             
-            public ChangesFlow(ITimeline currentBranch, ConcurrentDictionary<IStream, int> streams) 
-                : base(Configuration.DataflowOptions)
+            var count = 0;
+            var tasks = streams.Select(async s =>
             {
-                _inputBlock = new ActionBlock<IStream>(
-                    s =>
-                    {
-                        var version = ExpectedVersion.EmptyStream;
-                        var parent = s.Parent;
-                        while (parent != null && parent.Version > ExpectedVersion.EmptyStream)
-                        {
-                            version = parent.Version;
+                var version = await store.GetVersion(s, time);
+                if (version == ExpectedVersion.NoStream)
+                    return;
+                var clone = s.Branch(timeline, version);
+                if (lazy)
+                    _streamLocator.Register(clone);
+                else
+                    await store.AppendToStream(clone);
+                Interlocked.Increment(ref count);
+            });
+            await Task.WhenAll(tasks);            
 
-                            if (s.Version == version)
-                                return;
-
-                            if (parent.Timeline == currentBranch?.Id)
-                                break;
-
-                            parent = parent.Parent;
-                        }
-
-                        var stream = parent ?? s.Branch(s.Timeline, version);
-                        streams.TryAdd(stream, s.Version - version);
-                    }, Configuration.DataflowOptions.ToDataflowBlockOptions(true)); // ToExecutionBlockOption(true)); 
-
-                RegisterChild(_inputBlock);
-            }
-
-            public override ITargetBlock<IStream> InputBlock => _inputBlock;
+            if (count > 0)
+                _log.Debug($"{count} {typeof(T).Name} streams cloned to {timeline}");            
+            
         }
         
         private class MergeFlow<T> : Dataflow<IStream>
@@ -581,38 +560,6 @@ namespace ZES.Infrastructure.Branching
             }
 
             public ConcurrentDictionary<IStream, int> Streams { get; } = new ();
-
-            public override ITargetBlock<IStream> InputBlock => _inputBlock;
-        }
-
-        private class CloneFlow<T> : Dataflow<IStream>
-            where T : IEventSourced
-        {
-            private readonly ActionBlock<IStream> _inputBlock;
-            private int _numberOfStreams;
-            
-            public CloneFlow(string timeline, Time time, bool lazy, IEventStore<T> eventStore, IStreamLocator streamLocator) 
-                : base(Configuration.DataflowOptions)
-            {
-                _inputBlock = new ActionBlock<IStream>(
-                    async s =>
-                    {
-                        var version = await eventStore.GetVersion(s, time);
-                        if (version == ExpectedVersion.NoStream)
-                            return;
-
-                        var clone = s.Branch(timeline, version);
-                        if (lazy)
-                            streamLocator.Register(clone);
-                        else
-                            await eventStore.AppendToStream(clone);
-                        Interlocked.Increment(ref _numberOfStreams);
-                    }, Configuration.DataflowOptions.ToDataflowBlockOptions(true)); // .ToExecutionBlockOption(true)); 
-
-                RegisterChild(_inputBlock);
-            }
-
-            public int NumberOfStreams => _numberOfStreams;
 
             public override ITargetBlock<IStream> InputBlock => _inputBlock;
         }

@@ -16,9 +16,10 @@ namespace ZES.Infrastructure.EventStore
         private readonly string _type;
         private readonly List<IStream> _ancestors = [];
         private int _version;
-        private string _cachedKey;
+        private string _key;
         private string _timeline;
         private bool? _isTemporary;
+        private bool? _isSaga;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="Stream"/> class.
@@ -50,12 +51,13 @@ namespace ZES.Infrastructure.EventStore
             var tokens = key.Split(':');
             if (tokens.Length != 3)
                 throw new InvalidOperationException();
-            
+           
             Timeline = tokens[0];
             _type = tokens[1];
             Id = tokens[2];
             Version = version;
             Parent = parent;
+            _key = key;
         }
 
         /// <summary>
@@ -98,7 +100,14 @@ namespace ZES.Infrastructure.EventStore
         }
 
         /// <inheritdoc />
-        public bool IsSaga => _type.ToUpper().Contains(nameof(Saga).ToUpper());
+        public bool IsSaga
+        {
+            get
+            {
+                _isSaga ??= _type.ToUpper().Contains(nameof(Saga).ToUpper());
+                return _isSaga.Value;
+            }
+        }
 
         /// <inheritdoc />
         public string Id { get; }
@@ -109,9 +118,8 @@ namespace ZES.Infrastructure.EventStore
             get
             {
                 // Cache the key to avoid repeated string allocations and Replace operations (12M+ calls per test)
-                if (_cachedKey == null)
-                    _cachedKey = $"{_timeline}:{_type}:{Id.Replace(' '.ToString(), "_")}";
-                return _cachedKey;
+                _key ??= $"{_timeline}:{_type}:{Id.Replace(' '.ToString(), "_")}";
+                return _key;
             }
         }
 
@@ -166,7 +174,7 @@ namespace ZES.Infrastructure.EventStore
                     return;
                 
                 _timeline = value;
-                _cachedKey = null; // Invalidate key cache when timeline changes
+                _key = null; // Invalidate key cache when timeline changes
                 _isTemporary = null;
             }
         }
@@ -177,6 +185,8 @@ namespace ZES.Infrastructure.EventStore
             SnapshotTimestamp = SnapshotTimestamp,
             SnapshotVersion = SnapshotVersion,
             DeletedCount = DeletedCount,
+            _isSaga = _isSaga,
+            _isTemporary = _isTemporary
         };
         
         /// <inheritdoc />
@@ -234,13 +244,10 @@ namespace ZES.Infrastructure.EventStore
         {
             version = Math.Min(version, Version);
 
-            var stream = new Stream(
-                Key,
-                version)
+            var stream = new Stream(version, null, timeline, _type, Id.Replace(' '.ToString(), "_"))
             {
-                SnapshotTimestamp = SnapshotVersion <= version ? SnapshotTimestamp : Time.MaxValue, 
+                SnapshotTimestamp = SnapshotVersion <= version ? SnapshotTimestamp : Time.MaxValue,
                 SnapshotVersion = SnapshotVersion <= version ? SnapshotVersion : 0,
-                Timeline = timeline,
             };
 
             // find last ancestor before the version to branch
@@ -254,7 +261,7 @@ namespace ZES.Infrastructure.EventStore
             }
             else if ( version > ExpectedVersion.EmptyStream )
             {
-                stream.Parent = new Stream(Key, version, parent)
+                stream.Parent = new Stream(version, parent, Timeline, _type, Id.Replace(' '.ToString(), "_"))
                 {
                     SnapshotTimestamp = SnapshotVersion <= version ? SnapshotTimestamp : Time.MaxValue,
                     SnapshotVersion = SnapshotVersion <= version ? SnapshotVersion : 0,

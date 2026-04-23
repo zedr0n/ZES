@@ -1,3 +1,4 @@
+#nullable enable
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
@@ -16,6 +17,7 @@ using HotChocolate.Types.Descriptors.Definitions;
 using JetBrains.Annotations;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using Newtonsoft.Json;
 using NodaTime;
 using ZES.Infrastructure.GraphQl;
 using ZES.Interfaces;
@@ -91,14 +93,14 @@ namespace ZES.GraphQL
         {
             var provider = _services.BuildServiceProvider();
             var resolver = provider.GetService<IRequestExecutorResolver>();
-            var executor = resolver.GetRequestExecutorAsync().Result;
+            var executor = resolver?.GetRequestExecutorAsync().Result;
             
             /* var sender = provider.GetService<IEventSender>();
 
             _log.Logs.Subscribe(async m => await sender.SendAsync(
                 new OnLogMessage(new LogMessage(m))));*/
 
-            return executor;
+            return executor!;
         }
 
         /// <inheritdoc />
@@ -145,7 +147,8 @@ namespace ZES.GraphQL
                 .AddMutationType<BaseMutations>(c => c.Name("Mutation"))
                 .AddTypeExtension<QueryTypeExtensions>()
                 .AddTypeExtension<MutationTypeExtensions>()
-                .AddDiagnosticEventListener<DiagnosticListener>();
+                .AddDiagnosticEventListener<DiagnosticListener>()
+                .TryAddTypeInterceptor<JsonIgnoreTypeInterceptor>();
 
             foreach (var type in _inputTypes.Aggregate(new HashSet<Type>(), (types, catalog) => types.Union(catalog.Types).ToHashSet()))
             {
@@ -170,7 +173,7 @@ namespace ZES.GraphQL
                     .Select(p => p.Name.FirstCharacterToLower())
                     .ToHashSet();
                 
-                var dynamicInputType = (INamedType)Activator.CreateInstance(
+                var dynamicInputType = (INamedType?)Activator.CreateInstance(
                     typeof(IgnoreInputObjectType<>).MakeGenericType(type),
                     propsToIgnore,
                     $"{type.Name}Input");
@@ -202,7 +205,7 @@ namespace ZES.GraphQL
                                  arg.GetGenericTypeDefinition() == typeof(List<>) &&
                                  Enumerable.Contains(arg.GetGenericArguments()[0].GetInterfaces(), typeof(ICommand));
 
-                    var commandArg = isList ? arg.GetGenericArguments()[0] : arg;
+                    var commandArg = isList ? arg?.GetGenericArguments()[0] : arg;
 
                     if (commandArg != null && Enumerable.Contains(commandArg.GetInterfaces(), typeof(ICommand)))
                     {
@@ -213,6 +216,24 @@ namespace ZES.GraphQL
             }
         }
 
+        /// <inheritdoc />
+        [UsedImplicitly]
+        private class JsonIgnoreTypeInterceptor : TypeInterceptor
+        {
+            /// <inheritdoc />
+            public override void OnBeforeRegisterDependencies(
+                ITypeDiscoveryContext discoveryContext, DefinitionBase? definition,
+                IDictionary<string, object?> contextData)
+            {
+                if (definition is not ObjectTypeDefinition objectDef) return;
+                for (var i = objectDef.Fields.Count - 1; i >= 0; i--)
+                {
+                    if (objectDef.Fields[i].Member?.GetCustomAttribute<JsonIgnoreAttribute>() != null)
+                        objectDef.Fields.RemoveAt(i);
+                }
+            }
+        }        
+        
         [UsedImplicitly]
         private class QueryTypeExtensions : ObjectTypeExtension
         {

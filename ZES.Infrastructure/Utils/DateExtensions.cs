@@ -97,6 +97,17 @@ namespace ZES.Infrastructure.Utils
         }
 
         /// <summary>
+        /// Determines if the given instant falls on a working day in the UK.
+        /// </summary>
+        /// <param name="instant">The instant to check.</param>
+        /// <returns>True if the instant falls on a working day; otherwise, false.</returns>
+        public static bool IsWorkingDay(this Instant instant)
+        {
+            var date = instant.InZone(DateTimeZoneProviders.Tzdb["Europe/London"]).Date.ToDateTimeUnspecified();
+            return Uk.IsWorkingDay(date);
+        }
+
+        /// <summary>
         /// Determines whether the number of working days between the specified instants is within the given limit.
         /// </summary>
         /// <param name="instant">The starting instant.</param>

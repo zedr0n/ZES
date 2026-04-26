@@ -142,6 +142,27 @@ namespace ZES.Infrastructure.Utils
         }
 
         /// <summary>
+        /// Gets the time of the previous day based on the provided time.
+        /// </summary>
+        /// <param name="time">The current time instance.</param>
+        /// <returns>A <see cref="Time"/> instance representing the previous day.</returns>
+        public static Time PreviousDay(this Time time) => time.ToInstant().PreviousDay().ToTime();
+        
+        /// <summary>
+        /// Gets the end of the previous day for the specified instant in the specified timezone.
+        /// </summary>
+        /// <param name="instant">The input instant.</param>
+        /// <param name="zoneId">The timezone ID. Defaults to "Europe/London".</param>
+        /// <returns>The instant representing the end of the previous day in the specified timezone.</returns>
+        public static Instant PreviousDay(this Instant instant, string zoneId = "Europe/London")
+        {
+            var localZone = DateTimeZoneProviders.Tzdb[zoneId];
+            var localDate = instant.InZone(localZone);
+            var previousDay = localDate.Plus(Duration.FromDays(-1));
+            return previousDay.ToInstant().EndOfDay(zoneId);
+        }
+
+        /// <summary>
         /// Calculates the close of day for a given instant in a specified time zone.
         /// </summary>
         /// <param name="instant">The input instant.</param>

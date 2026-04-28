@@ -142,6 +142,29 @@ namespace ZES.Infrastructure.Utils
         }
 
         /// <summary>
+        /// Determines the start of the day for the given instant in the specified time zone.
+        /// </summary>
+        /// <param name="instant">The input instant.</param>
+        /// <param name="zoneId">The time zone identifier. Defaults to "Europe/London".</param>
+        /// <returns>The instant representing the start of the day in the specified time zone.</returns>
+        public static Instant StartOfDay(this Instant instant, string zoneId = "Europe/London")
+        {
+            var localZone = DateTimeZoneProviders.Tzdb[zoneId];
+            var localDate = instant.InZone(localZone);
+            var startOfDay = localDate.Date.At(LocalTime.Midnight).InZoneLeniently(localZone);
+            return startOfDay.ToInstant();
+        }
+
+        /// <summary>
+        /// Determines the start of the specified date in a given time zone.
+        /// </summary>
+        /// <param name="time">The time for which the start of the date is determined.</param>
+        /// <param name="zoneId">The time zone identifier (default is "Europe/London").</param>
+        /// <returns>The start of the date represented as a <see cref="Time"/> object.</returns>
+        public static Time StartOfDay(this Time time, string zoneId = "Europe/London") =>
+            time.ToInstant().StartOfDay().ToTime();
+
+        /// <summary>
         /// Gets the time of the previous day based on the provided time.
         /// </summary>
         /// <param name="time">The current time instance.</param>

@@ -162,7 +162,15 @@ namespace ZES.Interfaces.Clocks
         /// </summary>
         /// <returns>Unx time milliseconds</returns>
         public abstract long ToUnixTimeMilliseconds();
-        
+
+        /// <summary>
+        /// Converts the current time to Unix time in seconds.
+        /// The result represents the number of seconds that have elapsed since
+        /// 00:00:00 UTC on 1 January 1970, excluding leap seconds.
+        /// </summary>
+        /// <returns>The Unix time in seconds.</returns>
+        public long ToUnixTimeSeconds() => ToUnixTimeMilliseconds() / 1000;
+
         /// <inheritdoc />
         public abstract int CompareTo(Time other);
 

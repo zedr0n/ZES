@@ -1,6 +1,7 @@
 using System;
 using System.Globalization;
 using NodaTime;
+using NodaTime.Extensions;
 using NodaTime.Text;
 using PublicHoliday;
 using ZES.Interfaces.Clocks;
@@ -155,6 +156,19 @@ namespace ZES.Infrastructure.Utils
             return startOfDay.ToInstant();
         }
 
+        /// <summary>
+        /// Converts a datetime object to a Time object in given zone.
+        /// </summary>
+        /// <param name="dateTime">Input datetime object.</param>
+        /// <param name="zoneId">The time zone identifier (default is "Europe/London").</param>
+        /// <returns>The converted Time object.</returns>
+        public static Time ToTime(this DateTime dateTime, string zoneId = "Europe/London")
+        {
+            var localZone = DateTimeZoneProviders.Tzdb[zoneId];
+            var time = dateTime.ToLocalDateTime().InZoneLeniently(localZone).ToInstant().ToTime();
+            return time;
+        }
+        
         /// <summary>
         /// Determines the start of the specified date in a given time zone.
         /// </summary>

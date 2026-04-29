@@ -49,5 +49,8 @@ namespace ZES.Infrastructure.Domain
         {
             throw new System.NotImplementedException();
         }
+
+        /// <inheritdoc />
+        public virtual Task<TResult> Handle<T>(T state, TQuery query) => Handle(query);
     }
 }

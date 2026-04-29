@@ -47,6 +47,9 @@ namespace ZES.Infrastructure.Domain
             return await Handle(query as TQuery);
         }
 
+        /// <inheritdoc />
+        public virtual Task<TResult> Handle<TState>(TState state, TQuery query) => Handle(query);
+
         /// <summary>
         /// Convert synchronous handler to async method
         /// </summary>

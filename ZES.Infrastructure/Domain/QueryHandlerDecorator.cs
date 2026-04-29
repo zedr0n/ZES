@@ -50,6 +50,10 @@ namespace ZES.Infrastructure.Domain
             return await tracked.Task;
         }
 
+        /// <inheritdoc />
+        public override Task<TResult> Handle<TState>(TState tState, TQuery query) =>
+            _handler.Handle(tState, query); 
+
         private async Task<TResult> HandleEx(TQuery query)
         {
             try

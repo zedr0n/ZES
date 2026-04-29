@@ -30,5 +30,14 @@ namespace ZES.Interfaces.Domain
         /// <param name="query"> Query object </param>
         /// <returns>Query result</returns>
         Task<TResult> Handle(IQuery<TResult> query);
+
+        /// <summary>
+        /// Handles the query while providing additional state information.
+        /// </summary>
+        /// <typeparam name="TState">The state type used during query handling.</typeparam>
+        /// <param name="state">State information for query processing.</param>
+        /// <param name="query">Query object to handle.</param>
+        /// <returns>Query result.</returns>
+        Task<TResult> Handle<TState>(TState state, TQuery query);
     }
 } 

@@ -20,6 +20,7 @@ using ZES.Infrastructure.Domain;
 using ZES.Infrastructure.EventStore;
 using ZES.Infrastructure.GraphQl;
 using ZES.Infrastructure.Net;
+using ZES.Infrastructure.Projections;
 using ZES.Infrastructure.Replicas;
 using ZES.Infrastructure.Serialization;
 using ZES.Interfaces;
@@ -90,6 +91,9 @@ namespace ZES
             container.Register<IJSonConnector, JsonConnector>(Lifestyle.Singleton);
             container.Register<ICommandHandler<RequestJson>, JsonRequestHandler>(Lifestyle.Singleton);
             container.RegisterSingleton<GraphQlResolver>();
+            
+            container.Register<IProjection<NullState>, DefaultProjection<NullState>>(Lifestyle.Singleton);
+            container.Register<IHistoricalProjection<NullState>, HistoricalProjection<NullState>>(Lifestyle.Singleton);
             
             var store = GetStore(container);
             if (Configuration.EventStoreBackendType == EventStoreBackendType.EventStore)

@@ -36,6 +36,7 @@ namespace ZES.Infrastructure.Projections
         private ActionBlock<Tracked<IEvent>> _updateStateBlock;
         private IDisposable _liveStreamsConnection;
         private IDisposable _allStreamsSubscription;
+        private readonly bool _isNullState = typeof(TState) == typeof(NullState);
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ProjectionBase{TState}"/> class.
@@ -51,6 +52,9 @@ namespace ZES.Infrastructure.Projections
             ActiveTimeline = activeTimeline;
             _streamLocator = streamLocator;
             CancellationSource = new RepeatableCancellationTokenSource();
+            if (_isNullState) 
+                return;
+            
             _start = new Lazy<Task>(() => Task.Run(Start));
             var options = new DataflowOptions { RecommendedParallelismIfMultiThreaded = 1 };
 
@@ -65,6 +69,9 @@ namespace ZES.Infrastructure.Projections
         {
             get
             {
+                if(_isNullState)
+                    return Observable.Return(Listening);
+                
                 var unused = _start.Value;
                 return StatusSubject.AsObservable()
                     .FirstAsync(s => s == Listening)

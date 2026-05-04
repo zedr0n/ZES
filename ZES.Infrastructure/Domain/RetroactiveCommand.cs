@@ -25,6 +25,15 @@ namespace ZES.Infrastructure.Domain
             Ephemeral = command.Ephemeral;
         }
 
+        public override string Guid
+        {
+            get => base.Guid;
+            set {
+                base.Guid = value;
+                Command?.RetroactiveId = MessageId;
+            }
+        }
+        
         /// <summary>
         /// Gets underlying command 
         /// </summary>

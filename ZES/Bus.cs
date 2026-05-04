@@ -87,9 +87,9 @@ namespace ZES
         {
             command.Timeline = _timeline.Id;
             if (command is IRetroactiveCommand)
-                await _flowCompletionService.CompletionAsync(includeRetroactive: waitForRetroactive);//.Timeout(Configuration.Timeout);
-            else if (command.RetroactiveId == default && command.AncestorId == default)
-                await _flowCompletionService.RetroactiveExecution.FirstAsync(b => b == false);
+                await _flowCompletionService.CompletionAsync(includeRetroactive: waitForRetroactive);
+            else if (command.RetroactiveId == null && command.AncestorId == null)
+                await _flowCompletionService.RetroactiveExecution.FirstAsync(b => !b);
 
             _flowCompletionService.TrackMessage(command);
             

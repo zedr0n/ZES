@@ -38,7 +38,7 @@ namespace ZES.Infrastructure.Domain
 
         /// <inheritdoc />
         [JsonIgnore]
-        public string Guid
+        public virtual string Guid
         {
             get;
             set

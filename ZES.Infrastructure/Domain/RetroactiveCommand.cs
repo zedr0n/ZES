@@ -25,6 +25,7 @@ namespace ZES.Infrastructure.Domain
             Ephemeral = command.Ephemeral;
         }
 
+        /// <inheritdoc />
         public override string Guid
         {
             get => base.Guid;

@@ -160,7 +160,7 @@ namespace ZES.Infrastructure.Branching
 
             _log.StopWatch.Start($"{nameof(GetChanges)}.HandleCommand");
             var copy = command.Copy();
-            copy.RetroactiveId = default;
+            //copy.RetroactiveId = default;
             copy.Timeline = branch;
             copy.StoreInLog = false;
             

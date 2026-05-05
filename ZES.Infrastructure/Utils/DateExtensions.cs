@@ -98,6 +98,30 @@ namespace ZES.Infrastructure.Utils
         }
 
         /// <summary>
+        /// Determines whether two instants fall on the same calendar day within the specified time zone.
+        /// </summary>
+        /// <param name="instant">The first instant to compare.</param>
+        /// <param name="otherInstant">The second instant to compare.</param>
+        /// <param name="zoneId">The time zone identifier to use for the date comparison. Defaults to "Europe/London".</param>
+        /// <returns>True if both instants fall on the same calendar day; otherwise, false.</returns>
+        public static bool IsSameDay(this Instant instant, Instant otherInstant, string zoneId = "Europe/London")
+        {
+            var date = instant.InZone(DateTimeZoneProviders.Tzdb[zoneId]).Date;
+            var otherDate = otherInstant.InZone(DateTimeZoneProviders.Tzdb[zoneId]).Date;
+            return date == otherDate;
+        }
+
+        /// <summary>
+        /// Determines whether two instances of <see cref="Time"/> represent the same calendar day in a specified time zone.
+        /// </summary>
+        /// <param name="time">The first <see cref="Time"/> instance.</param>
+        /// <param name="otherTime">The second <see cref="Time"/> instance to compare.</param>
+        /// <param name="zoneId">The time zone identifier to use for the comparison. Defaults to "Europe/London".</param>
+        /// <returns><c>true</c> if both instances represent the same calendar day in the specified time zone; otherwise, <c>false</c>.</returns>
+        public static bool IsSameDay(this Time time, Time otherTime, string zoneId = "Europe/London") 
+            => time.ToInstant().IsSameDay(otherTime.ToInstant(), zoneId);
+        
+        /// <summary>
         /// Determines if the given instant falls on a working day in the UK.
         /// </summary>
         /// <param name="instant">The instant to check.</param>
@@ -123,13 +147,14 @@ namespace ZES.Infrastructure.Utils
         /// <param name="instant">The starting instant.</param>
         /// <param name="otherInstant">The comparison instant.</param>
         /// <param name="days">The maximum number of working days allowed between the two instants. Defaults to 0.</param>
+        /// <param name="zoneId">The time zone ID to use for the check. Defaults to "Europe/London".</param>
         /// <returns>True if the number of working days is less than or equal to the specified limit; otherwise, false.</returns>
         /// <remarks>This method uses the UK bank holiday calendar to determine working days</remarks>
-        public static bool IsWithinPriorWorkingDays(this Instant instant, Instant otherInstant, int days = 0)
+        public static bool IsWithinPriorWorkingDays(this Instant instant, Instant otherInstant, int days = 0, string zoneId = "Europe/London")
         {
-            var date = instant.InZone(DateTimeZoneProviders.Tzdb["Europe/London"]).Date.ToDateTimeUnspecified();
-            var otherDate = otherInstant.InZone(DateTimeZoneProviders.Tzdb["Europe/London"]).Date
-                .ToDateTimeUnspecified();
+            var localZone = DateTimeZoneProviders.Tzdb[zoneId];
+            var date = instant.InZone(localZone).Date.ToDateTimeUnspecified();
+            var otherDate = otherInstant.InZone(localZone).Date.ToDateTimeUnspecified();
             if(date > otherDate)
                 return false;
             

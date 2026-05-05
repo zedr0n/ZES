@@ -44,11 +44,11 @@ public class FlowCompletionService : IFlowCompletionService
         
         flowNode.MarkUncompleted();
         _uncompletedNodes[id] = flowNode;
-        _log.Trace($"Tracking {message.MessageId}({flowNode.CompletionCounter})");
+        _log.Debug($"Tracking {message.MessageId}({flowNode.CompletionCounter})");
         flowNode.CompletionSubject.Subscribe(_ =>
         {
             _uncompletedNodes.TryRemove(id, out var node);
-            _log.Trace($"Completed {message.MessageId}({flowNode.CompletionCounter})");
+            _log.Debug($"Completed {message.MessageId}({flowNode.CompletionCounter})");
         });
         
         if (flowNode.IsRetroactive)
@@ -61,7 +61,7 @@ public class FlowCompletionService : IFlowCompletionService
             return;
         
         var counter = parentNode.AddChild(flowNode);
-        _log.Trace($"Adding tracked child {message.MessageId} to {parentNode.MessageId}({counter})");
+        _log.Debug($"Adding tracked child {message.MessageId} to {parentNode.MessageId}({counter})");
     }
 
     /// <inheritdoc />
@@ -70,7 +70,7 @@ public class FlowCompletionService : IFlowCompletionService
         if (!_flowNodes.TryGetValue(message.MessageId.Id, out var flowNode)) 
             return;
         
-        _log.Trace($"Completing {message.MessageId}({flowNode.CompletionCounter})");
+        _log.Debug($"Completing {message.MessageId}({flowNode.CompletionCounter})");
         flowNode.MarkCompleted();
     }
 

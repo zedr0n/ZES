@@ -135,7 +135,7 @@ namespace ZES.Infrastructure.Domain
             private async Task Handle(IEvent e)
             {
                 // _log.Trace($"{typeof(TSaga).Name}.When({e.EventType}[{e.Stream}])");
-                _log.Trace($"{e.MessageType}", typeof(TSaga).GetFriendlyName());
+                _log.Debug($"{e.MessageType}", typeof(TSaga).GetFriendlyName());
             
                 try
                 {

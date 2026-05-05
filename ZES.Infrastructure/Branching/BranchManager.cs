@@ -126,7 +126,7 @@ namespace ZES.Infrastructure.Branching
             _log.StopWatch.Start("Branch");
             if (_activeTimeline.Id == branchId)
             {
-                _log.Trace($"Already on branch {branchId}");
+                _log.Debug($"Already on branch {branchId}");
                 return _activeTimeline;
             }
 

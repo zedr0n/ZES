@@ -61,7 +61,7 @@ namespace ZES.Infrastructure.Projections
             Build = new BuildFlow(options, this);
 
             StatusSubject.Where(s => s != Sleeping)
-                .Subscribe(s => Log?.Info($"[{Timeline}]{GetType().GetFriendlyName()}/{RuntimeHelpers.GetHashCode(this)}/ : {s.ToString()}"));
+                .Subscribe(s => Log?.Trace($"[{Timeline}]{GetType().GetFriendlyName()}/{RuntimeHelpers.GetHashCode(this)}/ : {s.ToString()}"));
         }
 
         /// <inheritdoc />

@@ -113,7 +113,7 @@ namespace ZES.Infrastructure
                 return;
             
             Interlocked.Increment(ref _parallelCount);
-            Log?.Trace($"{(input is Tracked<IEvent> trackedEvent ? trackedEvent.Value.GetType().GetFriendlyName() : input.GetType().GetFriendlyName())}", (_declaringType ?? GetType().DeclaringType)?.GetFriendlyName());
+            Log?.Debug($"{(input is Tracked<IEvent> trackedEvent ? trackedEvent.Value.GetType().GetFriendlyName() : input.GetType().GetFriendlyName())}", (_declaringType ?? GetType().DeclaringType)?.GetFriendlyName());
 
             var key = _dispatchFunc(input);
             if (key == null)

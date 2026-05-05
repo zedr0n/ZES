@@ -43,14 +43,14 @@ namespace ZES
         /// <inheritdoc />
         public void Alert(IAlert alert)
         {
-            _log.Trace(alert.GetType().GetFriendlyName(), this);
+            _log.Debug(alert.GetType().GetFriendlyName(), this);
             _alerts.OnNext(alert);
         }
 
         /// <inheritdoc />
         public void Event(IEvent e)
         {
-            _log.Trace(e.GetType().GetFriendlyName(), this);
+            _log.Debug(e.GetType().GetFriendlyName(), this);
             _messages.OnNext(e);
         }
     }

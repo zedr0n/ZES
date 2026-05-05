@@ -129,6 +129,16 @@ namespace ZES.Infrastructure.Utils
         }
 
         /// <summary>
+        /// Determines whether the time is within a certain number of prior working days relative to another time.
+        /// </summary>
+        /// <param name="time">The current time to check.</param>
+        /// <param name="otherTime">The reference time to compare against.</param>
+        /// <param name="days">The number of prior working days to check within. Default is 0.</param>
+        /// <returns>True if the time is within the specified number of prior working days relative to the other time; otherwise, false.</returns>
+        public static bool IsWithinPriorWorkingDays(this Time time, Time otherTime, int days = 0) =>
+            time.ToInstant().IsWithinPriorWorkingDays(otherTime.ToInstant(), days);
+
+        /// <summary>
         /// Gets the end of the day for the specified instant in the specified timezone.
         /// </summary>
         /// <param name="instant">The input instant.</param>
@@ -200,6 +210,33 @@ namespace ZES.Infrastructure.Utils
         }
 
         /// <summary>
+        /// Gets the previous working day for a given instant, taking into account weekends and UK bank holidays.
+        /// </summary>
+        /// <param name="instant">The input instant for which the previous working day is calculated.</param>
+        /// <param name="zoneId">The time zone identifier used to evaluate the local date. Default is "Europe/London".</param>
+        /// <returns>The instant representing the start of the previous working day in the specified time zone.</returns>
+        public static Instant PreviousWorkingDay(this Instant instant, string zoneId = "Europe/London")
+        {
+            var localZone = DateTimeZoneProviders.Tzdb[zoneId];
+            var localDate = instant.InZone(localZone);
+            var uk = new UKBankHoliday();
+            localDate = localDate.Plus(Duration.FromDays(-1));
+            while (!uk.IsWorkingDay(localDate.ToDateTimeUnspecified()))
+                localDate = localDate.Plus(Duration.FromDays(-1));
+ 
+            return localDate.ToInstant();
+        }
+
+        /// <summary>
+        /// Gets the previous working day relative to the specified time.
+        /// </summary>
+        /// <param name="time">The current time.</param>
+        /// <param name="zoneId">The time zone identifier. Defaults to "Europe/London".</param>
+        /// <returns>The previous working day as a <see cref="Time"/> object.</returns>
+        public static Time PreviousWorkingDay(this Time time, string zoneId = "Europe/London") =>
+            time.ToInstant().PreviousWorkingDay(zoneId).ToTime();
+
+        /// <summary>
         /// Calculates the close of day for a given instant in a specified time zone.
         /// </summary>
         /// <param name="instant">The input instant.</param>
@@ -212,5 +249,13 @@ namespace ZES.Infrastructure.Utils
             var closeOfDay = localDate.Date.At(new LocalTime(16, 30)).InZoneLeniently(localZone);
             return closeOfDay.ToInstant();
         }
+
+        /// <summary>
+        /// Gets the end of the day for the given time in the specified time zone.
+        /// </summary>
+        /// <param name="time">The input time.</param>
+        /// <param name="zoneId">The time zone identifier. Defaults to "Europe/London".</param>
+        /// <returns>The time representing the close of the day.</returns>
+        public static Time CloseOfDay(this Time time, string zoneId = "Europe/London") => time.ToInstant().CloseOfDay(zoneId).ToTime();
     }
 }

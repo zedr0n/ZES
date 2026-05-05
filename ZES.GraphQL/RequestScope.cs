@@ -34,6 +34,9 @@ namespace ZES.GraphQL
         public void Dispose()
         {
             var query = _context.Request.Query.ToString();
+            if(_context.Operation?.Definition == null)
+                throw new ArgumentNullException(nameof(_context.Operation), "Operation definition cannot be null");
+            
             var request = _context.Operation.Definition;
 
             switch (request.Operation)

@@ -10,9 +10,8 @@ using System.Threading.Tasks;
 using HotChocolate;
 using HotChocolate.Configuration;
 using HotChocolate.Execution;
-using HotChocolate.Execution.Configuration;
+using HotChocolate.Language;
 using HotChocolate.Types;
-using HotChocolate.Types.Descriptors;
 using HotChocolate.Types.Descriptors.Definitions;
 using JetBrains.Annotations;
 using Microsoft.Extensions.DependencyInjection;
@@ -20,7 +19,6 @@ using Microsoft.Extensions.DependencyInjection.Extensions;
 using Newtonsoft.Json;
 using NodaTime;
 using ZES.Infrastructure.GraphQl;
-using ZES.Interfaces;
 using ZES.Interfaces.Branching;
 using ZES.Interfaces.Clocks;
 using ZES.Interfaces.Domain;
@@ -148,7 +146,8 @@ namespace ZES.GraphQL
                 .AddTypeExtension<QueryTypeExtensions>()
                 .AddTypeExtension<MutationTypeExtensions>()
                 .AddDiagnosticEventListener<DiagnosticListener>()
-                .TryAddTypeInterceptor<JsonIgnoreTypeInterceptor>();
+                .TryAddTypeInterceptor<JsonIgnoreTypeInterceptor>()
+                .TryAddTypeInterceptor<DefaultValueTypeInterceptor>();
 
             foreach (var type in _inputTypes.Aggregate(new HashSet<Type>(), (types, catalog) => types.Union(catalog.Types).ToHashSet()))
             {
@@ -232,7 +231,109 @@ namespace ZES.GraphQL
                         objectDef.Fields.RemoveAt(i);
                 }
             }
-        }        
+        }
+
+        [UsedImplicitly]
+        private class DefaultValueTypeInterceptor : TypeInterceptor
+        {
+            public override void OnBeforeRegisterDependencies(
+                ITypeDiscoveryContext discoveryContext,
+                DefinitionBase? definition,
+                IDictionary<string, object?> contextData)
+            {
+                switch (definition)
+                {
+                    case InputObjectTypeDefinition inputDef:
+                        ApplyInputObjectDefaults(inputDef);
+                        break;
+                    case ObjectTypeDefinition objectDef:
+                        ApplyResolverArgumentDefaults(objectDef);
+                        break;
+                }
+            }
+
+            private static void ApplyInputObjectDefaults(InputObjectTypeDefinition inputDef)
+            {
+                var ctor = inputDef.RuntimeType.GetConstructors()
+                    .OrderByDescending(c => c.GetParameters().Length)
+                    .FirstOrDefault();
+
+                if (ctor is null)
+                    return;
+
+                var parameters = ctor.GetParameters()
+                    .Where(p => p.HasDefaultValue)
+                    .ToDictionary(p => p.Name!, StringComparer.OrdinalIgnoreCase);
+
+                foreach (var field in inputDef.Fields)
+                {
+                    if (field.Property is null)
+                        continue;
+
+                    if (!parameters.TryGetValue(field.Property.Name, out var parameter))
+                        continue;
+
+                    ApplyDefault(field, parameter);
+                }
+            }
+
+            private static void ApplyResolverArgumentDefaults(ObjectTypeDefinition objectDef)
+            {
+                foreach (var field in objectDef.Fields)
+                {
+                    var method = field.ResolverMember as MethodInfo
+                        ?? field.Member as MethodInfo;
+
+                    if (method is null)
+                        continue;
+
+                    var parameters = method.GetParameters()
+                        .Where(p => p.HasDefaultValue)
+                        .ToDictionary(p => p.Name!, StringComparer.OrdinalIgnoreCase);
+
+                    foreach (var argument in field.Arguments)
+                    {
+                        if (!parameters.TryGetValue(argument.Name, out var parameter))
+                            continue;
+
+                        ApplyDefault(argument, parameter);
+                    }
+                }
+            }
+
+            private static void ApplyDefault(InputFieldDefinition field, ParameterInfo parameter)
+            {
+                if (field.DefaultValue is not null)
+                    return;
+
+                if (parameter.ParameterType == typeof(bool) &&
+                    parameter.DefaultValue is bool value)
+                {
+                    field.DefaultValue = value
+                        ? BooleanValueNode.True
+                        : BooleanValueNode.False;
+
+                    field.RuntimeDefaultValue = value;
+                }
+            }
+
+            private static void ApplyDefault(ArgumentDefinition argument, ParameterInfo parameter)
+            {
+                if (argument.DefaultValue is not null)
+                    return;
+
+                if (parameter.ParameterType == typeof(bool) &&
+                    parameter.DefaultValue is bool value)
+                {
+                    argument.DefaultValue = value
+                        ? BooleanValueNode.True
+                        : BooleanValueNode.False;
+
+                    argument.RuntimeDefaultValue = value;
+                }
+            }
+        }
+
         
         [UsedImplicitly]
         private class QueryTypeExtensions : ObjectTypeExtension

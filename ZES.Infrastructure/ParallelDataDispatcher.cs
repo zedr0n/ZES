@@ -129,7 +129,6 @@ namespace ZES.Infrastructure
                 await block.InputBlock.SendAsync(input);
                 if (input is ITracked tracked)
                 {
-                    // _token.Register(tracked.Complete);
                     if (!await tracked.Completed.Timeout())
                         throw new TimeoutException();
                 }

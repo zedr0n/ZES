@@ -239,7 +239,7 @@ namespace ZES.Infrastructure
         /// <value>
         /// Default timeout
         /// </value>
-        public static TimeSpan Timeout => TimeSpan.FromSeconds(Debugger.IsAttached ? 600 : 2);
+        public static TimeSpan Timeout => TimeSpan.FromSeconds(Debugger.IsAttached ? 600 : 4);
 
         /// <summary>
         /// Gets default network timeout

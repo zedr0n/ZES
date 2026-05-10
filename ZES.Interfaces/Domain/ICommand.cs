@@ -30,6 +30,11 @@ namespace ZES.Interfaces.Domain
         /// Gets or sets the value indicating whether the command is ephemeral
         /// </summary>
         bool Ephemeral { get; set; }
+
+        /// <summary>
+        /// Gets or sets a value indicating whether the command execution has failed.
+        /// </summary>
+        bool Failed { get; set; }
         
         /// <summary>
         /// Copy the command

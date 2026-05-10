@@ -8,8 +8,6 @@ namespace ZES.Infrastructure.Domain
     /// <inheritdoc cref="ICommand" />
     public class Command : Message<CommandStaticMetadata, CommandMetadata>, ICommand
     {
-        private bool _ephemeral;
-        
         /// <inheritdoc />
         [JsonIgnore]
         public virtual string Target { get; set; }
@@ -66,14 +64,21 @@ namespace ZES.Infrastructure.Domain
         [JsonIgnore]
         public bool Ephemeral
         {
-            get { return _ephemeral; }
+            get;
             set
             {
-                _ephemeral = value;
-                if(_ephemeral)
+                field = value;
+                if(value)
                     StoreInLog = false;
             }
         }
+
+        /// Indicates whether the command execution has failed.
+        /// When set to true, it signals that the corresponding command encountered an error or was unsuccessful.
+        /// The property implementation can vary based on the context. In derived classes, additional logic may be used
+        /// to determine failure, such as aggregating the failure state from other related commands.
+        [JsonIgnore]
+        public virtual bool Failed { get; set; }
 
         /// <inheritdoc />
         public ICommand Copy()

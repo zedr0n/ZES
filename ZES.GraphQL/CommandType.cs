@@ -44,6 +44,7 @@ namespace ZES.GraphQL
             descriptor.Field(t => t.Pure).Ignore();
             descriptor.Field(t => t.RetroactiveId).Ignore();
             descriptor.Field(t => t.Ephemeral).Ignore();
+            descriptor.Field(t => t.Failed).Ignore();
             base.Configure(descriptor);
         }
     }

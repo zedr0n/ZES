@@ -1,3 +1,4 @@
+using Newtonsoft.Json;
 using NodaTime;
 using ZES.Interfaces.Clocks;
 using ZES.Interfaces.Domain;
@@ -34,7 +35,15 @@ namespace ZES.Infrastructure.Domain
                 Command?.RetroactiveId = MessageId;
             }
         }
-        
+
+        /// <inheritdoc />
+        [JsonIgnore]
+        public override bool Failed
+        {
+            get => field || (Command?.Failed ?? false); 
+            set ;
+        }
+
         /// <summary>
         /// Gets underlying command 
         /// </summary>

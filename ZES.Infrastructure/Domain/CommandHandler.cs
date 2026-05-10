@@ -88,7 +88,7 @@ namespace ZES.Infrastructure.Domain
                 }
                 
                 await _handler.Handle(command);
-                if (command.StoreInLog && !command.Pure)
+                if (command.StoreInLog && !command.Pure && !command.Failed)
                     await _commandLog.AppendCommand(command);
             }
             catch (Exception e)
@@ -111,6 +111,7 @@ namespace ZES.Infrastructure.Domain
                     await _commandLog.AddFailedCommand(command);
                     _log.Error($"Command {command} failed : {e}");
                 }
+                command.Failed = true;
             }
         }
     }

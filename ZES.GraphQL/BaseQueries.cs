@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.Linq;
 using System.Reactive.Linq;
 using HotChocolate.Types;
@@ -51,5 +52,12 @@ namespace ZES.GraphQL
         /// </summary>
         /// <returns>Log contents</returns>
         public string Log() => _log.MemoryLogs.LastOrDefault();
+        
+        /// <summary>
+        /// GraphQL log query
+        /// </summary>
+        /// <returns>Log contents</returns>
+        public IEnumerable<string> Logs() => _log.MemoryLogs;
+
     }
 }

@@ -10,6 +10,7 @@ using System.Threading.Tasks;
 using HotChocolate;
 using HotChocolate.Configuration;
 using HotChocolate.Execution;
+using HotChocolate.Execution.Options;
 using HotChocolate.Language;
 using HotChocolate.Types;
 using HotChocolate.Types.Descriptors.Definitions;
@@ -147,7 +148,8 @@ namespace ZES.GraphQL
                 .AddTypeExtension<MutationTypeExtensions>()
                 .AddDiagnosticEventListener<DiagnosticListener>()
                 .TryAddTypeInterceptor<JsonIgnoreTypeInterceptor>()
-                .TryAddTypeInterceptor<DefaultValueTypeInterceptor>();
+                .TryAddTypeInterceptor<DefaultValueTypeInterceptor>()
+                .SetRequestOptions(_ => new RequestExecutorOptions { ExecutionTimeout = TimeSpan.FromMinutes(5)});
 
             foreach (var type in _inputTypes.Aggregate(new HashSet<Type>(), (types, catalog) => types.Union(catalog.Types).ToHashSet()))
             {

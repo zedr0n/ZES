@@ -422,26 +422,23 @@ namespace ZES.Tests
 
             await await bus.CommandAsync(new CreateRoot($"{id}Temp"));
 
-            var statsQuery = new StatsQuery();
             var now = timeline.Now;
-            
-            var historicalQuery = new HistoricalQuery<StatsQuery, Stats>(statsQuery, Time.Default);
+
+            var historicalQuery = new StatsQuery() { Timestamp = Time.Default }; 
             await bus.Equal(historicalQuery, s => s.NumberOfRoots, 0);
-            
-            var liveQuery = new HistoricalQuery<StatsQuery, Stats>(statsQuery, DateTimeOffset.UtcNow.ToInstant().ToTime());
+
+            var liveQuery = new StatsQuery() { Timestamp = DateTimeOffset.UtcNow.ToInstant().ToTime() };
             await bus.Equal(liveQuery, s => s.NumberOfRoots, 2);
 
             await await bus.CommandAsync(new UpdateRoot($"{id}Historical"));            
-            var historicalInfo = new HistoricalQuery<RootInfoQuery, RootInfo>(new RootInfoQuery($"{id}Historical"), now);
+            var historicalInfo = new RootInfoQuery($"{id}Historical") { Timestamp = now };
             await bus.IsTrue(historicalInfo, i => i.CreatedAt == i.UpdatedAt);
             await bus.IsTrue(new RootInfoQuery($"{id}Historical"), i => i.UpdatedAt > i.CreatedAt);
 
-            historicalInfo =
-                new HistoricalQuery<RootInfoQuery, RootInfo>(new RootInfoQuery($"{id}Historical"), DateTimeOffset.UtcNow.ToInstant().ToTime());
+            historicalInfo = new RootInfoQuery($"{id}Historical") { Timestamp = DateTimeOffset.UtcNow.ToInstant().ToTime() };
             await bus.IsTrue(historicalInfo, i => i.UpdatedAt > i.CreatedAt);
             
-            historicalInfo =
-                new HistoricalQuery<RootInfoQuery, RootInfo>(new RootInfoQuery($"{id}Temp"), DateTimeOffset.UtcNow.ToInstant().ToTime());
+            historicalInfo = new RootInfoQuery($"{id}Temp") { Timestamp = DateTimeOffset.UtcNow.ToInstant().ToTime() };
             await bus.IsTrue(historicalInfo, i => i.UpdatedAt == i.CreatedAt);
         }
 

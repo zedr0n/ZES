@@ -257,7 +257,7 @@ namespace ZES.Tests
             await manager.Merge("Branch");
             
             await bus.IsTrue(new LastRecordQuery(id), r => (int)r.Value == 1);
-            await bus.IsTrue(new HistoricalQuery<LastRecordQuery, LastRecord>(new LastRecordQuery(id), then), r => (int)r.Value == 10);
+            await bus.IsTrue(new LastRecordQuery(id) { Timestamp = then }, r => (int)r.Value == 10);
         }
         
         [Fact]

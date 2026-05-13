@@ -189,7 +189,7 @@ namespace ZES.Tests
             messageQueue.Alert(new InvalidateProjections());
 
             await bus.Equal(new RootInfoQuery(id), r => r.UpdatedAt, lastTime);
-            await bus.Equal(new HistoricalQuery<RootInfoQuery, RootInfo>(new RootInfoQuery(id), e.Timestamp), r => r.UpdatedAt, e.Timestamp);
+            await bus.Equal(new RootInfoQuery(id) {Timestamp = e.Timestamp }, r => r.UpdatedAt, e.Timestamp);
             
             await graph.Serialise(nameof(CanInsertIntoStream));
             log.Info(log.StopWatch.Totals);
@@ -271,7 +271,7 @@ namespace ZES.Tests
             await graph.Serialise(nameof(CanInsertIntoStreamMultipleBranch));
             
             await bus.Equal(new RootInfoQuery(id), r => r.UpdatedAt, lastTime);
-            await bus.Equal(new HistoricalQuery<RootInfoQuery, RootInfo>(new RootInfoQuery(id), e.Timestamp), r => r.UpdatedAt, e.Timestamp);
+            await bus.Equal(new RootInfoQuery(id) { Timestamp = e.Timestamp}, r => r.UpdatedAt, e.Timestamp);
         }
 
         [Fact]
@@ -292,7 +292,7 @@ namespace ZES.Tests
             await bus.IsTrue(new RootInfoQuery($"{id}Copy"), info => info.CreatedAt < midTime);
 
             await await bus.CommandAsync(new RetroactiveCommand<UpdateRoot>(new UpdateRoot(id), lastTime));
-            await bus.Equal(new HistoricalQuery<RootInfoQuery, RootInfo>(new RootInfoQuery(id), lastTime), r => r.UpdatedAt, lastTime);
+            await bus.Equal(new RootInfoQuery(id) { Timestamp = lastTime }, r => r.UpdatedAt, lastTime);
             
             await await bus.CommandAsync(new RetroactiveCommand<CreateRoot>(new CreateRoot($"{id}Last"), lastTime));
             messageQueue.Alert(new InvalidateProjections());
@@ -301,7 +301,7 @@ namespace ZES.Tests
             await await bus.CommandAsync(
                 new RetroactiveCommand<UpdateRoot>(new UpdateRoot($"{id}Last"), lastTime + Duration.FromSeconds(1)));
             
-            await bus.Equal(new HistoricalQuery<RootInfoQuery, RootInfo>(new RootInfoQuery($"{id}Last"), lastTime + Duration.FromSeconds(1)), r => r.UpdatedAt, lastTime + Duration.FromSeconds(1));
+            await bus.Equal(new RootInfoQuery($"{id}Last") { Timestamp = lastTime + Duration.FromSeconds(1)}, r => r.UpdatedAt, lastTime + Duration.FromSeconds(1));
             
             await await bus.CommandAsync(new RetroactiveCommand<CreateRoot>(new CreateRoot($"{id}Mid"), midTime));
             messageQueue.Alert(new InvalidateProjections());

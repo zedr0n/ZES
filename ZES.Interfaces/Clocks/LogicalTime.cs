@@ -11,7 +11,7 @@ namespace ZES.Interfaces.Clocks
     /// <summary>
     /// Logical time record
     /// </summary>
-    [DebuggerDisplay("{ToExtendedIso()}")]
+    [DebuggerDisplay("{ToExtendedIso(), nq}")]
     public sealed record LogicalTime(long l, long c) : Time, IComparable<LogicalTime>, IComparable
     {
         /// <summary>
@@ -188,6 +188,9 @@ namespace ZES.Interfaces.Clocks
             }
         }
 
+        /// <inheritdoc />
+        public override string ToString() => ToExtendedIso();
+        
         /// <inheritdoc />
         public override string ToString(string format, IFormatProvider formatProvider) =>
             Instant.FromUnixTimeTicks(l).ToString(format, formatProvider);

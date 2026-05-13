@@ -192,19 +192,11 @@ namespace ZES.Utils
                     baseType = baseType.BaseType;
                 }
 
-                var iHistoricalQuery = typeof(HistoricalQuery<,>).MakeGenericType(q, result);
-                var iHistoricalQueryHandler = typeof(IQueryHandler<,>).MakeGenericType(iHistoricalQuery, result);
-                
-                var historicalHandler = typeof(HistoricalQueryHandler<,,>).MakeGenericType(q, result, tState);
-                if (isSingle)
-                    historicalHandler = typeof(HistoricalSingleQueryHandler<,,>).MakeGenericType(q, result, tState);
-
                 var lifestyle = isSingle ? Lifestyle.Transient : Lifestyle.Singleton; 
                 if (handler.GetCustomAttribute<TransientAttribute>() != null)
                     lifestyle = Lifestyle.Transient;
                 
                 c.RegisterConditional(iQueryHandler, handler, lifestyle, x => !x.Handled);
-                c.RegisterConditional(iHistoricalQueryHandler, historicalHandler, Lifestyle.Transient, x => !x.Handled);
             }
         }
         
@@ -226,12 +218,6 @@ namespace ZES.Utils
                 registeredStates.Add(tState);
 
                 c.RegisterConditional(
-                    projectionInterface,
-                    typeof(HistoricalProjection<>).MakeGenericType(tState),
-                    Lifestyle.Transient,
-                    x => x.Consumer != null && x.Consumer.ImplementationType.IsClosedTypeOf(typeof(HistoricalQueryHandler<,,>)));
-                
-                c.RegisterConditional(
                     typeof(IHistoricalProjection<>).MakeGenericType(tState),
                     typeof(HistoricalProjection<>).MakeGenericType(tState),
                     Lifestyle.Transient,
@@ -248,11 +234,6 @@ namespace ZES.Utils
                 var projectionInterface = typeof(IProjection<>).MakeGenericType(tState);
                 var projection = typeof(DefaultProjection<>).MakeGenericType(tState);
                 
-                c.RegisterConditional(
-                    projectionInterface,
-                    typeof(HistoricalProjection<>).MakeGenericType(tState),
-                    Lifestyle.Transient,
-                    x => x.Consumer != null && x.Consumer.ImplementationType.IsClosedTypeOf(typeof(HistoricalQueryHandler<,,>)));
                 c.RegisterConditional(
                     typeof(IHistoricalProjection<>).MakeGenericType(tState),
                     typeof(HistoricalProjection<>).MakeGenericType(tState),

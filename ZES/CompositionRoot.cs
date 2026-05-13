@@ -248,8 +248,7 @@ namespace ZES
                 Lifestyle.Transient,
                 c =>
                     c.Consumer == null ||
-                    (!c.Consumer.ImplementationType.IsClosedTypeOf(typeof(HistoricalQueryHandler<,,>)) && 
-                    !c.Consumer.ImplementationType.IsClosedTypeOf(typeof(QueryHandlerDecorator<,>))));
+                    !c.Consumer.ImplementationType.IsClosedTypeOf(typeof(QueryHandlerDecorator<,>)));
 
             container.Register<IBranchManager, BranchManager>(Lifestyle.Singleton);
             container.Register<IRetroactive, Retroactive>(Lifestyle.Singleton);

@@ -107,12 +107,14 @@ namespace ZES.Infrastructure.Net
         private static string GetCacheKey(string url)
         {
             var tokens = url.Split(';');
-            var uri = new Uri(tokens[0]);
+            if (!Uri.TryCreate(tokens[0], UriKind.Absolute, out var uri))
+                return tokens[0];
+            
             var query = string.Join(
                 "&",
                 uri.Query.TrimStart('?')
                     .Split('&', StringSplitOptions.RemoveEmptyEntries)
-                    .Where(p => !IsSecretKey(p.Split('=', 2)[0])));
+                    .Where(p => !IsSecretKey(GetQueryKey(p))));
 
             return new UriBuilder(uri)
             {
@@ -120,11 +122,18 @@ namespace ZES.Infrastructure.Net
             }.Uri.ToString();
         }
 
+        private static string GetQueryKey(string parameter)
+        {
+            var separatorIndex = parameter.IndexOf('=');
+            var key = separatorIndex < 0 ? parameter : parameter[..separatorIndex];
+            return Uri.UnescapeDataString(key);
+        }
+
         private static bool IsSecretKey(string key) =>
-            key.Equals("api_token", StringComparison.OrdinalIgnoreCase) ||
-            key.Equals("apikey", StringComparison.OrdinalIgnoreCase) ||
-            key.Equals("apiKey", StringComparison.OrdinalIgnoreCase) ||
-            key.Equals("token", StringComparison.OrdinalIgnoreCase);        
+            key != null &&
+            (key.Equals("api_token", StringComparison.OrdinalIgnoreCase) ||
+             key.Equals("apikey", StringComparison.OrdinalIgnoreCase) ||
+             key.Equals("token", StringComparison.OrdinalIgnoreCase));        
         
         private class ConnectorFlow : Dataflow<TrackedResult<string, string>>
         {

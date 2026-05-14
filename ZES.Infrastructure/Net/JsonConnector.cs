@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Concurrent;
+using System.Linq;
 using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
@@ -9,6 +10,7 @@ using ZES.Infrastructure.Utils;
 using ZES.Interfaces;
 using ZES.Interfaces.Infrastructure;
 using ZES.Interfaces.Net;
+using ZES.Interfaces.Recording;
 
 namespace ZES.Infrastructure.Net
 {
@@ -18,14 +20,17 @@ namespace ZES.Infrastructure.Net
         private readonly ConcurrentDictionary<string, HttpClient> _httpClients = new();
         private readonly ConcurrentDictionary<string, AsyncLazy<string>> _jsonData = new();
         private readonly ILog _log;
+        private readonly IRecordLog _recordLog;
         
         /// <summary>
         /// Initializes a new instance of the <see cref="JsonConnector"/> class.
         /// </summary>
         /// <param name="log">Log service</param>
-        public JsonConnector(ILog log)
+        /// <param name="recordLog">Record log service</param>
+        public JsonConnector(ILog log, IRecordLog recordLog)
         {
             _log = log;
+            _recordLog = recordLog;
         }
         
         /// <inheritdoc />
@@ -50,25 +55,27 @@ namespace ZES.Infrastructure.Net
         /// <inheritdoc />
         public async Task<bool> SetAsync(string url, string value)
         {
-            var tokens = url.Split(';');
-            var uri = tokens[0];
+            var key = GetCacheKey(url);
 
-            var res = await _jsonData.GetOrAdd(uri, new AsyncLazy<string>(() => value));
+            var res = await _jsonData.GetOrAdd(key, new AsyncLazy<string>(() => value));
             return res == value;
         }
 
         private AsyncLazy<string> GetAsyncImpl(HttpClient w, HttpRequestMessage request, string url) =>
             new(() =>
             {
-                _log.Info($"Initiating json connection to {url}");
+                var logUrl = GetCacheKey(url);
+                _log.Info($"Initiating json connection to {logUrl}");
                 return w.SendAsync(request)
-                    .Timeout(timeout: Configuration.NetworkTimeout, message: $"Connection to {url} timed out...")
+                    .Timeout(timeout: Configuration.NetworkTimeout, message: $"Connection to {logUrl} timed out...")
                     .ContinueWith(x => x.Result.Content.ReadAsStringAsync()).Unwrap();
             });
         
         private async Task<string> GetAsync(string url, string apiKey = "", bool cache = true) 
         {
             var uri = new Uri(url);
+            var cacheKey = GetCacheKey(url);   // sanitized URL, no secrets
+            
             var request = new HttpRequestMessage()
             {
                 RequestUri = uri,
@@ -80,11 +87,45 @@ namespace ZES.Infrastructure.Net
                 EnableMultipleHttp2Connections = true
             }));
             request.Headers.Add("apikey", apiKey);
-            var task = cache ? _jsonData.GetOrAdd(url, s => GetAsyncImpl(httpClient, request, s)) : GetAsyncImpl(httpClient, request, url); 
+           
+            // 1. Recorded/test fixture values always win, even for nocache.
+            if (_jsonData.TryGetValue(cacheKey, out var existing))
+                return await existing;
+            
+            var task = cache
+                ? _jsonData.GetOrAdd(cacheKey, _ => GetAsyncImpl(httpClient, request, url))
+                : GetAsyncImpl(httpClient, request, url);            
+            
             var json = await task;
-            return string.IsNullOrEmpty(json) ? null : json;
+            if (string.IsNullOrEmpty(json))
+                return null;
+
+            _recordLog.AddConnectorResult(cacheKey, json);
+            return json;
         }
 
+        private static string GetCacheKey(string url)
+        {
+            var tokens = url.Split(';');
+            var uri = new Uri(tokens[0]);
+            var query = string.Join(
+                "&",
+                uri.Query.TrimStart('?')
+                    .Split('&', StringSplitOptions.RemoveEmptyEntries)
+                    .Where(p => !IsSecretKey(p.Split('=', 2)[0])));
+
+            return new UriBuilder(uri)
+            {
+                Query = query
+            }.Uri.ToString();
+        }
+
+        private static bool IsSecretKey(string key) =>
+            key.Equals("api_token", StringComparison.OrdinalIgnoreCase) ||
+            key.Equals("apikey", StringComparison.OrdinalIgnoreCase) ||
+            key.Equals("apiKey", StringComparison.OrdinalIgnoreCase) ||
+            key.Equals("token", StringComparison.OrdinalIgnoreCase);        
+        
         private class ConnectorFlow : Dataflow<TrackedResult<string, string>>
         {
             public ConnectorFlow(DataflowOptions dataflowOptions, JsonConnector connector) 

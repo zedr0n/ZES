@@ -21,6 +21,13 @@ namespace ZES.Interfaces.Recording
         /// <param name="query">Query to record</param>
         /// <param name="result">Query result</param>
         void AddQuery(string query, string result);
+
+        /// <summary>
+        /// Record a JSON connector response required for deterministic replay.
+        /// </summary>
+        /// <param name="url">Sanitized connector cache key.</param>
+        /// <param name="value">JSON response value.</param>
+        void AddConnectorResult(string url, string value);
         
         /// <summary>
         /// Persist the log to file

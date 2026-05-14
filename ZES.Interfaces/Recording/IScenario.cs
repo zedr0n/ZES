@@ -19,6 +19,11 @@ namespace ZES.Interfaces.Recording
         List<IScenarioResult> Results { get; }
 
         /// <summary>
+        /// Gets cached JSON connector responses required to replay the scenario without network access.
+        /// </summary>
+        List<IConnectorResult> ConnectorResults { get; }
+
+        /// <summary>
         /// Sort the scenario actions
         /// </summary>
         void Sort();
@@ -61,5 +66,21 @@ namespace ZES.Interfaces.Recording
         /// <param name="other">Other scenario results</param>
         /// <returns>True if result is the same</returns>
         bool Equal(IScenarioResult other);
+    }
+
+    /// <summary>
+    /// Cached JSON connector response captured while recording a scenario.
+    /// </summary>
+    public interface IConnectorResult
+    {
+        /// <summary>
+        /// Gets the sanitized connector cache key.
+        /// </summary>
+        string Url { get; }
+
+        /// <summary>
+        /// Gets the JSON response associated with the connector cache key.
+        /// </summary>
+        string Value { get; }
     }
 }

@@ -5,6 +5,7 @@ using Microsoft.Extensions.DependencyInjection;
 using NLog;
 using SimpleInjector;
 using ZES.Interfaces;
+using ZES.Interfaces.Net;
 using ZES.Interfaces.Recording;
 
 namespace ZES.GraphQL
@@ -61,8 +62,12 @@ namespace ZES.GraphQL
             
             var provider = container.GetInstance<ISchemaProvider>();
             var recordLog = container.GetInstance<IRecordLog>();
+            var connector = container.GetInstance<IJSonConnector>();
 
             var scenario = await recordLog.Load(logFile);
+            foreach (var result in scenario.ConnectorResults)
+                await connector.SetAsync(result.Url, result.Value);
+
             var replayResult = await provider.Replay(scenario);
 
             replayResult.Result = recordLog.Validate(scenario, replayResult);

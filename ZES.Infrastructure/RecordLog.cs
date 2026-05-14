@@ -57,6 +57,15 @@ namespace ZES.Infrastructure
             _scenario.Value.AddResult(query, result);
         }
 
+        /// <inheritdoc />
+        public void AddConnectorResult(string url, string value)
+        {
+            if (string.IsNullOrEmpty(url) || string.IsNullOrEmpty(value))
+                return;
+
+            _scenario.Value.AddConnectorResult(url, value);
+        }
+
         private static bool IsLogQuery(string query)
         {
             if (query == null)
@@ -139,11 +148,19 @@ namespace ZES.Infrastructure
             /// </summary>
             public List<ScenarioResult> Results { get; set; } = new List<ScenarioResult>();
 
+            /// <summary>
+            /// Gets or sets cached JSON connector responses needed by scenario replay.
+            /// </summary>
+            public List<ConnectorResult> ConnectorResults { get; set; } = new List<ConnectorResult>();
+
             /// <inheritdoc/>
             List<IScenarioMutation> IScenario.Requests => Requests.OfType<IScenarioMutation>().ToList();
             
             /// <inheritdoc/>
             List<IScenarioResult> IScenario.Results => Results.OfType<IScenarioResult>().ToList();
+
+            /// <inheritdoc/>
+            List<IConnectorResult> IScenario.ConnectorResults => ConnectorResults.OfType<IConnectorResult>().ToList();
 
             /// <inheritdoc />
             public void Sort()
@@ -169,6 +186,23 @@ namespace ZES.Infrastructure
             public void AddResult(string query, string result)
             {
                 Results.Add(new ScenarioResult(query, result));
+            }
+
+            /// <summary>
+            /// Add or update a cached connector response.
+            /// </summary>
+            /// <param name="url">Sanitized connector cache key</param>
+            /// <param name="value">JSON response value</param>
+            public void AddConnectorResult(string url, string value)
+            {
+                var existing = ConnectorResults.SingleOrDefault(r => r.Url == url);
+                if (existing != null)
+                {
+                    existing.Value = value;
+                    return;
+                }
+
+                ConnectorResults.Add(new ConnectorResult(url, value));
             }
 
             /// <inheritdoc />
@@ -217,6 +251,27 @@ namespace ZES.Infrastructure
                 {
                     return Result == other.Result;
                 }
+            }
+
+            /// <inheritdoc />
+            public class ConnectorResult : IConnectorResult
+            {
+                /// <summary>
+                /// Initializes a new instance of the <see cref="ConnectorResult"/> class.
+                /// </summary>
+                /// <param name="url">Sanitized connector cache key</param>
+                /// <param name="value">JSON response value</param>
+                public ConnectorResult(string url, string value)
+                {
+                    Url = url;
+                    Value = value;
+                }
+
+                /// <inheritdoc />
+                public string Url { get; }
+
+                /// <inheritdoc />
+                public string Value { get; set; }
             }
         }
     }

@@ -52,7 +52,18 @@ namespace ZES.Infrastructure
         /// <inheritdoc />
         public void AddQuery(string query, string result)
         {
+            if (IsLogQuery(query))
+                return;
             _scenario.Value.AddResult(query, result);
+        }
+
+        private static bool IsLogQuery(string query)
+        {
+            if (query == null)
+                return false;
+
+            var normalized = string.Concat(query.Where(c => !char.IsWhiteSpace(c))).ToLowerInvariant();
+            return normalized is "{log}" or "{logs}" or "query{log}" or "query{logs}";
         }
 
         /// <inheritdoc />

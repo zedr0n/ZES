@@ -72,10 +72,10 @@ namespace ZES.Infrastructure.Domain
             else if (query.Timestamp != null)
             {
                 var historicalProjection = Manager.GetHistoricalProjection<TState>(id);
-                if (supportsHistoricalResults && historicalProjection is IProjectionSinkHost<TState> sinkHost)
+                if (query.AdditionalTimestamps != null && supportsHistoricalResults && historicalProjection is IProjectionSinkHost<TState> sinkHost)
                 {
                     sinkHost.ClearSinks();
-                    sinks = query.AdditionalTimestamps?.Select(x =>
+                    sinks = query.AdditionalTimestamps.Select(x =>
                         new HistoricalProjectionSink<TState>(historicalProjection) { Timestamp = x }).ToList() ?? []; 
                     sinkHost.AddSinks(sinks);
                 }
@@ -93,7 +93,7 @@ namespace ZES.Infrastructure.Domain
 
             await projection.Ready;
             var result = await Handle(projection as IProjectionState<TState>, query);
-            if (supportsHistoricalResults)
+            if (supportsHistoricalResults && query.AdditionalTimestamps != null)
             {
                 var historicalResults = (IHistoricalResults<TResult>)result;
                 if (historicalResults.HistoricalResults == null)

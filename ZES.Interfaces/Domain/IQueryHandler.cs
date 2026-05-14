@@ -1,4 +1,5 @@
 using System.Threading.Tasks;
+using ZES.Interfaces.Clocks;
 
 namespace ZES.Interfaces.Domain
 {

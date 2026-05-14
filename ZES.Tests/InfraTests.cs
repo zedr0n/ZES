@@ -442,6 +442,34 @@ namespace ZES.Tests
             await bus.IsTrue(historicalInfo, i => i.UpdatedAt == i.CreatedAt);
         }
 
+        [Fact]
+        public async Task CanHistoricalProjectRootAtMultipleTimes()
+        {
+            var container = CreateContainer();
+            var bus = container.GetInstance<IBus>();
+
+            var id = $"{nameof(CanHistoricalProjectRootAtMultipleTimes)}-Root";
+            
+            var date = new LocalDateTime(2023, 6, 1, 12, 30, 0, 0).InUtc().ToInstant().ToTime();
+            var date2 = new LocalDateTime(2023, 12, 1, 12, 30, 0, 0).InUtc().ToInstant().ToTime();
+            
+            await bus.Command(new CreateRoot($"{id}Historical").ToRetroactiveCommand(date));
+            await bus.Command(new CreateRoot($"{id}Temp").ToRetroactiveCommand(date2));
+
+            var query = new StatsQuery()
+            {
+                Timestamp = DateTimeOffset.UtcNow.ToInstant().ToTime(),
+                AdditionalTimestamps = [Time.Default, date, date2]
+            };
+           
+            var stats = await bus.QueryAsync(query);
+            Assert.Equal(2, stats.NumberOfRoots);
+            
+            Assert.Equal(0, stats.HistoricalResults[Time.Default].NumberOfRoots);
+            Assert.Equal(1, stats.HistoricalResults[date].NumberOfRoots);
+            Assert.Equal(2, stats.HistoricalResults[date2].NumberOfRoots);
+        }
+
         [Theory]
         [InlineData(1000)]
         public async Task CanProjectALotOfRoots(int numRoots)

@@ -1,21 +1,16 @@
-using System.Threading;
+using System.Collections.Generic;
+using Newtonsoft.Json;
+using ZES.Interfaces.Clocks;
 using ZES.Interfaces.Domain;
 
 namespace ZES.Tests.Domain.Queries
 {
-    public class Stats : IState
+    public class Stats(int numberOfRoots) : IHistoricalState, IHistoricalResults<Stats>
     {
-        private int _numberOfRoots;
-
-        public int NumberOfRoots
-        {
-            get => _numberOfRoots;
-            set => _numberOfRoots = value;
-        }
-
-        public void Increment()
-        {
-            Interlocked.Increment(ref _numberOfRoots);
-        }
+        public Stats() : this(0) { }
+        public int NumberOfRoots => numberOfRoots;
+        /// <inheritdoc/>
+        [JsonIgnore]
+        public Dictionary<Time, Stats> HistoricalResults { get; } = new();
     }
 }

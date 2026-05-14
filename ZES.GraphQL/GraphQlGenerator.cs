@@ -1,6 +1,7 @@
 using System.Linq;
 using System.Reflection;
 using Antlr4.StringTemplate;
+using Newtonsoft.Json;
 using ZES.Interfaces.Domain;
 
 namespace ZES.GraphQL
@@ -44,10 +45,9 @@ namespace ZES.GraphQL
         {
             var constructor = query.GetType().GetConstructors().SingleOrDefault(c => c.GetParameters().Length > 0);
             var allParams = string.Empty;
-            var defaultTimestamp = query.Timestamp == default;
             if (constructor != null)
             {
-                var paramsProps = query.GetType().GetProperties(BindingFlags.Public | BindingFlags.Instance).Where(p => p.Name != nameof(IQuery.Timestamp) || !defaultTimestamp);
+                var paramsProps = query.GetType().GetProperties(BindingFlags.Public | BindingFlags.Instance).Where(p => p.Name != nameof(IQuery.Timestamp) && p.Name != nameof(IQuery.AdditionalTimestamps));
                 allParams = string.Join(",", paramsProps.Select(p => $"{p.Name.ToLowerFirst()} : {BackQuote(p)}{p.GetValue(query)}{BackQuote(p)}"));
             }
 
@@ -57,7 +57,7 @@ namespace ZES.GraphQL
             st.Add(MultiQuery.NameField, query.GetType().Name.ToLowerFirst());
 
             var resultProps = typeof(TResult).GetProperties(BindingFlags.DeclaredOnly | BindingFlags.Public |
-                                                      BindingFlags.Instance);
+                                                      BindingFlags.Instance).Where(x => x.GetCustomAttribute<JsonIgnoreAttribute>() == null);
             var allResults = string.Join(",", resultProps.Select(p => $"{p.Name.ToLowerFirst()}"));
                 
             st.Add(MultiQuery.ParamsField, allParams);

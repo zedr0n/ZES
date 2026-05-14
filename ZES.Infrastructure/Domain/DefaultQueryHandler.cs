@@ -24,7 +24,7 @@ namespace ZES.Infrastructure.Domain
         }
 
         /// <inheritdoc />
-        protected override async Task<TResult> Handle(IProjection<TState> projection, TQuery query)
+        protected override async Task<TResult> Handle(IProjectionState<TState> projection, TQuery query)
             => projection?.State as TResult;
     }
 

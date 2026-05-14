@@ -188,7 +188,10 @@ namespace ZES.Interfaces.Clocks
             }
         }
 
-        /// <inheritdoc />
+        /// <summary>
+        /// Converts the logical time to its string representation using the extended ISO format.
+        /// </summary>
+        /// <returns>A string representation of the logical time in extended ISO format.</returns>
         public override string ToString() => ToExtendedIso();
         
         /// <inheritdoc />

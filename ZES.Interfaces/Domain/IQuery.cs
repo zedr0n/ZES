@@ -1,4 +1,4 @@
-using NodaTime;
+using System.Collections.Generic;
 using ZES.Interfaces.Clocks;
 
 namespace ZES.Interfaces.Domain
@@ -17,6 +17,11 @@ namespace ZES.Interfaces.Domain
         /// Gets or sets the query timestamp
         /// </summary>
         Time Timestamp { get; set; }
+
+        /// <summary>
+        /// Gets or sets the collection of additional timestamps to include in the query.
+        /// </summary>
+        IReadOnlyList<Time> AdditionalTimestamps { get; set; }
     }
 
     /// <summary>
@@ -25,21 +30,5 @@ namespace ZES.Interfaces.Domain
     /// <typeparam name="TResult">Query result type</typeparam>
     public interface IQuery<TResult> : IQuery
     {
-    }
-    
-    /// <summary>
-    /// Historical derivative of underlying query
-    /// </summary>
-    /// <typeparam name="TQuery">Underlying query type</typeparam>
-    /// <typeparam name="TResult">Query result type</typeparam>
-    public interface IHistoricalQuery<out TQuery, TResult> : IQuery<TResult>
-    {
-        /// <summary>
-        /// Gets underlying query
-        /// </summary>
-        /// <value>
-        /// Underlying query
-        /// </value>
-        TQuery Query { get; }
     }
 }

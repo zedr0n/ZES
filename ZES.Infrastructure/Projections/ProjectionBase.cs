@@ -25,8 +25,26 @@ using static ZES.Interfaces.Domain.ProjectionStatus;
 
 namespace ZES.Infrastructure.Projections
 {
-    /// <inheritdoc />
-    public abstract class ProjectionBase<TState> : IProjection<TState>
+    /// Interface defining methods to manage projection sinks for a specific projection state.
+    /// Represents the host responsible for adding and clearing sinks associated with a projection.
+    /// Typically implemented by classes that manage observable state changes in projections.
+    internal interface IProjectionSinkHost<in TState>
+    {
+        /// <summary>
+        /// Adds a collection of projection sinks that will manage the projection's state
+        /// and process events to update that state.
+        /// </summary>
+        /// <param name="sinks">The collection of projection sinks to be added.</param>
+        void AddSinks(IEnumerable<IProjectionSink<TState>> sinks);
+
+        /// <summary>
+        /// Clears all registered projection sinks from the current projection.
+        /// </summary>
+        void ClearSinks();
+    }
+
+    /// <inheritdoc cref="IProjectionRuntime{TState}" />
+    public abstract class ProjectionBase<TState> : IProjectionRuntime<TState>, IProjectionSinkHost<TState>
         where TState : new()
     {
         private readonly Lazy<Task> _start;
@@ -37,6 +55,11 @@ namespace ZES.Infrastructure.Projections
         private IDisposable _liveStreamsConnection;
         private IDisposable _allStreamsSubscription;
         private readonly bool _isNullState = typeof(TState) == typeof(NullState);
+        
+        /// Represents a collection of projection sinks that process and manage projection states.
+        /// Each sink is responsible for handling events and maintaining its own state of type TState.
+        /// This property provides a mechanism to dynamically manage and iterate over multiple sinks.
+        private readonly List<IProjectionSink<TState>> _sinks = [];
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ProjectionBase{TState}"/> class.
@@ -63,7 +86,7 @@ namespace ZES.Infrastructure.Projections
             StatusSubject.Where(s => s != Sleeping)
                 .Subscribe(s => Log?.Trace($"[{Timeline}]{GetType().GetFriendlyName()}/{RuntimeHelpers.GetHashCode(this)}/ : {s.ToString()}"));
         }
-
+        
         /// <inheritdoc />
         public IObservable<ProjectionStatus> Ready
         {
@@ -109,7 +132,7 @@ namespace ZES.Infrastructure.Projections
         /// <summary>
         /// Gets projection version state
         /// </summary>
-        public ConcurrentDictionary<string, int> Versions { get; } = new ConcurrentDictionary<string, int>();
+        public ConcurrentDictionary<string, int> Versions { get; } = new();
         
         /// <summary>
         /// Gets projection cancellation token
@@ -184,6 +207,17 @@ namespace ZES.Infrastructure.Projections
             return tracked.Task;
         }
 
+        /// <inheritdoc />
+        public void Reset()
+        {
+            lock (State)
+            {
+                State = new TState();
+            }
+            foreach(var sink in _sinks)
+                sink.Reset();
+        }
+
         /// <summary>
         /// Cancel the projection
         /// </summary>
@@ -212,12 +246,9 @@ namespace ZES.Infrastructure.Projections
 
             CancellationSource.Dispose();
             Versions.Clear();
-            lock (State)
-            {
-                State = new TState();
-            }
+            Reset();
 
-            var dispatcher = new ProjectionDispatcher<TState>(Configuration.DataflowOptions, this);
+            var dispatcher = new ProjectionDispatcher<TState>(Configuration.DataflowOptions, this, _sinks);
 
             CancellationToken.Register(async () =>
             {
@@ -362,6 +393,21 @@ namespace ZES.Infrastructure.Projections
 
             /// <inheritdoc />
             public override ITargetBlock<InvalidateProjections> InputBlock { get; }
+        }
+
+        /// <inheritdoc />
+        public void AddSinks(IEnumerable<IProjectionSink<TState>> sinks)
+        {
+            if (sinks == null)
+                return;
+            
+            _sinks.AddRange(sinks);
+        }
+
+        /// <inheritdoc />
+        public void ClearSinks()
+        {
+            _sinks.Clear();
         }
     }
 }

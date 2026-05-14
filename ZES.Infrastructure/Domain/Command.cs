@@ -41,11 +41,10 @@ namespace ZES.Infrastructure.Domain
             get;
             set
             {
-                if (value == null)
-                    return;
                 field = value;
-                Metadata.MessageId = new MessageId(MessageId.MessageType, System.Guid.Parse(value));
-            }
+                Metadata.MessageId = value != null
+                    ? new MessageId(MessageId.MessageType, System.Guid.Parse(value))
+                    : new MessageId(MessageId.MessageType, System.Guid.NewGuid());            }
         } = null;
 
         /// <inheritdoc />

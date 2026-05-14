@@ -11,6 +11,7 @@ namespace ZES.GraphQL
         protected override void Configure(IInputObjectTypeDescriptor<T> descriptor)
         {
             descriptor.Field(t => t.Timestamp).Ignore();
+            descriptor.Field(t => t.AdditionalTimestamps).Ignore();
             base.Configure(descriptor);
         }
     }

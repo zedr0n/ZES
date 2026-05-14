@@ -19,17 +19,19 @@ namespace ZES.Infrastructure.Projections
     internal class ProjectionFlow<TState> : Dataflow<Tracked<IStream>>
         where TState : new()
     {
-        private readonly ProjectionBase<TState> _projection;
+        private readonly IProjectionRuntime<TState> _projection;
+        private readonly List<IProjectionSink<TState>> _additionalSinks;
         private readonly IEventStore<IAggregate> _eventStore;
         private readonly ILog _log;
         private readonly CancellationToken _token;
             
         private readonly ConcurrentDictionary<string, int> _versions;
             
-        public ProjectionFlow(DataflowOptions dataflowOptions, ProjectionBase<TState> projection)
+        public ProjectionFlow(DataflowOptions dataflowOptions, IProjectionRuntime<TState> projection, IEnumerable<IProjectionSink<TState>> additionalSinks = null)
             : base(dataflowOptions)
         {
             _projection = projection;
+            _additionalSinks = additionalSinks?.ToList();
             _eventStore = projection.EventStore;
             _log = projection.Log;
             _token = projection.CancellationToken;
@@ -43,6 +45,14 @@ namespace ZES.Infrastructure.Projections
         /// <inheritdoc />
         public override ITargetBlock<Tracked<IStream>> InputBlock { get; }
 
+        private Task When(IEvent e)
+        {
+            var tasks = new List<Task> { _projection.When(e) };
+            if(_additionalSinks != null) 
+                tasks.AddRange(_additionalSinks.Select(p => p.When(e)));
+            return Task.WhenAll(tasks);
+        }
+        
         private async Task Process(Tracked<IStream> trackedStream)
         {
             _log.Debug($"Processing {trackedStream.Value.Key}@{trackedStream.Value.Version}");
@@ -98,14 +108,14 @@ namespace ZES.Infrastructure.Projections
                     var sortedEvents = events.OrderBy(e => e.Timestamp).ToList();
                     ephemeralCount = sortedEvents.Count(e => e!.Ephemeral);
 
-                    t = sortedEvents.Select(e => _projection.When(e)).ToList();
+                    t = sortedEvents.Select(When).ToList();
                 }
                 else
                 {
                     // Stream normally without buffering when no ephemeral events
                     t = await _eventStore.ReadStream<IEvent>(s, version + 1)
                         .TakeWhile(_ => !_token.IsCancellationRequested)
-                        .Select(e => _projection.When(e))
+                        .Select(When)
                         .ToList()
                         .Timeout(Configuration.Timeout)
                         .LastOrDefaultAsync();

@@ -1,6 +1,6 @@
-using System;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
+using ZES.Interfaces.Clocks;
 using ZES.Interfaces.Domain;
 
 namespace ZES.Infrastructure.Domain
@@ -15,18 +15,6 @@ namespace ZES.Infrastructure.Domain
         where TQuery : class, IQuery<TResult>
         where TResult : class
     {
-        /// <summary>
-        /// Unimplemented 
-        /// </summary>
-        /// <param name="projection">Projection to use</param>
-        /// <param name="query">CQRS query</param>
-        /// <returns>Query result</returns>
-        /// <exception cref="NotImplementedException">Base unimplemented method</exception>
-        public virtual Task<TResult> Handle(IProjection projection, TQuery query)
-        {
-            throw new NotImplementedException();
-        }
-
         /// <summary>
         /// Dynamic redirect to appropriate async handler
         /// </summary>

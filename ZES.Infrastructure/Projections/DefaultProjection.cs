@@ -36,7 +36,7 @@ namespace ZES.Infrastructure.Projections
                         .Select(i => i.GenericTypeArguments[1]).ToList();
 
                 // register remainder using reflection
-                var otherMethods = h.GetType().GetMethods(BindingFlags.Public | BindingFlags.DeclaredOnly |
+                var otherMethods = h.GetType().GetMethods(BindingFlags.Public | BindingFlags.DeclaredOnly | BindingFlags.NonPublic |
                                                           BindingFlags.InvokeMethod | BindingFlags.Instance)
                     .Where(m => m.Name.Equals("Handle", StringComparison.OrdinalIgnoreCase));
 
@@ -44,16 +44,7 @@ namespace ZES.Infrastructure.Projections
                 {
                     var tEvent = method.GetParameters().First().ParameterType;
                     if (tEvent != typeof(IEvent) && !tEvents.Contains(tEvent))
-                    {
-                        // MethodInfo.Invoke >> EfficientInvoker.Invoke >> dynamic keyword
                         tEvents.Add(tEvent);
-                       
-                        // var func = method.CreateDelegate(typeof(Func<,,,>).MakeGenericType(h.GetType(), tEvent, typeof(TState), typeof(TState)));
-                        // var invoker = EfficientInvoker.ForMethodInfo(h.GetType(), method);
-                        // if (invoker != null)
-                        //    Register(tEvent, (e, state) => (TState)invoker.Invoke(h, e, state));
-                        // Register(tEvent, (e, state) => (TState)method.Invoke(h, new object[] { e, state }));
-                    }
                 }
                 
                 foreach (var tEvent in tEvents)

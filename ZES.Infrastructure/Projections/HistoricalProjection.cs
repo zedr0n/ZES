@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using NodaTime;
 using ZES.Interfaces;
 using ZES.Interfaces.Branching;
@@ -12,7 +13,7 @@ namespace ZES.Infrastructure.Projections
     /// Historical projection decorator
     /// </summary>
     /// <typeparam name="TState">Projection state</typeparam>
-    public sealed class HistoricalProjection<TState> : ProjectionBase<TState>, IHistoricalProjection<TState>
+    public class HistoricalProjection<TState> : ProjectionBase<TState>, IHistoricalProjection<TState>
         where TState : new()
     {
         /// <summary>

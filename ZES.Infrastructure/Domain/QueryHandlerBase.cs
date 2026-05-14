@@ -1,10 +1,11 @@
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Reactive.Linq;
 using System.Threading.Tasks;
-using System.Threading.Tasks.Dataflow;
-using Gridsum.DataflowEx;
-using ZES.Interfaces;
+using ZES.Infrastructure.Projections;
 using ZES.Interfaces.Branching;
+using ZES.Interfaces.Clocks;
 using ZES.Interfaces.Domain;
 using ZES.Interfaces.EventStore;
 
@@ -49,14 +50,8 @@ namespace ZES.Infrastructure.Domain
         protected Func<IStream, bool> Predicate { get; set; } = s => true;
         
         /// <inheritdoc />
-        public override async Task<TResult> Handle(IProjection projection, TQuery query)
-        {
-            return await Handle(projection as IProjection<TState>, query);
-        }
-
-        /// <inheritdoc />
         protected override async Task<TResult> Handle(TQuery query) => await Handle(query, "");
-
+        
         /// <summary>
         /// Handles a query on a specific projection and returns the result.
         /// </summary>
@@ -66,16 +61,26 @@ namespace ZES.Infrastructure.Domain
         protected async Task<TResult> Handle(TQuery query, string id)
         {
             var projection = Projection;
+            IEnumerable<IProjectionSink<TState>> sinks = [];
+            var supportsHistoricalResults = typeof(IHistoricalState).IsAssignableFrom(typeof(TState)) &&
+                                            typeof(IHistoricalResults<TResult>).IsAssignableFrom(typeof(TResult));
+            
             if (query.Timeline != string.Empty)
             {
                 projection = Manager.GetProjection<TState>(id, query.Timeline);
-                projection.Predicate = Predicate;
             }
             else if (query.Timestamp != null)
             {
                 var historicalProjection = Manager.GetHistoricalProjection<TState>(id);
+                if (supportsHistoricalResults && historicalProjection is IProjectionSinkHost<TState> sinkHost)
+                {
+                    sinkHost.ClearSinks();
+                    sinks = query.AdditionalTimestamps?.Select(x =>
+                        new HistoricalProjectionSink<TState>(historicalProjection) { Timestamp = x }).ToList() ?? []; 
+                    sinkHost.AddSinks(sinks);
+                }
+
                 historicalProjection.Timestamp = query.Timestamp;
-                historicalProjection.Predicate = Predicate;
                 projection = historicalProjection;
             }
             else if (projection.Timeline != _activeTimeline.Id)
@@ -83,24 +88,33 @@ namespace ZES.Infrastructure.Domain
             else if (id != string.Empty)
             {
                 projection = Manager.GetProjection<TState>(id);
-                projection.Predicate = Predicate;
             }
+            projection.Predicate = Predicate;
 
             await projection.Ready;
-            var result = await Handle(projection, query);
+            var result = await Handle(projection as IProjectionState<TState>, query);
+            if (supportsHistoricalResults)
+            {
+                var historicalResults = (IHistoricalResults<TResult>)result;
+                if (historicalResults.HistoricalResults == null)
+                    throw new InvalidOperationException("Historical results are not supported by this projection");
+                
+                foreach (var sink in sinks)
+                    historicalResults.HistoricalResults[sink.Latest] = await Handle(sink, query);
+            }
             // historical projections are disposed of ( especially the subscriptions to streams ) immediately
             // this is fine because they are only accessed from the query handler
             if (query.Timestamp != null)
                 projection.Dispose();
             return result;
         }
-
+        
         /// <summary>
         /// Strongly-typed handler
         /// </summary>
         /// <param name="projection">Project</param>
         /// <param name="query">Query</param>
         /// <returns>Query result</returns>
-        protected abstract Task<TResult> Handle(IProjection<TState> projection, TQuery query);
+        protected abstract Task<TResult> Handle(IProjectionState<TState> projection, TQuery query);
     }
 }

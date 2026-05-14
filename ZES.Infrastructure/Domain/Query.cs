@@ -1,4 +1,4 @@
-using NodaTime;
+using System.Collections.Generic;
 using ZES.Interfaces.Clocks;
 using ZES.Interfaces.Domain;
 
@@ -11,6 +11,9 @@ namespace ZES.Infrastructure.Domain
         public string Timeline { get; set; } = string.Empty;
 
         /// <inheritdoc />
-        public Time Timestamp { get; set; } = default;
+        public Time Timestamp { get; set; }
+
+        /// <inheritdoc />
+        public IReadOnlyList<Time> AdditionalTimestamps { get; set; }
     }
 }

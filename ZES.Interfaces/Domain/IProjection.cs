@@ -78,28 +78,26 @@ namespace ZES.Interfaces.Domain
         /// or disposing projections created dynamically during query execution.
         /// </remarks>
         public void Dispose();
-
-        /*
-        /// <summary>
-        /// Returns when projection is rebuilt
-        /// </summary>
-        /// <returns>Listening</returns>
-        dynamic GetAwaiter();*/
     }
 
+    /// <summary>
+    /// Read-only view of a projection state.
+    /// </summary>
+    /// <typeparam name="TState">Type of the projection state.</typeparam>
+    public interface IProjectionState<out TState>
+    {
+        /// <summary>
+        /// Gets the current projection state.
+        /// </summary>
+        TState State { get; }
+    }
+    
     /// <summary>
     /// Projections are singleton services which build the state from events
     /// sourced from a set of streams
     /// </summary>
     /// <typeparam name="TState">Type of the projection state</typeparam>
-    public interface IProjection<out TState> : IProjection
+    public interface IProjection<out TState> : IProjection, IProjectionState<TState>
     {
-        /// <summary>
-        /// Gets projection current state 
-        /// </summary>
-        /// <value>
-        /// Projection current state 
-        /// </value>
-        TState State { get; }
     }
 }

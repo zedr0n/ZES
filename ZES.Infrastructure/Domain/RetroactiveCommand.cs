@@ -9,8 +9,16 @@ namespace ZES.Infrastructure.Domain
     /// <inheritdoc />
     public interface IRetroactiveCommand : ICommand { }
 
+    /// Provides extension methods for converting commands to retroactive commands.
     public static class RetroactiveExtensions
     {
+        /// <summary>
+        /// Converts the specified command into a retroactive command with the provided timestamp.
+        /// </summary>
+        /// <typeparam name="TCommand">The type of the command to be converted.</typeparam>
+        /// <param name="command">The original command to be wrapped as a retroactive command.</param>
+        /// <param name="time">The timestamp representing when the command will be actioned retroactively.</param>
+        /// <returns>A new instance of <see cref="RetroactiveCommand{TCommand}"/> containing the specified command and timestamp.</returns>
         public static RetroactiveCommand<TCommand> ToRetroactiveCommand<TCommand>(this TCommand command, Time time)
             where TCommand : Command
         {

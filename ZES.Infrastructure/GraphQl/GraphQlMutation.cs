@@ -3,7 +3,9 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reactive.Linq;
 using Gridsum.DataflowEx;
+using ZES.Infrastructure.Domain;
 using ZES.Interfaces.Branching;
+using ZES.Interfaces.Clocks;
 using ZES.Interfaces.Domain;
 using ZES.Interfaces.GraphQL;
 using ZES.Interfaces.Infrastructure;
@@ -39,15 +41,17 @@ namespace ZES.Infrastructure.GraphQl
         /// Execute the query via bus
         /// </summary>
         /// <param name="query">Query instance</param>
+        /// <param name="time">Time to retroactively execute query</param>
         /// <typeparam name="TResult">Query result type</typeparam>
         /// <returns>Query result</returns>
-        protected TResult Resolve<TResult>(IQuery<TResult> query)
+        protected TResult Resolve<TResult>(IQuery<TResult> query, Time time = null)
         {
             var lastError = _log.Errors.Observable.FirstOrDefaultAsync().GetAwaiter().GetResult();
 
             var result = default(TResult);
             try
             {
+                query.Timestamp ??= time;
                 result = _bus.QueryAsync(query).Result;
             }
             catch (Exception e)
@@ -61,15 +65,17 @@ namespace ZES.Infrastructure.GraphQl
                 throw new InvalidOperationException(error.Message);
             return result;
         }
-        
+
         /// <summary>
         /// Execute command via bus 
         /// </summary>
         /// <param name="command">CQRS command</param>
+        /// <param name="time">Time to retroactively execute command</param>
         /// <returns>True if command succeeded</returns>
-        protected bool Resolve(ICommand command)
+        protected bool Resolve<TCommand>(TCommand command, Time time = null)
+            where TCommand : Command
         {
-            var tracked = new Tracked<ICommand>(command);
+            var tracked = new Tracked<ICommand>(time != null ? command.ToRetroactiveCommand(time) : command);
             _resolver.Post(tracked);
             tracked.Task.Wait();
             

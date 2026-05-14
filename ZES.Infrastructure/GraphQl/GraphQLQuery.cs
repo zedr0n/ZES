@@ -1,5 +1,6 @@
 using System;
 using System.Reactive.Linq;
+using ZES.Interfaces.Clocks;
 using ZES.Interfaces.Domain;
 using ZES.Interfaces.GraphQL;
 using ZES.Interfaces.Infrastructure;
@@ -24,17 +25,19 @@ namespace ZES.Infrastructure.GraphQl
             _bus = bus;
             _log = log;
         }
-        
+
         /// <summary>
         /// Execute the query via bus
         /// </summary>
         /// <param name="query">Query instance</param>
+        /// <param name="time">Time to retroactively execute query</param>
         /// <typeparam name="TResult">Query result type</typeparam>
         /// <returns>Query result</returns>
-        protected TResult Resolve<TResult>(IQuery<TResult> query)
+        protected TResult Resolve<TResult>(IQuery<TResult> query, Time time = null)
         {
             var lastError = _log.Errors.Observable.FirstOrDefaultAsync().GetAwaiter().GetResult();
-            
+           
+            query.Timestamp ??= time;
             var result = _bus.QueryAsync(query).Result;
             
             var error = _log.Errors.Observable.FirstOrDefaultAsync().GetAwaiter().GetResult();

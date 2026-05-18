@@ -90,7 +90,7 @@ namespace ZES.Infrastructure
         }
 
         /// <inheritdoc />
-        public bool Validate(IScenario scenario, ReplayResult result = null)
+        public bool Validate(IScenario scenario, ReplayResult result = null, double tolerance = 1e-12)
         {
             // var otherJson = JsonConvert.SerializeObject(scenario.Results, Formatting.Indented);
             // var thisJson = JsonConvert.SerializeObject(_scenario.Value.Results, Formatting.Indented);
@@ -108,6 +108,8 @@ namespace ZES.Infrastructure
             var jdp = new JsonDiffPatch();
             for (var i = 0; i < thisResults.Count; ++i)
             {
+                NormalizeNumbersWithinTolerance(expectedResults[i], thisResults[i], tolerance);
+                
                 var diff = jdp.Diff(expectedResults[i], thisResults[i]);
                 if (diff == null) 
                     continue;
@@ -274,5 +276,39 @@ namespace ZES.Infrastructure
                 public string Value { get; set; }
             }
         }
+        
+        private void NormalizeNumbersWithinTolerance(JToken expected, JToken actual, double tolerance)
+        {
+            switch (expected)
+            {
+                case JObject expectedObject when actual is JObject actualObject:
+                {
+                    foreach (var property in expectedObject.Properties())
+                    {
+                        if (actualObject.TryGetValue(property.Name, out var actualValue))
+                            NormalizeNumbersWithinTolerance(property.Value, actualValue, tolerance);
+                    }
+
+                    return;
+                }
+                case JArray expectedArray when actual is JArray actualArray:
+                {
+                    for (var i = 0; i < Math.Min(expectedArray.Count, actualArray.Count); i++)
+                        NormalizeNumbersWithinTolerance(expectedArray[i], actualArray[i], tolerance);
+
+                    return;
+                }
+            }
+
+            if (expected.Type is not (JTokenType.Float or JTokenType.Integer) ||
+                actual.Type is not (JTokenType.Float or JTokenType.Integer)) return;
+            {
+                var expectedValue = expected.Value<double>();
+                var actualValue = actual.Value<double>();
+
+                if (Math.Abs(expectedValue - actualValue) <= tolerance)
+                    actual.Replace(expected.DeepClone());
+            }
+        }        
     }
 }

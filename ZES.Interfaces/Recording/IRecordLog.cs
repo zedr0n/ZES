@@ -48,7 +48,8 @@ namespace ZES.Interfaces.Recording
         /// </summary>
         /// <param name="scenario">Scenario to validate</param>
         /// <param name="result">Result of the replay</param>
+        /// <param name="tolerance">Tolerance for floating point comparison</param>
         /// <returns>True if valid</returns>
-        bool Validate(IScenario scenario, ReplayResult result = null);
+        bool Validate(IScenario scenario, ReplayResult result = null, double tolerance = 1e-12);
     }
 }

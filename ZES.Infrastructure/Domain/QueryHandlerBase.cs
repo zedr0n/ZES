@@ -95,12 +95,23 @@ namespace ZES.Infrastructure.Domain
             var result = await Handle(projection as IProjectionState<TState>, query);
             if (supportsHistoricalResults && query.AdditionalTimestamps != null)
             {
-                var historicalResults = (IHistoricalResults<TResult>)result;
-                if (historicalResults.HistoricalResults == null)
-                    throw new InvalidOperationException("Historical results are not supported by this projection");
-                
-                foreach (var sink in sinks)
-                    historicalResults.HistoricalResults[sink.Latest] = await Handle(sink, query);
+                var timestamp = query.Timestamp;
+                try
+                {
+                    var historicalResults = (IHistoricalResults<TResult>)result;
+                    if (historicalResults.HistoricalResults == null)
+                        throw new InvalidOperationException("Historical results are not supported by this projection");
+
+                    foreach (var sink in sinks)
+                    {
+                        query.Timestamp = sink.Latest;
+                        historicalResults.HistoricalResults[sink.Latest] = await Handle(sink, query);
+                    }
+                }
+                finally
+                {
+                    query.Timestamp = timestamp;
+                }
             }
             // historical projections are disposed of ( especially the subscriptions to streams ) immediately
             // this is fine because they are only accessed from the query handler

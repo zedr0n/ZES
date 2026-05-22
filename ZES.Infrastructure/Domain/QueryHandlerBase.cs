@@ -85,11 +85,12 @@ namespace ZES.Infrastructure.Domain
             }
             projection.Predicate = Predicate;
 
-            if (query.AdditionalTimestamps is { Count: > 0 } && supportsHistoricalResults && projection is IProjectionSinkHost<TState> sinkHost)
+            var sinkHost = projection as IProjectionSinkHost<TState>;
+            if (query.AdditionalTimestamps is { Count: > 0 } && supportsHistoricalResults && sinkHost != null)
             {
                 sinkHost.ClearSinks();
                 sinks = query.AdditionalTimestamps.Select(x =>
-                    new HistoricalProjectionSink<TState>(projection) { Timestamp = x }).ToList() ?? []; 
+                    new HistoricalProjectionSink<TState>(projection) { Timestamp = x }).ToList(); 
                 sinkHost.AddSinks(sinks);
 
                 // we need to restart the projection if additional timestamps are requested
@@ -98,7 +99,7 @@ namespace ZES.Infrastructure.Domain
             }
             
             await projection.Ready;
-            var result = await Handle(projection as IProjectionState<TState>, query);
+            var result = await Handle(projection, query);
             if (supportsHistoricalResults && query.AdditionalTimestamps is { Count: > 0 })
             {
                 var timestamp = query.Timestamp;
@@ -117,6 +118,8 @@ namespace ZES.Infrastructure.Domain
                 finally
                 {
                     query.Timestamp = timestamp;
+                    if(timestamp == null)
+                        sinkHost?.ClearSinks();
                 }
             }
             // historical projections are disposed of ( especially the subscriptions to streams ) immediately

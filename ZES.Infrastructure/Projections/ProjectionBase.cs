@@ -236,10 +236,16 @@ namespace ZES.Infrastructure.Projections
         }
 
         /// <inheritdoc />
-        public void Restart()
+        public async Task Restart()
         {
             var unused = _start.Value;
-            Build.InputBlock.Post(new InvalidateProjections());
+            
+            Cancel();
+            var status = StatusSubject.AsObservable().Timeout(Configuration.Timeout)
+                .Catch<ProjectionStatus, TimeoutException>(x => Observable.Return(Failed));
+            await status.FirstAsync(s => s is Sleeping or Failed);
+
+            Rebuild();
         }
         
         /// <summary>
@@ -384,14 +390,9 @@ namespace ZES.Infrastructure.Projections
             {
                 var actionBlock = new ActionBlock<InvalidateProjections>(
                     async e =>
-                {
-                    projection.Cancel();
-                    var status = projection.StatusSubject.AsObservable().Timeout(Configuration.Timeout)
-                        .Catch<ProjectionStatus, TimeoutException>(x => Observable.Return(Failed));
-                    await status.FirstAsync(s => s is Sleeping or Failed);
-
-                    projection.Rebuild();
-                }, Configuration.DataflowOptions.ToDataflowBlockOptions(false)); 
+                    {
+                        await projection.Restart();
+                    }, Configuration.DataflowOptions.ToDataflowBlockOptions(false)); 
                
                 RegisterChild(actionBlock);
                 InputBlock = actionBlock;

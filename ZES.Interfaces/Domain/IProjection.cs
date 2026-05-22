@@ -76,7 +76,10 @@ namespace ZES.Interfaces.Domain
         /// configured data streams. Typically used when the projection needs to be refreshed or brought
         /// in sync with changes in the underlying data framework.
         /// </remarks>
-        public void Restart();
+        /// <returns>
+        /// A task representing the asynchronous operation of resetting the projection state and starting the rebuild process.
+        /// </returns>
+        public Task Restart();
 
         /// <summary>
         /// Releases all resources used by the <see cref="IProjection"/> implementation.

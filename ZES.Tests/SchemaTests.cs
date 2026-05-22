@@ -87,7 +87,7 @@ namespace ZES.Tests
             log.Info(rootInfoDict);
             Assert.NotNull(rootInfoDict);
             var timeStr = rootInfoDict["createdAt"] as string;
-            var time = Time.Parse(timeStr);
+            var time = Time.Parse(timeStr, true);
             Assert.NotNull(time);
             Assert.NotEqual(default, time.ToInstant());
 

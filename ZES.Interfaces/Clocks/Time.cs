@@ -106,12 +106,13 @@ namespace ZES.Interfaces.Clocks
             UseLogicalTime ? LogicalTime.FromUnixTicks(ticks) : InstantTime.FromUnixTicks(ticks);
 
         /// <summary>
-        /// Gets the time instance from string
+        /// Parses a string representation of time into a Time instance.
         /// </summary>
-        /// <param name="time">Time string</param>
-        /// <returns>Time instance</returns>
-        public static Time Parse(string time) =>
-            UseExtendedIsoForSerialisation ? FromExtendedIso(time) : FromUnixTicks(time);
+        /// <param name="time">The string representation of time.</param>
+        /// <param name="useExtendedIso">Determines whether to parse the time as extended ISO format. Defaults to false.</param>
+        /// <returns>A Time instance parsed from the provided string.</returns>
+        public static Time Parse(string time, bool useExtendedIso = false) =>
+            UseExtendedIsoForSerialisation || useExtendedIso ? FromExtendedIso(time) : FromUnixTicks(time);
 
         /// <summary>
         /// Convert the time instance to extended iso format
@@ -126,10 +127,12 @@ namespace ZES.Interfaces.Clocks
         public abstract string ToUnixTicks();
 
         /// <summary>
-        /// Gets the serialised version of the time
+        /// Serialises the time to a string representation.
         /// </summary>
-        /// <returns>Serialised string</returns>
-        public string Serialise() => UseExtendedIsoForSerialisation ? ToExtendedIso() : ToUnixTicks();
+        /// <param name="useExtendedIso">Specifies whether to use extended ISO format for serialisation.</param>
+        /// <returns>A string representation of the time in either extended ISO or Unix ticks format.</returns>
+        public string Serialise(bool useExtendedIso = false) =>
+            UseExtendedIsoForSerialisation || useExtendedIso ? ToExtendedIso() : ToUnixTicks();
         
         /// <summary>
         /// Converts the time to physical instant 

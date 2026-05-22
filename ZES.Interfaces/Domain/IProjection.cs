@@ -1,4 +1,5 @@
 using System;
+using System.Threading.Tasks;
 using ZES.Interfaces.EventStore;
 
 namespace ZES.Interfaces.Domain
@@ -66,6 +67,16 @@ namespace ZES.Interfaces.Domain
         /// Gets or sets the projection timeline
         /// </summary>
         string Timeline { get; set; }
+
+        /// <summary>
+        /// Resets the state of the projection and starts a process to completely rebuild its data.
+        /// </summary>
+        /// <remarks>
+        /// This method clears the current state of the projection and triggers a rebuild based on the
+        /// configured data streams. Typically used when the projection needs to be refreshed or brought
+        /// in sync with changes in the underlying data framework.
+        /// </remarks>
+        public void Restart();
 
         /// <summary>
         /// Releases all resources used by the <see cref="IProjection"/> implementation.

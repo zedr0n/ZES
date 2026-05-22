@@ -76,22 +76,26 @@ namespace ZES.Infrastructure.Domain
                 projection = historicalProjection;
             }
             else if (projection.Timeline != _activeTimeline.Id)
-                projection = Manager.GetProjection<TState>(id, _activeTimeline.Id);
-
-            if (query.AdditionalTimestamps != null && supportsHistoricalResults && projection is IProjectionSinkHost<TState> sinkHost)
             {
-                sinkHost.ClearSinks();
-                sinks = query.AdditionalTimestamps.Select(x =>
-                    new HistoricalProjectionSink<TState>(projection) { Timestamp = x }).ToList() ?? []; 
-                sinkHost.AddSinks(sinks);
+                projection = Manager.GetProjection<TState>(id, _activeTimeline.Id);
             }
-            
             else if (id != string.Empty)
             {
                 projection = Manager.GetProjection<TState>(id);
             }
             projection.Predicate = Predicate;
 
+            if (query.AdditionalTimestamps != null && supportsHistoricalResults && projection is IProjectionSinkHost<TState> sinkHost)
+            {
+                // we need to restart the projection if additional timestamps are requested
+                if(query.Timestamp == null)
+                    projection.Restart();
+                sinkHost.ClearSinks();
+                sinks = query.AdditionalTimestamps.Select(x =>
+                    new HistoricalProjectionSink<TState>(projection) { Timestamp = x }).ToList() ?? []; 
+                sinkHost.AddSinks(sinks);
+            }
+            
             await projection.Ready;
             var result = await Handle(projection as IProjectionState<TState>, query);
             if (supportsHistoricalResults && query.AdditionalTimestamps != null)

@@ -233,7 +233,14 @@ namespace ZES.Infrastructure.Projections
             _liveStreamsConnection?.Dispose();
             _allStreamsSubscription?.Dispose();
             Cancel();
-        }        
+        }
+
+        /// <inheritdoc />
+        public void Restart()
+        {
+            var unused = _start.Value;
+            Build.InputBlock.Post(new InvalidateProjections());
+        }
         
         /// <summary>
         /// Rebuild the projection 
@@ -383,7 +390,6 @@ namespace ZES.Infrastructure.Projections
                         .Catch<ProjectionStatus, TimeoutException>(x => Observable.Return(Failed));
                     await status.FirstAsync(s => s is Sleeping or Failed);
 
-                    // Task.Factory.StartNew(projection.Rebuild);
                     projection.Rebuild();
                 }, Configuration.DataflowOptions.ToDataflowBlockOptions(false)); 
                

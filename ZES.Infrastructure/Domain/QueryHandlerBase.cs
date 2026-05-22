@@ -37,7 +37,7 @@ namespace ZES.Infrastructure.Domain
         /// <value>
         /// The projection as common base interface
         /// </value>
-        protected IProjection Projection { get; set; }
+        protected IProjection<TState> Projection { get; set; }
 
         /// <summary>
         /// Gets the projection manager 
@@ -72,19 +72,20 @@ namespace ZES.Infrastructure.Domain
             else if (query.Timestamp != null)
             {
                 var historicalProjection = Manager.GetHistoricalProjection<TState>(id);
-                if (query.AdditionalTimestamps != null && supportsHistoricalResults && historicalProjection is IProjectionSinkHost<TState> sinkHost)
-                {
-                    sinkHost.ClearSinks();
-                    sinks = query.AdditionalTimestamps.Select(x =>
-                        new HistoricalProjectionSink<TState>(historicalProjection) { Timestamp = x }).ToList() ?? []; 
-                    sinkHost.AddSinks(sinks);
-                }
-
                 historicalProjection.Timestamp = query.Timestamp;
                 projection = historicalProjection;
             }
             else if (projection.Timeline != _activeTimeline.Id)
                 projection = Manager.GetProjection<TState>(id, _activeTimeline.Id);
+
+            if (query.AdditionalTimestamps != null && supportsHistoricalResults && projection is IProjectionSinkHost<TState> sinkHost)
+            {
+                sinkHost.ClearSinks();
+                sinks = query.AdditionalTimestamps.Select(x =>
+                    new HistoricalProjectionSink<TState>(projection) { Timestamp = x }).ToList() ?? []; 
+                sinkHost.AddSinks(sinks);
+            }
+            
             else if (id != string.Empty)
             {
                 projection = Manager.GetProjection<TState>(id);

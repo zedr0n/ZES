@@ -138,6 +138,7 @@ namespace ZES.GraphQL
 
             var builder = _services.AddGraphQL()
                 .BindRuntimeType<Instant, InstantType>()
+                .BindRuntimeType<Period, PeriodType>()
                 .BindRuntimeType<Time, TimeType>()
                 .AddType<CommandMetadataType>()
                 .AddType<CommandStaticMetadataType>()

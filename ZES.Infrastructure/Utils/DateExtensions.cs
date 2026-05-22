@@ -291,5 +291,28 @@ namespace ZES.Infrastructure.Utils
         /// <param name="zoneId">The time zone identifier. Defaults to "Europe/London".</param>
         /// <returns>The time representing the close of the day.</returns>
         public static Time CloseOfDay(this Time time, string zoneId = "Europe/London") => time.ToInstant().CloseOfDay(zoneId).ToTime();
+
+        /// <summary>
+        /// Adds a period to the provided instant.
+        /// </summary>
+        /// <param name="instant">The instant to which the period will be added.</param>
+        /// <param name="period">The period to add to the instant.</param>
+        /// <param name="zoneId">The time zone identifier for applying the period. Defaults to "Europe/London".</param>
+        /// <returns>The resulting instant after adding the period.</returns>
+        public static Instant PlusPeriod(this Instant instant, Period period, string zoneId = "Europe/London")
+        {
+            var localZone = DateTimeZoneProviders.Tzdb[zoneId];
+            return instant.InZone(localZone).LocalDateTime.Plus(period).InZoneLeniently(localZone).ToInstant();
+        }
+
+        /// <summary>
+        /// Adds a specified time period to the given time.
+        /// </summary>
+        /// <param name="time">The input time to which the period is added.</param>
+        /// <param name="period">The time period to add to the time.</param>
+        /// <param name="zoneId">The time zone identifier. Defaults to "Europe/London".</param>
+        /// <returns>An updated time with the specified period added.</returns>
+        public static Time PlusPeriod(this Time time, Period period, string zoneId = "Europe/London") =>
+            time.ToInstant().PlusPeriod(period, zoneId).ToTime();
     }
 }

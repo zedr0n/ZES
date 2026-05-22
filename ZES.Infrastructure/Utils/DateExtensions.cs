@@ -314,5 +314,28 @@ namespace ZES.Infrastructure.Utils
         /// <returns>An updated time with the specified period added.</returns>
         public static Time PlusPeriod(this Time time, Period period, string zoneId = "Europe/London") =>
             time.ToInstant().PlusPeriod(period, zoneId).ToTime();
+        
+        /// <summary>
+        /// Subtracts a period to the provided instant.
+        /// </summary>
+        /// <param name="instant">The instant which the period will be subtracted from.</param>
+        /// <param name="period">The period to subtract from the instant.</param>
+        /// <param name="zoneId">The time zone identifier for applying the period. Defaults to "Europe/London".</param>
+        /// <returns>The resulting instant after subtracting the period.</returns>
+        public static Instant MinusPeriod(this Instant instant, Period period, string zoneId = "Europe/London")
+        {
+            var localZone = DateTimeZoneProviders.Tzdb[zoneId];
+            return instant.InZone(localZone).LocalDateTime.Minus(period).InZoneLeniently(localZone).ToInstant();
+        }
+
+        /// <summary>
+        /// Subtracts a period to the provided time.
+        /// </summary>
+        /// <param name="time">The time which the period will be subtracted from.</param>
+        /// <param name="period">The period to subtract from the time.</param>
+        /// <param name="zoneId">The time zone identifier for applying the period. Defaults to "Europe/London".</param>
+        /// <returns>The resulting time after subtracting the period.</returns>
+        public static Time MinusPeriod(this Time time, Period period, string zoneId = "Europe/London") =>
+            time.ToInstant().MinusPeriod(period, zoneId).ToTime();
     }
 }

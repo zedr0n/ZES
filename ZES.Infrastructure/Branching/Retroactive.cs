@@ -163,20 +163,26 @@ namespace ZES.Infrastructure.Branching
            
             var timeline = command.Timeline;
             var storeInLog = command.StoreInLog;
+
+            try
+            {
+                command.Timeline = branch;
+                command.StoreInLog = false;
             
-            command.Timeline = branch;
-            command.StoreInLog = false;
-            
-            var handler = _commandRegistry.GetHandler(command);
-            if (handler == null)
-                throw new InvalidOperationException($"No handler found for command {command.GetType().Name}");
-            _flowCompletionService.TrackMessage(command);
-            await handler.Handle(command);
-            _flowCompletionService.MarkComplete(command);
-            await _flowCompletionService.NodeCompletionAsync(command);
-            
-            command.Timeline = timeline;
-            command.StoreInLog = storeInLog;
+                var handler = _commandRegistry.GetHandler(command);
+                if (handler == null)
+                    throw new InvalidOperationException($"No handler found for command {command.GetType().Name}");
+                _flowCompletionService.TrackMessage(command);
+                await handler.Handle(command);
+                _flowCompletionService.MarkComplete(command);
+                await _flowCompletionService.NodeCompletionAsync(command);
+            }
+            finally
+            {
+                command.Timeline = timeline;
+                command.StoreInLog = storeInLog;
+                
+            }
             
             _log.StopWatch.Stop($"{nameof(GetChanges)}.HandleCommand");
             

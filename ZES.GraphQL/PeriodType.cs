@@ -35,10 +35,10 @@ namespace ZES.GraphQL
         public override bool TrySerialize(object runtimeValue, out object resultValue)
         {
             resultValue = null;
-            if (runtimeValue is not Instant instant) 
+            if (runtimeValue is not Period period) 
                 throw new SerializationException($"Cannot serialize {Name}", this);
             
-            resultValue = instant;
+            resultValue = period;
             return true;
         }
 

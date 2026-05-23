@@ -159,18 +159,25 @@ namespace ZES.Infrastructure.Branching
             _log.StopWatch.Stop($"{nameof(GetChanges)}.Branch");
 
             _log.StopWatch.Start($"{nameof(GetChanges)}.HandleCommand");
-            var copy = command.Copy();
-            //copy.RetroactiveId = default;
-            copy.Timeline = branch;
-            copy.StoreInLog = false;
+            //var copy = command.Copy();
+           
+            var timeline = command.Timeline;
+            var storeInLog = command.StoreInLog;
             
-            var handler = _commandRegistry.GetHandler(copy);
+            command.Timeline = branch;
+            command.StoreInLog = false;
+            
+            var handler = _commandRegistry.GetHandler(command);
             if (handler == null)
                 throw new InvalidOperationException($"No handler found for command {command.GetType().Name}");
-            _flowCompletionService.TrackMessage(copy);
-            await handler.Handle(copy);
-            _flowCompletionService.MarkComplete(copy);
-            await _flowCompletionService.NodeCompletionAsync(copy);
+            _flowCompletionService.TrackMessage(command);
+            await handler.Handle(command);
+            _flowCompletionService.MarkComplete(command);
+            await _flowCompletionService.NodeCompletionAsync(command);
+            
+            command.Timeline = timeline;
+            command.StoreInLog = storeInLog;
+            
             _log.StopWatch.Stop($"{nameof(GetChanges)}.HandleCommand");
             
             _log.StopWatch.Start($"{nameof(GetChanges)}.Branch");

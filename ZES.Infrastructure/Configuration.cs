@@ -90,6 +90,12 @@ namespace ZES.Infrastructure
         }
 
         /// <summary>
+        /// Gets a value indicating whether to include full URLs in log entries,
+        /// typically used to provide more detailed information about resource locations in the logs.
+        /// </summary>
+        public static bool UseFullUrlsInLog { get; } = Environment.GetEnvironmentVariable("USEFULLURLSINLOG") == "1";
+        
+        /// <summary>
         /// Gets a value indicating whether to enable lazy branching,
         /// which defers branching operations to optimize resource usage and improve performance.
         /// </summary>

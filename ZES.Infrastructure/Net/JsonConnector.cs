@@ -21,7 +21,7 @@ namespace ZES.Infrastructure.Net
         private readonly ConcurrentDictionary<string, AsyncLazy<string>> _jsonData = new();
         private readonly ILog _log;
         private readonly IRecordLog _recordLog;
-        
+
         /// <summary>
         /// Initializes a new instance of the <see cref="JsonConnector"/> class.
         /// </summary>
@@ -65,7 +65,7 @@ namespace ZES.Infrastructure.Net
             new(() =>
             {
                 var logUrl = GetCacheKey(url);
-                _log.Info($"Initiating json connection to {logUrl}");
+                _log.Info($"Initiating json connection to {(Configuration.UseFullUrlsInLog ? url : logUrl)}");
                 return w.SendAsync(request)
                     .Timeout(timeout: Configuration.NetworkTimeout, message: $"Connection to {logUrl} timed out...")
                     .ContinueWith(x => x.Result.Content.ReadAsStringAsync()).Unwrap();

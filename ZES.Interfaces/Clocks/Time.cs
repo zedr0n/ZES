@@ -106,6 +106,14 @@ namespace ZES.Interfaces.Clocks
             UseLogicalTime ? LogicalTime.FromUnixTicks(ticks) : InstantTime.FromUnixTicks(ticks);
 
         /// <summary>
+        /// Creates a <see cref="Time"/> instance from the specified number of Unix ticks.
+        /// </summary>
+        /// <param name="ticks">The number of Unix ticks to create the time from.</param>
+        /// <returns>A <see cref="Time"/> instance corresponding to the specified Unix ticks.</returns>
+        public static Time FromUnixTicks(long ticks) =>
+            UseLogicalTime ? LogicalTime.FromUnixTicks(ticks) : InstantTime.FromUnixTicks(ticks);
+
+        /// <summary>
         /// Parses a string representation of time into a Time instance.
         /// </summary>
         /// <param name="time">The string representation of time.</param>
@@ -166,6 +174,21 @@ namespace ZES.Interfaces.Clocks
         /// <returns>Unx time milliseconds</returns>
         public abstract long ToUnixTimeMilliseconds();
 
+        /// <summary>
+        /// Creates a <see cref="Time"/> instance from the specified Unix time in milliseconds.
+        /// </summary>
+        /// <param name="ms">The Unix time in milliseconds representing the number of milliseconds since the Unix epoch (January 1, 1970, 00:00:00 UTC).</param>
+        /// <returns>A <see cref="Time"/> instance corresponding to the specified Unix time in milliseconds.</returns>
+        public static Time FromUnixTimeMilliseconds(long ms) =>
+            UseLogicalTime ? LogicalTime.FromUnixTimeMilliseconds(ms) : InstantTime.FromUnixTimeMilliseconds(ms);
+
+        /// <summary>
+        /// Converts a Unix timestamp given in seconds to a <see cref="Time"/> instance.
+        /// </summary>
+        /// <param name="seconds">The Unix timestamp in seconds to be converted.</param>
+        /// <returns>A <see cref="Time"/> instance representing the specified Unix timestamp.</returns>
+        public static Time FromUnixTimeSeconds(long seconds) => FromUnixTimeMilliseconds(seconds * 1000);
+        
         /// <summary>
         /// Converts the current time to Unix time in seconds.
         /// The result represents the number of seconds that have elapsed since

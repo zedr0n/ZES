@@ -106,6 +106,13 @@ namespace ZES.Interfaces.Clocks
             return long.TryParse(tokens[0], out var time) ? new LogicalTime(time, c) : default(Time);
         }
 
+        /// <summary>
+        /// Converts a Unix timestamp, expressed in ticks, to a LogicalTime instance.
+        /// </summary>
+        /// <param name="ticks">The Unix timestamp in ticks to be converted.</param>
+        /// <returns>A LogicalTime instance representing the given Unix timestamp.</returns>
+        public new static Time FromUnixTicks(long ticks) => new LogicalTime(ticks, 0);
+
         /// <inheritdoc />
         public int CompareTo(LogicalTime other)
         {
@@ -143,6 +150,13 @@ namespace ZES.Interfaces.Clocks
         /// <inheritdoc />
         public override long ToUnixTimeMilliseconds() => Instant.FromUnixTimeTicks(l).ToUnixTimeMilliseconds();
 
+        /// <summary>
+        /// Creates a <see cref="LogicalTime"/> instance from the specified Unix time in milliseconds.
+        /// </summary>
+        /// <param name="ms">The Unix time in milliseconds representing the number of milliseconds since the Unix epoch (January 1, 1970, 00:00:00 UTC).</param>
+        /// <returns>A <see cref="LogicalTime"/> instance corresponding to the specified Unix time in milliseconds.</returns>
+        public new static LogicalTime FromUnixTimeMilliseconds(long ms) => new LogicalTime(Instant.FromUnixTimeMilliseconds(ms).ToUnixTimeTicks(), 0);
+        
         /// <inheritdoc />
         protected override Duration DurationTo(Time other)
         {

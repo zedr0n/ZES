@@ -87,6 +87,13 @@ namespace ZES.Interfaces.Clocks
             return long.TryParse(ticks, out var time) ? new InstantTime(Instant.FromUnixTimeTicks(time)) : default(Time);
         }
 
+        /// <summary>
+        /// Creates an instance of <see cref="InstantTime"/> from the specified Unix time ticks.
+        /// </summary>
+        /// <param name="ticks">The number of ticks since the Unix epoch.</param>
+        /// <returns>An <see cref="InstantTime"/> instance representing the specified Unix time ticks.</returns>
+        public new static Time FromUnixTicks(long ticks) => new InstantTime(Instant.FromUnixTimeTicks(ticks));
+
         /// <inheritdoc />
         public override string ToExtendedIso() => InstantPattern.ExtendedIso.Format(Instant);
 
@@ -119,6 +126,13 @@ namespace ZES.Interfaces.Clocks
         /// <inheritdoc />
         public override long ToUnixTimeMilliseconds() => Instant.ToUnixTimeMilliseconds();
 
+        /// <summary>
+        /// Creates an <see cref="InstantTime"/> instance from the specified Unix time in milliseconds.
+        /// </summary>
+        /// <param name="ms">The Unix time in milliseconds representing the number of milliseconds since the Unix epoch (January 1, 1970, 00:00:00 UTC).</param>
+        /// <returns>An <see cref="InstantTime"/> instance corresponding to the specified Unix time in milliseconds.</returns>
+        public new static InstantTime FromUnixTimeMilliseconds(long ms) => Instant.FromUnixTimeMilliseconds(ms);
+        
         /// <inheritdoc />
         public override int CompareTo(Time other)
         {

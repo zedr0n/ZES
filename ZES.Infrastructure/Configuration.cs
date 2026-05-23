@@ -90,6 +90,13 @@ namespace ZES.Infrastructure
         }
 
         /// <summary>
+        /// Gets or sets a value indicating whether operations should be processed in batches.
+        /// Enabling batching can improve performance by reducing the number of individual processing tasks,
+        /// but may introduce slight delays as items accumulate into batches.
+        /// </summary>
+        public static bool UseBatching { get; set; } = true;
+        
+        /// <summary>
         /// Gets a value indicating whether to include full URLs in log entries,
         /// typically used to provide more detailed information about resource locations in the logs.
         /// </summary>

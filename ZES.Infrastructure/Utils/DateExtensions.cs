@@ -138,15 +138,19 @@ namespace ZES.Infrastructure.Utils
         /// <returns>The <see cref="LocalDate"/> representing the date part of the specified time in the given time zone.</returns>
         public static LocalDate Date(this Time time, string zoneId = "Europe/London") => 
             time.ToInstant().Date(zoneId);
-        
+
         /// <summary>
         /// Determines if the given instant falls on a working day in the UK.
         /// </summary>
         /// <param name="instant">The instant to check.</param>
+        /// <param name="holidayCalendar">The holiday calendar to use for determining working days. Defaults to "UK" for UK holidays.</param>
         /// <param name="zoneId">The time zone ID to use for the check. Defaults to "Europe/London".</param>
         /// <returns>True if the instant falls on a working day; otherwise, false.</returns>
-        public static bool IsWorkingDay(this Instant instant, string zoneId = "Europe/London")
+        public static bool IsWorkingDay(this Instant instant, string holidayCalendar = "UK", string zoneId = "Europe/London")
         {
+            if (holidayCalendar == null)
+                return true;
+            
             var date = instant.InZone(DateTimeZoneProviders.Tzdb[zoneId]).Date.ToDateTimeUnspecified();
             return Uk.IsWorkingDay(date);
         }
@@ -155,9 +159,11 @@ namespace ZES.Infrastructure.Utils
         /// Determines if the specified time represents a working day.
         /// </summary>
         /// <param name="time">The time to evaluate.</param>
+        /// <param name="holidayCalendar">The holiday calendar to use for determining working days. Defaults to "UK" for UK holidays.</param>
         /// <param name="zoneId">The time zone ID to use for the check. Defaults to "Europe/London".</param>
         /// <returns>True if the time represents a working day; otherwise, false.</returns>
-        public static bool IsWorkingDay(this Time time, string zoneId = "Europe/London") => time.ToInstant().IsWorkingDay(zoneId);
+        public static bool IsWorkingDay(this Time time, string holidayCalendar = "UK", string zoneId = "Europe/London") 
+            => time.ToInstant().IsWorkingDay(holidayCalendar, zoneId);
 
         /// <summary>
         /// Determines whether the number of working days between the specified instants is within the given limit.
@@ -165,18 +171,22 @@ namespace ZES.Infrastructure.Utils
         /// <param name="instant">The starting instant.</param>
         /// <param name="otherInstant">The comparison instant.</param>
         /// <param name="days">The maximum number of working days allowed between the two instants. Defaults to 0.</param>
+        /// <param name="holidayCalendar">The holiday calendar identifier to use for determining working days. Defaults to "UK" for UK holidays.</param>
         /// <param name="zoneId">The time zone ID to use for the check. Defaults to "Europe/London".</param>
         /// <returns>True if the number of working days is less than or equal to the specified limit; otherwise, false.</returns>
         /// <remarks>This method uses the UK bank holiday calendar to determine working days</remarks>
-        public static bool IsWithinPriorWorkingDays(this Instant instant, Instant otherInstant, int days = 0, string zoneId = "Europe/London")
+        public static bool IsWithinPriorWorkingDays(this Instant instant, Instant otherInstant, int days = 0, string holidayCalendar = "UK", string zoneId = "Europe/London")
         {
             var localZone = DateTimeZoneProviders.Tzdb[zoneId];
-            var date = instant.InZone(localZone).Date.ToDateTimeUnspecified();
-            var otherDate = otherInstant.InZone(localZone).Date.ToDateTimeUnspecified();
+            var date = instant.InZone(localZone).Date;
+            var otherDate = otherInstant.InZone(localZone).Date;
             if(date > otherDate)
                 return false;
             
-            var workingDays = Uk.BusinessDaysBetween(date, otherDate);
+            if (holidayCalendar == null)
+                return otherDate.Minus(date).Days + 1 <= days;
+            
+            var workingDays = Uk.BusinessDaysBetween(date.ToDateTimeUnspecified(), otherDate.ToDateTimeUnspecified());
             return workingDays <= days;
         }
 
@@ -186,9 +196,11 @@ namespace ZES.Infrastructure.Utils
         /// <param name="time">The current time to check.</param>
         /// <param name="otherTime">The reference time to compare against.</param>
         /// <param name="days">The number of prior working days to check within. Default is 0.</param>
+        /// <param name="holidayCalendar">The holiday calendar identifier to use for determining working days. Defaults to "UK" for UK holidays.</param>
+        /// <param name="zoneId">The time zone ID to use for the check. Defaults to "Europe/London".</param>
         /// <returns>True if the time is within the specified number of prior working days relative to the other time; otherwise, false.</returns>
-        public static bool IsWithinPriorWorkingDays(this Time time, Time otherTime, int days = 0) =>
-            time.ToInstant().IsWithinPriorWorkingDays(otherTime.ToInstant(), days);
+        public static bool IsWithinPriorWorkingDays(this Time time, Time otherTime, int days = 0, string holidayCalendar = "UK", string zoneId = "Europe/London")  =>
+            time.ToInstant().IsWithinPriorWorkingDays(otherTime.ToInstant(), days, holidayCalendar, zoneId);
 
         /// <summary>
         /// Gets the end of the day for the specified instant in the specified timezone.
@@ -230,6 +242,28 @@ namespace ZES.Infrastructure.Utils
             var time = dateTime.ToLocalDateTime().InZoneLeniently(localZone).ToInstant().ToTime();
             return time;
         }
+
+        /// <summary>
+        /// Converts a LocalDate to a Time instance, using the specified time zone.
+        /// </summary>
+        /// <param name="localDate">The LocalDate to convert.</param>
+        /// <param name="localTime">The LocalTime to use for the conversion. Defaults to LocalTime.MinValue if not specified.</param>
+        /// <param name="zoneId">The time zone identifier. Defaults to "Europe/London" if not specified.</param>
+        /// <returns>A Time instance representing the given LocalDate.</returns>
+        public static Instant ToInstant(this LocalDate localDate, LocalTime localTime = default, string zoneId = "Europe/London")
+        {
+            return localDate.At(localTime).InZoneLeniently(DateTimeZoneProviders.Tzdb[zoneId]).ToInstant();
+        }
+
+        /// <summary>
+        /// Converts a LocalDate to a Time instance, using the specified time zone.
+        /// </summary>
+        /// <param name="localDate">The LocalDate to convert.</param>
+        /// <param name="localTime">The LocalTime to use for the conversion. Defaults to LocalTime.MinValue if not specified.</param>
+        /// <param name="zoneId">The time zone identifier. Defaults to "Europe/London" if not specified.</param>
+        /// <returns>A Time instance representing the given LocalDate.</returns>
+        public static Time ToTime(this LocalDate localDate, LocalTime localTime = default, string zoneId = "Europe/London")
+            => localDate.ToInstant(localTime, zoneId).ToTime();
         
         /// <summary>
         /// Determines the start of the specified date in a given time zone.
@@ -244,8 +278,9 @@ namespace ZES.Infrastructure.Utils
         /// Gets the time of the previous day based on the provided time.
         /// </summary>
         /// <param name="time">The current time instance.</param>
+        /// <param name="zoneId">The timezone ID. Defaults to "Europe/London".</param>
         /// <returns>A <see cref="Time"/> instance representing the previous day.</returns>
-        public static Time PreviousDay(this Time time) => time.ToInstant().PreviousDay().ToTime();
+        public static Time PreviousDay(this Time time, string zoneId = "Europe/London") => time.ToInstant().PreviousDay(zoneId).ToTime();
         
         /// <summary>
         /// Gets the end of the previous day for the specified instant in the specified timezone.
@@ -265,15 +300,18 @@ namespace ZES.Infrastructure.Utils
         /// Gets the previous working day for a given instant, taking into account weekends and UK bank holidays.
         /// </summary>
         /// <param name="instant">The input instant for which the previous working day is calculated.</param>
+        /// <param name="holidayCalendar">The holiday calendar to use for determining working days. Defaults to "UK" for UK holidays.</param>
         /// <param name="zoneId">The time zone identifier used to evaluate the local date. Default is "Europe/London".</param>
         /// <returns>The instant representing the start of the previous working day in the specified time zone.</returns>
-        public static Instant PreviousWorkingDay(this Instant instant, string zoneId = "Europe/London")
+        public static Instant PreviousWorkingDay(this Instant instant, string holidayCalendar = "UK", string zoneId = "Europe/London")
         {
+            if(holidayCalendar == null)
+                return instant.PreviousDay(zoneId);
+                
             var localZone = DateTimeZoneProviders.Tzdb[zoneId];
             var localDate = instant.InZone(localZone);
-            var uk = new UKBankHoliday();
             localDate = localDate.Plus(Duration.FromDays(-1));
-            while (!uk.IsWorkingDay(localDate.ToDateTimeUnspecified()))
+            while (!Uk.IsWorkingDay(localDate.ToDateTimeUnspecified()))
                 localDate = localDate.Plus(Duration.FromDays(-1));
  
             return localDate.ToInstant();
@@ -283,11 +321,47 @@ namespace ZES.Infrastructure.Utils
         /// Gets the previous working day relative to the specified time.
         /// </summary>
         /// <param name="time">The current time.</param>
+        /// <param name="holidayCalendar">The holiday calendar identifier to use for determining working days. Defaults to "UK" for UK holidays.</param>
         /// <param name="zoneId">The time zone identifier. Defaults to "Europe/London".</param>
         /// <returns>The previous working day as a <see cref="Time"/> object.</returns>
-        public static Time PreviousWorkingDay(this Time time, string zoneId = "Europe/London") =>
-            time.ToInstant().PreviousWorkingDay(zoneId).ToTime();
+        public static Time PreviousWorkingDay(this Time time, string holidayCalendar = "UK", string zoneId = "Europe/London") =>
+            time.ToInstant().PreviousWorkingDay(holidayCalendar, zoneId).ToTime();
 
+        /// <summary>
+        /// Adjusts the given instant to the most recent working day if it falls on a non-working day preserving the local time.
+        /// </summary>
+        /// <param name="instant">The instant to adjust.</param>
+        /// <param name="holidayCalendar">The holiday calendar identifier to use for determining working days. Defaults to null, using the default UK calendar.</param>
+        /// <param name="zoneId">The time zone ID used to determine the working day. Defaults to "Europe/London".</param>
+        /// <returns>The instant adjusted to the most recent working day.</returns>
+        public static Instant RollToWorkingDay(this Instant instant, string holidayCalendar = null, string zoneId = "Europe/London")
+        {
+            if (holidayCalendar == null)
+                return instant;
+            
+            var localZone = DateTimeZoneProviders.Tzdb[zoneId];
+            var localDate = instant.InZone(localZone);
+            var datetime = localDate.ToDateTimeUnspecified();
+            if(Uk.IsWorkingDay(datetime))
+                return instant;
+            
+            localDate = localDate.Plus(Duration.FromDays(-1));
+            while (!Uk.IsWorkingDay(localDate.ToDateTimeUnspecified()))
+                localDate = localDate.Plus(Duration.FromDays(-1));
+            
+            return localDate.ToInstant();
+        }
+
+        /// <summary>
+        /// Adjusts the given time to the nearest working day if it falls on a non-working day.
+        /// </summary>
+        /// <param name="time">The time to adjust.</param>
+        /// <param name="holidayCalendar">The holiday calendar identifier to use for determining working days. Defaults to null, using the default UK calendar.</param>
+        /// <param name="zoneId">The time zone identifier to use for determining working days. Defaults to "Europe/London".</param>
+        /// <returns>A new Time instance representing the adjusted time on a working day.</returns>
+        public static Time RollToWorkingDay(this Time time, string holidayCalendar = null, string zoneId = "Europe/London")
+            => time.ToInstant().RollToWorkingDay(holidayCalendar, zoneId).ToTime();
+        
         /// <summary>
         /// Calculates the close of day for a given instant in a specified time zone.
         /// </summary>

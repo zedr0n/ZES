@@ -120,6 +120,24 @@ namespace ZES.Infrastructure.Utils
         /// <returns><c>true</c> if both instances represent the same calendar day in the specified time zone; otherwise, <c>false</c>.</returns>
         public static bool IsSameDay(this Time time, Time otherTime, string zoneId = "Europe/London") 
             => time.ToInstant().IsSameDay(otherTime.ToInstant(), zoneId);
+
+        /// <summary>
+        /// Converts an instant to a local date in the specified time zone.
+        /// </summary>
+        /// <param name="instant">The instant to convert.</param>
+        /// <param name="zoneId">The time zone identifier. Defaults to "Europe/London".</param>
+        /// <returns>The local date corresponding to the given instant in the specified time zone.</returns>
+        public static LocalDate Date(this Instant instant, string zoneId = "Europe/London") 
+            => instant.InZone(DateTimeZoneProviders.Tzdb[zoneId]).Date;
+
+        /// <summary>
+        /// Retrieves the local date component of a <see cref="Time"/> instance in the specified time zone.
+        /// </summary>
+        /// <param name="time">The <see cref="Time"/> instance to extract the local date from.</param>
+        /// <param name="zoneId">The time zone identifier to use for determining the local date. Defaults to "Europe/London".</param>
+        /// <returns>The <see cref="LocalDate"/> representing the date part of the specified time in the given time zone.</returns>
+        public static LocalDate Date(this Time time, string zoneId = "Europe/London") => 
+            time.ToInstant().Date(zoneId);
         
         /// <summary>
         /// Determines if the given instant falls on a working day in the UK.

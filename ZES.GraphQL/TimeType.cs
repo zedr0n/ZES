@@ -85,7 +85,7 @@ namespace ZES.GraphQL
         /// <inheritdoc />
         protected override StringValueNode ParseValue(Time value)
         {
-            if (value == default)
+            if (value == null)
             {
                 return new StringValueNode(string.Empty);
             }

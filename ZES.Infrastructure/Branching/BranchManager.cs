@@ -117,7 +117,7 @@ namespace ZES.Infrastructure.Branching
         }
 
         /// <inheritdoc />
-        public async Task<ITimeline> Branch(string branchId, Time time = default, IEnumerable<string> keys = null, bool deleteExisting = false, bool? useLazy = null)
+        public async Task<ITimeline> Branch(string branchId, Time time = null, IEnumerable<string> keys = null, bool deleteExisting = false, bool? useLazy = null)
         {
             var lazy = Configuration.UseLazyBranching;
             if (useLazy.HasValue)
@@ -146,7 +146,7 @@ namespace ZES.Infrastructure.Branching
             }
 
             var timeline = _branches.GetOrAdd(branchId, b => _activeTimeline.New(branchId, time));
-            if (time != default && timeline.Now != time)
+            if (time != null && timeline.Now != time)
             {
                 _log.Errors.Add(new InvalidOperationException($"Branch {branchId} already exists!"));
                 return null;
@@ -166,7 +166,9 @@ namespace ZES.Infrastructure.Branching
             _log.StopWatch.Stop("Branch.Clone");
 
             // update current timeline
-            _activeTimeline.Set(timeline);
+            //_activeTimeline.Set(timeline);
+            _activeTimeline.ActiveTimeline = timeline.Id == Master ? null : timeline;
+            //_activeTimeline = timeline;
             
             _log.Debug($"Switched to {branchId} branch");
 
@@ -174,7 +176,7 @@ namespace ZES.Infrastructure.Branching
              _messageQueue.Alert(new Alerts.InvalidateProjections());*/
                 
             _log.StopWatch.Stop("Branch");
-            return _activeTimeline;
+            return timeline;
         }
 
         /// <inheritdoc />
@@ -238,6 +240,7 @@ namespace ZES.Infrastructure.Branching
                 _commandLog.AppendCommand(c);
             }
 
+            _messageQueue.Alert(new ImmediateInvalidateProjections());
             return new MergeResult(true, aggrResult.Concat(sagaResult).ToDictionary(x => x.Key, x => x.Value), commandsToMerge);
         }
         

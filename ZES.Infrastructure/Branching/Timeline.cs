@@ -1,7 +1,5 @@
-using System;
 using NodaTime;
-using NodaTime.Extensions;
-using ZES.Interfaces;
+using ZES.Infrastructure.Utils;
 using ZES.Interfaces.Branching;
 using ZES.Interfaces.Clocks;
 using IClock = ZES.Interfaces.Clocks.IClock;
@@ -13,7 +11,12 @@ namespace ZES.Infrastructure.Branching
     {
         private readonly IClock _clock;
         private Time _now;
+        private readonly string _id;
 
+        /// <inheritdoc />
+        public ITimeline ActiveTimeline { get; set; }
+        private Timeline This => ActiveTimeline as Timeline ?? this;
+        
         /// <summary>
         /// Initializes a new instance of the <see cref="Timeline"/> class.
         /// </summary>
@@ -21,6 +24,7 @@ namespace ZES.Infrastructure.Branching
         public Timeline(IClock clock)
         {
             _clock = clock;
+            _id = BranchManager.Master;
         }
         
         /// <summary>
@@ -29,21 +33,21 @@ namespace ZES.Infrastructure.Branching
         /// <param name="id">Branch id</param>
         /// <param name="clock">Logical clock</param>
         /// <param name="time">Fixed time or null for live</param>
-        private Timeline(string id, IClock clock, Time time = default)
+        private Timeline(string id, IClock clock, Time time = null)
         {
-            Id = id;
+            _id = id;
             _clock = clock;
             _now = time;
         }
 
         /// <inheritdoc />
-        public bool Live => _now == default;
+        public bool Live => This._now == null;
 
         /// <inheritdoc />
-        public string Id { get; set; } = BranchManager.Master;
+        public string Id => This._id; 
 
         /// <inheritdoc />
-        public Time Now => _now ?? _clock.GetCurrentInstant(); 
+        public Time Now => This._now ?? _clock.GetCurrentInstant(); 
 
         /// <summary>
         /// Create new timeline 
@@ -51,26 +55,24 @@ namespace ZES.Infrastructure.Branching
         /// <param name="id">Timeline id</param>
         /// <param name="time">Null for live or time for fixed timeline</param>
         /// <returns>New timeline</returns>
-        public ITimeline New(string id, Time time = default) => new Timeline(id, _clock, time);    
-        
-        /// <inheritdoc />
-        public void Set(ITimeline rhs)
-        {
-            var t = rhs as Timeline;
-            if (t == null)
-                throw new InvalidOperationException();
-
-            Id = t.Id;
-            _now = t._now;
-        }
+        public ITimeline New(string id, Time time = null) => new Timeline(id, _clock, time);
 
         /// <inheritdoc />
         public void Warp(Time time)
         {
-            if (Id == BranchManager.Master)
+            if (_id == BranchManager.Master)
                 return;
 
             _now = time;
+        }
+
+        /// <inheritdoc />
+        public void Advance(Period period)
+        {
+            if (_id == BranchManager.Master)
+                return;
+
+            _now = Now.PlusPeriod(period);
         }
     }
 }

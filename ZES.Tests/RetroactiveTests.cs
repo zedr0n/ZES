@@ -246,10 +246,12 @@ namespace ZES.Tests
             branch.Warp(lastTime);
             await await bus.CommandAsync(new UpdateRoot(id));
 
+            await bus.Equal(new RootInfoQuery(id), r => r.UpdatedAt, lastTime);
+            
             manager.Reset();
-            await manager.Branch("test", timestamp);
+            var otherBranch = await manager.Branch("test", timestamp);
             await await bus.CommandAsync(new UpdateRoot(id));
-            var stream = await streamLocator.Find<Root>(id, branch.Id);
+            var stream = await streamLocator.Find<Root>(id, otherBranch.Id);
 
             var e = await eventStore.ReadStream<IEvent>(stream, 0).LastAsync();
 

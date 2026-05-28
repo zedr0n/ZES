@@ -1,3 +1,4 @@
+using NodaTime;
 using ZES.Interfaces.Clocks;
 
 namespace ZES.Interfaces.Branching
@@ -32,16 +33,25 @@ namespace ZES.Interfaces.Branching
         bool Live { get; }
 
         /// <summary>
-        /// Sets the timeline to be a copy of target timeline
+        /// Gets or sets the active timeline, representing the current timeline
+        /// being operated on, or null if on the master timeline.
         /// </summary>
-        /// <param name="rhs">target timeline</param>
-        void Set(ITimeline rhs);
+        /// <value>
+        /// The active timeline instance.
+        /// </value>
+        public ITimeline ActiveTimeline { get; set; }
 
         /// <summary>
         /// Warp to time
         /// </summary>
         /// <param name="time">Time to warp to</param>
         void Warp(Time time);
+        
+        /// <summary>
+        /// Advances the timeline by the specified period.
+        /// </summary>
+        /// <param name="period">The duration to advance the timeline by.</param>
+        void Advance(Period period);
 
         /// <summary>
         /// Create new timeline 

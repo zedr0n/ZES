@@ -36,7 +36,7 @@ namespace ZES.Interfaces.Branching
         /// <param name="deleteExisting">Indicates whether to delete an existing branch with the same identifier.</param>
         /// <param name="useLazy">Specifies whether the branch creation should be deferred (lazy) or immediate.</param>
         /// <returns>A task that represents the asynchronous operation, containing the newly created timeline.</returns>
-        Task<ITimeline> Branch(string branchId, Time time = default, IEnumerable<string> keys = null, bool deleteExisting = false, bool? useLazy = null);
+        Task<ITimeline> Branch(string branchId, Time time = null, IEnumerable<string> keys = null, bool deleteExisting = false, bool? useLazy = null);
 
         /// <summary>
         /// Merges the timeline into active timeline

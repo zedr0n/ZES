@@ -360,6 +360,34 @@ namespace ZES.Utils
             }
         }
 
+        /// <summary>
+        /// Retrieves all types from the specified assembly that implement or inherit from the given interface type.
+        /// </summary>
+        /// <param name="assembly">The assembly to scan for matching types.</param>
+        /// <param name="t">The interface type to match against implemented or inherited types.</param>
+        /// <returns>An enumerable collection of types that implement or inherit from the given interface.</returns>
+        public static IEnumerable<Type> GetTypesFromInterface(this Assembly assembly, Type t)
+        {
+            var types = assembly.GetTypes()
+                .Where(type =>
+                {
+                    if (!t.IsAssignableFrom(type))
+                        return false;
+
+                    // If searching for an open generic interface (contains unresolved generic parameters)
+                    if (!t.IsGenericType || !t.ContainsGenericParameters)
+                        return true;
+
+                    var matchingInterface = type.GetInterfaces()
+                        .FirstOrDefault(i => i.IsGenericType &&
+                                             i.GetGenericTypeDefinition() == t.GetGenericTypeDefinition());
+
+                    return matchingInterface != null && // Only match if the interface is also open generic
+                           matchingInterface.ContainsGenericParameters;
+                });
+            return types;
+        }
+
         private static Type GetMostDerivedInterface(Type[] interfaces)
         {
             if (interfaces == null || interfaces.Length == 0)
@@ -405,28 +433,6 @@ namespace ZES.Utils
             }
 
             return result;
-        }
-
-        private static IEnumerable<Type> GetTypesFromInterface(this Assembly assembly, Type t)
-        {
-            var types = assembly.GetTypes()
-                .Where(type =>
-                {
-                    if (!t.IsAssignableFrom(type))
-                        return false;
-
-                    // If searching for an open generic interface (contains unresolved generic parameters)
-                    if (!t.IsGenericType || !t.ContainsGenericParameters)
-                        return true;
-
-                    var matchingInterface = type.GetInterfaces()
-                        .FirstOrDefault(i => i.IsGenericType &&
-                                             i.GetGenericTypeDefinition() == t.GetGenericTypeDefinition());
-
-                    return matchingInterface != null && // Only match if the interface is also open generic
-                           matchingInterface.ContainsGenericParameters;
-                });
-            return types;
         }
         
         private static Type GetAsClosedTypeOf(this Type t, Type genericTypeDefinition)

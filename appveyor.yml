@@ -1,5 +1,5 @@
 version: 1.0.{build}
-image: Visual Studio 2022
+image: Visual Studio 2026
 
 dotnet_csproj:
   patch: true
@@ -16,12 +16,7 @@ build:
   verbosity: minimal
   publish_nuget: true             # package projects with .nuspec files and push to artifacts
 test_script:
-  - cmd: dotnet test --no-build --filter InfraTests ZES.Tests\ZES.Tests.csproj
-  - cmd: dotnet test --no-build --filter BranchTests ZES.Tests\ZES.Tests.csproj
-  - cmd: dotnet test --no-build --filter SchemaTests ZES.Tests\ZES.Tests.csproj
-  - cmd: dotnet test --no-build --filter FuncTests ZES.Tests\ZES.Tests.csproj
-  - cmd: dotnet test --no-build --filter RetroactiveTests ZES.Tests\ZES.Tests.csproj
-  - cmd: dotnet test --no-build --filter IntegrationTests ZES.Tests\ZES.Tests.csproj
+  - cmd: dotnet test --no-build
 on_failure:
   # Cache node modules, and refresh if package.json changes
 cache:
@@ -34,6 +29,3 @@ nuget:
 install:
  - nuget sources add -Name Account -Source https://ci.appveyor.com/nuget/zinnos -UserName %nuget_user% -Password %nuget_password%
  - nuget sources add -Name MyGet -Source https://www.myget.org/F/zinnos-public/api/v3/index.json
- - ps: |
-     Invoke-WebRequest -Uri 'https://dot.net/v1/dotnet-install.ps1' -UseBasicParsing -OutFile "$env:temp\dotnet-install.ps1"
-     & $env:temp\dotnet-install.ps1 -Architecture x64 -Version '10.0.102' -InstallDir "$env:ProgramFiles\dotnet" 

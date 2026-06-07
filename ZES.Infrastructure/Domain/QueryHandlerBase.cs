@@ -17,14 +17,14 @@ namespace ZES.Infrastructure.Domain
         where TResult : class
         where TState : IState, new()
     {
-        private readonly ITimeline _activeTimeline;
+        private readonly IActiveTimeline _activeTimeline;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="QueryHandlerBase{TQuery,TResult,TState}"/> class.
         /// </summary>
         /// <param name="manager">Projection manager</param>
         /// <param name="activeTimeline">Active timeline service</param>
-        protected QueryHandlerBase(IProjectionManager manager, ITimeline activeTimeline)
+        protected QueryHandlerBase(IProjectionManager manager, IActiveTimeline activeTimeline)
         {
             _activeTimeline = activeTimeline;
             Projection = manager.GetProjection<TState>();

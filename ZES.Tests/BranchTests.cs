@@ -72,10 +72,9 @@ namespace ZES.Tests
         {
             var container = CreateContainer();
             var bus = container.GetInstance<IBus>();
-            var repository = container.GetInstance<IEsRepository<IAggregate>>();
             var store = container.GetInstance<IEventStore<IAggregate>>();
             var locator = container.GetInstance<IStreamLocator>();
-            var timeline = container.GetInstance<ITimeline>();
+            var timeline = container.GetInstance<IActiveTimeline>();
 
             var manager = container.GetInstance<IBranchManager>();
 
@@ -274,7 +273,7 @@ namespace ZES.Tests
             var command = new CreateRoot(id);
             await await bus.CommandAsync(command);
 
-            var timeline = container.GetInstance<ITimeline>();
+            var timeline = container.GetInstance<IActiveTimeline>();
             Assert.Equal("master", timeline.Id);
 
             await manager.Branch("test");
@@ -323,7 +322,7 @@ namespace ZES.Tests
             var command = new CreateRoot(id);
             await await bus.CommandAsync(command);
 
-            var timeline = container.GetInstance<ITimeline>();
+            var timeline = container.GetInstance<IActiveTimeline>();
             Assert.Equal("master", timeline.Id);
 
             await timeTraveller.Branch("test");
@@ -365,7 +364,7 @@ namespace ZES.Tests
             var command = new CreateRoot(id);
             await await bus.CommandAsync(command);
 
-            var timeline = container.GetInstance<ITimeline>();
+            var timeline = container.GetInstance<IActiveTimeline>();
             Assert.Equal("master", timeline.Id);
 
             await timeTraveller.Branch("test");
@@ -406,7 +405,7 @@ namespace ZES.Tests
             await await bus.CommandAsync(command);
 
             await repository.Find<Root>(id);
-            var timeline = container.GetInstance<ITimeline>();
+            var timeline = container.GetInstance<IActiveTimeline>();
             Assert.Equal("master", timeline.Id);
            
             var timeTraveller = container.GetInstance<IBranchManager>();
@@ -866,7 +865,7 @@ namespace ZES.Tests
             var result = await remote.Push(BranchManager.Master);
             Assert.Equal(Status.Success, result.ResultStatus); 
             
-            var timeline = container.GetInstance<ITimeline>();
+            var timeline = container.GetInstance<IActiveTimeline>();
             Assert.Equal("master", timeline.Id);
 
             await timeTraveller.Branch("test", useLazy: false);
@@ -912,7 +911,7 @@ namespace ZES.Tests
             var result = await remote.Push(BranchManager.Master);
             Assert.Equal(Status.Success, result.ResultStatus); 
             
-            var timeline = container.GetInstance<ITimeline>();
+            var timeline = container.GetInstance<IActiveTimeline>();
             Assert.Equal("master", timeline.Id);
 
             await timeTraveller.Branch("test");

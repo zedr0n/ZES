@@ -18,7 +18,7 @@ namespace ZES.Infrastructure.Domain
     /// <inheritdoc />
     public abstract class CommandLogBase<TNewStreamMessage, TStreamMessage> : ICommandLog
     {
-        private readonly ITimeline _timeline;
+        private readonly IActiveTimeline _timeline;
         private readonly ILog _log;
 
         private readonly ConcurrentDictionary<string, FailedCommandsSingleHolder> _failedCommandsSingleHolders;
@@ -32,7 +32,7 @@ namespace ZES.Infrastructure.Domain
         /// <param name="serializer">Serializer</param>
         /// <param name="timeline">Current timeline tracker</param>
         /// <param name="log">Application log</param>
-        public CommandLogBase(ISerializer<ICommand> serializer, ITimeline timeline, ILog log)
+        public CommandLogBase(ISerializer<ICommand> serializer, IActiveTimeline timeline, ILog log)
         {
             Serializer = serializer;
             _timeline = timeline;

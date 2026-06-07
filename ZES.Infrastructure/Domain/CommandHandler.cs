@@ -19,7 +19,7 @@ namespace ZES.Infrastructure.Domain
         private readonly ICommandLog _commandLog;
         private readonly ILog _log;
         private readonly IErrorLog _errorLog;
-        private readonly ITimeline _timeline;
+        private readonly IActiveTimeline _timeline;
         private readonly IBranchManager _branchManager;
         private readonly IMessageQueue _messageQueue;
 
@@ -33,7 +33,7 @@ namespace ZES.Infrastructure.Domain
         /// <param name="errorLog">Error log</param>
         /// <param name="branchManager">Branch manager</param>
         /// <param name="messageQueue">Message queue</param>
-        public CommandHandler(ICommandHandler<T> handler, ILog log, ITimeline timeline, ICommandLog commandLog, IErrorLog errorLog, IBranchManager branchManager, IMessageQueue messageQueue)
+        public CommandHandler(ICommandHandler<T> handler, ILog log, IActiveTimeline timeline, ICommandLog commandLog, IErrorLog errorLog, IBranchManager branchManager, IMessageQueue messageQueue)
         {
             _handler = handler;
             _log = log;

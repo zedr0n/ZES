@@ -22,7 +22,7 @@ namespace ZES.Infrastructure
     /// <inheritdoc />
     public class RecordLog : IRecordLog
     {
-        private readonly ITimeline _timeline;
+        private readonly IActiveTimeline _timeline;
         private readonly Lazy<string> _logFile;
         private readonly Lazy<Scenario> _scenario;
         private readonly ILog _log;
@@ -32,7 +32,7 @@ namespace ZES.Infrastructure
         /// </summary>
         /// <param name="timeline">Timeline</param>
         /// <param name="log">Application log</param>
-        public RecordLog(ITimeline timeline, ILog log)
+        public RecordLog(IActiveTimeline timeline, ILog log)
         {
             _timeline = timeline;
             _log = log;

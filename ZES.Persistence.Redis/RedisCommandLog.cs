@@ -26,7 +26,7 @@ namespace ZES.Persistence.Redis
         /// <param name="timeline">Timeline instance</param>
         /// <param name="log">Log service</param>
         /// <param name="connection">Redis connection</param>
-        public RedisCommandLog(ISerializer<ICommand> serializer, ITimeline timeline, ILog log, IRedisConnection connection) 
+        public RedisCommandLog(ISerializer<ICommand> serializer, IActiveTimeline timeline, ILog log, IRedisConnection connection) 
             : base(serializer, timeline, log)
         {
             _connection = connection;

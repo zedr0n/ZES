@@ -1,11 +1,6 @@
 using System;
 using System.Collections.Concurrent;
-using System.Collections.Generic;
-using System.Linq;
 using SimpleInjector;
-using SqlStreamStore.Streams;
-using ZES.Infrastructure;
-using ZES.Interfaces;
 using ZES.Interfaces.Branching;
 using ZES.Interfaces.Domain;
 
@@ -15,7 +10,7 @@ namespace ZES
     public class ProjectionManager : IProjectionManager
     {
         private readonly Container _container;
-        private readonly ITimeline _activeTimeline;
+        private readonly IActiveTimeline _activeTimeline;
         private readonly ConcurrentDictionary<Descriptor, IProjection> _projections = new ConcurrentDictionary<Descriptor, IProjection>();
 
         /// <summary>
@@ -23,7 +18,7 @@ namespace ZES
         /// </summary>
         /// <param name="container">SimpleInjector DI container</param>
         /// <param name="activeTimeline">Active timeline service</param>
-        public ProjectionManager(Container container, ITimeline activeTimeline)
+        public ProjectionManager(Container container, IActiveTimeline activeTimeline)
         {
             _container = container;
             _activeTimeline = activeTimeline;

@@ -218,6 +218,7 @@ namespace ZES
             container.RegisterDecorator(typeof(IEventStore<>), typeof(EphemeralEventStore<>), predicate: p => p.ServiceType.GetGenericArguments().Contains(typeof(IAggregate)));
 
             container.Register<ITimeline, Timeline>(Lifestyle.Singleton);
+            container.Register<IActiveTimeline, ActiveTimeline>(Lifestyle.Singleton);
             container.Register<IMessageQueue, MessageQueue>(Lifestyle.Singleton);
             container.Register<IFlowCompletionService, FlowCompletionService>(Lifestyle.Singleton);
             container.Register<ICommandRegistry, CommandRegistry>(Lifestyle.Singleton);
@@ -344,7 +345,7 @@ namespace ZES
             return Lifestyle.Singleton.CreateRegistration(
                 () => new SqlCommandLog(
                     container.GetInstance<ISerializer<ICommand>>(), 
-                    container.GetInstance<ITimeline>(),
+                    container.GetInstance<IActiveTimeline>(),
                     container.GetInstance<ILog>(),
                     container.GetInstance<RemoteStreamStore>().Store),
                 container);

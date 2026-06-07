@@ -25,7 +25,7 @@ namespace ZES.Persistence.EventStoreDB
         /// <param name="timeline">Timeline instance</param>
         /// <param name="log">Log service</param>
         /// <param name="connection">EventStore connection</param>
-        public TcpCommandLog(ISerializer<ICommand> serializer, ITimeline timeline, ILog log, IEventStoreConnection connection)
+        public TcpCommandLog(ISerializer<ICommand> serializer, IActiveTimeline timeline, ILog log, IEventStoreConnection connection)
             : base(serializer, timeline, log)
         {
             _connection = connection;

@@ -31,8 +31,7 @@ namespace ZES
         private readonly ConcurrentDictionary<string, CommandDispatcher> _dispatchers = new(); 
         private readonly ConcurrentDictionary<Type, IQueryHandler> _queryHandlers = new();
         private readonly ILog _log;
-        private readonly ITimeline _timeline;
-        private readonly IMessageQueue _messageQueue;
+        private readonly IActiveTimeline _timeline;
         private readonly ICommandLog _commandLog;
         private readonly IFlowCompletionService _flowCompletionService;
         private readonly AsyncLock _lock = new();
@@ -46,12 +45,11 @@ namespace ZES
         /// <param name="messageQueue">Message queue</param>
         /// <param name="commandLog">Command log</param>
         /// <param name="flowCompletionService">Flow completion service</param>
-        public Bus(Container container, ILog log, ITimeline timeline, IMessageQueue messageQueue, ICommandLog commandLog, IFlowCompletionService flowCompletionService)
+        public Bus(Container container, ILog log, IActiveTimeline timeline, IMessageQueue messageQueue, ICommandLog commandLog, IFlowCompletionService flowCompletionService)
         {
             _container = container;
             _log = log;
             _timeline = timeline;
-            _messageQueue = messageQueue;
             _commandLog = commandLog;
             _flowCompletionService = flowCompletionService;
 

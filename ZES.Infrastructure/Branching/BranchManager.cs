@@ -35,8 +35,8 @@ namespace ZES.Infrastructure.Branching
         public const string Master = "master";
         
         private readonly ILog _log;
-        private readonly ConcurrentDictionary<string, ITimeline> _branches = new ConcurrentDictionary<string, ITimeline>();
-        private readonly ITimeline _activeTimeline;
+        private readonly ConcurrentDictionary<string, ITimeline> _branches = new();
+        private readonly IActiveTimeline _activeTimeline;
         private readonly IClock _clock;
         private readonly IMessageQueue _messageQueue;
         private readonly IFlowCompletionService _flowCompletionService;
@@ -61,7 +61,7 @@ namespace ZES.Infrastructure.Branching
         /// <param name="clock">Logical clock</param>
         public BranchManager(
             ILog log, 
-            ITimeline activeTimeline,
+            IActiveTimeline activeTimeline,
             IMessageQueue messageQueue,
             IFlowCompletionService flowCompletionService,
             IEventStore<IAggregate> eventStore,
@@ -72,7 +72,7 @@ namespace ZES.Infrastructure.Branching
             IClock clock)
         {
             _log = log;
-            _activeTimeline = activeTimeline as Timeline;
+            _activeTimeline = activeTimeline;
             _messageQueue = messageQueue;
             _flowCompletionService = flowCompletionService;
             _eventStore = eventStore;
@@ -166,15 +166,9 @@ namespace ZES.Infrastructure.Branching
             _log.StopWatch.Stop("Branch.Clone");
 
             // update current timeline
-            //_activeTimeline.Set(timeline);
-            _activeTimeline.ActiveTimeline = timeline.Id == Master ? null : timeline;
-            //_activeTimeline = timeline;
-            
+            _activeTimeline.Timeline = timeline;
             _log.Debug($"Switched to {branchId} branch");
 
-            /* rebuild all projections
-             _messageQueue.Alert(new Alerts.InvalidateProjections());*/
-                
             _log.StopWatch.Stop("Branch");
             return timeline;
         }

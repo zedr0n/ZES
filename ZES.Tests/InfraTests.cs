@@ -414,7 +414,7 @@ namespace ZES.Tests
         {
             var container = CreateContainer();
             var bus = container.GetInstance<IBus>();
-            var timeline = container.GetInstance<ITimeline>();
+            var timeline = container.GetInstance<IActiveTimeline>();
 
             var id = $"{nameof(CanHistoricalProjectRoot)}-Root";
             var command = new CreateRoot($"{id}Historical");

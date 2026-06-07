@@ -24,14 +24,14 @@ namespace ZES.Infrastructure.Domain
     {
         private readonly IEventStore<TEventSourced> _eventStore;
         private readonly IStreamLocator _streams;
-        private readonly ITimeline _timeline;
+        private readonly IActiveTimeline _timeline;
         private readonly IBus _bus;
         private readonly IEsRegistry _registry;
         private readonly ILog _log;
 
-        private readonly ConcurrentDictionary<string, TEventSourced> _cache = new ConcurrentDictionary<string, TEventSourced>();
+        private readonly ConcurrentDictionary<string, TEventSourced> _cache = new();
         
-        private readonly ConcurrentDictionary<string, Func<string, Task<IEnumerable<IEvent>>>> _delegates = new ConcurrentDictionary<string, Func<string, Task<IEnumerable<IEvent>>>>();
+        private readonly ConcurrentDictionary<string, Func<string, Task<IEnumerable<IEvent>>>> _delegates = new();
 
         /// <summary>
         /// Initializes a new instance of the <see cref="EsRepository{I}"/> class.
@@ -42,7 +42,7 @@ namespace ZES.Infrastructure.Domain
         /// <param name="bus">Message bus</param>
         /// <param name="registry">Event sourced registry</param>
         /// <param name="log">Log service</param>
-        public EsRepository(IEventStore<TEventSourced> eventStore, IStreamLocator streams, ITimeline timeline, IBus bus, IEsRegistry registry, ILog log)
+        public EsRepository(IEventStore<TEventSourced> eventStore, IStreamLocator streams, IActiveTimeline timeline, IBus bus, IEsRegistry registry, ILog log)
         {
             _eventStore = eventStore;
             _streams = streams;

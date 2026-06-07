@@ -46,7 +46,7 @@ namespace ZES.GraphQL
         private readonly IMessageQueue _messageQueue;
         private readonly IRecordLog _recordLog;
         private readonly IRemote _remote;
-        private readonly ITimeline _timeline;
+        private readonly IActiveTimeline _timeline;
         private readonly GraphQlResolver _graphQlResolver;
 
         /// <summary>
@@ -68,7 +68,7 @@ namespace ZES.GraphQL
         public SchemaProvider(IBus bus, ILog log, IBranchManager manager, IEnumerable<IGraphQlMutation> mutations,
             IEnumerable<IGraphQlQuery> queries, IEnumerable<ICatalog<IGraphQlInputType>> inputTypes,
             IServiceCollection services, IGraph graph, IMessageQueue messageQueue, IRecordLog recordLog, IRemote remote,
-            ITimeline timeline, GraphQlResolver graphQlResolver)
+            IActiveTimeline timeline, GraphQlResolver graphQlResolver)
         {
             _bus = bus;
             _log = log;
@@ -131,7 +131,7 @@ namespace ZES.GraphQL
             _services.AddSingleton(typeof(IMessageQueue), _messageQueue);
             _services.AddSingleton(typeof(IRecordLog), _recordLog);
             _services.AddSingleton(typeof(IRemote), _remote);
-            _services.AddSingleton(typeof(ITimeline), _timeline);
+            _services.AddSingleton(typeof(IActiveTimeline), _timeline);
             _services.AddSingleton(typeof(GraphQlResolver), _graphQlResolver);
             _services.TryAddEnumerable(_queries.Select(ServiceDescriptor.Singleton));
             _services.TryAddEnumerable(_mutations.Select(ServiceDescriptor.Singleton));

@@ -27,7 +27,7 @@ namespace ZES
             IMessageQueue messageQueue,
             ISerializer<IEvent> serializer,
             ISerializer<ICommand> serializerCommand,
-            ITimeline timeline, 
+            IActiveTimeline timeline, 
             ILog log)
         {
             var streamStore = new InMemoryStreamStore();

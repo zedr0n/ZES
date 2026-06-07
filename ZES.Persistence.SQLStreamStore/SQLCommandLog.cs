@@ -29,7 +29,7 @@ namespace ZES.Persistence.SQLStreamStore
         /// <param name="timeline">Timeline instance</param>
         /// <param name="log">Log service</param>
         /// <param name="streamStore">SQLStreamStore instance</param>
-        public SqlCommandLog(ISerializer<ICommand> serializer, ITimeline timeline, ILog log, IStreamStore streamStore)
+        public SqlCommandLog(ISerializer<ICommand> serializer, IActiveTimeline timeline, ILog log, IStreamStore streamStore)
             : base(serializer, timeline, log)
         {
             _streamStore = streamStore;

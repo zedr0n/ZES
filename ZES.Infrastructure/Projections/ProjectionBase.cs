@@ -50,7 +50,6 @@ namespace ZES.Infrastructure.Projections
         private readonly Lazy<Task> _start;
         private readonly IStreamLocator _streamLocator;
         private int _parallel;
-        private string _timeline;
         private ActionBlock<Tracked<IEvent>> _updateStateBlock;
         private IDisposable _liveStreamsConnection;
         private IDisposable _allStreamsSubscription;
@@ -68,7 +67,7 @@ namespace ZES.Infrastructure.Projections
         /// <param name="log">Log service</param>
         /// <param name="activeTimeline">Timeline service</param>
         /// <param name="streamLocator">Stream locator</param>
-        public ProjectionBase(IEventStore<IAggregate> eventStore, ILog log, ITimeline activeTimeline, IStreamLocator streamLocator)
+        public ProjectionBase(IEventStore<IAggregate> eventStore, ILog log, IActiveTimeline activeTimeline, IStreamLocator streamLocator)
         {
             EventStore = eventStore;
             Log = log;
@@ -108,8 +107,8 @@ namespace ZES.Infrastructure.Projections
         /// <inheritdoc/>
         public string Timeline
         {
-            get => _timeline ?? ActiveTimeline.Id;
-            set => _timeline = value;
+            get => field ?? ActiveTimeline.Id;
+            set;
         }
 
         /// <inheritdoc />
@@ -162,7 +161,7 @@ namespace ZES.Infrastructure.Projections
         /// <summary>
         /// Gets current timeline
         /// </summary>
-        protected ITimeline ActiveTimeline { get; }
+        protected IActiveTimeline ActiveTimeline { get; }
 
         /// <summary>
         /// Gets observable representing the projection status

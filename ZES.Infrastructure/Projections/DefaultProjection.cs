@@ -25,7 +25,7 @@ namespace ZES.Infrastructure.Projections
         /// <param name="streamLocator">Stream locator</param>
         /// <param name="flowCompletionService">Flow completion service</param>
         /// <param name="handlers">Event handlers</param>
-        public DefaultProjection(IEventStore<IAggregate> eventStore, ILog log, ITimeline activeTimeline, IMessageQueue messageQueue, IStreamLocator streamLocator, IFlowCompletionService flowCompletionService, IEnumerable<IProjectionHandler<TState>> handlers)
+        public DefaultProjection(IEventStore<IAggregate> eventStore, ILog log, IActiveTimeline activeTimeline, IMessageQueue messageQueue, IStreamLocator streamLocator, IFlowCompletionService flowCompletionService, IEnumerable<IProjectionHandler<TState>> handlers)
             : base(eventStore, log, activeTimeline, messageQueue, streamLocator, flowCompletionService)
         {
             State = new TState();

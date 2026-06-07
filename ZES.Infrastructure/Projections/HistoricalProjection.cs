@@ -28,7 +28,7 @@ namespace ZES.Infrastructure.Projections
             IEventStore<IAggregate> eventStore,
             ILog log,
             IProjection<TState> iProjection,
-            ITimeline activeTimeline,
+            IActiveTimeline activeTimeline,
             IStreamLocator streamLocator)
             : base(eventStore, log, activeTimeline, streamLocator)
         {

@@ -33,15 +33,6 @@ namespace ZES.Interfaces.Branching
         bool Live { get; }
 
         /// <summary>
-        /// Gets or sets the active timeline, representing the current timeline
-        /// being operated on, or null if on the master timeline.
-        /// </summary>
-        /// <value>
-        /// The active timeline instance.
-        /// </value>
-        public ITimeline ActiveTimeline { get; set; }
-
-        /// <summary>
         /// Warp to time
         /// </summary>
         /// <param name="time">Time to warp to</param>

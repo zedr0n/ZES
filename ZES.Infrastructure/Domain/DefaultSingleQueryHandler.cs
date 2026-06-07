@@ -16,7 +16,7 @@ namespace ZES.Infrastructure.Domain
         /// </summary>
         /// <param name="manager">Projection manager</param>
         /// <param name="activeTimeline">Active timeline</param>
-        public DefaultSingleQueryHandler(IProjectionManager manager, ITimeline activeTimeline)
+        public DefaultSingleQueryHandler(IProjectionManager manager, IActiveTimeline activeTimeline)
             : base(manager, activeTimeline)
         {
         }
@@ -40,7 +40,7 @@ namespace ZES.Infrastructure.Domain
         /// </summary>
         /// <param name="manager">Projection manager</param>
         /// <param name="activeTimeline">Active timeline</param>
-        public DefaultSingleQueryHandler(IProjectionManager manager, ITimeline activeTimeline)
+        public DefaultSingleQueryHandler(IProjectionManager manager, IActiveTimeline activeTimeline)
             : base(manager, activeTimeline)
         {
         }

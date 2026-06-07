@@ -76,7 +76,7 @@ namespace ZES.Tests
         {
             var container = CreateContainer();
             var bus = container.GetInstance<IBus>();
-            var timeline = container.GetInstance<ITimeline>();
+            var timeline = container.GetInstance<IActiveTimeline>();
             var graph = container.GetInstance<IGraph>();
             
             var timestamp = timeline.Now;
@@ -99,7 +99,7 @@ namespace ZES.Tests
         {
             var container = CreateContainer();
             var bus = container.GetInstance<IBus>();
-            var timeline = container.GetInstance<ITimeline>();
+            var timeline = container.GetInstance<IActiveTimeline>();
 
             var timestamp = timeline.Now;
             var lastTime = timestamp + Duration.FromSeconds(-60);
@@ -159,7 +159,7 @@ namespace ZES.Tests
             var container = CreateContainer();
             var bus = container.GetInstance<IBus>();
             var messageQueue = container.GetInstance<IMessageQueue>();
-            var timeline = container.GetInstance<ITimeline>();
+            var timeline = container.GetInstance<IActiveTimeline>();
             var manager = container.GetInstance<IBranchManager>();
             var streamLocator = container.GetInstance<IStreamLocator>();
             var eventStore = container.GetInstance<IEventStore<IAggregate>>();
@@ -200,7 +200,7 @@ namespace ZES.Tests
         {
             var container = CreateContainer();
             var bus = container.GetInstance<IBus>();
-            var timeline = container.GetInstance<ITimeline>();
+            var timeline = container.GetInstance<IActiveTimeline>();
             var messageQueue = container.GetInstance<IMessageQueue>();
             var manager = container.GetInstance<IBranchManager>();
             var flowCompletionService = container.GetInstance<IFlowCompletionService>();
@@ -230,7 +230,7 @@ namespace ZES.Tests
         {
             var container = CreateContainer();
             var bus = container.GetInstance<IBus>();
-            var timeline = container.GetInstance<ITimeline>();
+            var timeline = container.GetInstance<IActiveTimeline>();
             var manager = container.GetInstance<IBranchManager>();
             var eventStore = container.GetInstance<IEventStore<IAggregate>>();
             var streamLocator = container.GetInstance<IStreamLocator>();
@@ -281,7 +281,7 @@ namespace ZES.Tests
         {
             var container = CreateContainer(new List<Action<Container>> { Config.RegisterSagas });
             var bus = container.GetInstance<IBus>();
-            var timeline = container.GetInstance<ITimeline>();
+            var timeline = container.GetInstance<IActiveTimeline>();
             var messageQueue = container.GetInstance<IMessageQueue>();
             var log = container.GetInstance<ILog>();
             var id = $"{nameof(CanRetroactivelyApplySaga)}-Root";

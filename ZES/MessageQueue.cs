@@ -7,7 +7,6 @@ using System.Reactive.Subjects;
 using SimpleInjector;
 using ZES.Infrastructure.Domain;
 using ZES.Interfaces;
-using ZES.Interfaces.Branching;
 using ZES.Interfaces.Domain;
 using ZES.Interfaces.EventStore;
 using ZES.Interfaces.Infrastructure;
@@ -19,7 +18,6 @@ namespace ZES
     public class MessageQueue : IMessageQueue
     {
         private readonly ILog _log;
-        private readonly ITimeline _timeline;
         private readonly Subject<IEvent> _messages = new();
         private readonly Subject<IAlert> _alerts = new();
 
@@ -27,11 +25,9 @@ namespace ZES
         /// Initializes a new instance of the <see cref="MessageQueue"/> class.
         /// </summary>
         /// <param name="log">Application log</param>
-        /// <param name="timeline">Timeline</param>
-        public MessageQueue(ILog log, ITimeline timeline)
+        public MessageQueue(ILog log)
         {
             _log = log;
-            _timeline = timeline;
         }
 
         /// <inheritdoc />

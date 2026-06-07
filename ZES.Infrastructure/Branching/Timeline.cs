@@ -11,12 +11,7 @@ namespace ZES.Infrastructure.Branching
     {
         private readonly IClock _clock;
         private Time _now;
-        private readonly string _id;
 
-        /// <inheritdoc />
-        public ITimeline ActiveTimeline { get; set; }
-        private Timeline This => ActiveTimeline as Timeline ?? this;
-        
         /// <summary>
         /// Initializes a new instance of the <see cref="Timeline"/> class.
         /// </summary>
@@ -24,7 +19,7 @@ namespace ZES.Infrastructure.Branching
         public Timeline(IClock clock)
         {
             _clock = clock;
-            _id = BranchManager.Master;
+            Id = BranchManager.Master;
         }
         
         /// <summary>
@@ -35,19 +30,19 @@ namespace ZES.Infrastructure.Branching
         /// <param name="time">Fixed time or null for live</param>
         private Timeline(string id, IClock clock, Time time = null)
         {
-            _id = id;
+            Id = id;
             _clock = clock;
             _now = time;
         }
 
         /// <inheritdoc />
-        public bool Live => This._now == null;
+        public bool Live => _now == null;
 
         /// <inheritdoc />
-        public string Id => This._id; 
+        public string Id { get; }
 
         /// <inheritdoc />
-        public Time Now => This._now ?? _clock.GetCurrentInstant(); 
+        public Time Now => _now ?? _clock.GetCurrentInstant(); 
 
         /// <summary>
         /// Create new timeline 
@@ -60,7 +55,7 @@ namespace ZES.Infrastructure.Branching
         /// <inheritdoc />
         public void Warp(Time time)
         {
-            if (_id == BranchManager.Master)
+            if (Id == BranchManager.Master)
                 return;
 
             _now = time;
@@ -69,7 +64,7 @@ namespace ZES.Infrastructure.Branching
         /// <inheritdoc />
         public void Advance(Period period)
         {
-            if (_id == BranchManager.Master)
+            if (Id == BranchManager.Master)
                 return;
 
             _now = Now.PlusPeriod(period);

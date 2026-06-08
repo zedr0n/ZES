@@ -1,6 +1,7 @@
 ﻿using NodaTime;
 using ZES.Interfaces.Branching;
 using ZES.Interfaces.Clocks;
+using ZES.Interfaces.Domain;
 
 namespace ZES.Infrastructure.Branching;
 
@@ -24,6 +25,15 @@ public class ActiveTimeline(ITimeline timeline) : IActiveTimeline
 
     /// <inheritdoc />
     public ITimeline New(string id, Time time = default) => Timeline.New(id, time);
+
+    /// <inheritdoc />
+    public void QueueCommand(ICommand command) => Timeline.QueueCommand(command);
+
+    /// <inheritdoc />
+    public ICommand DequeCommand() => Timeline.DequeCommand();
+
+    /// <inheritdoc />
+    public ICommand PeekCommand() => Timeline.PeekCommand();
 
     /// <inheritdoc />
     public ITimeline Timeline { get; set; } = timeline;

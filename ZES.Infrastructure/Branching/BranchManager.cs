@@ -38,6 +38,7 @@ namespace ZES.Infrastructure.Branching
         private readonly ConcurrentDictionary<string, ITimeline> _branches = new();
         private readonly IActiveTimeline _activeTimeline;
         private readonly IClock _clock;
+        private readonly IBus _bus;
         private readonly IMessageQueue _messageQueue;
         private readonly IFlowCompletionService _flowCompletionService;
         private readonly IEventStore<IAggregate> _eventStore;
@@ -59,6 +60,7 @@ namespace ZES.Infrastructure.Branching
         /// <param name="graph">Graph</param>
         /// <param name="commandLog">Command log</param>
         /// <param name="clock">Logical clock</param>
+        /// <param name="bus">Command bus</param>       
         public BranchManager(
             ILog log, 
             IActiveTimeline activeTimeline,
@@ -69,7 +71,8 @@ namespace ZES.Infrastructure.Branching
             IStreamLocator streamLocator,
             IGraph graph,
             ICommandLog commandLog, 
-            IClock clock)
+            IClock clock,
+            IBus bus)
         {
             _log = log;
             _activeTimeline = activeTimeline;
@@ -80,6 +83,7 @@ namespace ZES.Infrastructure.Branching
             _graph = graph;
             _commandLog = commandLog;
             _clock = clock;
+            _bus = bus;
             _sagaStore = sagaStore;
 
             _branches.TryAdd(Master, activeTimeline.New(Master));
@@ -170,6 +174,30 @@ namespace ZES.Infrastructure.Branching
             _log.Debug($"Switched to {branchId} branch");
 
             _log.StopWatch.Stop("Branch");
+            return timeline;
+        }
+
+        /// <inheritdoc />
+        public async Task<ITimeline> Advance(string branchId, Period period)
+        {
+            if(branchId == Master)
+                throw new InvalidOperationException("Cannot advance master branch");
+            
+            if (!_branches.TryGetValue(branchId, out var timeline))
+                return null;
+
+            var now = timeline.Now;
+            var futureDate = now.PlusPeriod(period);
+            
+            while ( (timeline.PeekCommand()?.Timestamp ?? Time.MaxValue) <= futureDate)
+            {
+                var command = timeline.DequeCommand();
+                timeline.Advance(Period.Between(now.Date(), command.Timestamp.Date()));
+                now = command.Timestamp;
+                await _bus.Command(command);
+            }
+            
+            timeline.Advance(Period.Between(now.Date(), futureDate.Date()));
             return timeline;
         }
 

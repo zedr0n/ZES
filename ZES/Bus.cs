@@ -2,7 +2,6 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
-using System.Reactive.Concurrency;
 using System.Reactive.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -13,7 +12,6 @@ using ZES.Infrastructure;
 using ZES.Infrastructure.Alerts;
 using ZES.Infrastructure.Domain;
 using ZES.Infrastructure.Utils;
-using ZES.Interfaces;
 using ZES.Interfaces.Branching;
 using ZES.Interfaces.Domain;
 using ZES.Interfaces.Infrastructure;
@@ -84,6 +82,13 @@ namespace ZES
         public async Task<Task> CommandAsync(ICommand command, bool waitForRetroactive = false)
         {
             command.Timeline = _timeline.Id;
+
+            if (command is not IRetroactiveCommand && command.Timestamp != null && command.Timestamp > _timeline.Now)
+            {
+                _timeline.QueueCommand(command);
+                return Task.CompletedTask;
+            }
+
             if (command is IRetroactiveCommand)
                 await _flowCompletionService.CompletionAsync(includeRetroactive: waitForRetroactive);
             else if (command.RetroactiveId == null && command.AncestorId == null)

@@ -1,5 +1,6 @@
 using NodaTime;
 using ZES.Interfaces.Clocks;
+using ZES.Interfaces.Domain;
 
 namespace ZES.Interfaces.Branching
 {
@@ -51,5 +52,23 @@ namespace ZES.Interfaces.Branching
         /// <param name="time">Null for live or time for fixed timeline</param>
         /// <returns>New timeline</returns>
         ITimeline New(string id, Time time = default);
+
+        /// <summary>
+        /// Queues a command for execution on the timeline
+        /// </summary>
+        /// <param name="command">The command to be queued</param>
+        void QueueCommand(ICommand command);
+
+        /// <summary>
+        /// Dequeues the next command from the timeline's command queue.
+        /// </summary>
+        /// <returns>The next command in the queue, or null if the queue is empty.</returns>
+        ICommand DequeCommand();
+
+        /// <summary>
+        /// Peeks at the next command in the timeline's command queue without removing it.
+        /// </summary>
+        /// <returns>The next command in the queue, or null if the queue is empty.</returns>
+        ICommand PeekCommand();
     }
 }

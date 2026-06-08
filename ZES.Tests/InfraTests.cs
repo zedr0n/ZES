@@ -403,7 +403,7 @@ namespace ZES.Tests
 
             var time = (DateTime.UtcNow.ToInstant() + Duration.FromMinutes(10)).ToTime(); // (DateTimeOffset)new DateTime(2019, 1, 1, 0, 0, 0, DateTimeKind.Utc); 
             
-            var command = new AddRecord(id, 1) { Timestamp = time };
+            var command = new AddRecord(id, 1).ToRetroactiveCommand(time);
             await await bus.CommandAsync(command);
 
             await bus.Equal(new LastRecordQuery(id), c => c.TimeStamp, time);

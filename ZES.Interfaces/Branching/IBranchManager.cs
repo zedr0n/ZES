@@ -39,6 +39,14 @@ namespace ZES.Interfaces.Branching
         Task<ITimeline> Branch(string branchId, Time time = null, IEnumerable<string> keys = null, bool deleteExisting = false, bool? useLazy = null);
 
         /// <summary>
+        /// Advances the timeline of the specified branch by a given time period.
+        /// </summary>
+        /// <param name="branchId">The identifier of the branch to advance.</param>
+        /// <param name="period">The time period by which to advance the timeline.</param>
+        /// <returns>A task representing the asynchronous operation, containing the advanced timeline.</returns>
+        Task<ITimeline> Advance(string branchId, Period period);        
+        
+        /// <summary>
         /// Merges the timeline into active timeline
         /// </summary>
         /// <param name="branchId">Branch to merge</param>

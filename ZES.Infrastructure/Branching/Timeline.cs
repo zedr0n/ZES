@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using NodaTime;
 using ZES.Infrastructure.Utils;
@@ -13,7 +14,7 @@ namespace ZES.Infrastructure.Branching
     {
         private readonly IClock _clock;
         private Time _now;
-        private readonly Queue<ICommand> _pendingCommands = new();
+        private readonly ConcurrentQueue<ICommand> _pendingCommands = new();
 
         /// <summary>
         /// Initializes a new instance of the <see cref="Timeline"/> class.
@@ -64,13 +65,13 @@ namespace ZES.Infrastructure.Branching
         /// <inheritdoc />
         public ICommand DequeCommand()
         {
-            return _pendingCommands.Count > 0 ? _pendingCommands.Dequeue() : null;
+            return _pendingCommands.TryDequeue(out var command) ? command : null;
         }
 
         /// <inheritdoc />
         public ICommand PeekCommand()
         {
-            return _pendingCommands.Count > 0 ? _pendingCommands.Peek() : null;    
+            return _pendingCommands.TryPeek(out var command) ? command : null;
         }
 
         /// <inheritdoc />

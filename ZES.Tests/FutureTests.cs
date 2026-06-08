@@ -53,12 +53,39 @@ public class FutureTests : ZesTest
         await bus.Command(new CreateRoot(nameof(CanExecuteCommandInTheFuture)) { Timestamp = futureDate });
         await bus.Command(new UpdateRoot(nameof(CanExecuteCommandInTheFuture)) { Timestamp = futureDate2 });
         
-        await manager.Advance(futureTimeline.Id, Period.FromYears(2));
+        await manager.Advance(futureTimeline.Id, futureDate2);
 
         var stats = await bus.QueryAsync(new StatsQuery());
         Assert.Equal(1, stats.NumberOfRoots);
         
         var rootInfo = await bus.QueryAsync(new RootInfoQuery(nameof(CanExecuteCommandInTheFuture)));
+        Assert.Equal(futureDate2, rootInfo.UpdatedAt);
+    }
+
+    [Fact]
+    public async Task CanExecuteCommandInTheFutureOnMaster()
+    {
+        var container = CreateContainer();
+        
+        var bus = container.GetInstance<IBus>();
+        var timeline = container.GetInstance<IActiveTimeline>();
+        
+        var now = timeline.Now;
+        var futureDate = now.PlusPeriod(Period.FromSeconds(1));
+        var futureDate2 = futureDate.PlusPeriod(Period.FromSeconds(1));
+        
+        await bus.Command(new CreateRoot(nameof(CanExecuteCommandInTheFutureOnMaster)) { Timestamp = futureDate });
+        await bus.Command(new UpdateRoot(nameof(CanExecuteCommandInTheFutureOnMaster)) { Timestamp = futureDate2 });
+
+        var stats = await bus.QueryAsync(new StatsQuery());
+        Assert.Equal(0, stats.NumberOfRoots);
+        
+        await Task.Delay((futureDate2 - timeline.Now).ToTimeSpan(), TestContext.Current.CancellationToken);
+        
+        stats = await bus.QueryAsync(new StatsQuery());
+        Assert.Equal(1, stats.NumberOfRoots);
+        
+        var rootInfo = await bus.QueryAsync(new RootInfoQuery(nameof(CanExecuteCommandInTheFutureOnMaster)));
         Assert.Equal(futureDate2, rootInfo.UpdatedAt);
     }
 }

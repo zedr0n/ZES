@@ -15,7 +15,6 @@ using ZES.Infrastructure.Utils;
 using ZES.Interfaces.Branching;
 using ZES.Interfaces.Domain;
 using ZES.Interfaces.Infrastructure;
-using AsyncLock = NeoSmart.AsyncLock.AsyncLock;
 
 #pragma warning disable CS4014
 
@@ -32,7 +31,6 @@ namespace ZES
         private readonly IActiveTimeline _timeline;
         private readonly ICommandLog _commandLog;
         private readonly IFlowCompletionService _flowCompletionService;
-        private readonly AsyncLock _lock = new();
 
         /// <summary>
         /// Initializes a new instance of the <see cref="Bus"/> class.

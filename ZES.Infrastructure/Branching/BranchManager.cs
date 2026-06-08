@@ -7,7 +7,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Threading.Tasks.Dataflow;
 using Gridsum.DataflowEx;
-using NodaTime;
 using ZES.Infrastructure.Alerts;
 using ZES.Infrastructure.Domain;
 using ZES.Infrastructure.EventStore;
@@ -47,6 +46,10 @@ namespace ZES.Infrastructure.Branching
         private readonly IStreamLocator _streamLocator;
         private readonly IGraph _graph;
 
+        private readonly Lock _masterWakeLock = new();
+        private readonly SemaphoreSlim _masterAdvanceLock = new(1, 1);
+        private CancellationTokenSource _masterWakeCts;        
+        
         /// <summary>
         /// Initializes a new instance of the <see cref="BranchManager"/> class.
         /// </summary>
@@ -86,7 +89,9 @@ namespace ZES.Infrastructure.Branching
             _bus = bus;
             _sagaStore = sagaStore;
 
-            _branches.TryAdd(Master, activeTimeline.New(Master));
+            var master = activeTimeline.Timeline;
+            _branches.TryAdd(Master, master);
+            master.PendingCommandsChanged.Subscribe(_ => ScheduleMasterWake());
         }
 
         /// <inheritdoc />
@@ -178,26 +183,19 @@ namespace ZES.Infrastructure.Branching
         }
 
         /// <inheritdoc />
-        public async Task<ITimeline> Advance(string branchId, Period period)
+        public async Task<ITimeline> Advance(string branchId, Time time)
         {
-            if(branchId == Master)
-                throw new InvalidOperationException("Cannot advance master branch");
-            
             if (!_branches.TryGetValue(branchId, out var timeline))
                 return null;
 
-            var now = timeline.Now;
-            var futureDate = now.PlusPeriod(period);
-            
-            while ( (timeline.PeekCommand()?.Timestamp ?? Time.MaxValue) <= futureDate)
+            while ( (timeline.PeekCommand()?.Timestamp ?? Time.MaxValue) <= time) 
             {
                 var command = timeline.DequeCommand();
-                timeline.Advance(Period.Between(now.Date(), command.Timestamp.Date()));
-                now = command.Timestamp;
-                await _bus.Command(command);
+                timeline.Advance(command.Timestamp);
+                await _bus.Command(command.ToRetroactiveCommand(command.Timestamp));
             }
             
-            timeline.Advance(Period.Between(now.Date(), futureDate.Date()));
+            timeline.Advance(time);
             return timeline;
         }
 
@@ -445,6 +443,51 @@ namespace ZES.Infrastructure.Branching
             if (count > 0)
                 _log.Debug($"{count} {typeof(T).Name} streams cloned to {timeline}");            
             
+        }
+        
+        private void ScheduleMasterWake()
+        {
+            lock (_masterWakeLock)
+            {
+                if (!_branches.TryGetValue(Master, out var master))
+                    return;
+                
+                _masterWakeCts?.Cancel();
+                var next = master.PeekCommand()?.Timestamp;
+                if (next == null)
+                    return;
+
+                _masterWakeCts = new CancellationTokenSource();
+                var token = _masterWakeCts.Token;
+
+                _ = WakeMasterAt(next, token);
+            }
+        }    
+        
+        private async Task WakeMasterAt(Time dueAt, CancellationToken token)
+        {
+            var now = _clock.GetCurrentInstant();
+            var delay = dueAt > now
+                ? (dueAt - now).ToTimeSpan()
+                : TimeSpan.Zero;
+
+            if (delay > TimeSpan.Zero)
+                await Task.Delay(delay, token);
+
+            if (token.IsCancellationRequested)
+                return;
+
+            await _masterAdvanceLock.WaitAsync(token);
+            try
+            {
+                await Advance(Master, _clock.GetCurrentInstant());
+            }
+            finally
+            {
+                _masterAdvanceLock.Release();
+            }
+
+            ScheduleMasterWake();
         }
         
         private class MergeFlow<T> : Dataflow<IStream>

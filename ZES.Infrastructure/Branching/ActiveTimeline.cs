@@ -1,4 +1,5 @@
-﻿using NodaTime;
+﻿using System;
+using NodaTime;
 using ZES.Interfaces.Branching;
 using ZES.Interfaces.Clocks;
 using ZES.Interfaces.Domain;
@@ -18,7 +19,10 @@ public class ActiveTimeline(ITimeline timeline) : IActiveTimeline
     public bool Live => Timeline.Live;
 
     /// <inheritdoc />
-    public void Warp(Time time) => Timeline.Warp(time);
+    public IObservable<ITimeline> PendingCommandsChanged => Timeline.PendingCommandsChanged;
+
+    /// <inheritdoc />
+    public void Advance(Time time) => Timeline.Advance(time);
 
     /// <inheritdoc />
     public void Advance(Period period) => Timeline.Advance(period);

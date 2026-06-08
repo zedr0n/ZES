@@ -1,3 +1,4 @@
+using System;
 using NodaTime;
 using ZES.Interfaces.Clocks;
 using ZES.Interfaces.Domain;
@@ -34,10 +35,18 @@ namespace ZES.Interfaces.Branching
         bool Live { get; }
 
         /// <summary>
+        /// Gets an observable that emits when the state of pending commands for the timeline changes.
+        /// </summary>
+        /// <value>
+        /// An observable stream of <see cref="ITimeline"/> instances that reflects changes in the timeline's pending commands.
+        /// </value>
+        public IObservable<ITimeline> PendingCommandsChanged { get; }
+        
+        /// <summary>
         /// Warp to time
         /// </summary>
         /// <param name="time">Time to warp to</param>
-        void Warp(Time time);
+        void Advance(Time time);
         
         /// <summary>
         /// Advances the timeline by the specified period.

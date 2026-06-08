@@ -42,9 +42,9 @@ namespace ZES.Interfaces.Branching
         /// Advances the timeline of the specified branch by a given time period.
         /// </summary>
         /// <param name="branchId">The identifier of the branch to advance.</param>
-        /// <param name="period">The time period by which to advance the timeline.</param>
+        /// <param name="time">The time to which the branch should be advanced.</param>
         /// <returns>A task representing the asynchronous operation, containing the advanced timeline.</returns>
-        Task<ITimeline> Advance(string branchId, Period period);        
+        Task<ITimeline> Advance(string branchId, Time time);        
         
         /// <summary>
         /// Merges the timeline into active timeline

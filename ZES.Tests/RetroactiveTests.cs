@@ -243,7 +243,7 @@ namespace ZES.Tests
 
             var branch = await manager.Branch("test0");
             var lastTime = timestamp + Duration.FromSeconds(60); 
-            branch.Warp(lastTime);
+            branch.Advance(lastTime);
             await await bus.CommandAsync(new UpdateRoot(id));
 
             await bus.Equal(new RootInfoQuery(id), r => r.UpdatedAt, lastTime);

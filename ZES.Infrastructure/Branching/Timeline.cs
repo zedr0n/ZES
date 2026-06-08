@@ -1,5 +1,10 @@
+using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Linq;
+using System.Reactive;
+using System.Reactive.Linq;
+using System.Reactive.Subjects;
 using NodaTime;
 using ZES.Infrastructure.Utils;
 using ZES.Interfaces.Branching;
@@ -14,7 +19,12 @@ namespace ZES.Infrastructure.Branching
     {
         private readonly IClock _clock;
         private Time _now;
-        private readonly ConcurrentQueue<ICommand> _pendingCommands = new();
+        private readonly SortedDictionary<Time, Queue<ICommand>> _pendingCommands = new();
+
+        private readonly Subject<ITimeline> _pendingCommandsChanged = new();
+
+        /// <inheritdoc />
+        public IObservable<ITimeline> PendingCommandsChanged => _pendingCommandsChanged.AsObservable();
 
         /// <summary>
         /// Initializes a new instance of the <see cref="Timeline"/> class.
@@ -59,23 +69,50 @@ namespace ZES.Infrastructure.Branching
         /// <inheritdoc />
         public void QueueCommand(ICommand command)
         {
-            _pendingCommands.Enqueue(command);
+            lock (_pendingCommands)
+            {
+                if (!_pendingCommands.TryGetValue(command.Timestamp, out var queue))
+                {
+                    queue = new Queue<ICommand>();
+                    _pendingCommands.Add(command.Timestamp, queue);
+                }
+                queue.Enqueue(command);
+            }
+            _pendingCommandsChanged.OnNext(this);
         }
 
         /// <inheritdoc />
         public ICommand DequeCommand()
         {
-            return _pendingCommands.TryDequeue(out var command) ? command : null;
+            lock (_pendingCommands)
+            {
+                if (_pendingCommands.Count == 0)
+                    return null;
+                
+                var first = _pendingCommands.First();
+                var command = first.Value.Dequeue();
+
+                if (first.Value.Count == 0)
+                    _pendingCommands.Remove(first.Key);
+
+                return command;
+            }
         }
 
         /// <inheritdoc />
         public ICommand PeekCommand()
         {
-            return _pendingCommands.TryPeek(out var command) ? command : null;
+            lock (_pendingCommands)
+            {
+                if (_pendingCommands.Count == 0)
+                    return null;
+                
+                return _pendingCommands.First().Value.Peek();
+            }
         }
 
         /// <inheritdoc />
-        public void Warp(Time time)
+        public void Advance(Time time)
         {
             if (Id == BranchManager.Master)
                 return;

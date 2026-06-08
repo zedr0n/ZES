@@ -29,6 +29,25 @@ namespace ZES.Infrastructure.Domain
                 command.Guid = null;
             return new RetroactiveCommand<TCommand>(command, time) { Guid = guidOverride };    
         }
+
+        /// <summary>
+        /// Converts the specified command into a retroactive command with the provided timestamp.
+        /// </summary>
+        /// <param name="command">The original command to be wrapped as a retroactive command.</param>
+        /// <param name="time">The timestamp representing when the command will be actioned retroactively.</param>
+        /// <returns>An instance of <see cref="IRetroactiveCommand"/> containing the specified command and timestamp.</returns>
+        public static IRetroactiveCommand ToRetroactiveCommand(this ICommand command, Time time)
+        {
+            var guidOverride = command.Guid;
+            // Preserve the externally supplied id on the retroactive wrapper. The wrapped
+            // command receives a new id so it does not share the wrapper's command id.
+            if(guidOverride != null)
+                command.Guid = null;
+
+            var retroactiveCommand = Activator.CreateInstance(typeof(RetroactiveCommand<>).MakeGenericType(command.GetType()), command, time) as IRetroactiveCommand;
+            retroactiveCommand!.Guid = guidOverride;
+            return retroactiveCommand;
+        }
     }
     
     /// <inheritdoc cref="ZES.Infrastructure.Domain.Command" />

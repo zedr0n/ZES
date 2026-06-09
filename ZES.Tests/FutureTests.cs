@@ -6,6 +6,7 @@ using ZES.Interfaces.Branching;
 using ZES.Interfaces.Infrastructure;
 using ZES.Tests.Domain.Commands;
 using ZES.Tests.Domain.Queries;
+using ZES.Utils;
 
 namespace ZES.Tests;
 
@@ -85,7 +86,6 @@ public class FutureTests : ZesTest
         stats = await bus.QueryAsync(new StatsQuery());
         Assert.Equal(1, stats.NumberOfRoots);
         
-        var rootInfo = await bus.QueryAsync(new RootInfoQuery(nameof(CanExecuteCommandInTheFutureOnMaster)));
-        Assert.Equal(futureDate2, rootInfo.UpdatedAt);
+        await bus.QueryUntil(new RootInfoQuery(nameof(CanExecuteCommandInTheFutureOnMaster)), r => r.UpdatedAt == futureDate2);
     }
 }

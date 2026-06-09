@@ -1,6 +1,7 @@
 ﻿using System.Threading.Tasks;
 using NodaTime;
 using Xunit;
+using ZES.Infrastructure.Branching;
 using ZES.Infrastructure.Utils;
 using ZES.Interfaces.Branching;
 using ZES.Interfaces.Infrastructure;
@@ -83,9 +84,73 @@ public class FutureTests : ZesTest
         
         await Task.Delay((futureDate2 - timeline.Now).ToTimeSpan(), TestContext.Current.CancellationToken);
         
+        await bus.QueryUntil(new StatsQuery(), s => s.NumberOfRoots == 1);
+        await bus.QueryUntil(new RootInfoQuery(nameof(CanExecuteCommandInTheFutureOnMaster)), r => r.UpdatedAt == futureDate2);
+    }
+
+    [Fact]
+    public async Task CanExecuteCommandInTheFutureOnLiveBranch()
+    {
+        var container = CreateContainer();
+        
+        var bus = container.GetInstance<IBus>();
+        var manager = container.GetInstance<IBranchManager>();
+        var timeline = container.GetInstance<IActiveTimeline>();
+        
+        var branch = await manager.Branch("test");
+        var now = branch.Now;
+
+        var futureDate = now.PlusPeriod(Period.FromSeconds(1));
+        var futureDate2 = futureDate.PlusPeriod(Period.FromSeconds(1));
+        
+        await bus.Command(new CreateRoot(nameof(CanExecuteCommandInTheFutureOnLiveBranch)) { Timestamp = futureDate });
+        await bus.Command(new UpdateRoot(nameof(CanExecuteCommandInTheFutureOnLiveBranch)) { Timestamp = futureDate2 });
+
+        var stats = await bus.QueryAsync(new StatsQuery());
+        Assert.Equal(0, stats.NumberOfRoots);
+        
+        await Task.Delay((futureDate2 - timeline.Now).ToTimeSpan(), TestContext.Current.CancellationToken);
+        
+        await bus.QueryUntil(new StatsQuery(), s => s.NumberOfRoots == 1);
+        await bus.QueryUntil(new RootInfoQuery(nameof(CanExecuteCommandInTheFutureOnLiveBranch)), r => r.UpdatedAt == futureDate2);
+
+        await manager.Branch(BranchManager.Master);
+        
+        stats = await bus.QueryAsync(new StatsQuery());
+        Assert.Equal(0, stats.NumberOfRoots);
+    }
+    
+    [Fact]
+    public async Task CanCopyPendingCommandsToLiveBranch()
+    {
+        var container = CreateContainer();
+        
+        var bus = container.GetInstance<IBus>();
+        var manager = container.GetInstance<IBranchManager>();
+        var timeline = container.GetInstance<IActiveTimeline>();
+
+        var now = timeline.Now;
+        var futureDate = now.PlusPeriod(Period.FromSeconds(1));
+        var futureDate2 = futureDate.PlusPeriod(Period.FromSeconds(1));
+        
+        await bus.Command(new CreateRoot(nameof(CanCopyPendingCommandsToLiveBranch)) { Timestamp = futureDate });
+        await bus.Command(new UpdateRoot(nameof(CanCopyPendingCommandsToLiveBranch)) { Timestamp = futureDate2 });
+
+        await manager.Branch("test");
+        
+        var stats = await bus.QueryAsync(new StatsQuery());
+        Assert.Equal(0, stats.NumberOfRoots);
+        
+        await Task.Delay((futureDate2 - timeline.Now).ToTimeSpan(), TestContext.Current.CancellationToken);
+        
         stats = await bus.QueryAsync(new StatsQuery());
         Assert.Equal(1, stats.NumberOfRoots);
         
-        await bus.QueryUntil(new RootInfoQuery(nameof(CanExecuteCommandInTheFutureOnMaster)), r => r.UpdatedAt == futureDate2);
+        await bus.QueryUntil(new RootInfoQuery(nameof(CanCopyPendingCommandsToLiveBranch)), r => r.UpdatedAt == futureDate2);
+
+        manager.Reset();
+        
+        await bus.QueryUntil(new StatsQuery(), s => s.NumberOfRoots == 1);
+        await bus.QueryUntil(new RootInfoQuery(nameof(CanCopyPendingCommandsToLiveBranch)), r => r.UpdatedAt == futureDate2);
     }
 }

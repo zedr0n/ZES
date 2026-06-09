@@ -46,9 +46,15 @@ namespace ZES.Infrastructure.Branching
         private readonly IStreamLocator _streamLocator;
         private readonly IGraph _graph;
 
-        private readonly Lock _masterWakeLock = new();
-        private readonly SemaphoreSlim _masterAdvanceLock = new(1, 1);
-        private CancellationTokenSource _masterWakeCts;        
+        private readonly ConcurrentDictionary<string, WakeState> _wakeStates = new();
+        private readonly Lock _wakeLock = new();
+
+        private class WakeState
+        {
+            public CancellationTokenSource Source { get; set; }
+            public SemaphoreSlim AdvanceLock { get; } = new(1, 1);
+            public IDisposable Subscription { get; set; }
+        }
         
         /// <summary>
         /// Initializes a new instance of the <see cref="BranchManager"/> class.
@@ -91,7 +97,7 @@ namespace ZES.Infrastructure.Branching
 
             var master = activeTimeline.Timeline;
             _branches.TryAdd(Master, master);
-            master.PendingCommandsChanged.Subscribe(_ => ScheduleMasterWake());
+            master.PendingCommandsChanged.Subscribe(_ => ScheduleWake(Master));
         }
 
         /// <inheritdoc />
@@ -120,12 +126,29 @@ namespace ZES.Infrastructure.Branching
             await Task.WhenAll(deleteAggregate, deleteSaga, deleteCommands);
             
             _branches.TryRemove(branchId, out var branch);
+            if (branch is { Live: true })
+            {
+                if (_wakeStates.TryRemove(branchId, out var wakeState))
+                {
+                    wakeState.Source?.Cancel();
+                    wakeState.Subscription?.Dispose();
+                }
+            }
+                
             _messageQueue.Alert(new BranchDeleted(branchId));
             
             _log.StopWatch.Stop("DeleteBranch");
         }
 
-        /// <inheritdoc />
+        /// <summary>
+        /// Creates or switches to an existing branch with the specified parameters.
+        /// </summary>
+        /// <param name="branchId">The unique identifier of the branch to create or switch to.</param>
+        /// <param name="time">The point in time at which the branch begins, or null for a live timeline.</param>
+        /// <param name="keys">An optional collection of keys for filtering the events to clone into the branch.</param>
+        /// <param name="deleteExisting">Indicates whether to delete the existing branch with the same identifier, if it exists.</param>
+        /// <param name="useLazy">Specifies whether lazy branching should be used; if null, the default configuration is applied.</param>
+        /// <returns>The timeline associated with the specified branch, or null if the branch could not be created or switched to.</returns>
         public async Task<ITimeline> Branch(string branchId, Time time = null, IEnumerable<string> keys = null, bool deleteExisting = false, bool? useLazy = null)
         {
             var lazy = Configuration.UseLazyBranching;
@@ -140,20 +163,15 @@ namespace ZES.Infrastructure.Branching
             }
 
             _log.StopWatch.Start("Branch.Wait");
-            // var sub = _messageQueue.UncompletedMessages.Subscribe(s => _log.Info($"Uncompleted messages: {s}"));
-            // sub.Dispose();
-            // await _messageQueue.UncompletedMessages.FirstAsync(s => s == 0).Timeout(Configuration.Timeout);
             await _flowCompletionService.CompletionAsync().Timeout(Configuration.Timeout);
             _log.StopWatch.Stop("Branch.Wait");
-            var newBranch = !_branches.ContainsKey(branchId); // && branchId != Master;
+            var newBranch = !_branches.ContainsKey(branchId);
             if (!newBranch && deleteExisting)
             {
                 await DeleteBranch(branchId);
-                
-                // branchId = branchId + "!";
                 newBranch = true;
             }
-
+            
             var timeline = _branches.GetOrAdd(branchId, b => _activeTimeline.New(branchId, time));
             if (time != null && timeline.Now != time)
             {
@@ -173,10 +191,28 @@ namespace ZES.Infrastructure.Branching
             }
 
             _log.StopWatch.Stop("Branch.Clone");
-
+           
+            if (time == null)
+                CancelWake(_activeTimeline.Timeline.Id);
+            
             // update current timeline
             _activeTimeline.Timeline = timeline;
             _log.Debug($"Switched to {branchId} branch");
+            
+            // set the scheduler for live timelines
+            if (time == null)
+            {
+                ScheduleWake(branchId);
+
+                if (newBranch)
+                {
+                    lock (_wakeStates)
+                    {
+                        var wakeState = _wakeStates.GetOrAdd(branchId, _ => new WakeState());
+                        wakeState.Subscription = timeline.PendingCommandsChanged.Subscribe(_ => ScheduleWake(branchId));
+                    }
+                }
+            }
 
             _log.StopWatch.Stop("Branch");
             return timeline;
@@ -188,7 +224,8 @@ namespace ZES.Infrastructure.Branching
             if (!_branches.TryGetValue(branchId, out var timeline))
                 return null;
 
-            while ( (timeline.PeekCommand()?.Timestamp ?? Time.MaxValue) <= time) 
+            var effectiveUntil = timeline.Live && time > timeline.Now ? timeline.Now : time; 
+            while ( (timeline.PeekCommand()?.Timestamp ?? Time.MaxValue) <= effectiveUntil) 
             {
                 var command = timeline.DequeCommand();
                 timeline.Advance(command.Timestamp);
@@ -444,50 +481,80 @@ namespace ZES.Infrastructure.Branching
                 _log.Debug($"{count} {typeof(T).Name} streams cloned to {timeline}");            
             
         }
-        
-        private void ScheduleMasterWake()
+
+        private void CancelWake(string branchId)
         {
-            lock (_masterWakeLock)
+            lock (_wakeLock)
             {
-                if (!_branches.TryGetValue(Master, out var master))
+                if (branchId != _activeTimeline.Id)
                     return;
                 
-                _masterWakeCts?.Cancel();
-                var next = master.PeekCommand()?.Timestamp;
+                if (!_wakeStates.TryGetValue(branchId, out var state))
+                    return;
+                
+                state.Source?.Cancel();
+                state.Subscription?.Dispose();
+            }
+        }
+        
+        private void ScheduleWake(string branchId)
+        {
+            lock (_wakeLock)
+            {
+                if (branchId != _activeTimeline.Id)
+                    return;
+                
+                if (!_branches.TryGetValue(branchId, out var timeline))
+                    return;
+                
+                var wakeState = _wakeStates.GetOrAdd(branchId, _ => new WakeState());
+                wakeState.Source?.Cancel();
+                
+                var next = timeline.PeekCommand()?.Timestamp;
                 if (next == null)
                     return;
+               
+                var wakeCts = new CancellationTokenSource();
+                wakeState.Source = wakeCts;
 
-                _masterWakeCts = new CancellationTokenSource();
-                var token = _masterWakeCts.Token;
-
-                _ = WakeMasterAt(next, token);
+                _ = WakeTimelineAt(branchId, next, wakeState.Source, wakeState.AdvanceLock);
             }
         }    
         
-        private async Task WakeMasterAt(Time dueAt, CancellationToken token)
+        private async Task WakeTimelineAt(string timeline, Time dueAt, CancellationTokenSource source, SemaphoreSlim advanceLock)
         {
-            var now = _clock.GetCurrentInstant();
-            var delay = dueAt > now
-                ? (dueAt - now).ToTimeSpan()
-                : TimeSpan.Zero;
-
-            if (delay > TimeSpan.Zero)
-                await Task.Delay(delay, token);
-
-            if (token.IsCancellationRequested)
-                return;
-
-            await _masterAdvanceLock.WaitAsync(token);
+            var token = source.Token;
             try
             {
-                await Advance(Master, _clock.GetCurrentInstant());
+                var now = _clock.GetCurrentInstant();
+                var delay = dueAt > now
+                    ? (dueAt - now).ToTimeSpan()
+                    : TimeSpan.Zero;
+
+                if (delay > TimeSpan.Zero)
+                    await Task.Delay(delay, token);
+
+                if (token.IsCancellationRequested)
+                    return;
+
+                await advanceLock.WaitAsync(token);
+                try
+                {
+                    await Advance(timeline, _clock.GetCurrentInstant());
+                }
+                finally
+                {
+                    advanceLock.Release();
+                    ScheduleWake(timeline);
+                }
+            }
+            catch (OperationCanceledException) when (token.IsCancellationRequested)
+            {
             }
             finally
             {
-                _masterAdvanceLock.Release();
-            }
-
-            ScheduleMasterWake();
+                if (!_wakeStates.TryGetValue(timeline, out var state) || !ReferenceEquals(state.Source, source))
+                    source.Dispose();            }
         }
         
         private class MergeFlow<T> : Dataflow<IStream>

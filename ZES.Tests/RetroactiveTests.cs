@@ -241,7 +241,7 @@ namespace ZES.Tests
             await await bus.CommandAsync(new CreateRoot(id));
             var timestamp = timeline.Now;
 
-            var branch = await manager.Branch("test0");
+            var branch = await manager.Branch("test0", timestamp);
             var lastTime = timestamp + Duration.FromSeconds(60); 
             branch.Advance(lastTime);
             await await bus.CommandAsync(new UpdateRoot(id));

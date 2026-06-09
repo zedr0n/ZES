@@ -56,7 +56,7 @@ namespace ZES.Infrastructure.Branching
         public string Id { get; }
 
         /// <inheritdoc />
-        public Time Now => _now ?? _clock.GetCurrentInstant(); 
+        public Time Now => _now ?? _clock.GetCurrentInstant();
 
         /// <summary>
         /// Create new timeline 
@@ -64,7 +64,25 @@ namespace ZES.Infrastructure.Branching
         /// <param name="id">Timeline id</param>
         /// <param name="time">Null for live or time for fixed timeline</param>
         /// <returns>New timeline</returns>
-        public ITimeline New(string id, Time time = null) => new Timeline(id, _clock, time);
+        public ITimeline New(string id, Time time)
+        {
+            var timeline = new Timeline(id, _clock, time);
+
+            var cutoff = time ?? Now;
+            lock (_pendingCommands)
+            {
+                foreach (var (t, queue) in _pendingCommands.Where(x => x.Key > cutoff))
+                {
+                    foreach (var copy in queue.Select(c => c.Copy()))
+                    {
+                        copy.Timeline = id;
+                        timeline.QueueCommand(copy);
+                    }
+                }
+            }
+
+            return timeline;
+        }
 
         /// <inheritdoc />
         public void QueueCommand(ICommand command)
@@ -114,7 +132,7 @@ namespace ZES.Infrastructure.Branching
         /// <inheritdoc />
         public void Advance(Time time)
         {
-            if (Id == BranchManager.Master)
+            if (Live)
                 return;
 
             _now = time;
@@ -123,7 +141,7 @@ namespace ZES.Infrastructure.Branching
         /// <inheritdoc />
         public void Advance(Period period)
         {
-            if (Id == BranchManager.Master)
+            if (Live)
                 return;
 
             _now = Now.PlusPeriod(period);

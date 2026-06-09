@@ -41,7 +41,7 @@ namespace ZES.Interfaces.Branching
         /// An observable stream of <see cref="ITimeline"/> instances that reflects changes in the timeline's pending commands.
         /// </value>
         public IObservable<ITimeline> PendingCommandsChanged { get; }
-        
+
         /// <summary>
         /// Warp to time
         /// </summary>
@@ -60,7 +60,7 @@ namespace ZES.Interfaces.Branching
         /// <param name="id">Timeline id</param>
         /// <param name="time">Null for live or time for fixed timeline</param>
         /// <returns>New timeline</returns>
-        ITimeline New(string id, Time time = default);
+        ITimeline New(string id, Time time);
 
         /// <summary>
         /// Queues a command for execution on the timeline

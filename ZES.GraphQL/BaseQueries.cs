@@ -48,6 +48,12 @@ namespace ZES.GraphQL
         public string ActiveBranch() => _manager.ActiveBranch;
 
         /// <summary>
+        /// Retrieves the list of all branch identifiers available in the current timeline manager.
+        /// </summary>
+        /// <returns>An enumerable collection of strings representing branch identifiers.</returns>
+        public IEnumerable<string> ListBranches() => _manager.ListBranches();
+        
+        /// <summary>
         /// GraphQL log query
         /// </summary>
         /// <returns>Log contents</returns>

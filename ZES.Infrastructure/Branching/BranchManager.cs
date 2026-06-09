@@ -114,11 +114,8 @@ namespace ZES.Infrastructure.Branching
             _log.StopWatch.Start("DeleteBranch");
             
             _log.StopWatch.Start($"{nameof(DeleteBranch)}.Wait");
-            //await _messageQueue.UncompletedMessagesOnBranch(branchId).Timeout(Configuration.Timeout)
-            //    .FirstAsync(s => s == 0);            
             await _flowCompletionService.CompletionAsync(branchId).Timeout(Configuration.Timeout);
             _log.StopWatch.Stop($"{nameof(DeleteBranch)}.Wait");
-
             
             var deleteAggregate = DeleteBranch<IAggregate>(branchId);
             var deleteSaga = DeleteBranch<ISaga>(branchId);
@@ -128,10 +125,13 @@ namespace ZES.Infrastructure.Branching
             _branches.TryRemove(branchId, out var branch);
             if (branch is { Live: true })
             {
-                if (_wakeStates.TryRemove(branchId, out var wakeState))
+                lock (_wakeStates)
                 {
-                    wakeState.Source?.Cancel();
-                    wakeState.Subscription?.Dispose();
+                    if (_wakeStates.TryRemove(branchId, out var wakeState))
+                    {
+                        wakeState.Source?.Cancel();
+                        wakeState.Subscription?.Dispose();
+                    }
                 }
             }
                 
@@ -265,7 +265,10 @@ namespace ZES.Infrastructure.Branching
 
             return timeline.Now;
         }
-        
+
+        /// <inheritdoc />
+        public IEnumerable<string> ListBranches() => _branches.Keys;
+
         /// <inheritdoc />
         public async Task<MergeResult> Merge(string branchId, bool includeNewStreams = true)
         {

@@ -3,6 +3,7 @@ using ZES.Infrastructure.Alerts;
 using ZES.Infrastructure.GraphQl;
 using ZES.Interfaces;
 using ZES.Interfaces.Branching;
+using ZES.Interfaces.Clocks;
 using ZES.Interfaces.Infrastructure;
 using ZES.Interfaces.Recording;
 using ZES.Persistence.SQLStreamStore;
@@ -67,18 +68,19 @@ namespace ZES.GraphQL
             var result = _remote.Pull(branch).Result;
             return result.ResultStatus == FastForwardResult.Status.Success;
         }
-        
+
         /// <summary>
         /// Branch mutation
         /// </summary>
         /// <param name="branch">Branch id</param>
+        /// <param name="time">Time to branch from</param>
         /// <returns>Branch result</returns>
-        public bool Branch(string branch)
+        public bool Branch(string branch, Time time = null)
         {
             if (branch == string.Empty)
                 _manager.Reset();
             else
-                _manager.Branch(branch).Wait();
+                _manager.Branch(branch, time).Wait();
 
             return true;
         }

@@ -1,8 +1,5 @@
-using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using NodaTime;
 using ZES.Interfaces.Clocks;
 using ZES.Interfaces.Domain;
 using ZES.Interfaces.EventStore;
@@ -80,6 +77,12 @@ namespace ZES.Interfaces.Branching
         /// <param name="branchId">Branch identifier</param>
         /// <returns>Current time</returns>
         Time GetTime(string branchId);
+
+        /// <summary>
+        /// Retrieves a list of all branch identifiers in the current timeline manager.
+        /// </summary>
+        /// <returns>A collection of strings representing the identifiers of all available branches.</returns>
+        IEnumerable<string> ListBranches();
     }
     
     /// <summary>

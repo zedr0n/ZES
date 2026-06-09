@@ -153,4 +153,40 @@ public class FutureTests : ZesTest
         await bus.QueryUntil(new StatsQuery(), s => s.NumberOfRoots == 1);
         await bus.QueryUntil(new RootInfoQuery(nameof(CanCopyPendingCommandsToLiveBranch)), r => r.UpdatedAt == futureDate2);
     }
+
+    [Fact]
+    public async Task CanCopyPendingCommandsToFixedTimeline()
+    {
+        var container = CreateContainer();
+        
+        var bus = container.GetInstance<IBus>();
+        var manager = container.GetInstance<IBranchManager>();
+        var timeline = container.GetInstance<IActiveTimeline>();
+
+        var now = timeline.Now;
+        var futureDate = now.PlusPeriod(Period.FromYears(1));
+        var futureDate2 = futureDate.PlusPeriod(Period.FromYears(1));
+        
+        await bus.Command(new CreateRoot(nameof(CanCopyPendingCommandsToFixedTimeline)) { Timestamp = futureDate });
+        await bus.Command(new UpdateRoot(nameof(CanCopyPendingCommandsToFixedTimeline)) { Timestamp = futureDate2 });
+ 
+        await manager.Branch("test", now);
+        
+        var stats = await bus.QueryAsync(new StatsQuery());
+        Assert.Equal(0, stats.NumberOfRoots);
+
+        await manager.Advance("test", futureDate);
+        
+        await bus.QueryUntil(new StatsQuery(), s => s.NumberOfRoots == 1);
+        await bus.QueryUntil(new RootInfoQuery(nameof(CanCopyPendingCommandsToFixedTimeline)), r => r.UpdatedAt == futureDate);
+ 
+        await manager.Advance("test", futureDate2);
+ 
+        await bus.QueryUntil(new RootInfoQuery(nameof(CanCopyPendingCommandsToFixedTimeline)), r => r.UpdatedAt == futureDate2);
+        
+        manager.Reset();
+        
+        stats = await bus.QueryAsync(new StatsQuery());
+        Assert.Equal(0, stats.NumberOfRoots);
+    }
 }
